@@ -50,7 +50,7 @@ export default function OnlineSimultaneousRound({
       <div className="mt-6 text-center">
         <div className="mb-3 text-5xl">💀</div>
         <p className="font-display text-xl font-extrabold text-white">You&apos;re out</p>
-        <p className="mt-1 text-white/50">
+        <p className="mt-1 text-fg-helper">
           Stick around — {waitingOn.length
             ? `${waitingOn.map((p) => p.name).join(', ')} still to answer.`
             : 'revealing…'}
@@ -65,7 +65,7 @@ export default function OnlineSimultaneousRound({
       <div className="mt-6 text-center">
         <div className="mb-3 text-5xl">🔒</div>
         <p className="font-display text-xl font-extrabold text-white">Locked in</p>
-        <p className="mt-1 text-white/50">
+        <p className="mt-1 text-fg-helper">
           {waitingOn.length
             ? `Waiting on ${waitingOn.map((p) => p.name).join(', ')}…`
             : 'Revealing…'}
@@ -78,7 +78,7 @@ export default function OnlineSimultaneousRound({
   if (!clipStarted) {
     return (
       <div className="mt-6 text-center">
-        <p className="text-base text-white/60">Listen for the clip — you&apos;ll get to guess.</p>
+        <p className="text-base text-fg-body">Listen for the clip — you&apos;ll get to guess.</p>
         {strip}
       </div>
     );
@@ -89,7 +89,7 @@ export default function OnlineSimultaneousRound({
       <p className="mb-1 text-center font-display text-xl font-extrabold text-white">
         Which anime is this?
       </p>
-      <p className="mb-4 text-center text-sm text-white/30">
+      <p className="mb-4 text-center text-sm text-fg-subtle">
         Everyone types at once — {submittedCount}/{contenders.length} locked in.
       </p>
       <GuessInput

@@ -41,7 +41,7 @@ export default function RoundEnd({
                 <span className="font-display text-lg font-extrabold text-pop-lime">
                   +{lp.points} pts
                 </span>
-                <span className="ml-3 text-sm text-white/40">({lp.turnsUsed} turns)</span>
+                <span className="ml-3 text-sm text-fg-subtle">({lp.turnsUsed} turns)</span>
               </span>
             </CardRow>
           );
@@ -56,7 +56,7 @@ export default function RoundEnd({
             <CardRow key={p.id} className={left ? 'opacity-50' : ''}>
               <span className="text-lg text-white">
                 {isLeading ? '👑 ' : ''}{p.name}
-                {left && <span className="ml-2 text-sm text-white/50">left</span>}
+                {left && <span className="ml-2 text-sm text-fg-helper">left</span>}
               </span>
               <span className="font-display text-xl font-extrabold text-pop-purple">
                 {p.total} pts
@@ -82,7 +82,7 @@ export default function RoundEnd({
         // aria-live because for a non-host this line is the only thing that
         // changes when the host moves the room on, and it stands in for a
         // control that would otherwise have taken focus.
-        <p className="text-center text-lg text-white/50" aria-live="polite">
+        <p className="text-center text-lg text-fg-helper" aria-live="polite">
           👑 Waiting for {hostName || 'the host'} to start the next round…
         </p>
       )}

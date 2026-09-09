@@ -50,17 +50,17 @@ export default function RoundEnd({
           return (
             <div
               key={row.playerId}
-              className="grid grid-cols-[1fr_auto_3rem] items-center gap-3 border-b border-white/10
+              className="grid grid-cols-[1fr_auto_3rem] items-center gap-3 border-b border-line
                 py-3 last:border-0"
             >
               <div className="min-w-0">
                 <p className="truncate font-display text-lg font-extrabold text-white">
                   {nameOf(row.playerId)}
                 </p>
-                <p className="truncate text-sm text-white/50">
+                <p className="truncate text-sm text-fg-helper">
                   {row.category ? getCategory(row.category).label : 'Category not revealed'}
                 </p>
-                {line && <p className="truncate text-sm text-white/40">{line}</p>}
+                {line && <p className="truncate text-sm text-fg-subtle">{line}</p>}
               </div>
               {row.took ? (
                 <Badge tone={row.solved ? 'lime' : 'red'}>
@@ -71,7 +71,7 @@ export default function RoundEnd({
               )}
               <span
                 className={`text-right font-display text-lg font-extrabold
-                  ${row.points > 0 ? 'text-pop-amber' : 'text-white/25'}`}
+                  ${row.points > 0 ? 'text-pop-amber' : 'text-fg-disabled'}`}
               >
                 +{row.points}
               </span>
@@ -90,7 +90,7 @@ export default function RoundEnd({
           {isFinalRound ? '🏁 See the final scores' : 'Next round →'}
         </Button>
       ) : (
-        <p className="text-center text-base text-white/40">
+        <p className="text-center text-base text-fg-subtle">
           Waiting for {hostName || 'the host'} to move on…
         </p>
       )}

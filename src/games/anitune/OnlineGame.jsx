@@ -101,13 +101,13 @@ export default function OnlineGame({ onBack, onExit }) {
         confirm="Leave this room and return to the hub? You can rejoin with the same name and room code."
       />
       <div className="fixed top-3 right-3 z-40 flex items-center gap-2">
-        <span className="hidden font-display text-xs tracking-widest text-white/40 sm:inline">
+        <span className="hidden font-display text-xs tracking-widest text-fg-subtle sm:inline">
           {room.roomCode}
         </span>
         <button
           onClick={handleLeave}
-          className="focus-pop rounded-pop-sm bg-black/40 px-3 py-1.5 font-display text-sm font-bold
-            text-white/60 backdrop-blur-sm transition-colors hover:bg-black/60 hover:text-white"
+          className="focus-pop rounded-pop-sm bg-scrim px-3 py-1.5 font-display text-sm font-bold
+            text-fg-body backdrop-blur-sm transition-colors hover:bg-scrim-strong hover:text-white"
         >
           Leave
         </button>
@@ -151,7 +151,7 @@ export default function OnlineGame({ onBack, onExit }) {
           </h2>
           {room.isPreparing && p ? (
             <div className="mx-auto w-full max-w-sm">
-              <p className="mb-2 text-base text-white/60">
+              <p className="mb-2 text-base text-fg-body">
                 {p.phase === 'resolving' ? 'Matching shows…' : 'Loading themes…'} {p.done}/{p.total}
               </p>
               <div className="h-4 w-full overflow-hidden rounded-pop-sm border-2 border-ink bg-surface-2">
@@ -162,7 +162,7 @@ export default function OnlineGame({ onBack, onExit }) {
               </div>
             </div>
           ) : (
-            <p className="text-lg text-white/60">Hang tight — the round is being dealt.</p>
+            <p className="text-lg text-fg-body">Hang tight — the round is being dealt.</p>
           )}
         </Screen>
       </>
@@ -215,7 +215,7 @@ export default function OnlineGame({ onBack, onExit }) {
             })}
           </div>
 
-          <p className="mb-1 text-center text-base text-white/40">
+          <p className="mb-1 text-center text-base text-fg-subtle">
             Question {game.index + 1} of {round.length}
           </p>
           <h2 className="mb-6 text-center font-display text-3xl font-extrabold text-white">

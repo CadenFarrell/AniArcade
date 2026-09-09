@@ -159,7 +159,7 @@ export default function Dial({
             {Number.isFinite(target) && <TargetBands target={target} animate={animate} />}
 
             {/* The midpoint, so an untouched dial still reads as a scale. */}
-            <Spoke value={50} from={R_INNER} to={R_OUTER} className="stroke-white/15" strokeWidth="1" />
+            <Spoke value={50} from={R_INNER} to={R_OUTER} className="stroke-line-strong" strokeWidth="1" />
 
             {markers.map((m) => (
               <Spoke
@@ -167,7 +167,7 @@ export default function Dial({
                 value={m.value}
                 from={R_INNER}
                 to={R_OUTER}
-                className="stroke-white/70"
+                className="stroke-mark"
                 strokeWidth="2"
               />
             ))}
@@ -211,10 +211,10 @@ export default function Dial({
       </div>
 
       <div className="mt-1 flex items-start justify-between gap-3">
-        <span className="font-display text-xs font-extrabold uppercase tracking-widest text-white/60">
+        <span className="font-display text-xs font-extrabold uppercase tracking-widest text-fg-body">
           ← {spectrum.leftLabel}
         </span>
-        <span className="text-right font-display text-xs font-extrabold uppercase tracking-widest text-white/60">
+        <span className="text-right font-display text-xs font-extrabold uppercase tracking-widest text-fg-body">
           {spectrum.rightLabel} →
         </span>
       </div>
@@ -232,7 +232,7 @@ export default function Dial({
             type="button"
             onClick={() => onChange(clamp((placed ? value : 50) - 1))}
             aria-label="Nudge left"
-            className="focus-pop grid h-11 w-11 place-items-center rounded-pop-sm border-2 border-white/15
+            className="focus-pop grid h-11 w-11 place-items-center rounded-pop-sm border-2 border-line-strong
               bg-surface-2 font-display text-xl font-black text-white hover:bg-surface"
           >
             −
@@ -247,7 +247,7 @@ export default function Dial({
             type="button"
             onClick={() => onChange(clamp((placed ? value : 50) + 1))}
             aria-label="Nudge right"
-            className="focus-pop grid h-11 w-11 place-items-center rounded-pop-sm border-2 border-white/15
+            className="focus-pop grid h-11 w-11 place-items-center rounded-pop-sm border-2 border-line-strong
               bg-surface-2 font-display text-xl font-black text-white hover:bg-surface"
           >
             +

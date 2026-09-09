@@ -85,7 +85,7 @@ export default function AniRankRound({
           ? <CardTray items={round.tray} selectedId={selectedId} onSelect={setSelectedId} />
           : <CurrentItem item={round.item} index={round.cursor} total={deck.length} />}
 
-        <p className="mb-2 text-center text-base font-bold text-white/70">
+        <p className="mb-2 text-center text-base font-bold text-fg-strong">
           {/* The subject ranks for real — they are the answer key, so telling
               them to guess at themselves would be nonsense. */}
           {isSubject
@@ -93,7 +93,7 @@ export default function AniRankRound({
             : promptFor(axis, subject?.name ?? 'they')}
         </p>
 
-        <p className="mb-4 text-center text-base text-white/50">
+        <p className="mb-4 text-center text-base text-fg-helper">
           {open
             ? players.length > 1
               ? 'Tap a card then a slot. Tap two slots to swap them. Lock in when you’re happy and pass the device on.'

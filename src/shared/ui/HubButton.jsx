@@ -41,9 +41,9 @@ export default function HubButton({ onClick, confirm = null }) {
   return (
     <button
       onClick={handleClick}
-      className="focus-pop fixed top-3 left-3 z-40 rounded-pop-sm bg-black/40 px-3 py-1.5
-        font-display text-sm font-bold text-white/60 backdrop-blur-sm
-        transition-colors hover:bg-black/60 hover:text-white"
+      className="focus-pop fixed top-3 left-3 z-40 rounded-pop-sm bg-scrim px-3 py-1.5
+        font-display text-sm font-bold text-fg-body backdrop-blur-sm
+        transition-colors hover:bg-scrim-strong hover:text-white"
     >
       🏠 Hub
     </button>

@@ -154,7 +154,7 @@ export default function AniRankSetup({ onStart, error, onBack }) {
         )}
 
         {players.length === 0 && (
-          <p className="mb-6 text-center text-base text-white/40">
+          <p className="mb-6 text-center text-base text-fg-subtle">
             Nobody seated yet — set your main profile with the 👤 button at the hub,
             or add a player above. Profiles and anime lists are shared with every game.
           </p>
@@ -274,7 +274,7 @@ export default function AniRankSetup({ onStart, error, onBack }) {
         </Card>
 
         {players.length > 0 && (
-          <p className="mb-4 text-center text-base text-white/50">
+          <p className="mb-4 text-center text-base text-fg-helper">
             {eligible} {eligible === 1 ? noun.replace(/s$/, '') : noun} to draw from
             {sharedOnly && players.length > 1 && ' (shared by everyone)'}
           </p>

@@ -59,7 +59,7 @@ export default function TrailBoard({
         const trail = trails[row.playerId] ?? [];
         const used = usedFor?.(row.playerId) ?? trail.length;
         return (
-          <div key={row.playerId} className={i ? 'mt-1 border-t border-white/10 pt-1' : ''}>
+          <div key={row.playerId} className={i ? 'mt-1 border-t border-line pt-1' : ''}>
             <button
               type="button"
               aria-expanded={isOpen}
@@ -67,7 +67,7 @@ export default function TrailBoard({
               className="focus-pop flex w-full items-center gap-3 rounded-pop-sm py-2 text-left"
             >
               <span className="min-w-0 flex-1 truncate font-display text-sm font-extrabold
-                uppercase tracking-widest text-white/60"
+                uppercase tracking-widest text-fg-body"
               >
                 {row.playerId === myPlayerId ? 'Your names' : `${row.name}'s names`}
               </span>
@@ -77,7 +77,7 @@ export default function TrailBoard({
               <Badge tone={Number.isFinite(cap) && used >= cap ? 'red' : 'neutral'}>
                 {Number.isFinite(cap) ? `${used}/${cap}` : used}
               </Badge>
-              <span aria-hidden="true" className="flex-shrink-0 text-white/40">
+              <span aria-hidden="true" className="flex-shrink-0 text-fg-icon">
                 {isOpen ? '▾' : '▸'}
               </span>
             </button>

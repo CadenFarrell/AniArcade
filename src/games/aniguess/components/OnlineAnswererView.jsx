@@ -24,7 +24,7 @@ export default function OnlineAnswererView({
         <h2 className="font-display text-3xl font-extrabold text-white">
           {guesser?.name}&apos;s Turn
         </h2>
-        <p className="mt-1 text-base text-white/50">
+        <p className="mt-1 text-base text-fg-helper">
           Turn {turnCount + 1} · You answer, they guess
         </p>
       </div>
@@ -36,17 +36,17 @@ export default function OnlineAnswererView({
           <>
             <Avatar src={guesserCharacter.imageUrl} size="md" />
             <div className="min-w-0">
-              <p className="font-display text-xs uppercase tracking-widest text-white/40">
+              <p className="font-display text-xs uppercase tracking-widest text-fg-subtle">
                 {guesser?.name} is
               </p>
               <p className="truncate font-display text-xl font-extrabold text-white">
                 {guesserCharacter.name}
               </p>
-              <p className="truncate text-sm text-white/50">{guesserCharacter.series}</p>
+              <p className="truncate text-sm text-fg-helper">{guesserCharacter.series}</p>
             </div>
           </>
         ) : (
-          <p className="text-base text-white/40">Loading their character…</p>
+          <p className="text-base text-fg-subtle">Loading their character…</p>
         )}
       </Card>
 
@@ -57,7 +57,7 @@ export default function OnlineAnswererView({
       {!live && (
         <div className="py-8 text-center">
           <div className="mb-3 text-6xl">⏳</div>
-          <p className="text-lg text-white/50">Waiting for a question or guess…</p>
+          <p className="text-lg text-fg-helper">Waiting for a question or guess…</p>
         </div>
       )}
 
@@ -86,14 +86,14 @@ export default function OnlineAnswererView({
               ❌ No
             </Button>
           </div>
-          <p className="mt-3 text-sm text-white/30">
+          <p className="mt-3 text-sm text-fg-subtle">
             Any player can answer — first one through wins.
           </p>
         </div>
       )}
 
       {live && pendingAction.kind === 'guess' && (
-        <p className="mb-8 text-center text-lg text-white/60">
+        <p className="mb-8 text-center text-lg text-fg-body">
           🎯 Checking guess: &quot;{pendingAction.text}&quot;…
         </p>
       )}

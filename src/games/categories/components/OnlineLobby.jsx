@@ -66,7 +66,7 @@ export default function OnlineLobby({ room }) {
         <Wordmark tone="lime" size="md" className="mb-8">AniTag</Wordmark>
 
         <div className="mb-8 text-center">
-          <p className="mb-3 text-white/50">Share this code with the other players:</p>
+          <p className="mb-3 text-fg-helper">Share this code with the other players:</p>
           <span className="sticker inline-block bg-pop-lime px-6 py-3 text-4xl tracking-[0.3em] text-ink">
             {room.roomCode}
           </span>
@@ -112,7 +112,7 @@ export default function OnlineLobby({ room }) {
             )}
           </>
         ) : (
-          <p className="mb-6 text-center text-base text-white/50">
+          <p className="mb-6 text-center text-base text-fg-helper">
             Waiting for {room.hostName || 'the host'} to start…
           </p>
         )}

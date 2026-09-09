@@ -25,7 +25,7 @@ function Ballot({ votes = {}, counts = {}, caught, fakeId, players, departedIds 
   );
   const silent = players.filter((p) => !votes[p.id]);
 
-  if (!cast) return <p className="text-white/40">Nobody voted.</p>;
+  if (!cast) return <p className="text-fg-subtle">Nobody voted.</p>;
 
   return (
     <div className="flex flex-col gap-4">
@@ -36,7 +36,7 @@ function Ballot({ votes = {}, counts = {}, caught, fakeId, players, departedIds 
           <div key={id} className={departedIds.includes(id) ? 'opacity-40' : ''}>
             <div className="flex items-center gap-2">
               <span className="w-6 flex-shrink-0 text-center font-display text-sm
-                font-extrabold text-white/30">
+                font-extrabold text-fg-subtle">
                 {playerOf(id)?.seat ?? '–'}
               </span>
               <span className="min-w-0 flex-1 truncate font-display text-lg font-extrabold text-white">
@@ -50,13 +50,13 @@ function Ballot({ votes = {}, counts = {}, caught, fakeId, players, departedIds 
             {/* The bar is the tally made readable at a glance — red only for the
                 one the ballot landed on, so a tie shows two neutral bars of
                 equal length and says "nobody" without needing a caption. */}
-            <div className="mt-1.5 ml-8 h-2 overflow-hidden rounded-pop-sm bg-white/10">
+            <div className="mt-1.5 ml-8 h-2 overflow-hidden rounded-pop-sm bg-wash">
               <div
-                className={`h-full rounded-pop-sm ${isCaught ? 'bg-pop-red' : 'bg-white/30'}`}
+                className={`h-full rounded-pop-sm ${isCaught ? 'bg-pop-red' : 'bg-wash-mid'}`}
                 style={{ width: `${(n / cast) * 100}%` }}
               />
             </div>
-            <p className="mt-1 ml-8 truncate text-sm text-white/40">
+            <p className="mt-1 ml-8 truncate text-sm text-fg-subtle">
               {Object.entries(votes)
                 .filter(([, target]) => target === id)
                 .map(([voter]) => nameOf(voter))
@@ -66,7 +66,7 @@ function Ballot({ votes = {}, counts = {}, caught, fakeId, players, departedIds 
         );
       })}
       {silent.length > 0 && (
-        <p className="text-sm text-white/30">
+        <p className="text-sm text-fg-subtle">
           Didn&apos;t vote: {silent.map((p) => p.name).join(', ')}
         </p>
       )}
@@ -127,7 +127,7 @@ export default function AniFakeResults({
       <Backdrop />
       <Screen width="md" onBack={onBack} backLabel="← Back to setup">
         <Wordmark tone="teal" size="md" level={2} className="mb-2">🕵️ Reveal</Wordmark>
-        <p className="mb-8 text-center text-base text-white/50">{mode.label}</p>
+        <p className="mb-8 text-center text-base text-fg-helper">{mode.label}</p>
 
         {!scored && (
           <Banner tone="warning" className="mb-6">
@@ -142,7 +142,7 @@ export default function AniFakeResults({
             <p className="mt-3 font-display text-3xl font-extrabold text-white">
               {fake?.name ?? 'Someone'} was the fake
             </p>
-            <p className="mt-2 text-lg text-white/60">
+            <p className="mt-2 text-lg text-fg-body">
               {caught === fakeId
                 ? (isRunoff ? 'Caught — in the runoff.' : 'Caught.')
                 : caught
@@ -160,7 +160,7 @@ export default function AniFakeResults({
                 reads like the game does not know who she is. A wrong guess IS
                 quoted, because there the typing is the point. */}
             {stolenName && (
-              <p className="mt-2 text-lg text-white/60">
+              <p className="mt-2 text-lg text-fg-body">
                 {stoleIt
                   ? `…but they named ${secret?.name ?? stolenName} correctly and took a point back.`
                   : `Their guess of “${stolenName}” was wrong.`}
@@ -171,7 +171,7 @@ export default function AniFakeResults({
                 hintFor deals no word at all there, and SecretCard has already
                 told the fake they were going in blind. */}
             {fakeCard?.hint && (
-              <p className="mt-4 text-white/50">
+              <p className="mt-4 text-fg-helper">
                 They were bluffing off one word:{' '}
                 <span className="font-display font-extrabold text-white">{fakeCard.hint}</span>
               </p>
@@ -187,11 +187,11 @@ export default function AniFakeResults({
                 <p className="truncate font-display text-2xl font-extrabold text-pop-lime">
                   {secret.name}
                 </p>
-                <p className="truncate text-white/50">{secret.series}</p>
+                <p className="truncate text-fg-helper">{secret.series}</p>
               </div>
             </div>
           ) : (
-            <p className="text-white/40">
+            <p className="text-fg-subtle">
               Nobody published enough cards to say who it was.
             </p>
           )}
@@ -210,10 +210,10 @@ export default function AniFakeResults({
                     <p className="truncate font-display text-2xl font-extrabold text-pop-red">
                       {fakeCard.name}
                     </p>
-                    <p className="truncate text-white/50">{fakeCard.series}</p>
+                    <p className="truncate text-fg-helper">{fakeCard.series}</p>
                   </div>
                 </div>
-                <p className="mt-4 text-white/60">
+                <p className="mt-4 text-fg-body">
                   {fake?.name ?? 'The fake'} was holding this one — and never knew.
                 </p>
               </>
@@ -221,7 +221,7 @@ export default function AniFakeResults({
               // Reachable two ways: the fake left before publishing (so they were
               // named by elimination, with no card to show), or a decoy deal ran
               // on a pool of one. Say so rather than render an empty frame.
-              <p className="text-white/40">
+              <p className="text-fg-subtle">
                 {fake?.name ?? 'The fake'} never turned their card over.
               </p>
             )}

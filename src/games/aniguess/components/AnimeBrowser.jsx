@@ -29,7 +29,7 @@ export default function AnimeBrowser({
           {guesserName}&apos;s Characters
         </h4>
         {sharedShowsOnly && (
-          <span className="ml-auto text-sm text-white/40">Shared shows only</span>
+          <span className="ml-auto text-sm text-fg-subtle">Shared shows only</span>
         )}
       </div>
 
@@ -47,13 +47,13 @@ export default function AnimeBrowser({
       )}
 
       {animeList.length === 0 && (
-        <p className="py-10 text-center text-lg text-white/50">{emptyMessage}</p>
+        <p className="py-10 text-center text-lg text-fg-helper">{emptyMessage}</p>
       )}
 
       {/* Distinct from emptyMessage: that one is about having no shared shows
           at all and carries setup advice that would be wrong here. */}
       {animeList.length > 0 && shown.length === 0 && (
-        <p className="py-10 text-center text-lg text-white/50">
+        <p className="py-10 text-center text-lg text-fg-helper">
           No shows or characters match “{query.trim()}”.
         </p>
       )}
@@ -64,19 +64,19 @@ export default function AnimeBrowser({
               the chevron and stops being a button rather than sitting there as
               a control that visibly does nothing. */}
           {searching ? (
-            <div className="w-full rounded-pop-sm border-2 border-white/15 bg-surface px-5 py-4 text-left text-lg text-white">
+            <div className="w-full rounded-pop-sm border-2 border-line-strong bg-surface px-5 py-4 text-left text-lg text-white">
               {anime.title}
-              <span className="ml-2 font-sans font-normal text-white/40">
+              <span className="ml-2 font-sans font-normal text-fg-subtle">
                 ({anime.characters.length})
               </span>
             </div>
           ) : (
             <button
               onClick={() => setExpandedAnime(expandedAnime === anime.id ? null : anime.id)}
-              className="btn-pop focus-pop w-full border-white/15 bg-surface px-5 py-4 text-left text-lg text-white"
+              className="btn-pop focus-pop w-full border-line-strong bg-surface px-5 py-4 text-left text-lg text-white"
             >
               {expandedAnime === anime.id ? '▼' : '▶'} {anime.title}
-              <span className="ml-2 font-sans font-normal text-white/40">
+              <span className="ml-2 font-sans font-normal text-fg-subtle">
                 ({anime.characters.length})
               </span>
             </button>
@@ -91,11 +91,11 @@ export default function AnimeBrowser({
                     <p className="truncate font-display text-lg font-extrabold text-white">
                       {char.name}
                     </p>
-                    <p className="text-base text-white/50">
+                    <p className="text-base text-fg-helper">
                       {[char.gender, char.role].filter(Boolean).join(' · ')}
                     </p>
                     {char.ability && (
-                      <p className="truncate text-sm text-white/30">{char.ability}</p>
+                      <p className="truncate text-sm text-fg-subtle">{char.ability}</p>
                     )}
                   </div>
                   <Button

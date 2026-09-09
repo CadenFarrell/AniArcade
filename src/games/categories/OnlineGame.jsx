@@ -56,13 +56,13 @@ export default function OnlineGame({ onBack, onExit }) {
         {/* Visible at every width. It used to be `hidden sm:inline`, which hid
             the room code on precisely the device most likely to be handed to
             somebody who has to type it in. */}
-        <span className="font-display text-xs tracking-widest text-white/40">
+        <span className="font-display text-xs tracking-widest text-fg-subtle">
           {room.roomCode}
         </span>
         <button
           onClick={handleLeave}
-          className="focus-pop rounded-pop-sm bg-black/40 px-3 py-1.5 font-display text-sm font-bold
-            text-white/60 backdrop-blur-sm transition-colors hover:bg-black/60 hover:text-white"
+          className="focus-pop rounded-pop-sm bg-scrim px-3 py-1.5 font-display text-sm font-bold
+            text-fg-body backdrop-blur-sm transition-colors hover:bg-scrim-strong hover:text-white"
         >
           Leave
         </button>

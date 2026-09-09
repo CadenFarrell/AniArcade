@@ -33,7 +33,7 @@ export default function CategoryEditor({ categories, onSave, onDelete, noun = 'c
 
   return (
     <Card title="✍️ Your own categories" padding="lg" className="mb-6">
-      <p className="mb-3 text-sm text-white/50">
+      <p className="mb-3 text-sm text-fg-helper">
         Anything the table can rule on — the app never checks an answer, so a clause
         no anime database could ever know is exactly the point.
       </p>
@@ -63,18 +63,18 @@ export default function CategoryEditor({ categories, onSave, onDelete, noun = 'c
       </div>
 
       {categories.length > 0 && (
-        <div className="mt-4 border-t border-white/10 pt-3">
+        <div className="mt-4 border-t border-line pt-3">
           {/* The count, not just the list: a table larger than the pool starts
               sharing clauses, and this is the control that fixes it. */}
           <div className="mb-1 flex items-center justify-between gap-3">
-            <span className="font-display text-xs font-extrabold uppercase tracking-widest text-white/40">
+            <span className="font-display text-xs font-extrabold uppercase tracking-widest text-fg-subtle">
               Written on this device
             </span>
             <Badge tone="neutral">{categories.length}</Badge>
           </div>
           {categories.map((c) => (
             <CardRow key={c.id}>
-              <span className="min-w-0 flex-1 truncate text-base text-white/80">{c.label}</span>
+              <span className="min-w-0 flex-1 truncate text-base text-fg-strong">{c.label}</span>
               <button
                 onClick={() => { setEditingId(c.id); setDraft(c.label); }}
                 aria-label={`Edit “${c.label}”`}

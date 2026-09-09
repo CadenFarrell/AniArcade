@@ -14,10 +14,20 @@
 // tick would talk over a screen-reader user for the entire round, so the live
 // region carries only the coarse seconds and only while the clock is running.
 
+// The bar also lights, and the halo widens as the clock runs out — 12px of lime
+// at the start against 22px of red at the end. That is the one place in the app
+// where glow carries information rather than emphasis, and it is worth it here
+// because the whole point of a countdown is to be noticed from across a room
+// without being read. A paused clock is unlit, for the same reason a disabled
+// button is: nothing is happening, so nothing should be emitting.
 function toneFor(secondsLeft) {
-  if (secondsLeft > 10) return { bar: 'bg-pop-lime', text: 'text-pop-lime' };
-  if (secondsLeft > 5) return { bar: 'bg-pop-amber', text: 'text-pop-amber' };
-  return { bar: 'bg-pop-red', text: 'text-pop-red' };
+  if (secondsLeft > 10) {
+    return { bar: 'bg-pop-lime [--glow:var(--color-pop-lime)] shadow-[0_0_12px_-2px_var(--glow)]', text: 'text-pop-lime' };
+  }
+  if (secondsLeft > 5) {
+    return { bar: 'bg-pop-amber [--glow:var(--color-pop-amber)] shadow-[0_0_16px_-2px_var(--glow)]', text: 'text-pop-amber' };
+  }
+  return { bar: 'bg-pop-red [--glow:var(--color-pop-red)] shadow-[0_0_22px_-1px_var(--glow)]', text: 'text-pop-red' };
 }
 
 export default function TimerBar({
@@ -28,7 +38,7 @@ export default function TimerBar({
   className = '',
 }) {
   const tone = paused
-    ? { bar: 'bg-white/25', text: 'text-white/40' }
+    ? { bar: 'bg-wash-bar', text: 'text-fg-subtle' }
     : toneFor(secondsLeft);
   // `fraction` is elapsed; the bar shows what is left.
   const pct = Math.min(100, Math.max(0, (1 - fraction) * 100));

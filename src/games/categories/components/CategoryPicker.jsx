@@ -113,8 +113,8 @@ export default function CategoryPicker({
                 key={c.id}
                 type="button"
                 onClick={() => setDraft(c.label)}
-                className="focus-pop rounded-pop-sm border-2 border-white/10 bg-white/5 px-3 py-2
-                  text-left text-base text-white/70 transition-colors hover:text-white"
+                className="focus-pop rounded-pop-sm border-2 border-line bg-wash-soft px-3 py-2
+                  text-left text-base text-fg-strong transition-colors hover:text-white"
               >
                 {c.custom && <span className="mr-1.5 text-pop-purple">✍️</span>}
                 {c.label}
@@ -122,7 +122,7 @@ export default function CategoryPicker({
             ))}
           </div>
         )}
-        <p className="mt-3 text-sm text-white/40">
+        <p className="mt-3 text-sm text-fg-subtle">
           Anything the table can rule on — nothing here is checked against a database, so a
           clause no anime site could ever know is exactly the point.
         </p>

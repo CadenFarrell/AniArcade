@@ -30,10 +30,10 @@ export default function SeatStrip({ order = [], myPlayerId = null, className = '
         const tone = row.isSeat
           ? 'border-pop-purple bg-pop-purple/20 text-white'
           : row.done
-            ? 'border-white/10 bg-white/5 text-white/40'
+            ? 'border-line bg-wash-soft text-fg-subtle'
             : row.away
-              ? 'border-pop-amber/40 bg-pop-amber/10 text-white/50'
-              : 'border-white/10 bg-white/5 text-white/70';
+              ? 'border-pop-amber/40 bg-pop-amber/10 text-fg-helper'
+              : 'border-line bg-wash-soft text-fg-strong';
 
         const status = () => {
           if (row.away) return 'away';

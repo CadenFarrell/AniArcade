@@ -86,7 +86,7 @@ export default function AniTuneSetup({ onStart, preparing, progress, error, onBa
         )}
 
         {players.length === 0 && (
-          <p className="mb-6 text-center text-base text-white/40">
+          <p className="mb-6 text-center text-base text-fg-subtle">
             Nobody seated yet — set your main profile with the 👤 button at the hub,
             or add a player above. Profiles and anime lists are shared with AniGuess.
           </p>
@@ -142,7 +142,7 @@ export default function AniTuneSetup({ onStart, preparing, progress, error, onBa
         </div>
 
         {players.length > 0 && (
-          <p className="mb-4 text-center text-base text-white/50">
+          <p className="mb-4 text-center text-base text-fg-helper">
             {eligible} show{eligible === 1 ? '' : 's'} in play
             {settings.sharedSongsOnly && players.length > 1 && ' (shared by everyone)'}
           </p>
@@ -172,7 +172,7 @@ export default function AniTuneSetup({ onStart, preparing, progress, error, onBa
 
         {preparing && progress && (
           <div className="mb-4">
-            <p className="mb-2 text-center text-base text-white/60">
+            <p className="mb-2 text-center text-base text-fg-body">
               {progress.phase === 'resolving' ? 'Matching your shows…' : 'Loading themes…'}{' '}
               {progress.done}/{progress.total}
             </p>
@@ -188,7 +188,7 @@ export default function AniTuneSetup({ onStart, preparing, progress, error, onBa
                 style={{ width: `${(progress.done / Math.max(progress.total, 1)) * 100}%` }}
               />
             </div>
-            <p className="mt-2 text-center text-sm text-white/30">
+            <p className="mt-2 text-center text-sm text-fg-subtle">
               First time takes a moment; after that it&apos;s cached.
             </p>
           </div>

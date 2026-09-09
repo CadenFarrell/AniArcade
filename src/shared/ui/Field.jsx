@@ -2,8 +2,12 @@
 // consts that ListManager had already extracted locally — same idea, now
 // shared, and with a real focus ring instead of only a border-colour change.
 
+// `field-lit` is the cabinet's focus signal — the border takes the primary
+// accent and a halo comes up behind it. It sits UNDER focus-pop rather than in
+// place of it: the white ring is the accessible affordance and survives
+// forced-colours mode, while a colour change on its own would not.
 const BASE = `w-full rounded-pop-sm border-2 border-ink bg-surface-2 px-4 py-3
-  text-white placeholder-white/35 focus-pop transition-colors`;
+  text-white placeholder-hint focus-pop field-lit`;
 
 export function Input({ className = '', ...rest }) {
   return <input className={`${BASE} ${className}`} {...rest} />;
@@ -21,7 +25,7 @@ export function Label({ className = '', children, ...rest }) {
   return (
     <label
       className={`block font-display text-xs font-extrabold uppercase tracking-widest
-        text-white/50 mb-1.5 ${className}`}
+        text-fg-helper mb-1.5 ${className}`}
       {...rest}
     >
       {children}
@@ -56,12 +60,12 @@ export function Checkbox({ label, className = '', ...rest }) {
         className="grid h-7 w-7 flex-shrink-0 place-items-center rounded-pop-sm border-2 border-ink
           bg-surface-2 text-transparent text-lg font-black leading-none transition-colors
           peer-checked:bg-pop-lime peer-checked:text-ink
-          peer-focus-visible:ring-4 peer-focus-visible:ring-white/80
+          peer-focus-visible:ring-4 peer-focus-visible:ring-focus
           peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-canvas"
       >
         ✓
       </span>
-      <span className="text-white/80 text-lg group-hover:text-white transition-colors">{label}</span>
+      <span className="text-fg-strong text-lg group-hover:text-white transition-colors">{label}</span>
     </label>
   );
 }

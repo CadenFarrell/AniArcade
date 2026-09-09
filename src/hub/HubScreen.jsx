@@ -10,15 +10,22 @@ import ProfilePicker from '../shared/components/ProfilePicker';
 import { useProfileStore } from '../shared/context/profileContext';
 import { Backdrop, Badge, GhostButton, HubButton, Screen, Wordmark } from '../shared/ui';
 
-// Tile fill plus the border the card adopts on hover, so each game "lights up"
-// in its own colour rather than every card sharing one highlight.
+// Tile fill, the border the card adopts on hover, and the halo `btn-pop` paints
+// behind it, so each game "lights up" in its own colour rather than every card
+// sharing one highlight.
+//
+// The glow is applied to the BUTTON and only when the game is available. That
+// is what makes the board read as a row of cabinets: a playable game is lit from
+// behind, an unavailable one is dark. `grayscale opacity-50` on the marquee was
+// already saying "off" — without killing the halo too, the one game nobody can
+// play would be the only tile glowing around a grey picture.
 const ACCENTS = {
-  pink: { tile: 'bg-pop-pink', hover: 'hover:border-pop-pink' },
-  purple: { tile: 'bg-pop-purple', hover: 'hover:border-pop-purple' },
-  lime: { tile: 'bg-pop-lime', hover: 'hover:border-pop-lime' },
-  amber: { tile: 'bg-pop-amber', hover: 'hover:border-pop-amber' },
-  blue: { tile: 'bg-pop-blue', hover: 'hover:border-pop-blue' },
-  teal: { tile: 'bg-pop-teal', hover: 'hover:border-pop-teal' },
+  pink: { tile: 'bg-pop-pink', hover: 'hover:border-pop-pink', glow: '[--glow:var(--color-pop-pink)]' },
+  purple: { tile: 'bg-pop-purple', hover: 'hover:border-pop-purple', glow: '[--glow:var(--color-pop-purple)]' },
+  lime: { tile: 'bg-pop-lime', hover: 'hover:border-pop-lime', glow: '[--glow:var(--color-pop-lime)]' },
+  amber: { tile: 'bg-pop-amber', hover: 'hover:border-pop-amber', glow: '[--glow:var(--color-pop-amber)]' },
+  blue: { tile: 'bg-pop-blue', hover: 'hover:border-pop-blue', glow: '[--glow:var(--color-pop-blue)]' },
+  teal: { tile: 'bg-pop-teal', hover: 'hover:border-pop-teal', glow: '[--glow:var(--color-pop-teal)]' },
 };
 
 // One game on the menu — a cabinet, not a list row. Built on `btn-pop` directly
@@ -36,7 +43,7 @@ function GameCard({ game, onPick }) {
       // focus-pop's ring and btn-pop's shadow — both on this element — survive.
       className={`btn-pop focus-pop group flex flex-col overflow-hidden p-0 text-center
         transition-colors bg-surface
-        ${game.available ? 'border-white/15 ' + accent.hover : 'border-white/10'}`}
+        ${game.available ? `border-line-strong ${accent.hover} ${accent.glow}` : 'border-line'}`}
     >
       {/* Colour marquee. Saturation is what marks a game as playable, so the
           unavailable one reads as "off" even without the badge — which is also
@@ -74,7 +81,7 @@ function GameCard({ game, onPick }) {
           <span
             className="blurb-overlay absolute inset-0 flex items-center justify-center
               bg-ink/90 px-2 py-1.5 font-sans text-xs font-normal normal-case leading-4
-              tracking-normal text-white/85
+              tracking-normal text-fg-strong
               group-hover:opacity-100 group-focus-visible:opacity-100"
           >
             {game.blurb}
@@ -85,7 +92,7 @@ function GameCard({ game, onPick }) {
       <span className="flex w-full flex-1 flex-col px-2 pt-2 pb-2.5">
         <span
           className={`font-display text-sm font-extrabold uppercase tracking-wide
-            ${game.available ? 'text-white' : 'text-white/40'}`}
+            ${game.available ? 'text-white' : 'text-fg-subtle'}`}
         >
           {game.title}
         </span>
@@ -97,7 +104,7 @@ function GameCard({ game, onPick }) {
         {game.available ? (
           <span
             className="blurb-inline mt-1 line-clamp-2 font-sans text-xs font-normal
-              normal-case leading-4 tracking-normal text-white/55"
+              normal-case leading-4 tracking-normal text-fg-helper"
           >
             {game.blurb}
           </span>
@@ -190,7 +197,7 @@ export default function HubScreen() {
         {/* The only thing left of the old full-width profile card. It points at
             the corner once and then never appears again. */}
         {!activeProfile && (
-          <p className="mb-6 text-center text-sm text-white/40">
+          <p className="mb-6 text-center text-sm text-fg-subtle">
             No profile yet — tap 👤 up top to set one up.
           </p>
         )}

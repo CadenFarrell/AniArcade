@@ -21,7 +21,7 @@ export default function RaceRound({
           onSubmit={onAnswer}
           submitLabel="Lock it in 🎯"
         />
-        <p className="mt-3 text-center text-sm text-white/30">
+        <p className="mt-3 text-center text-sm text-fg-subtle">
           Miss it and you&apos;re out for this song — the clip picks back up for everyone else.
         </p>
       </div>
@@ -32,7 +32,7 @@ export default function RaceRound({
 
   return (
     <div className="mt-6">
-      <p className="mb-4 text-center text-base text-white/60">
+      <p className="mb-4 text-center text-base text-fg-body">
         {stillIn.length === players.length
           ? 'First one to name it takes the point'
           : `${stillIn.length} still in`}

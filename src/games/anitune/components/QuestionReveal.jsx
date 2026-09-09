@@ -64,7 +64,7 @@ export default function QuestionReveal({
       <div className="mb-3 text-5xl">{scorers.length ? '🎉' : '😶'}</div>
       <p
         className={`mb-4 font-display text-2xl font-extrabold ${
-          scorers.length ? 'text-pop-lime' : 'text-white/60'
+          scorers.length ? 'text-pop-lime' : 'text-fg-body'
         }`}
       >
         {race
@@ -82,9 +82,9 @@ export default function QuestionReveal({
           <div className="min-w-0 flex-1">
             <p className="font-display text-2xl font-extrabold text-white">{question.animeTitle}</p>
             {question.displayTitle !== question.animeTitle && (
-              <p className="text-sm text-white/40">{question.displayTitle}</p>
+              <p className="text-sm text-fg-subtle">{question.displayTitle}</p>
             )}
-            <p className="mt-2 text-white/70">{themeAndYear(question)}</p>
+            <p className="mt-2 text-fg-strong">{themeAndYear(question)}</p>
             {question.songTitle && (
               <p className="mt-1 font-display font-extrabold text-pop-blue">
                 🎵 {question.songTitle}
@@ -102,13 +102,13 @@ export default function QuestionReveal({
                 named. (`as` is the field that would spoil. Leave it alone, or
                 gate it if it is ever wanted.) */}
             {question.artists?.length > 0 && (
-              <p className="text-sm text-white/50">{question.artists.join(', ')}</p>
+              <p className="text-sm text-fg-helper">{question.artists.join(', ')}</p>
             )}
           </div>
         </div>
 
         {showOwners && (
-          <p className="mt-4 border-t-2 border-white/10 pt-3 text-left text-sm text-white/40">
+          <p className="mt-4 border-t-2 border-line pt-3 text-left text-sm text-fg-subtle">
             From {nameList(ownerNames)}&apos;s list{ownerNames.length > 1 ? 's' : ''}
           </p>
         )}
@@ -134,15 +134,15 @@ export default function QuestionReveal({
                   </span>
                 )}
               </span>
-              <span className="block truncate text-sm text-white/40">
+              <span className="block truncate text-sm text-fg-subtle">
                 {answer?.text?.trim() ? `“${answer.text}”` : 'passed'}
               </span>
             </span>
             {ms != null && (
-              <span className="flex-shrink-0 text-right text-sm tabular-nums text-white/40">
+              <span className="flex-shrink-0 text-right text-sm tabular-nums text-fg-subtle">
                 {formatSeconds(ms)}
                 {answer?.correct && fastest != null && ms > fastest && (
-                  <span className="block text-xs text-white/25">+{formatSeconds(ms - fastest)}</span>
+                  <span className="block text-xs text-fg-disabled">+{formatSeconds(ms - fastest)}</span>
                 )}
               </span>
             )}

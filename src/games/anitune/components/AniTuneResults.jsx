@@ -49,7 +49,7 @@ export default function AniTuneResults({
         <Wordmark tone="blue" size="md" level={2} className="mb-2">
           🏆 Final Scores
         </Wordmark>
-        {suffix && <p className="mb-8 text-center text-base text-white/40">{suffix}</p>}
+        {suffix && <p className="mb-8 text-center text-base text-fg-subtle">{suffix}</p>}
 
         <Card padding="sm" className="mb-8">
           {ranked.map((p) => {
@@ -60,7 +60,7 @@ export default function AniTuneResults({
                 <span className="w-10 text-2xl">{getPositionEmoji(p.position)}</span>
                 <span className="min-w-0 flex-1 truncate text-left font-display text-lg font-extrabold text-white">
                   {p.name}
-                  {left && <span className="ml-2 text-sm font-bold text-white/50">left</span>}
+                  {left && <span className="ml-2 text-sm font-bold text-fg-helper">left</span>}
                 </span>
                 {lastManStanding && (
                   <Badge tone={out ? 'red' : 'lime'}>
@@ -84,7 +84,7 @@ export default function AniTuneResults({
           <Card title={`🎵 The ${played.length} song${played.length === 1 ? '' : 's'}`} padding="sm" className="mb-8">
             {played.map((q, i) => (
               <CardRow key={`${q.id}:${i}`} className="text-left">
-                <span className="w-6 flex-shrink-0 text-sm tabular-nums text-white/30">{i + 1}</span>
+                <span className="w-6 flex-shrink-0 text-sm tabular-nums text-fg-subtle">{i + 1}</span>
                 {q.coverImageUrl
                   ? <Avatar src={q.coverImageUrl} alt="" size="sm" className="flex-shrink-0" />
                   : <span className="w-10 flex-shrink-0" />}
@@ -92,7 +92,7 @@ export default function AniTuneResults({
                   <span className="block truncate font-display font-extrabold text-white">
                     {songCredit(q) || '—'}
                   </span>
-                  <span className="block truncate text-sm text-white/40">
+                  <span className="block truncate text-sm text-fg-subtle">
                     {q.animeTitle} · {themeAndYear(q)}
                   </span>
                 </span>

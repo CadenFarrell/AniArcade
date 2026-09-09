@@ -26,7 +26,7 @@ export default function Leaderboard({
   // back amber — still clearly a step below gold.
   const podiumConfig = {
     1: { height: 'h-44', color: 'bg-pop-amber', emoji: '🥇' },
-    2: { height: 'h-28', color: 'bg-white/70', emoji: '🥈' },
+    2: { height: 'h-28', color: 'bg-wash-bright', emoji: '🥈' },
     3: { height: 'h-20', color: 'bg-pop-amber/50', emoji: '🥉' },
   };
 
@@ -35,7 +35,7 @@ export default function Leaderboard({
       <Wordmark tone="amber" size="md" level={2} className="mb-3">
         🏆 Final Results
       </Wordmark>
-      <p className="mb-10 text-lg text-white/50">
+      <p className="mb-10 text-lg text-fg-helper">
         {roundNumber} round{roundNumber !== 1 ? 's' : ''} played
       </p>
 
@@ -52,7 +52,7 @@ export default function Leaderboard({
                     <p className="mb-1 font-display text-base font-extrabold text-white">
                       {player.name}
                     </p>
-                    <p className="mb-1 text-sm text-white/70">{player.total} pts</p>
+                    <p className="mb-1 text-sm text-fg-strong">{player.total} pts</p>
                     {isTied(player) && <p className="mb-1 text-xs text-pop-amber">🤝</p>}
                     {/* Blocks, not bars — same ink border as every other solid
                         fill. No bottom border so they sit on the baseline. */}
@@ -79,7 +79,7 @@ export default function Leaderboard({
               <span className="font-display text-lg font-extrabold">
                 {getPositionEmoji(player.position)} {player.name}
                 {isTied(player) && <span className="ml-2 text-sm text-pop-amber">🤝 Tied</span>}
-                {left && <span className="ml-2 text-sm font-bold text-white/50">left</span>}
+                {left && <span className="ml-2 text-sm font-bold text-fg-helper">left</span>}
               </span>
               <span className="font-display text-2xl font-extrabold">{player.total} pts</span>
             </CardRow>

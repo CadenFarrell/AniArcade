@@ -32,7 +32,7 @@ export default function SettingsFooter({ values, defaults, onReset }) {
     // width it needs and the link drops beneath it, instead of the two squeezing
     // into an unreadable column each.
     <div className="mt-5 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
-      <p className="text-sm text-white/30">
+      <p className="text-sm text-fg-subtle">
         Remembered for next time — saved when you press Start.
       </p>
       {!arePrefsDefault(values, defaults) && (

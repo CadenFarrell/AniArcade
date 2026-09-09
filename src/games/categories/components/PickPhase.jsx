@@ -41,7 +41,7 @@ export default function PickPhase({
   const header = (
     <div className="mb-6 flex items-center justify-between gap-3">
       <div className="min-w-0">
-        <p className="font-display text-xs font-extrabold uppercase tracking-widest text-white/50">
+        <p className="font-display text-xs font-extrabold uppercase tracking-widest text-fg-helper">
           Everyone picks a category
         </p>
         <h2 className="truncate font-display text-2xl font-extrabold text-white">
@@ -68,7 +68,7 @@ export default function PickPhase({
               ? `Waiting on ${waitingOn.map((p) => p.name).join(', ')}…`
               : 'Starting the round…'}
           </p>
-          <p className="mt-3 text-base text-white/50">
+          <p className="mt-3 text-base text-fg-helper">
             Keep your category to yourself. Everything you answer from here is judged
             against it, and working it out is the whole game.
           </p>
@@ -88,7 +88,7 @@ export default function PickPhase({
           <p className="mt-3 font-display text-xl font-extrabold text-white">
             Pass the device to {playerName}
           </p>
-          <p className="mt-2 text-base text-white/50">
+          <p className="mt-2 text-base text-fg-helper">
             Everyone else, look away — this is the one screen in the round that is private.
             After this the device sits in the middle and you each name one thing in turn.
           </p>
@@ -106,7 +106,7 @@ export default function PickPhase({
       {/* A sentence rather than a panel. It used to be a whole Card holding one
           line of grey text, which spent a surface on a caption and left the
           picker below it looking like the second thing on the screen. */}
-      <p className="mb-5 text-base text-white/60">
+      <p className="mb-5 text-base text-fg-body">
         Pick something you can answer yes or no about instantly, for any {noun} anyone names.
       </p>
       <CategoryPicker suggestions={suggestions} noun={noun} onPick={onPick} busy={busy} />

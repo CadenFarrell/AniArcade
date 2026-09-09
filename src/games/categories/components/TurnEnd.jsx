@@ -61,7 +61,7 @@ export default function TurnEnd({
   return (
     <>
       <Card padding="lg" className="mb-6 text-center">
-        <p className="font-display text-sm font-extrabold uppercase tracking-widest text-white/50">
+        <p className="font-display text-sm font-extrabold uppercase tracking-widest text-fg-helper">
           {/* Built here rather than by the caller, which is how "Your" and an
               appended "'s" produced "Your's" the first time round. */}
           {heading()}
@@ -71,13 +71,13 @@ export default function TurnEnd({
         {(!chosen || claimed) && (category ? (
           <p className="mt-3 font-display text-3xl font-extrabold text-white">{category.label}</p>
         ) : (
-          <p className="mt-3 font-display text-xl font-extrabold text-white/30">
+          <p className="mt-3 font-display text-xl font-extrabold text-fg-subtle">
             Waiting for it to be revealed…
           </p>
         ))}
 
         {chosen && !claimed && (
-          <p className="mt-3 text-base text-white/50">
+          <p className="mt-3 text-base text-fg-helper">
             {result?.guess
               ? 'Still anybody’s to claim — it stays secret until the round ends.'
               : 'Every category is still standing.'}
@@ -93,7 +93,7 @@ export default function TurnEnd({
           </Badge>
         </div>
 
-        {footnote() && <p className="mt-3 text-sm text-white/40">{footnote()}</p>}
+        {footnote() && <p className="mt-3 text-sm text-fg-subtle">{footnote()}</p>}
       </Card>
 
       {/* The whole board rather than one trail: by the time anybody finishes,
@@ -115,7 +115,7 @@ export default function TurnEnd({
           {isLastSeat ? 'Finish the round →' : 'Carry on →'}
         </Button>
       ) : (
-        <p className="text-center text-base text-white/40">
+        <p className="text-center text-base text-fg-subtle">
           Waiting for the round to carry on…
         </p>
       )}

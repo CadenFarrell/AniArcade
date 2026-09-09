@@ -33,7 +33,7 @@ export default function CompareResult({ result, ownerA, ownerB, byId }) {
     <>
       <Card padding="lg" className="mb-6">
         <p className="text-center font-display text-6xl font-black text-pop-amber">{pct}%</p>
-        <p className="mt-1 text-center text-base text-white/60">
+        <p className="mt-1 text-center text-base text-fg-body">
           agreement over {result.comparisons.toLocaleString()}{' '}
           {result.comparisons === 1 ? 'pairing' : 'pairings'}
         </p>
@@ -53,12 +53,12 @@ export default function CompareResult({ result, ownerA, ownerB, byId }) {
 
       <Card title="🔥 Biggest disagreements" padding="lg">
         {result.clashes.length === 0 ? (
-          <p className="text-base text-white/60">
+          <p className="text-base text-fg-body">
             Nothing is out of order between these two — every pair agrees.
           </p>
         ) : (
           <>
-            <p className="mb-4 text-sm text-white/50">
+            <p className="mb-4 text-sm text-fg-helper">
               Sorted by how many other entries each one is ordered oppositely against — which
               is what the score above actually counts. An entry can appear here without moving
               itself, if enough others moved past it.
@@ -69,7 +69,7 @@ export default function CompareResult({ result, ownerA, ownerB, byId }) {
                 return (
                   <li
                     key={clash.id}
-                    className="flex items-center gap-3 border-b-2 border-white/5 py-2 last:border-b-0"
+                    className="flex items-center gap-3 border-b-2 border-line-soft py-2 last:border-b-0"
                   >
                     {card?.imageUrl && (
                       <img
@@ -90,13 +90,13 @@ export default function CompareResult({ result, ownerA, ownerB, byId }) {
                         count carries the meaning. */}
                     <span className="flex flex-shrink-0 items-center gap-1.5 font-display text-sm font-extrabold">
                       {clash.labelA === clash.labelB ? (
-                        <span className="text-white/40">
+                        <span className="text-fg-subtle">
                           {clash.labelA} <span className="font-sans font-normal">both</span>
                         </span>
                       ) : (
                         <>
                           <span className="text-pop-lime">{clash.labelA}</span>
-                          <span className="text-white/30">vs</span>
+                          <span className="text-fg-subtle">vs</span>
                           <span className="text-pop-red">{clash.labelB}</span>
                         </>
                       )}
@@ -107,7 +107,7 @@ export default function CompareResult({ result, ownerA, ownerB, byId }) {
               })}
             </ol>
             {result.clashes.length > MAX_CLASHES && (
-              <p className="mt-3 text-center text-sm text-white/40">
+              <p className="mt-3 text-center text-sm text-fg-subtle">
                 …and {result.clashes.length - MAX_CLASHES} more.
               </p>
             )}

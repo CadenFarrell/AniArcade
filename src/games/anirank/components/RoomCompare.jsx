@@ -94,7 +94,7 @@ export default function RoomCompare({ players, tierLists, cardsFor, onBack }) {
               </caption>
               <thead>
                 <tr>
-                  <th scope="col" className="p-2 text-left text-sm font-normal text-white/40">
+                  <th scope="col" className="p-2 text-left text-sm font-normal text-fg-subtle">
                     agrees with →
                   </th>
                   {entrants.map((p) => (
@@ -120,7 +120,7 @@ export default function RoomCompare({ players, tierLists, cardsFor, onBack }) {
                     {entrants.map((col) => {
                       if (row.id === col.id) {
                         return (
-                          <td key={col.id} className="p-1 text-white/15" aria-label="same list">
+                          <td key={col.id} className="p-1 text-fg-ghost" aria-label="same list">
                             —
                           </td>
                         );
@@ -141,10 +141,10 @@ export default function RoomCompare({ players, tierLists, cardsFor, onBack }) {
                             className={`focus-pop w-full rounded-pop-sm px-2 py-2 font-display
                               text-base font-extrabold transition-colors
                               ${value == null
-                          ? 'cursor-not-allowed text-white/20'
+                          ? 'cursor-not-allowed text-fg-disabled'
                           : active
                             ? 'bg-pop-amber text-ink'
-                            : 'text-pop-amber hover:bg-white/10'}`}
+                            : 'text-pop-amber hover:bg-wash'}`}
                           >
                             {value == null ? '–' : `${value}%`}
                           </button>
@@ -156,7 +156,7 @@ export default function RoomCompare({ players, tierLists, cardsFor, onBack }) {
               </tbody>
             </table>
           </div>
-          <p className="mt-4 text-center text-sm text-white/40">
+          <p className="mt-4 text-center text-sm text-fg-subtle">
             Tap a number to see what those two disagree about.
           </p>
         </Card>
@@ -180,7 +180,7 @@ export default function RoomCompare({ players, tierLists, cardsFor, onBack }) {
         <>
           <div className="mb-4 flex flex-wrap items-center justify-center gap-2">
             <Badge tone="lime">{playerA?.name}</Badge>
-            <span className="text-white/30">vs</span>
+            <span className="text-fg-subtle">vs</span>
             <Badge tone="red">{playerB?.name}</Badge>
           </div>
           <CompareResult

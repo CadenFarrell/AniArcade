@@ -5,7 +5,7 @@ import { useHelpDetail } from '../context/helpDetailContext';
  * player has asked for it — why it matters.
  *
  * Every setup screen and online lobby used to hand-place a `<p className="ml-10
- * text-base text-white/50">` holding both halves at once. Four games' worth of
+ * text-base text-fg-helper">` holding both halves at once. Four games' worth of
  * that put a two-to-four line paragraph under every single-line control, so a
  * settings card ran roughly three times taller in prose than in controls and the
  * whole thing read as a wall rather than as help. The copy is good and several
@@ -18,8 +18,8 @@ import { useHelpDetail } from '../context/helpDetailContext';
  * line just omits `more` and renders unchanged apart from its weight.
  *
  * That weight is the second half of the fix. Helper copy had drifted to three
- * different treatments across the games (`text-base text-white/50`, `text-sm
- * text-white/50`, `text-sm text-white/30`), which is what made the volume read as
+ * different treatments across the games (`text-base text-fg-helper`, `text-sm
+ * text-fg-helper`, `text-sm text-fg-subtle`), which is what made the volume read as
  * noise instead of hierarchy — there was no consistent signal for "this is the
  * secondary line". Everything routes through here now, at two weights only.
  */
@@ -31,12 +31,12 @@ export default function SettingHelp({ indent = false, more, className = '', chil
     // plus its 3-unit gap. A note under a Field (which has no box) takes no
     // indent — hence the prop rather than baking it in.
     <div className={`${indent ? 'ml-10' : ''} ${className}`}>
-      <p className="text-sm text-white/50">{children}</p>
+      <p className="text-sm text-fg-helper">{children}</p>
       {/* Rendered in flow rather than as an overlay, the way every other
           disclosure in the app does it (see Combobox's note on why popovers were
           rejected): the card growing downward is the correct behaviour when the
           player has just asked for more to read. */}
-      {more && detail && <p className="mt-1.5 text-sm text-white/40">{more}</p>}
+      {more && detail && <p className="mt-1.5 text-sm text-fg-subtle">{more}</p>}
     </div>
   );
 }
@@ -75,7 +75,7 @@ export function DetailToggle({ className = '' }) {
         font-display text-xs font-extrabold uppercase tracking-widest transition-colors
         ${detail
           ? 'border-pop-lime/60 bg-pop-lime/15 text-pop-lime'
-          : 'border-white/15 text-white/40 hover:border-white/30 hover:text-white/70'}
+          : 'border-line-strong text-fg-subtle hover:border-line-loud hover:text-fg-strong'}
         ${className}`}
     >
       ⓘ Detail

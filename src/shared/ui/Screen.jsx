@@ -23,7 +23,7 @@ export default function Screen({
 }) {
   return (
     <div
-      className={`min-h-screen flex flex-col items-center px-5 sm:px-6
+      className={`min-h-dvh flex flex-col items-center px-5 sm:px-6
         ${center ? 'justify-center py-8 sm:py-10' : 'pt-16 pb-8 sm:pb-10'} ${className}`}
     >
       <div className={`w-full ${WIDTHS[width]}`}>

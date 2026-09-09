@@ -67,7 +67,7 @@ export default function GuessView({
       )}
 
       <Card padding="lg" className="mb-6 text-center">
-        <p className="font-display text-sm font-extrabold uppercase tracking-widest text-white/50">
+        <p className="font-display text-sm font-extrabold uppercase tracking-widest text-fg-helper">
           {prompt}
         </p>
         {card ? (
@@ -85,7 +85,7 @@ export default function GuessView({
           onChange={(v) => { setTouched(true); onChange(v); }}
         />
         {expired ? (
-          <p className="mt-4 text-center text-base text-white/40">
+          <p className="mt-4 text-center text-base text-fg-subtle">
             {/* `placed` is still true here, because the auto-lock deliberately
                 leaves the draft alone — see OnlineGame. This screen is replaced
                 the moment the write lands. */}
@@ -94,7 +94,7 @@ export default function GuessView({
               : "Time's up — no dial to score."}
           </p>
         ) : !placed && (
-          <p className="mt-4 text-center text-base text-white/40">
+          <p className="mt-4 text-center text-base text-fg-subtle">
             Tap the dial to place it — then drag, nudge, or use the arrow keys.
           </p>
         )}

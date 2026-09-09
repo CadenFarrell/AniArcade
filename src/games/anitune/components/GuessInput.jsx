@@ -56,7 +56,7 @@ export default function GuessInput({
           <div className="min-w-0">
             <p className="truncate text-base font-bold text-white">{s.title}</p>
             {s.alt && s.alt !== s.title && (
-              <p className="truncate text-sm text-white/40">{s.alt}</p>
+              <p className="truncate text-sm text-fg-subtle">{s.alt}</p>
             )}
           </div>
         )}

@@ -40,7 +40,7 @@ export default function OnlineCharacterAssignment({
 
   return (
     <Screen center width="md">
-      <p className="mb-6 text-center text-base text-white/40">
+      <p className="mb-6 text-center text-base text-fg-subtle">
         Assigning characters — {assignmentNumber} of {totalPlayers}
       </p>
       <p className="mb-4 text-center font-display text-3xl font-extrabold text-white">
@@ -49,14 +49,14 @@ export default function OnlineCharacterAssignment({
       <Wordmark tone="pink" size="md" level={2} className="mb-3">
         {guesser.name}
       </Wordmark>
-      <p className="mb-8 text-center text-white/50">
+      <p className="mb-8 text-center text-fg-helper">
         Propose one together — everyone must approve before it locks in.
       </p>
 
       {filteredAnimeList.length === 0 ? (
         <div className="text-center">
           <div className="mb-5 text-6xl">🤷</div>
-          <p className="text-lg text-white/60">
+          <p className="text-lg text-fg-body">
             {guesser.name} doesn&apos;t share any anime titles with the other players.{' '}
             {NO_SHARED_HELP}
           </p>
@@ -74,18 +74,18 @@ export default function OnlineCharacterAssignment({
       ) : proposed ? (
         <>
           <Card padding="lg" className="mb-4 border-pop-purple text-center">
-            <p className="mb-3 text-sm text-white/50">
+            <p className="mb-3 text-sm text-fg-helper">
               Proposed{proposedBy ? ` by ${proposedBy}` : ''}
             </p>
             <div className="mb-3 flex justify-center">
               <Avatar src={proposed.imageUrl} alt={proposed.name} size="lg" />
             </div>
             <h4 className="font-display text-2xl font-extrabold text-white">{proposed.name}</h4>
-            <p className="text-white/60">from {proposed.series}</p>
+            <p className="text-fg-body">from {proposed.series}</p>
           </Card>
 
           <div className="mb-4">
-            <div className="mb-2 flex items-center justify-between font-display font-bold text-white/70">
+            <div className="mb-2 flex items-center justify-between font-display font-bold text-fg-strong">
               <span>Approvals</span>
               <span>{approvedIds.length} / {needed}</span>
             </div>
@@ -96,7 +96,7 @@ export default function OnlineCharacterAssignment({
               />
             </div>
             {approverNames.length > 0 && (
-              <p className="mt-2 text-sm text-white/40">Approved by {approverNames.join(', ')}</p>
+              <p className="mt-2 text-sm text-fg-subtle">Approved by {approverNames.join(', ')}</p>
             )}
           </div>
 
@@ -118,13 +118,13 @@ export default function OnlineCharacterAssignment({
               🔍 Change
             </Button>
           </div>
-          <p className="mt-3 text-center text-sm text-white/30">
+          <p className="mt-3 text-center text-sm text-fg-subtle">
             Changing the pick resets everyone&apos;s approval.
           </p>
         </>
       ) : (
         <>
-          <p className="mb-6 text-center text-white/40">
+          <p className="mb-6 text-center text-fg-subtle">
             No character proposed yet — pick one to start.
           </p>
           <div className="flex gap-4">

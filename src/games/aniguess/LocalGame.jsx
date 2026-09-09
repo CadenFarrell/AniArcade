@@ -72,7 +72,7 @@ function App({ onExit, onBack }) {
         <Modal onClose={handleDiscardSession} closeOnBackdrop={false} className="text-center">
           <div className="mb-4 text-6xl">🎮</div>
           <h2 className="mb-3 font-display text-3xl font-extrabold text-white">Resume Game?</h2>
-          <p className="mb-8 text-lg text-white/60">
+          <p className="mb-8 text-lg text-fg-body">
             You have an unfinished game. Pick up where you left off?
           </p>
           <div className="flex flex-col gap-3">

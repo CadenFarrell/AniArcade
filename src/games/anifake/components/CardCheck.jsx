@@ -42,16 +42,16 @@ export default function CardCheck({
         </div>
 
         {phase === 'redealing' ? (
-          <p className="text-center text-lg text-white/60">
+          <p className="text-center text-lg text-fg-body">
             🔁 Dealing a new character…
           </p>
         ) : waiting ? (
           <>
-            <p className="text-center text-lg text-white/60">
+            <p className="text-center text-lg text-fg-body">
               {phase === 'starting' ? 'Starting the clues…' : 'Waiting for everyone else…'}
             </p>
             {pendingNames.length > 0 && (
-              <p className="mt-2 text-center text-white/40">
+              <p className="mt-2 text-center text-fg-subtle">
                 Still looking: {pendingNames.join(', ')}
               </p>
             )}
@@ -65,7 +65,7 @@ export default function CardCheck({
               // Only this player ever sees it — every device renders its own card
               // — so saying it costs nothing, and not saying it leaves them
               // hunting for a control the rules deliberately withhold.
-              <p className="mt-4 text-center text-sm text-white/40">
+              <p className="mt-4 text-center text-sm text-fg-subtle">
                 You hold no character, so there&apos;s nothing for you to not-know.
                 If someone else asks, you&apos;ll get a new hint.
               </p>
@@ -92,7 +92,7 @@ export default function CardCheck({
                     more here than it ever did in setup — the host read it once
                     while configuring, whereas this is on screen for everyone at
                     the moment the button is theirs to press. */}
-                <p className="mt-3 text-center text-sm text-white/40">
+                <p className="mt-3 text-center text-sm text-fg-subtle">
                   Nobody is told who asked. If anyone does, everyone gets a new character —
                   {dealsLeft === 1 ? ' one more time.' : ` up to ${dealsLeft} more times.`}
                   {' '}It never changes who the fake is.

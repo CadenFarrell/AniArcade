@@ -128,7 +128,7 @@ export default function OnlineLobby({ room }) {
         </Wordmark>
 
         <div className="mb-8 text-center">
-          <p className="mb-3 text-white/50">Share this code with the other players:</p>
+          <p className="mb-3 text-fg-helper">Share this code with the other players:</p>
           <span className="sticker inline-block bg-pop-lime px-6 py-3 text-4xl text-ink tracking-[0.3em]">
             {room.roomCode}
           </span>
@@ -157,7 +157,7 @@ export default function OnlineLobby({ room }) {
             );
           })}
           {active.length < 2 && (
-            <p className="mt-3 text-sm text-white/40">Waiting for more players to join…</p>
+            <p className="mt-3 text-sm text-fg-subtle">Waiting for more players to join…</p>
           )}
         </Card>
 
@@ -189,7 +189,7 @@ export default function OnlineLobby({ room }) {
             <p className="font-display text-lg font-extrabold text-white">
               {room.hostName ? `${room.hostName} is the host` : 'Waiting for the host'}
             </p>
-            <p className="mt-1 text-white/50">
+            <p className="mt-1 text-fg-helper">
               The host picks the settings and starts the game. Import your list above so
               you&apos;re ready.
             </p>
@@ -223,11 +223,11 @@ export default function OnlineLobby({ room }) {
                 inert control is worse than an absent one — see AniRankSetup. */}
             {comparing ? (
               <Card padding="lg" className="mb-6">
-                <p className="text-base text-white/60">
+                <p className="text-base text-fg-body">
                   Lists are built in local play and saved to each player&rsquo;s own device.
                   Start, and everyone picks one to send.
                 </p>
-                <p className="mt-3 text-sm text-white/30">
+                <p className="mt-3 text-sm text-fg-subtle">
                   You&apos;re the host — your settings apply to everyone.
                 </p>
                 <SettingsFooter
@@ -278,7 +278,7 @@ export default function OnlineLobby({ room }) {
                 {SETTING_HELP.scoring.short}
               </SettingHelp>
 
-              <p className="mt-4 text-sm text-white/30">
+              <p className="mt-4 text-sm text-fg-subtle">
                 You&apos;re the host — your settings apply to everyone.
               </p>
 

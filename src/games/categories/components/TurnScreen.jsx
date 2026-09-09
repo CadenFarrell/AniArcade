@@ -126,7 +126,7 @@ export default function TurnScreen({
     <>
       <div className="mb-4 flex items-center justify-between gap-3">
         <div className="min-w-0">
-          <p className="font-display text-xs font-extrabold uppercase tracking-widest text-white/50">
+          <p className="font-display text-xs font-extrabold uppercase tracking-widest text-fg-helper">
             Round {roundNumber} of {totalRounds}
           </p>
           <h2 className="truncate font-display text-2xl font-extrabold text-white">
@@ -142,7 +142,7 @@ export default function TurnScreen({
           panel. Without it a judge's screen and a spectator's are identical
           apart from two buttons, and the person who has to answer does not know
           it is them. */}
-      <p className="mb-5 text-base text-white/60">{instruction()}</p>
+      <p className="mb-5 text-base text-fg-body">{instruction()}</p>
 
       <SeatStrip order={order} myPlayerId={myPlayerId} className="mb-5" />
 
@@ -161,8 +161,8 @@ export default function TurnScreen({
       {category && (peek
         ? <CategoryPeek label={category.label} seatName={seatName} bare className="mb-5" />
         : (
-          <div className="mb-5 rounded-pop-sm bg-white/5 px-3 py-2">
-            <p className="font-display text-xs font-extrabold uppercase tracking-widest text-white/50">
+          <div className="mb-5 rounded-pop-sm bg-wash-soft px-3 py-2">
+            <p className="font-display text-xs font-extrabold uppercase tracking-widest text-fg-helper">
               {seatName}&apos;s category
             </p>
             <p className="mt-0.5 font-display text-xl font-extrabold text-white">
@@ -188,7 +188,7 @@ export default function TurnScreen({
           is asking gets the whole surface. */}
       {waitingOnJudge && pending && (
         <Card padding="md" className="mb-5 text-center">
-          <p className="font-display text-sm font-extrabold uppercase tracking-widest text-white/50">
+          <p className="font-display text-sm font-extrabold uppercase tracking-widest text-fg-helper">
             {pending.kind === 'declaration' ? 'Their guess at the category' : `Is this ${noun} in it?`}
           </p>
           <p className="my-3 font-display text-2xl font-extrabold text-white">{pending.text}</p>
@@ -229,11 +229,11 @@ export default function TurnScreen({
           {/* Everyone can see how far off a full answer is, which is what stops
               a slow table looking like a broken one. */}
           {laterNames && (
-            <p className="mt-3 text-sm text-white/40">
+            <p className="mt-3 text-sm text-fg-subtle">
               {ruler ? 'Then' : 'Waiting on'} {laterNames}.
             </p>
           )}
-          {!ruler && !laterNames && <p className="text-base text-white/40">Waiting…</p>}
+          {!ruler && !laterNames && <p className="text-base text-fg-subtle">Waiting…</p>}
         </Card>
       )}
 
@@ -245,7 +245,7 @@ export default function TurnScreen({
               two players, where there is only ever one candidate. */}
           {declaring && chosen && declarable.length > 1 && (
             <div className="mb-4">
-              <p className="mb-2 font-display text-sm font-extrabold uppercase tracking-widest text-white/50">
+              <p className="mb-2 font-display text-sm font-extrabold uppercase tracking-widest text-fg-helper">
                 Whose category?
               </p>
               <div className="flex flex-wrap gap-2">
@@ -258,7 +258,7 @@ export default function TurnScreen({
                     className={`focus-pop rounded-pop-sm border-2 px-3 py-2 font-display text-base
                       font-bold transition-colors ${aimedAt?.id === p.id
                         ? 'border-pop-purple bg-pop-purple/25 text-white'
-                        : 'border-white/10 bg-white/5 text-white/60 hover:text-white'}`}
+                        : 'border-line bg-wash-soft text-fg-body hover:text-white'}`}
                   >
                     {p.name}
                   </button>
@@ -324,7 +324,7 @@ export default function TurnScreen({
           </Button>
 
           {!declaring && (
-            <p className="mt-3 text-sm text-white/40">
+            <p className="mt-3 text-sm text-fg-subtle">
               {left <= 0
                 ? 'Out of names — say what you think it is, or sit out the round.'
                 : `A wrong guess costs ${WRONG_DECLARATION_COST} names, not your round.`}
@@ -384,16 +384,16 @@ function LastPlayed({ entry, nameFor, myPlayerId }) {
   return (
     <div
       className={`mb-5 flex flex-wrap items-center gap-x-2 gap-y-1.5 rounded-pop-sm px-3 py-2
-        ${missed ? 'bg-pop-red/10' : 'bg-white/5'}`}
+        ${missed ? 'bg-pop-red/10' : 'bg-wash-soft'}`}
     >
-      <span className="text-base text-white/60">
+      <span className="text-base text-fg-body">
         {who} {missed ? 'guessed' : 'named'}
       </span>
       <span className="min-w-0 font-display text-base font-extrabold text-white">
         {entry.text}
       </span>
       {missed && entry.targetId && (
-        <span className="text-base text-white/60">at {nameFor?.(entry.targetId) ?? 'someone'}</span>
+        <span className="text-base text-fg-body">at {nameFor?.(entry.targetId) ?? 'someone'}</span>
       )}
       <span className="flex flex-wrap gap-1.5">
         {verdicts.map(({ judgeId, verdict }) => (

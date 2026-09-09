@@ -3,7 +3,7 @@
 // were each spelled out separately with their own tinted-background classes.
 
 const TONES = {
-  info: 'bg-surface-2 border-ink text-white/80',
+  info: 'bg-surface-2 border-ink text-fg-strong',
   success: 'bg-pop-lime/15 border-pop-lime text-white',
   warning: 'bg-pop-amber/15 border-pop-amber text-white',
   danger: 'bg-pop-red/15 border-pop-red text-white',
@@ -25,7 +25,7 @@ export default function Banner({
         <button
           onClick={onDismiss}
           aria-label="Dismiss"
-          className="focus-pop -my-1 -mr-1 grid h-11 w-11 flex-shrink-0 place-items-center rounded-pop-sm font-black text-white/60 hover:text-white"
+          className="focus-pop -my-1 -mr-1 grid h-11 w-11 flex-shrink-0 place-items-center rounded-pop-sm font-black text-fg-body hover:text-white"
         >
           ✕
         </button>

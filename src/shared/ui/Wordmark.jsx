@@ -2,13 +2,18 @@
 // AniGuess entry screen and PlayerSetup. Now a tilted sticker block — the same
 // border + hard-shadow language as every button, at title scale.
 
+// Each tone sets `--glow` alongside its fill, which `sticker` paints as a halo
+// behind the hard shadow. This is the marquee — the single element on a screen
+// that is allowed to be the brightest thing on it — so it carries the widest
+// glow in the app. Badges deliberately do NOT get one: there can be six of them
+// in a row, and a lit label repeated six times stops reading as emphasis.
 const TONES = {
-  pink: 'bg-pop-pink text-ink',
-  purple: 'bg-pop-purple text-ink',
-  lime: 'bg-pop-lime text-ink',
-  amber: 'bg-pop-amber text-ink',
-  blue: 'bg-pop-blue text-ink',
-  teal: 'bg-pop-teal text-ink',
+  pink: 'bg-pop-pink text-ink [--glow:var(--color-pop-pink)]',
+  purple: 'bg-pop-purple text-ink [--glow:var(--color-pop-purple)]',
+  lime: 'bg-pop-lime text-ink [--glow:var(--color-pop-lime)]',
+  amber: 'bg-pop-amber text-ink [--glow:var(--color-pop-amber)]',
+  blue: 'bg-pop-blue text-ink [--glow:var(--color-pop-blue)]',
+  teal: 'bg-pop-teal text-ink [--glow:var(--color-pop-teal)]',
 };
 
 const SIZES = {
@@ -38,7 +43,7 @@ export default function Wordmark({
     <div className={`text-center ${className}`}>
       {level === 1 ? <h1 {...headingProps} /> : <h2 {...headingProps} />}
       {subtitle && (
-        <p className="mt-5 text-lg text-white/60">{subtitle}</p>
+        <p className="mt-5 text-lg text-fg-body">{subtitle}</p>
       )}
     </div>
   );

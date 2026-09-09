@@ -1089,6 +1089,104 @@ red = no/wrong/destructive); don't pick them by vibe at the call site. The `btn-
 `focus-pop` utilities carry the press-down physics. UI primitives are imported from the
 `src/shared/ui` barrel; solid buttons use `text-ink`, not white, for AA contrast.
 
+**The look is an arcade cabinet: near-black ground, neon accents, glow layered ON TOP of
+the press-down physics rather than instead of them.** The canvas is `#05050c` and the three
+surfaces sit only 1.07:1 apart, because neon only reads as *emission* against something
+close to off — the previous dark-navy canvas made bright fills look like paint. Surfaces
+separate by hairline and glow, not by luminance, so they never compete with the accents.
+
+**`--glow` is a contract between the call site and the utility, and it only ever travels
+one way.** `btn-pop`, `sticker` and `neon-text` paint a halo in `var(--glow, transparent)`;
+they never choose the colour, because only the caller knows the fill, and a halo in a
+different colour from its block reads as a rendering fault rather than as light. Variants
+set it alongside their `bg-` token (`Button.jsx`, `Wordmark.jsx`, `HubScreen.jsx`'s
+`ACCENTS`) and it must always match. The `transparent` default is load-bearing: a control
+that sets no glow renders the pre-neon look instead of a black smear, which is why adding
+glow to 500 components was not a prerequisite for shipping it on six.
+
+Three places deliberately stay unlit, and each is a restraint decision rather than an
+oversight. **Disabled buttons** reset `--glow` inside `btn-pop` itself, or the halo would
+survive the grey fill and advertise a control nobody can press. **Badges** never glow —
+there can be six in a row, and a lit label repeated six times stops reading as emphasis.
+**Unavailable hub tiles** drop the glow with the same reasoning that already greyscales
+their marquee: without it, the one game nobody can play would be the only lit cabinet.
+
+**The CRT layers are static on purpose.** `crt-vignette` and `crt-grain` are a radial
+darkening plus an inline-SVG turbulence, both fixed, with no animation at all. Scanlines and
+flicker were considered and turned down: a full-screen animated overlay is a permanent
+compositing cost on every screen in the app, and thin repeating lines alias badly at
+fractional device pixel ratios, which is most laptops. Because nothing here moves, there is
+nothing for `prefers-reduced-motion` to disable — only the glow pools animate, and `blob`
+was already covered. `neon-text` is a `text-shadow` and not a `filter: drop-shadow` for the
+same class of reason: the filter forces its own compositing layer, which on a long list of
+glowing labels is a measurable scroll cost for an effect nobody can point at.
+
+**Neutral colour is a ROLE, never an opacity, and `white/N` must not come back.** The
+canvas, surfaces and accents were always tokens, but every dim text line, hairline and
+translucent fill was a hardcoded `white/N` utility — ~510 of them at **fifteen** different
+opacity steps, plus 16 `black/N` scrims. Two separate problems, and the token layer in
+`@theme` fixes both:
+
+- **A `white/N` literal is hardcoded to a dark canvas.** It inverts wrong the moment
+  `--color-canvas` lightens, and no token swap can catch it: the theme block looks correct
+  and the screens are unreadable. This is the reason the ramp exists at all.
+- **Fifteen steps is drift, not a system** — there were three separate treatments for
+  helper text alone, which is the problem `SettingHelp.jsx` was built to solve, reappearing
+  one layer down.
+
+The names encode a **contrast obligation**, and that is what let the AA repair land as a
+value edit when the canvas was finalised rather than a re-classification of 169 call sites.
+
+**There are FOUR text levels and that is a ceiling, not a preference.** On a near-black
+ground 4.5:1 puts a hard floor at ~0.46 alpha, so there is only so much room between it and
+plain white. The ramp used to have six and the bottom two were simply illegal; `fg-faint`
+(2.69:1) was **folded into `fg-subtle`** because the alpha both of them needed in order to
+pass turned out to be the same number — which means they were never two roles to begin
+with. Three roles sit near that floor and are exempt on purpose: `fg-icon` (glyph buttons,
+a UI affordance held to 3.0:1), `fg-disabled` (WCAG exempts disabled controls) and
+`fg-ghost` (`aria-hidden` markers). Collapsing any of those into `fg-subtle` silently
+re-couples them to an obligation they don't owe.
+
+So: if a shade seems missing, the question is never "which opacity" but **which role**, and
+whether it must clear 4.5:1 (text), 3.0:1 (icons and UI affordances), or nothing (disabled,
+decorative). Nothing dimmer than `fg-subtle` may carry text a user has to read. Scrims are
+`black`-based and separate from the `wash` scale for a related reason — a wash tints the
+canvas, a scrim hides what is behind it, so a lighter canvas inverts one and probably not
+the other.
+
+**Every accent value carries its two measured ratios in a comment, and both must be
+re-checked together.** An accent has to clear 4.5:1 as small text on `--color-surface` *and*
+4.5:1 with `text-ink` on top of it as a solid fill; the second is the one that gets
+forgotten, and it is why `pop-purple` is brighter than Tailwind's purple-500. `public/favicon.svg`
+is hand-synced to `--color-pop-pink` / `--color-ink` because a file in `public/` cannot see
+the theme — a palette change that skips it leaves the tab icon on the old colours silently.
+
+
+**`field-lit` is a second focus signal and must never become the only one.** A form control
+is a dark block on a dark ground whose ink border is very nearly the canvas, so focus cannot
+be signalled by a border-colour change — which is the exact bug `focus-pop` exists to fix,
+reappearing at the component level. `field-lit` takes the primary accent on the border and
+lifts a halo behind it, and it is applied **alongside** `focus-pop`, never instead of it: the
+white ring is what a forced-colours or high-contrast user actually gets, while a colour
+change on its own is a colour-only affordance. It fires on `:focus`, not `:focus-visible`,
+because a field that lights only for keyboard users leaves every pointer user on an unlit
+form. `NumberInput` applies it **only when the value is valid** — it sets `border-color` on
+`:focus-within`, so on an invalid stepper it would repaint the red error border pink at
+exactly the moment the user is looking at it.
+
+**Modals blur what is behind them because dimming is no longer enough.** A dark panel on a
+dark scrim over a near-black canvas is three nearly identical greys stacked up, and the
+dialog stops reading as being in front of anything. `backdrop-blur-sm` restores the depth
+the luminance no longer supplies, and the panel takes `border-line-loud` rather than the
+card default for the same reason.
+
+**Viewport heights are `dvh`, not `vh`.** `vh` on mobile browsers measures the viewport
+*without* the retracting URL bar, so a centred screen paints a bar-height too low and then
+jumps when the bar hides on first scroll. `Screen.jsx`, `ListManager.jsx` and the `body`
+floor in the base layer all use `dvh`; they are all `min-height`, so it costs nothing on
+desktop. Don't reintroduce `min-h-screen`.
+
+
 ### Generated files — don't read these
 
 `generateProfiles.js` (Node, `npm run generate`) queries AniList through

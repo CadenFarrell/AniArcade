@@ -53,30 +53,98 @@
    Restyling the app should mean editing values here, not sweeping components.
 --------------------------------------------------------------------------- */
 @theme {
-  /* Surfaces. The canvas is unchanged from the pre-redesign app on purpose —
-     the "pop" comes from what sits on top of it, not from the backdrop. */
-  --color-canvas: #0f0f1a;
-  --color-surface: #1b1b2e;
-  --color-surface-2: #262640;
-  --color-ink: #07070d; /* the near-black used for every border and hard shadow */
+  /* Surfaces. Near-black on purpose: this is a cabinet screen, and neon only
+     reads as EMISSION against something close to off. The previous canvas
+     (#0f0f1a) was a dark navy that made bright fills look like paint. The three
+     steps are deliberately close together (1.07:1 apart) — they separate by
+     glow and hairline, not by luminance, because a big luminance step between
+     surfaces would compete with the accents for attention. */
+  --color-canvas: #05050c;
+  --color-surface: #0f0f1c;
+  --color-surface-2: #191930;
+  --color-ink: #04040a; /* every border and hard shadow */
 
-  /* Accents. Each one has a fixed semantic job — do not pick these by vibe at
-     the call site, or the color stops meaning anything. */
-  --color-pop-pink: #ff4d8d; /* primary actions, guessing */
-  --color-pop-purple: #b26bf8; /* secondary actions, whose-turn-it-is
-     (a touch brighter than Tailwind purple-500 so it clears AA as small text
-     on the surface cards, where #a855f7 fell to 4.27) */
-  --color-pop-lime: #7bd83c; /* yes, correct, ready */
-  --color-pop-red: #ff5a5a; /* no, wrong, destructive */
-  --color-pop-amber: #ffc233; /* warnings, scores, the timer */
-  --color-pop-blue: #3b9cff; /* asking a question */
+  /* Accents. Each has a fixed semantic job — never pick these by vibe at the
+     call site. All seven were re-tuned for the darker ground and every one is
+     verified BOTH ways: legible as small text on the surface, and legible with
+     text-ink on top of it as a solid fill. Both numbers are in the comments,
+     and both must be re-checked if a value here changes. */
+  --color-pop-pink: #ff3d8b; /* primary, guessing    5.69 on surface / 6.13 ink */
+  --color-pop-purple: #b96bff; /* secondary, whose-turn 5.98 / 6.44 */
+  --color-pop-lime: #78f542; /* yes, correct, ready  13.51 / 14.55 */
+  --color-pop-red: #ff5a5a; /* no, wrong, destructive 6.21 / 6.68 */
+  --color-pop-amber: #ffc61a; /* warnings, scores, timer 12.07 / 12.99 */
+  --color-pop-blue: #31b6ff; /* asking a question     8.38 / 9.02 */
 
   /* DECORATIVE ONLY — a game's identity colour, with no semantic job. The six
      above were all spoken for by the fourth game: pink, blue and amber name a
      game each, and purple/lime/red mean whose-turn/yes/no everywhere in the app,
      so a game wearing one of those would fight the meaning on its own screens.
      Do not give this one a semantic role later; add another decorative token. */
-  --color-pop-teal: #2fd4c1; /* AniFake */
+  --color-pop-teal: #2ce0cb; /* AniFake             11.43 / 12.30 */
+
+  /* -------------------------------------------------------------------------
+     The neutral ramp: white at graded opacity over the canvas. This replaced
+     ~510 hardcoded `white/N` utilities at FIFTEEN opacity steps — drift rather
+     than a system, with three treatments for helper text alone.
+
+     Named by ROLE, never by opacity, and that is what let the AA repair land as
+     a value edit when the canvas was finalised rather than a re-classification
+     of 169 call sites.
+
+     THERE ARE FOUR TEXT LEVELS AND THAT IS A CEILING, NOT A PREFERENCE. On a
+     near-black ground, 4.5:1 puts a hard floor at ~0.46 alpha, so there is only
+     so much room above it before you reach plain white. The old ramp had six
+     levels and the bottom two were simply illegal — `fg-subtle` (2.69:1) was
+     folded into `fg-subtle` here because the alpha both of them needed to pass
+     was the same number, which means they were never two roles to begin with.
+
+     So: do not add a step back. If a shade seems missing, the question is which
+     ROLE is missing, and whether it owes 4.5:1 (text), 3.0:1 (icons and UI
+     affordances) or nothing at all (disabled, decorative). Anything dimmer than
+     fg-subtle must not carry text a user has to read.
+  ------------------------------------------------------------------------- */
+  --color-fg-strong: rgb(255 255 255 / 0.85); /* headings, emphasis  12.67:1 */
+  --color-fg-body: rgb(255 255 255 / 0.68); /* secondary prose        8.43:1 */
+  --color-fg-helper: rgb(255 255 255 / 0.55); /* helper lines         6.01:1 */
+  --color-fg-subtle: rgb(255 255 255 / 0.46); /* the AA floor         4.59:1 */
+
+  /* Exempt from 4.5:1, each for a different reason — which is the whole point
+     of splitting them out rather than letting them ride on fg-subtle. */
+  --color-fg-icon: rgb(255 255 255 / 0.42); /* glyph buttons in 44px hit
+     targets: a UI affordance, so the floor is 3.0:1 and 4.00 clears it */
+  --color-fg-disabled: rgb(255 255 255 / 0.25); /* WCAG exempts disabled */
+  --color-fg-ghost: rgb(255 255 255 / 0.15); /* aria-hidden markers only */
+  --color-hint: rgb(255 255 255 / 0.40); /* input placeholders */
+
+  /* Hairlines. Never text, so no contrast floor applies. Brighter than before
+     because a near-black ground swallows a 5% line entirely. */
+  --color-line-soft: rgb(255 255 255 / 0.07);
+  --color-line: rgb(255 255 255 / 0.13);
+  --color-line-strong: rgb(255 255 255 / 0.18);
+  --color-line-loud: rgb(255 255 255 / 0.32);
+  --color-line-hover: rgb(255 255 255 / 0.45);
+
+  /* Washes: translucent fills over the canvas — inert rows, bars, badges. */
+  --color-wash-soft: rgb(255 255 255 / 0.06);
+  --color-wash: rgb(255 255 255 / 0.11);
+  --color-wash-strong: rgb(255 255 255 / 0.16);
+  --color-wash-bar: rgb(255 255 255 / 0.26);
+  --color-wash-mid: rgb(255 255 255 / 0.32);
+  --color-wash-bright: rgb(255 255 255 / 0.72);
+
+  /* Scrims. BLACK, not white: these sit behind the floating pills that overlay
+     arbitrary game content, and their job is to darken whatever is underneath
+     so the label stays readable. That job is why they are separate tokens
+     rather than part of the wash scale — a wash tints the canvas, a scrim
+     hides it, and on a lighter canvas one of them has to invert and the other
+     probably does not. Decide that here, once, not in eight components. */
+  --color-scrim: rgb(0 0 0 / 0.55);
+  --color-scrim-strong: rgb(0 0 0 / 0.72);
+
+  --color-mark: rgb(255 255 255 / 0.72); /* AniWave's dial needle stroke */
+  --color-focus: rgb(255 255 255 / 0.85); /* focus-pop, and its two
+     hand-rolled twins in Field.jsx and NumberInput.jsx */
 
   --font-display: 'Baloo 2', 'Segoe UI', sans-serif;
   --font-sans: 'Nunito', 'Segoe UI', sans-serif;
@@ -103,7 +171,7 @@
     font-family: var(--font-sans);
     background: var(--color-canvas);
     color: #ffffff;
-    min-height: 100vh;
+    min-height: 100dvh; /* see Screen.jsx — vh jumps as the mobile URL bar hides */
   }
 
   input, select, textarea {
@@ -116,43 +184,113 @@
    border and a hard offset shadow underneath; hovering lifts it and pressing
    pushes it down into its own shadow. Kept as utilities so the React
    primitives in src/shared/ui stay short and the physics live in one place.
+
+   THE GLOW IS ADDITIVE TO THE PHYSICS, NOT A REPLACEMENT FOR THEM. The obvious
+   arcade move is to drop the hard shadow and make every control an outlined
+   neon tube, and it is wrong: the ink shadow is what the press-down animation
+   travels INTO, so deleting it leaves a button that dims and brightens but
+   never depresses. The tactility is the part players actually feel. So the
+   shadow stays exactly as it was and a coloured halo is layered behind it.
 --------------------------------------------------------------------------- */
 /* Note: no border-colour here. On a bright fill the border wants to be ink,
    but on a dark surface an ink border is invisible against the canvas — so the
-   colour is the caller's choice and only the geometry is shared. */
+   colour is the caller's choice and only the geometry is shared.
+
+   Same for --glow: the halo has to match the fill, and only the caller knows
+   the fill, so each variant in Button.jsx sets --glow and this only consumes
+   it. It defaults to transparent, so a control that never sets one renders the
+   pre-neon look rather than a black smear. */
 @utility btn-pop {
   @apply font-display font-extrabold tracking-wide rounded-pop
-         border-2 shadow-pop transition-transform duration-100
+         border-2 transition-transform duration-100
          disabled:cursor-not-allowed;
+  box-shadow: 0 6px 0 0 var(--color-ink), 0 0 18px -4px var(--glow, transparent);
 
+  /* Lifting pulls the block away from the surface, so the halo spreads. */
   &:hover:not(:disabled) {
     @apply -translate-y-0.5;
-    box-shadow: 0 8px 0 0 var(--color-ink);
+    box-shadow: 0 8px 0 0 var(--color-ink), 0 0 30px -2px var(--glow, transparent);
   }
-  /* Travels the full shadow depth so the block visibly bottoms out. */
+  /* Travels the full shadow depth so the block visibly bottoms out — and the
+     halo tightens, which is what selling the contact looks like. */
   &:active:not(:disabled) {
     @apply translate-y-1.5;
-    box-shadow: 0 0 0 0 var(--color-ink);
+    box-shadow: 0 0 0 0 var(--color-ink), 0 0 10px -3px var(--glow, transparent);
+  }
+  /* A disabled block is unlit. Without this the halo survives the grey fill and
+     advertises a control that cannot be pressed. */
+  &:disabled {
+    --glow: transparent;
   }
 }
 
 /* Dark-on-dark, so the edge is a light hairline and the ink shadow underneath
    supplies the depth. Using border-ink here would erase the card's outline. */
 @utility card-pop {
-  @apply bg-surface border-2 border-white/15 rounded-pop shadow-pop-sm;
+  @apply bg-surface border-2 border-line-strong rounded-pop shadow-pop-sm;
 }
 
 /* Stickers always sit on a bright fill, so ink is right for them. */
 @utility sticker {
   @apply font-display font-extrabold uppercase tracking-wider
          border-2 border-ink rounded-pop shadow-pop;
+  box-shadow: 0 6px 0 0 var(--color-ink), 0 0 26px -4px var(--glow, transparent);
+}
+
+/* Lit type — the marquee, game wordmarks, big score numerals. Deliberately a
+   text-shadow rather than a filter: `filter: drop-shadow` forces the element
+   onto its own compositing layer, which on a long list of glowing labels is a
+   measurable scroll cost for an effect nobody can point at. */
+@utility neon-text {
+  text-shadow: 0 0 18px var(--glow, transparent), 0 0 42px var(--glow, transparent);
+}
+
+/* The cabinet screen: a vignette that darkens the corners and a fixed grain.
+   Both are STATIC. The brief allowed scanlines and flicker and they were turned
+   down on purpose — a full-screen animated overlay is a permanent compositing
+   cost on every screen in the app, and thin repeating lines alias badly at
+   fractional device pixel ratios, which is most laptops. A vignette plus grain
+   reads as a CRT with no animation to disable and nothing to shimmer.
+
+   The grain is an inline SVG turbulence rather than an image file: it is a few
+   hundred bytes, needs no request, and cannot 404. */
+@utility crt-vignette {
+  background: radial-gradient(ellipse at 50% 40%, transparent 40%, rgb(0 0 0 / 0.65) 100%);
+}
+
+@utility crt-grain {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
+}
+
+/* A form control is a dark block on a dark ground, and on this canvas the ink
+   border it carries is very nearly the canvas itself — so "which field am I in?"
+   cannot be answered by a border-colour change, which is the exact bug
+   `focus-pop` was added to fix at the app level.
+
+   This does NOT replace focus-pop and must never be used instead of it. The
+   white ring is the accessible signal and is what a high-contrast or
+   forced-colours user actually gets; this is the cabinet's own signal layered
+   underneath, and on its own it would be a colour-only affordance.
+
+   Pink because focus is the primary interaction and pink is the primary accent.
+   Deliberately on `:focus`, not `:focus-visible`: a text field that lights up
+   only for keyboard users leaves every pointer user looking at an unlit form. */
+@utility field-lit {
+  --glow: var(--color-pop-pink);
+  transition: border-color 120ms ease, box-shadow 120ms ease;
+
+  &:focus,
+  &:focus-within {
+    border-color: var(--color-pop-pink);
+    box-shadow: 0 0 22px -6px var(--glow);
+  }
 }
 
 /* Every interactive element gets this. The old screens set outline-none on
    inputs and signalled focus with a border-color change alone, which is
    invisible on the dark canvas — this is the fix, applied centrally. */
 @utility focus-pop {
-  @apply outline-none focus-visible:ring-4 focus-visible:ring-white/80
+  @apply outline-none focus-visible:ring-4 focus-visible:ring-focus
          focus-visible:ring-offset-2 focus-visible:ring-offset-canvas;
 }
 

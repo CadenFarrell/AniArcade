@@ -27,7 +27,7 @@ export default function Avatar({ src, alt = '', size = 'md', className = '' }) {
 
   if (!src || failed) {
     return (
-      <div className={`${shape} grid place-items-center bg-surface-2 font-black text-white/30`}>
+      <div className={`${shape} grid place-items-center bg-surface-2 font-black text-fg-subtle`}>
         ?
       </div>
     );

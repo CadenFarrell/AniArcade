@@ -107,7 +107,7 @@ export default function Combobox({
           role="listbox"
           aria-label={ariaLabel}
           className="mt-3 max-h-72 w-full overflow-y-auto overflow-x-hidden rounded-pop
-            border-2 border-white/15 bg-surface"
+            border-2 border-line-strong bg-surface"
         >
           {suggestions.map((option, i) => (
             <div
@@ -119,7 +119,7 @@ export default function Combobox({
               // unmounts on blur would swallow the click entirely.
               onMouseDown={(e) => { e.preventDefault(); pick(option); }}
               className={`flex cursor-pointer items-center gap-3 px-4 py-2
-                ${i === activeIdx ? 'bg-pop-pink/30' : 'hover:bg-white/10'}`}
+                ${i === activeIdx ? 'bg-pop-pink/30' : 'hover:bg-wash'}`}
             >
               {renderOption(option)}
             </div>

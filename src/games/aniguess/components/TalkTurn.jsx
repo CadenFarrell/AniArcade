@@ -18,7 +18,7 @@ export default function TalkTurn({ guesserName, onAnswer, onJudgeGuess, trail = 
         <p className="mt-3 font-display text-2xl font-extrabold text-white">
           {guesserName}, ask a yes/no question or guess out loud
         </p>
-        <p className="mt-2 text-base text-white/50">
+        <p className="mt-2 text-base text-fg-helper">
           Everyone else — tap what happened
         </p>
 
@@ -77,11 +77,11 @@ function Group({ label, children }) {
   return (
     <>
       <div className="mt-6 flex items-center gap-3">
-        <span className="h-0.5 flex-1 bg-white/10" />
-        <span className="font-display text-xs font-extrabold uppercase tracking-widest text-white/40">
+        <span className="h-0.5 flex-1 bg-wash" />
+        <span className="font-display text-xs font-extrabold uppercase tracking-widest text-fg-subtle">
           {label}
         </span>
-        <span className="h-0.5 flex-1 bg-white/10" />
+        <span className="h-0.5 flex-1 bg-wash" />
       </div>
       <div className="mt-3 flex gap-4">{children}</div>
     </>

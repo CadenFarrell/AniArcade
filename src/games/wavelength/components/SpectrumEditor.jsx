@@ -38,7 +38,7 @@ export default function SpectrumEditor({ spectrum, onSave, onDelete, onClose }) 
       <h2 className="mb-2 font-display text-2xl font-black text-white">
         {editing ? '✏️ Edit spectrum' : '✏️ New spectrum'}
       </h2>
-      <p className="mb-6 text-base text-white/50">
+      <p className="mb-6 text-base text-fg-helper">
         Two ends of one idea. The psychic gets a hidden point somewhere between
         them and has to talk everyone else onto it.
       </p>
@@ -55,7 +55,7 @@ export default function SpectrumEditor({ spectrum, onSave, onDelete, onClose }) 
             autoFocus
           />
         </Field>
-        <span className="pb-3 font-display text-xl font-black text-white/30">→</span>
+        <span className="pb-3 font-display text-xl font-black text-fg-subtle">→</span>
         <Field label="Right end" htmlFor="spectrum-right" className="min-w-0 flex-1">
           <Input
             id="spectrum-right"
@@ -71,9 +71,9 @@ export default function SpectrumEditor({ spectrum, onSave, onDelete, onClose }) 
       {/* Live, and uppercased by the same normalizer that will store it — so
           what is previewed is literally what the dial will print, rather than
           what was typed. */}
-      <p className="mb-6 text-center text-base text-white/50">
+      <p className="mb-6 text-center text-base text-fg-helper">
         {normalized ? (
-          <span className="font-display font-extrabold tracking-widest text-white/70">
+          <span className="font-display font-extrabold tracking-widest text-fg-strong">
             ← {normalized.leftLabel} · {normalized.rightLabel} →
           </span>
         ) : (

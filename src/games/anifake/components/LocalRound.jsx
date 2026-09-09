@@ -110,12 +110,12 @@ export default function LocalRound({ players, pool, settings, onFinish, onQuit }
             <p className="mt-3 font-display text-2xl font-extrabold text-white">
               Someone drew a blank
             </p>
-            <p className="mt-2 text-lg text-white/60">
+            <p className="mt-2 text-lg text-fg-body">
               Everyone gets a fresh card, and nobody is told who asked. The old character is
               out of play — it is on your new card, and it is not the answer.
             </p>
             {dealsLeft > 0 && (
-              <p className="mt-3 text-white/40">
+              <p className="mt-3 text-fg-subtle">
                 {dealsLeft === 1
                   ? 'This can happen once more.'
                   : `This can happen up to ${dealsLeft} more times.`}
@@ -180,7 +180,7 @@ export default function LocalRound({ players, pool, settings, onFinish, onQuit }
           <Card padding="lg" className="mb-8 text-center">
             <div className="text-5xl">⚖️</div>
             <p className="mt-3 font-display text-2xl font-extrabold text-white">{names}</p>
-            <p className="mt-2 text-lg text-white/60">
+            <p className="mt-2 text-lg text-fg-body">
               Sudden death. Everyone votes again on just those names — and if it
               ties again, nobody is accused and the fake walks.
             </p>
@@ -209,7 +209,7 @@ export default function LocalRound({ players, pool, settings, onFinish, onQuit }
           <Wordmark tone="teal" size="md" level={2} className="mb-8">🃏 Votes are in</Wordmark>
           <Card padding="lg" className="mb-8 text-center">
             <div className="text-5xl">🕵️</div>
-            <p className="mt-3 text-lg text-white/60">
+            <p className="mt-3 text-lg text-fg-body">
               Everyone has voted. Gather round before you turn the cards over.
             </p>
           </Card>

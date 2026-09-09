@@ -28,7 +28,12 @@ export default function Modal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-ink/85 px-4 py-8 overflow-y-auto"
+      // backdrop-blur as well as the scrim: the panel is a dark card on a dark
+      // backdrop over a near-black canvas, so dimming alone leaves three nearly
+      // identical greys stacked up and the dialog stops reading as in front of
+      // anything. Blurring what is behind it is what restores the depth the
+      // luminance no longer supplies.
+      className="fixed inset-0 z-50 flex items-center justify-center bg-scrim-strong backdrop-blur-sm px-4 py-8 overflow-y-auto"
       onClick={canDismiss && closeOnBackdrop ? onClose : undefined}
       role="dialog"
       aria-modal="true"
@@ -36,7 +41,11 @@ export default function Modal({
       <div
         // Without this the backdrop's onClick fires for every click inside.
         onClick={(e) => e.stopPropagation()}
-        className={`w-full ${WIDTHS[width]} ${bare ? '' : 'card-pop p-6 sm:p-8'} ${className}`}
+        // The panel takes a brighter edge than a plain card-pop. A dialog is the
+        // one surface that has to look like it is in front of everything else,
+        // and border-line-strong reads as flush against a blurred backdrop.
+        className={`w-full ${WIDTHS[width]}
+          ${bare ? '' : 'card-pop border-line-loud p-6 sm:p-8'} ${className}`}
       >
         {children}
       </div>

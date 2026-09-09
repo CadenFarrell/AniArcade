@@ -17,12 +17,12 @@ export default function ModePicker({ value, onChange }) {
               onClick={() => onChange(mode.id)}
               aria-pressed={selected}
               className={`btn-pop focus-pop rounded-pop border-2 p-4 text-left
-                ${selected ? 'border-pop-teal bg-pop-teal/15' : 'border-white/15 bg-surface'}`}
+                ${selected ? 'border-pop-teal bg-pop-teal/15' : 'border-line-strong bg-surface'}`}
             >
               <span className="font-display text-lg font-extrabold text-white">
                 {mode.label}
               </span>
-              <span className="mt-1 block text-base text-white/50">{mode.blurb}</span>
+              <span className="mt-1 block text-base text-fg-helper">{mode.blurb}</span>
             </button>
           );
         })}

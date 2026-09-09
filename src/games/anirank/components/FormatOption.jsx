@@ -18,10 +18,10 @@ export default function FormatOption({ active, onClick, title, hint }) {
       className={`focus-pop rounded-pop-sm border-2 px-3 py-2.5 text-left transition-colors
         ${active
       ? 'border-pop-amber bg-pop-amber/20'
-      : 'border-white/10 bg-surface-2/40 hover:border-white/30'}`}
+      : 'border-line bg-surface-2/40 hover:border-line-loud'}`}
     >
       <span className="block font-display text-base font-extrabold text-white">{title}</span>
-      <span className="block text-sm text-white/50">{hint}</span>
+      <span className="block text-sm text-fg-helper">{hint}</span>
     </button>
   );
 }

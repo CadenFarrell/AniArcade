@@ -30,7 +30,7 @@ export default function ClueModePicker({ value, onChange }) {
               onClick={() => onChange(id)}
               aria-pressed={selected}
               className={`btn-pop focus-pop rounded-pop border-2 p-4 text-left
-                ${selected ? 'border-pop-purple bg-pop-purple/15' : 'border-white/15 bg-surface'}`}
+                ${selected ? 'border-pop-purple bg-pop-purple/15' : 'border-line-strong bg-surface'}`}
             >
               <span className="flex items-center gap-2">
                 <span className="min-w-0 flex-1 font-display text-lg font-extrabold text-white">

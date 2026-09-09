@@ -16,8 +16,8 @@ export default function TurnTracker({ players, currentPlayerId, lockedPositions 
           const tone = isCurrent
             ? 'bg-pop-purple text-ink border-ink'
             : locked
-              ? 'bg-surface-2 text-white/60 border-white/15'
-              : 'bg-surface text-white/40 border-white/10';
+              ? 'bg-surface-2 text-fg-body border-line-strong'
+              : 'bg-surface text-fg-subtle border-line';
 
           return (
             <div

@@ -81,7 +81,7 @@ export default function AniRankResults({
         <Wordmark tone="amber" size="md" level={2} className="mb-2">
           📊 Results
         </Wordmark>
-        <p className="mb-8 text-center text-base text-white/50">
+        <p className="mb-8 text-center text-base text-fg-helper">
           {axis.label}
           {opinion && subject && ` · as ${subject.name} would`}
         </p>
@@ -95,7 +95,7 @@ export default function AniRankResults({
                 ? ' got it perfect'
                 : headline.names.length > 1 ? ' tied for the best board' : ' had the best board'}
             </p>
-            <p className="mt-1 text-lg text-white/60">
+            <p className="mt-1 text-lg text-fg-body">
               {headline.detail.concordant} of {headline.detail.comparisons} comparisons right
             </p>
           </Card>
@@ -143,12 +143,12 @@ export default function AniRankResults({
               arithmetic: crossings are not a metaphor for mistakes, they are
               individually the points that were lost. */}
           {scored && (
-            <p className="-mt-1 mb-4 text-sm leading-snug text-white/40">
+            <p className="-mt-1 mb-4 text-sm leading-snug text-fg-subtle">
               Every line runs from where you put a show to where it belonged.
-              Lines that <strong className="font-bold text-white/60">cross</strong> are the
+              Lines that <strong className="font-bold text-fg-body">cross</strong> are the
               pairs you had the wrong way round — one point each. On an opened board,{' '}
-              <strong className="font-bold text-white/60">✓</strong> means a show is in its
-              right slot and <strong className="font-bold text-white/60">×2</strong> means two
+              <strong className="font-bold text-fg-body">✓</strong> means a show is in its
+              right slot and <strong className="font-bold text-fg-body">×2</strong> means two
               others ended up on the wrong side of it — a show can have both.
             </p>
           )}
@@ -164,7 +164,7 @@ export default function AniRankResults({
               <div key={p.id} className={`mb-6 last:mb-0 ${gone ? 'opacity-40' : ''}`}>
                 <div className="mb-2 flex items-center gap-2">
                   {scored && (
-                    <span className="font-display text-lg font-black text-white/60">
+                    <span className="font-display text-lg font-black text-fg-body">
                       {getPositionEmoji(p.position)}
                     </span>
                   )}
@@ -198,13 +198,13 @@ export default function AniRankResults({
                     {subj && scored && (
                       // Explained inline, because a score you did not earn by
                       // guessing looks like a bug otherwise.
-                      <p className="mb-1 text-sm text-white/40">
+                      <p className="mb-1 text-sm text-fg-subtle">
                         How predictable you were — the average of everyone&rsquo;s guesses
                       </p>
                     )}
                     {judged && (
-                      <p className="text-sm text-white/50">
-                        <strong className="font-bold text-white/80">
+                      <p className="text-sm text-fg-helper">
+                        <strong className="font-bold text-fg-strong">
                           {detail.concordant} of {detail.comparisons}
                         </strong>{' '}
                         comparisons right · {detail.inversions} crossed
@@ -216,7 +216,7 @@ export default function AniRankResults({
                       onClick={() => setOpenId(open ? null : p.id)}
                       aria-expanded={open}
                       className="focus-pop mt-0.5 rounded-pop-sm font-display text-sm font-black
-                        text-white/40 transition-colors hover:text-white/70"
+                        text-fg-subtle transition-colors hover:text-fg-strong"
                     >
                       {open ? '▾ hide board' : '▸ see board'}
                     </button>
@@ -329,7 +329,7 @@ function BoardDiagram({ detail, axis, size, judged }) {
           each far corner made them read as a caption for whichever column they
           happened to be nearest. */}
       <div className="mb-1.5 flex items-baseline justify-between gap-2 font-display text-xs
-        font-black tracking-widest text-white/25">
+        font-black tracking-widest text-fg-disabled">
         <span className="truncate">YOUR ORDER</span>
         {judged && <span className="flex-shrink-0">▲ #1 {axis.topLabel}</span>}
       </div>
@@ -348,14 +348,14 @@ function BoardDiagram({ detail, axis, size, judged }) {
                 px-2.5 ${row}
                 ${slot.item && judged
                   ? blameTone(slot.conflicts)
-                  : 'border-white/15 bg-surface-2 text-white'}`}
+                  : 'border-line-strong bg-surface-2 text-white'}`}
               >
                 <span className="grid h-6 w-6 flex-shrink-0 place-items-center rounded-pop-sm
-                  bg-white/15 font-display text-xs font-black">
+                  bg-wash-strong font-display text-xs font-black">
                   {i + 1}
                 </span>
                 <span className={`min-w-0 flex-1 truncate font-display text-sm font-extrabold
-                  ${slot.item ? 'text-white' : 'text-white/30'}`}
+                  ${slot.item ? 'text-white' : 'text-fg-subtle'}`}
                 >
                   {slot.item?.title ?? '—'}
                 </span>
@@ -390,8 +390,8 @@ function BoardDiagram({ detail, axis, size, judged }) {
             <ol className="flex flex-shrink-0 flex-col gap-1.5">
               {Array.from({ length: size }, (_, i) => (
                 <li key={i} className={row}>
-                  <span className="grid h-8 w-8 place-items-center rounded-pop-sm bg-white/10
-                    font-display text-sm font-black text-white/60">
+                  <span className="grid h-8 w-8 place-items-center rounded-pop-sm bg-wash
+                    font-display text-sm font-black text-fg-body">
                     {i + 1}
                   </span>
                 </li>
@@ -403,7 +403,7 @@ function BoardDiagram({ detail, axis, size, judged }) {
 
       {judged && (
         <div className="mt-1.5 flex items-baseline justify-end font-display text-xs font-black
-          tracking-widest text-white/25">
+          tracking-widest text-fg-disabled">
           <span className="flex-shrink-0">▼ #{size} {axis.bottomLabel}</span>
         </div>
       )}

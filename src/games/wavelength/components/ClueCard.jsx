@@ -37,7 +37,7 @@ export default function ClueCard({
       {/* Empty for every show card, which is why it is guarded rather than
           styled away — see rules.normalizeCard on where that empty comes from. */}
       {card.subtitle && (
-        <p className={`mt-1 truncate text-white/40 ${size === 'lg' ? 'text-base' : 'text-xs'}`}>
+        <p className={`mt-1 truncate text-fg-subtle ${size === 'lg' ? 'text-base' : 'text-xs'}`}>
           {card.subtitle}
         </p>
       )}
@@ -56,7 +56,7 @@ export default function ClueCard({
       className={`focus-pop rounded-pop-sm border-2 p-2 text-center transition-colors ${
         selected
           ? 'border-pop-purple bg-pop-purple/15'
-          : 'border-white/15 bg-surface-2 hover:border-white/40'
+          : 'border-line-strong bg-surface-2 hover:border-line-hover'
       } ${className}`}
     >
       {body}

@@ -16,19 +16,19 @@ export default function LastOutcomeBanner({ outcome }) {
   return (
     <Banner tone={tone} className="mb-5 text-center">
       {outcome.kind === 'guess' ? (
-        <p className="text-white/80">
+        <p className="text-fg-strong">
           ❌ <strong className="text-white">{outcome.name}</strong> guessed &quot;{outcome.text}
           &quot; — not correct.
         </p>
       ) : outcome.kind === 'question' ? (
-        <p className="text-white/80">
+        <p className="text-fg-strong">
           <strong className="text-white">{outcome.name}</strong> asked &quot;{outcome.text}&quot; —{' '}
           <strong className={outcome.answer === 'Yes' ? 'text-pop-lime' : 'text-pop-red'}>
             {outcome.answer}
           </strong>
         </p>
       ) : (
-        <p className="text-white/80">
+        <p className="text-fg-strong">
           ⏱️ <strong className="text-white">{outcome.name}</strong>&apos;s turn ended.
         </p>
       )}

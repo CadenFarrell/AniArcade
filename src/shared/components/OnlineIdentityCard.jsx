@@ -21,12 +21,12 @@ export default function OnlineIdentityCard({ profile, stat, tone = 'purple', onS
   return (
     <Card className="mb-6 flex items-center justify-between gap-3">
       <div className="min-w-0">
-        <p className="text-sm text-white/40">Playing online as</p>
+        <p className="text-sm text-fg-subtle">Playing online as</p>
         <p className="truncate font-display text-lg font-extrabold text-white">{profile.name}</p>
         {/* A game whose default mode draws no cards passes none — an empty line
             of the right height is worse than no line, since it reads as a stat
             that failed to load. */}
-        {stat && <p className="text-sm text-white/40">{stat}</p>}
+        {stat && <p className="text-sm text-fg-subtle">{stat}</p>}
         {/* Player ids come from the profile name, so a room rejects a second
             person using the same one — make switching easy. */}
         <button

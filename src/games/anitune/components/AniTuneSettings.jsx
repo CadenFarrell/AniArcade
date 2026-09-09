@@ -74,11 +74,11 @@ export default function AniTuneSettings({ players, values, onChange, disabled = 
               className={`focus-pop rounded-pop border-2 p-4 text-left transition-colors disabled:opacity-40
                 ${selected
                   ? 'border-pop-blue bg-pop-blue/15'
-                  : 'border-white/15 bg-surface hover:border-white/30'}`}
+                  : 'border-line-strong bg-surface hover:border-line-loud'}`}
             >
               <span className="text-2xl">{m.icon}</span>
               <p className="mt-1 font-display text-lg font-extrabold text-white">{m.label}</p>
-              <p className="mt-1 text-sm text-white/50">{m.blurb}</p>
+              <p className="mt-1 text-sm text-fg-helper">{m.blurb}</p>
             </button>
           );
         })}

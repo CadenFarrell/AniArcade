@@ -99,7 +99,7 @@ export default function WavelengthSetup({ onStart, onBack }) {
         )}
 
         {players.length === 0 && (
-          <p className="mb-6 text-center text-base text-white/40">
+          <p className="mb-6 text-center text-base text-fg-subtle">
             Nobody seated yet — set your main profile with the 👤 button at the hub,
             or add a player above.
           </p>
@@ -201,7 +201,7 @@ export default function WavelengthSetup({ onStart, onBack }) {
                   perfectly playable and still narrow a small shared list more
                   than anyone expected, and seeing the number is what makes the
                   shared-only checkbox above it legible. */}
-              <p className="mt-3 text-sm text-white/50">
+              <p className="mt-3 text-sm text-fg-helper">
                 {eligible} {noun} to draw from
                 {sharedOnly && players.length > 1 && ' (shared by everyone)'}
               </p>

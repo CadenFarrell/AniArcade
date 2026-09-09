@@ -70,7 +70,7 @@ export default function PsychicView({
     return (
       <Screen>
         {header}
-        <p className="mb-6 text-base text-white/60">
+        <p className="mb-6 text-base text-fg-body">
           Pick what this round is about. Nobody else sees the options — only
           whichever one you choose.
         </p>
@@ -130,7 +130,7 @@ export default function PsychicView({
       {mode === 'readroom' ? (
         <>
           <Card padding="lg" className="mb-6">
-            <p className="mb-4 text-base text-white/60">
+            <p className="mb-4 text-base text-fg-body">
               Put this where <em>you</em> think it belongs. There is no right
               answer — everyone else is guessing where you'll put it.
             </p>
@@ -144,7 +144,7 @@ export default function PsychicView({
       ) : (
         <>
           <Card padding="lg" className="mb-6">
-            <p className="mb-4 text-base text-white/60">
+            <p className="mb-4 text-base text-fg-body">
               Only you can see the target. Land everyone else's dial right on it.
             </p>
             <Dial spectrum={spectrum} target={target} label="The hidden target" />
@@ -155,7 +155,7 @@ export default function PsychicView({
               <Card title="Your card" padding="lg" className="mb-6">
                 {chosen ? (
                   <>
-                    <p className="mb-4 text-base text-white/60">
+                    <p className="mb-4 text-base text-fg-body">
                       This is what the table will place. Nobody sees anything
                       else you looked at.
                     </p>
@@ -166,7 +166,7 @@ export default function PsychicView({
                   </>
                 ) : (
                   <>
-                    <p className="mb-4 text-base text-white/60">
+                    <p className="mb-4 text-base text-fg-body">
                       Find the {noun.slice(0, -1)} that sits closest to the
                       target. Only {noun} this round can use are listed —
                       anything already played is gone.
@@ -187,7 +187,7 @@ export default function PsychicView({
                               {c.title}
                             </span>
                             {c.subtitle && (
-                              <span className="block truncate text-sm text-white/40">
+                              <span className="block truncate text-sm text-fg-subtle">
                                 {c.subtitle}
                               </span>
                             )}
@@ -203,7 +203,7 @@ export default function PsychicView({
                     {!query && browse.length > 0 && (
                       <div className="mt-5">
                         <p className="mb-3 font-display text-sm font-extrabold uppercase
-                          tracking-widest text-white/40"
+                          tracking-widest text-fg-subtle"
                         >
                           Or start from one of these
                         </p>
@@ -226,7 +226,7 @@ export default function PsychicView({
               <Card padding="lg" className="mb-6">
                 <label
                   htmlFor="aniwave-clue"
-                  className="mb-2 block font-display text-sm font-extrabold uppercase tracking-widest text-white/50"
+                  className="mb-2 block font-display text-sm font-extrabold uppercase tracking-widest text-fg-helper"
                 >
                   Your clue
                 </label>
@@ -239,7 +239,7 @@ export default function PsychicView({
                   onChange={(e) => setClue(e.target.value)}
                   onKeyDown={(e) => { if (e.key === 'Enter' && ready) submit(); }}
                 />
-                <p className="mt-2 text-right text-sm text-white/40">
+                <p className="mt-2 text-right text-sm text-fg-subtle">
                   {clue.length}/{MAX_CLUE_LEN}
                 </p>
               </Card>

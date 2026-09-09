@@ -72,7 +72,7 @@ export default function OnlineGameScreen({
 
       <div className="mb-6 text-center">
         <h2 className="font-display text-3xl font-extrabold text-white">🎮 Your Turn</h2>
-        <p className="mt-1 text-base text-white/50">
+        <p className="mt-1 text-base text-fg-helper">
           Turn {turnCount + 1} · Ask a question or submit a guess
         </p>
       </div>
@@ -82,7 +82,7 @@ export default function OnlineGameScreen({
       <WhoIsWhoPanel entries={whoIsWho} />
 
       {waiting && (
-        <p className="mb-5 text-center text-white/50">
+        <p className="mb-5 text-center text-fg-helper">
           ⏳ Waiting for another player to answer…
         </p>
       )}
@@ -141,7 +141,7 @@ export default function OnlineGameScreen({
                 <Avatar src={s.imageUrl} size="sm" />
                 <div>
                   <p className="text-sm font-semibold text-white">{s.name}</p>
-                  <p className="text-xs text-white/40">{s.series}</p>
+                  <p className="text-xs text-fg-subtle">{s.series}</p>
                 </div>
               </>
             )}

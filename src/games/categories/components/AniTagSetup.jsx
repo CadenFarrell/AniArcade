@@ -84,7 +84,7 @@ export default function AniTagSetup({ onStart, onBack }) {
         )}
 
         {players.length === 0 && (
-          <p className="mb-6 text-center text-base text-white/40">
+          <p className="mb-6 text-center text-base text-fg-subtle">
             Nobody seated yet — set your main profile with the 👤 button at the hub,
             or add a player above.
           </p>

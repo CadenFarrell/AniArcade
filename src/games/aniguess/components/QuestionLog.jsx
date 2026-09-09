@@ -7,12 +7,12 @@ export default function QuestionLog({ title, entries = [] }) {
   return (
     <Card title={title} padding="sm" className="max-h-72 overflow-y-auto">
       {entries.length === 0 ? (
-        <p className="text-center text-base text-white/30">No questions yet</p>
+        <p className="text-center text-base text-fg-subtle">No questions yet</p>
       ) : (
         entries.map((entry) => (
-          <div key={entry.id} className="border-b border-white/5 py-2 text-base last:border-0">
+          <div key={entry.id} className="border-b border-line-soft py-2 text-base last:border-0">
             {entry.type === 'question' && (
-              <span className="text-white/70">
+              <span className="text-fg-strong">
                 ❓ {entry.text}
                 {entry.answer && (
                   <strong className={entry.answer === 'Yes' ? 'text-pop-lime' : 'text-pop-red'}>

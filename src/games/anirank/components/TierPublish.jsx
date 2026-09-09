@@ -64,7 +64,7 @@ export default function TierPublish({ room, onCompare }) {
       <Wordmark tone="amber" size="sm" level={2} className="mb-2">
         📊 Compare lists
       </Wordmark>
-      <p className="mb-8 text-center text-white/50">
+      <p className="mb-8 text-center text-fg-helper">
         Everyone sends a list they&rsquo;ve already built, then the room sees where you agree.
       </p>
 
@@ -81,7 +81,7 @@ export default function TierPublish({ room, onCompare }) {
                 {p.name}
                 {p.id === room.myPlayerId && <span className="text-pop-amber"> (you)</span>}
                 {sent && (
-                  <span className="ml-2 text-sm text-white/40">
+                  <span className="ml-2 text-sm text-fg-subtle">
                     {sent.name || 'Untitled list'}
                   </span>
                 )}
@@ -102,7 +102,7 @@ export default function TierPublish({ room, onCompare }) {
           <p className="font-display text-lg font-extrabold text-white">
             You haven&rsquo;t built a list yet
           </p>
-          <p className="mt-1 text-white/50">
+          <p className="mt-1 text-fg-helper">
             Tier lists are built in local play — leave the room, pick AniRank &rarr; Local, and
             choose the tier-list format. Your list is saved to this device, so come back and
             send it whenever you like.
@@ -136,7 +136,7 @@ export default function TierPublish({ room, onCompare }) {
           </Button>
 
           {room.myList && (
-            <p className="mt-3 text-sm text-white/40">
+            <p className="mt-3 text-sm text-fg-subtle">
               The room has &ldquo;{room.myList.name || 'Untitled list'}&rdquo;. Sending again
               replaces it.
             </p>

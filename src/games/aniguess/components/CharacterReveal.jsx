@@ -33,16 +33,16 @@ export default function CharacterReveal({ character, guesserName, onStartQuestio
           <div key={fact.label} className="flex items-start gap-4 text-white">
             <span className="flex-shrink-0 text-2xl">{fact.emoji}</span>
             <div>
-              <span className="font-display text-xs uppercase tracking-widest text-white/40">
+              <span className="font-display text-xs uppercase tracking-widest text-fg-subtle">
                 {fact.label}
               </span>
-              <p className="text-lg text-white/80">{fact.value}</p>
+              <p className="text-lg text-fg-strong">{fact.value}</p>
             </div>
           </div>
         ))}
       </Card>
 
-      <p className="mb-8 text-center text-lg italic text-white/50">
+      <p className="mb-8 text-center text-lg italic text-fg-helper">
         {online ? (
           <>Memorize this — it&apos;s <strong className="text-white">{guesserName}</strong>&apos;s character.</>
         ) : (

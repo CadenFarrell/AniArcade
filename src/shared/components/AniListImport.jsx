@@ -247,7 +247,7 @@ export default function AniListImport({ profile, onClose, onImported, autoRefres
           <button
             onClick={onClose}
             aria-label="Close"
-            className="focus-pop -mr-2 grid h-11 w-11 place-items-center rounded-pop-sm text-xl font-black text-white/40 hover:text-white"
+            className="focus-pop -mr-2 grid h-11 w-11 place-items-center rounded-pop-sm text-xl font-black text-fg-icon hover:text-white"
           >
             ✕
           </button>
@@ -277,7 +277,7 @@ export default function AniListImport({ profile, onClose, onImported, autoRefres
 
           <button
             onClick={() => setShowAdvanced((v) => !v)}
-            className="focus-pop mb-3 rounded-pop-sm text-sm text-white/40 hover:text-white"
+            className="focus-pop mb-3 rounded-pop-sm text-sm text-fg-subtle hover:text-white"
           >
             {showAdvanced ? '▼' : '▶'} Advanced
           </button>
@@ -289,7 +289,7 @@ export default function AniListImport({ profile, onClose, onImported, autoRefres
                 onChange={(e) => setMainOnly(e.target.checked)}
               />
               {!mainOnly && (
-                <div className="flex flex-wrap items-center gap-3 text-white/70">
+                <div className="flex flex-wrap items-center gap-3 text-fg-strong">
                   <span>Min. favourites for supporting characters:</span>
                   {/* Steps by 25 — the useful range here is tens, not ones. */}
                   <NumberInput
@@ -323,7 +323,7 @@ export default function AniListImport({ profile, onClose, onImported, autoRefres
           {canRefresh && step !== 'loading-list' && (
             <button
               onClick={() => fetchList()}
-              className="focus-pop mt-3 w-full rounded-pop-sm text-sm text-white/40 hover:text-white"
+              className="focus-pop mt-3 w-full rounded-pop-sm text-sm text-fg-subtle hover:text-white"
             >
               or choose what to import…
             </button>
@@ -344,9 +344,9 @@ export default function AniListImport({ profile, onClose, onImported, autoRefres
           {!isFirstImport && suggested.size === 0 && (
             <Card padding="sm" className="mb-3 text-center">
               <p className="font-display font-extrabold text-white">✅ You&rsquo;re up to date</p>
-              <p className="mt-1 text-sm text-white/50">
+              <p className="mt-1 text-sm text-fg-helper">
                 All {counts.known} shows on your AniList are already in your list, with nothing
-                left to fill in. Use <strong className="text-white/70">Select All</strong> to
+                left to fill in. Use <strong className="text-fg-strong">Select All</strong> to
                 re-fetch them anyway — handy if a show has gained characters, or you changed
                 the Advanced settings.
               </p>
@@ -357,30 +357,30 @@ export default function AniListImport({ profile, onClose, onImported, autoRefres
             {!isFirstImport && (
               <button
                 onClick={() => setSelected(new Set(suggested))}
-                className="focus-pop rounded-pop-sm text-sm text-white/60 hover:text-white"
+                className="focus-pop rounded-pop-sm text-sm text-fg-body hover:text-white"
               >
                 Select New
               </button>
             )}
             <button
               onClick={() => setSelected(new Set(animeOptions.map((g) => g.key)))}
-              className="focus-pop rounded-pop-sm text-sm text-white/60 hover:text-white"
+              className="focus-pop rounded-pop-sm text-sm text-fg-body hover:text-white"
             >
               Select All
             </button>
             <button
               onClick={() => setSelected(new Set())}
-              className="focus-pop rounded-pop-sm text-sm text-white/60 hover:text-white"
+              className="focus-pop rounded-pop-sm text-sm text-fg-body hover:text-white"
             >
               Select None
             </button>
-            <span className="ml-auto text-sm text-white/40">{selected.size} selected</span>
+            <span className="ml-auto text-sm text-fg-subtle">{selected.size} selected</span>
           </div>
 
           {/* Only once there is a re-import to describe. On a first import
               "0 already imported" is noise at best and alarming at worst. */}
           {!isFirstImport && (
-            <p className="mb-2 text-xs text-white/40">
+            <p className="mb-2 text-xs text-fg-subtle">
               {counts.new} new
               {counts.partial > 0 && ` · ${counts.partial} with a new season`}
               {counts.stale > 0 && ` · ${counts.stale} missing character details`}
@@ -404,7 +404,7 @@ export default function AniListImport({ profile, onClose, onImported, autoRefres
                 <label
                   key={group.key}
                   className={`flex cursor-pointer items-center gap-3 rounded-pop-sm border-2
-                    border-white/10 bg-surface-2 p-3 ${state === 'known' ? 'opacity-50' : ''}`}
+                    border-line bg-surface-2 p-3 ${state === 'known' ? 'opacity-50' : ''}`}
                 >
                   <input
                     type="checkbox"
@@ -415,7 +415,7 @@ export default function AniListImport({ profile, onClose, onImported, autoRefres
                   {group.coverImageUrl ? (
                     <img src={group.coverImageUrl} alt="" loading="lazy" className="h-14 w-10 flex-shrink-0 rounded object-cover" />
                   ) : (
-                    <div className="h-14 w-10 flex-shrink-0 rounded bg-white/10" />
+                    <div className="h-14 w-10 flex-shrink-0 rounded bg-wash" />
                   )}
                   <span className="min-w-0 flex-1 text-sm text-white">{group.title}</span>
                   {/* 'new' is already the checked majority and 'known' is dimmed
@@ -427,10 +427,10 @@ export default function AniListImport({ profile, onClose, onImported, autoRefres
                   {state === 'partial' && <Badge tone="amber">New season</Badge>}
                   {state === 'stale' && <Badge tone="amber">Missing details</Badge>}
                   {state === 'known' && (
-                    <span className="flex-shrink-0 text-xs text-white/40">Imported</span>
+                    <span className="flex-shrink-0 text-xs text-fg-subtle">Imported</span>
                   )}
                   {group.memberIds.length > 1 && (
-                    <span className="flex-shrink-0 text-xs text-white/40">{group.memberIds.length} entries</span>
+                    <span className="flex-shrink-0 text-xs text-fg-subtle">{group.memberIds.length} entries</span>
                   )}
                 </label>
               );
@@ -452,7 +452,7 @@ export default function AniListImport({ profile, onClose, onImported, autoRefres
         <div className="py-6 text-center">
           <div className="mb-4 text-5xl">📥</div>
           <p className="mb-1 font-display text-lg font-extrabold text-white">Importing characters…</p>
-          <p className="mb-6 text-white/50">{progress.index} of {progress.total} shows</p>
+          <p className="mb-6 text-fg-helper">{progress.index} of {progress.total} shows</p>
           <div className="mb-6 h-3 w-full overflow-hidden rounded-pop-sm border-2 border-ink bg-surface-2">
             <div className="h-full bg-pop-pink transition-all" style={{ width: pct }} />
           </div>
@@ -464,7 +464,7 @@ export default function AniListImport({ profile, onClose, onImported, autoRefres
         <div className="py-6 text-center">
           <div className="mb-4 text-5xl">✅</div>
           <p className="mb-2 font-display text-lg font-extrabold text-white">Import complete!</p>
-          <p className="mb-6 text-white/60">
+          <p className="mb-6 text-fg-body">
             +{stats?.addedAnime ?? 0} anime, +{stats?.addedChars ?? 0} characters
             {/* Repairs are reported separately from additions, because a
                 re-import of a list you already have adds nothing and can still

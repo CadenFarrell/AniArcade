@@ -1,6 +1,6 @@
-// Surface panel. Replaces `bg-white/5 border border-white/10 rounded-2xl p-6`
+// Surface panel. Replaces `bg-wash-soft border border-line rounded-2xl p-6`
 // and, with `title`, the repeated
-// `text-white/60 text-sm font-bold uppercase tracking-wider` section heading.
+// `text-fg-body text-sm font-bold uppercase tracking-wider` section heading.
 
 const PADDING = {
   none: '',
@@ -29,7 +29,7 @@ export default function Card({
         // The margin moves onto the wrapper so the h3 keeps its own spacing when
         // there is no action, leaving the title-only path byte-identical.
         <div className="mb-3 flex items-center justify-between gap-3">
-          <h3 className="font-display text-sm font-extrabold uppercase tracking-widest text-white/50">
+          <h3 className="font-display text-sm font-extrabold uppercase tracking-widest text-fg-helper">
             {title}
           </h3>
           {action}
@@ -41,12 +41,12 @@ export default function Card({
 }
 
 // A row inside a Card's list, with the hairline separator the old screens all
-// spelled out as `py-2 border-b border-white/10 last:border-0`.
+// spelled out as `py-2 border-b border-line last:border-0`.
 export function CardRow({ className = '', children, ...rest }) {
   return (
     <div
       className={`flex items-center justify-between gap-3 py-3
-        border-b border-white/10 last:border-0 ${className}`}
+        border-b border-line last:border-0 ${className}`}
       {...rest}
     >
       {children}

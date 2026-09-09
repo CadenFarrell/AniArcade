@@ -47,13 +47,13 @@ export default function StealScreen({ fakeName = '', isMine, options = [], onSte
               The table caught {fakeName}
             </p>
             <p className="mt-2 text-lg text-pop-teal">They were the fake.</p>
-            <p className="mt-4 text-white/60">
+            <p className="mt-4 text-fg-body">
               One guess at the character is all they get. Nail it and they take a point back.
             </p>
           </Card>
           {/* The round is paused on one person — say so, rather than leaving a
               static card up that reads as a screen nobody has to act on. */}
-          <p className="animate-pulse text-center text-lg text-white/50">
+          <p className="animate-pulse text-center text-lg text-fg-helper">
             ⏳ Waiting on {fakeName}&apos;s one guess…
           </p>
         </Screen>
@@ -72,12 +72,12 @@ export default function StealScreen({ fakeName = '', isMine, options = [], onSte
           <p className="mt-4 font-display text-3xl font-extrabold text-white">
             The vote landed on you, {fakeName}
           </p>
-          <p className="mt-2 text-lg text-white/60">
+          <p className="mt-2 text-lg text-fg-body">
             One guess to take a point back. Miss it and you get nothing.
           </p>
         </Card>
 
-        <p className="mb-3 text-center text-lg text-white/60">
+        <p className="mb-3 text-center text-lg text-fg-body">
           Who was everyone talking about?
         </p>
 
@@ -94,7 +94,7 @@ export default function StealScreen({ fakeName = '', isMine, options = [], onSte
                 <Avatar src={option.imageUrl} alt="" size="sm" />
                 <div className="min-w-0">
                   <p className="truncate text-sm font-semibold text-white">{option.name}</p>
-                  <p className="truncate text-xs text-white/40">{option.series}</p>
+                  <p className="truncate text-xs text-fg-subtle">{option.series}</p>
                 </div>
               </>
             )}
@@ -103,7 +103,7 @@ export default function StealScreen({ fakeName = '', isMine, options = [], onSte
             ariaLabel="The character you think they were describing"
             autoFocus
           />
-          <p className="mt-3 text-base text-white/40">
+          <p className="mt-3 text-base text-fg-subtle">
             {freehand
               ? 'Typing it yourself — capitals and accents don’t matter.'
               : 'Search by character or show, then pick from the list.'}

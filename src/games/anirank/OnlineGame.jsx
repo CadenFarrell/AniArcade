@@ -62,13 +62,13 @@ export default function OnlineGame({ onBack, onExit }) {
         confirm="Leave this room and return to the hub? You can rejoin with the same name and room code."
       />
       <div className="fixed top-3 right-3 z-40 flex items-center gap-2">
-        <span className="hidden font-display text-xs tracking-widest text-white/40 sm:inline">
+        <span className="hidden font-display text-xs tracking-widest text-fg-subtle sm:inline">
           {room.roomCode}
         </span>
         <button
           onClick={handleLeave}
-          className="focus-pop rounded-pop-sm bg-black/40 px-3 py-1.5 font-display text-sm font-bold
-            text-white/60 backdrop-blur-sm transition-colors hover:bg-black/60 hover:text-white"
+          className="focus-pop rounded-pop-sm bg-scrim px-3 py-1.5 font-display text-sm font-bold
+            text-fg-body backdrop-blur-sm transition-colors hover:bg-scrim-strong hover:text-white"
         >
           Leave
         </button>
@@ -162,7 +162,7 @@ export default function OnlineGame({ onBack, onExit }) {
             )
             : <CurrentItem item={room.item} index={room.cursor} total={room.deck.length} />}
 
-          <p className="mb-2 text-center text-base font-bold text-white/70">
+          <p className="mb-2 text-center text-base font-bold text-fg-strong">
             {/* The subject ranks for real — they are the answer key, so telling
                 them to guess at themselves would be nonsense. */}
             {isOpinion(room.axis) && room.subjectId === room.myPlayerId
@@ -178,7 +178,7 @@ export default function OnlineGame({ onBack, onExit }) {
               <WaitingOn names={room.pendingNames} />
             </>
           ) : (
-            <p className="mb-4 text-center text-base text-white/50">
+            <p className="mb-4 text-center text-base text-fg-helper">
               {open
                 ? 'Tap a card then a slot. Tap two slots to swap them — nothing counts until you lock in.'
                 : 'Pick a slot. Once it is placed it cannot be moved.'}

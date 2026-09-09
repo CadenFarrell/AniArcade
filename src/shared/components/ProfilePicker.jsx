@@ -101,7 +101,7 @@ export default function ProfilePicker({
         className={`flex items-center gap-3 rounded-pop border-2 p-3 transition-colors
           ${row.isActive && !adding
             ? 'border-pop-purple bg-pop-purple/15'
-            : 'border-white/15 bg-surface'}
+            : 'border-line-strong bg-surface'}
           ${seated ? 'opacity-40' : ''}`}
       >
         <button
@@ -119,7 +119,7 @@ export default function ProfilePicker({
           <span className="block truncate font-display font-extrabold text-white">
             <span aria-hidden="true">{row.isActive && !adding ? '▸ ' : ''}</span>{row.name}
           </span>
-          <span className="mt-0.5 block text-sm text-white/40">
+          <span className="mt-0.5 block text-sm text-fg-subtle">
             {row.shows} show{row.shows === 1 ? '' : 's'} · {row.characters} characters
           </span>
         </button>
@@ -140,7 +140,7 @@ export default function ProfilePicker({
             <button
               onClick={() => handleDelete(row)}
               aria-label={`Delete ${row.name}`}
-              className="focus-pop grid h-11 w-11 flex-shrink-0 place-items-center rounded-pop-sm text-white/40 hover:text-pop-red"
+              className="focus-pop grid h-11 w-11 flex-shrink-0 place-items-center rounded-pop-sm text-fg-icon hover:text-pop-red"
             >
               🗑️
             </button>
@@ -175,7 +175,7 @@ export default function ProfilePicker({
         <button
           onClick={onClose}
           aria-label="Close"
-          className="focus-pop -mr-2 grid h-11 w-11 place-items-center rounded-pop-sm text-xl font-black text-white/40 hover:text-white"
+          className="focus-pop -mr-2 grid h-11 w-11 place-items-center rounded-pop-sm text-xl font-black text-fg-icon hover:text-white"
         >
           ✕
         </button>
@@ -183,21 +183,21 @@ export default function ProfilePicker({
 
       {/* The one sentence that explains the whole model. Without it, "main" and
           "also saved" read as an arbitrary sort order. */}
-      <p className="mb-6 text-sm text-white/45">
+      <p className="mb-6 text-sm text-fg-helper">
         {adding
           ? 'Anyone saved on this device. Adding someone here won’t change your main profile.'
           : 'Your main profile is who you are in online games. The rest stay saved on this device for pass-and-play.'}
       </p>
 
       {rows.length === 0 && !creating && (
-        <p className="mb-5 text-center text-white/40">
+        <p className="mb-5 text-center text-fg-subtle">
           No profiles yet. Create one and import your AniList once — every game uses it.
         </p>
       )}
 
       {mainRow && (
         <div className="mb-5">
-          <p className="mb-2 font-display text-xs font-bold uppercase tracking-widest text-white/35">
+          <p className="mb-2 font-display text-xs font-bold uppercase tracking-widest text-fg-subtle">
             Main profile
           </p>
           {renderRow(mainRow)}
@@ -207,7 +207,7 @@ export default function ProfilePicker({
       {otherRows.length > 0 && (
         <div className="mb-5">
           {!adding && (
-            <p className="mb-2 font-display text-xs font-bold uppercase tracking-widest text-white/35">
+            <p className="mb-2 font-display text-xs font-bold uppercase tracking-widest text-fg-subtle">
               Also saved on this device
             </p>
           )}

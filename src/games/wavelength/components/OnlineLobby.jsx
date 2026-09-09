@@ -91,7 +91,7 @@ export default function OnlineLobby({ room }) {
         <Wordmark tone="purple" size="md" className="mb-8">AniWave</Wordmark>
 
         <div className="mb-8 text-center">
-          <p className="mb-3 text-white/50">Share this code with the other players:</p>
+          <p className="mb-3 text-fg-helper">Share this code with the other players:</p>
           <span className="sticker inline-block bg-pop-lime px-6 py-3 text-4xl tracking-[0.3em] text-ink">
             {room.roomCode}
           </span>
@@ -175,7 +175,7 @@ export default function OnlineLobby({ room }) {
                     {sharedOnlyHelp({ noun }).short}
                   </SettingHelp>
 
-                  <p className="mt-3 mb-5 text-sm text-white/50">
+                  <p className="mt-3 mb-5 text-sm text-fg-helper">
                     {eligible} {noun} to draw from
                     {sharedOnly && active.length > 1 && ' (shared by everyone)'}
                   </p>
@@ -258,7 +258,7 @@ export default function OnlineLobby({ room }) {
             </Button>
           </>
         ) : (
-          <p className="text-center text-base text-white/50">
+          <p className="text-center text-base text-fg-helper">
             Waiting for {room.hostName || 'the host'} to start…
           </p>
         )}

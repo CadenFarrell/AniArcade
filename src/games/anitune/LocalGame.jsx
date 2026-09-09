@@ -247,7 +247,7 @@ export default function LocalGame({ onExit, onBack }) {
         <Modal onClose={discardSession} closeOnBackdrop={false} className="text-center">
           <div className="mb-4 text-6xl">🎵</div>
           <h2 className="mb-3 font-display text-3xl font-extrabold text-white">Resume round?</h2>
-          <p className="mb-8 text-lg text-white/60">
+          <p className="mb-8 text-lg text-fg-body">
             You left a round unfinished
             {saved?.round?.length
               ? ` on song ${Math.min((saved.state?.index ?? 0) + 1, saved.round.length)} of ${saved.round.length}`

@@ -2,7 +2,7 @@
 // Same semantic colour map as Button, at label scale.
 
 const TONES = {
-  neutral: 'bg-surface-2 text-white/70 border-ink',
+  neutral: 'bg-surface-2 text-fg-strong border-ink',
   pink: 'bg-pop-pink text-ink border-ink',
   purple: 'bg-pop-purple text-ink border-ink',
   lime: 'bg-pop-lime text-ink border-ink',

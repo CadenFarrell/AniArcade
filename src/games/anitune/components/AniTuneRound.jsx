@@ -120,7 +120,7 @@ export default function AniTuneRound({
           })}
         </div>
 
-        <p className="mb-1 text-center text-base text-white/40">
+        <p className="mb-1 text-center text-base text-fg-subtle">
           Question {state.index + 1} of {round.length}
         </p>
         <h2 className="mb-6 text-center font-display text-3xl font-extrabold text-white">

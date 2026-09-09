@@ -58,12 +58,12 @@ export default function PromptEditor({ prompt, onSave, onDelete, onClose }) {
           autoFocus
         />
       </Field>
-      <p className="mb-6 text-base text-white/50">
+      <p className="mb-6 text-base text-fg-helper">
         {normalized ? (
           <>
             {/* "they" rather than a sample name: the subject rotates every
                 round, and naming one player here reads like a setting. */}
-            Reads: <em className="text-white/70">{promptFor(customAxis(normalized))}</em>
+            Reads: <em className="text-fg-strong">{promptFor(customAxis(normalized))}</em>
           </>
         ) : (
           <>Finish the sentence &ldquo;rank these {noun} by&hellip;&rdquo;</>

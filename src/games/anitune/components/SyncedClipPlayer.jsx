@@ -221,7 +221,7 @@ export default function SyncedClipPlayer({
       </div>
 
       {state === 'loading' && (
-        <p className="py-4 text-center text-lg text-white/40">Loading clip…</p>
+        <p className="py-4 text-center text-lg text-fg-subtle">Loading clip…</p>
       )}
 
       {state === 'error' && (
@@ -237,7 +237,7 @@ export default function SyncedClipPlayer({
       )}
 
       {state === 'armed' && (
-        <p className="py-4 text-center text-lg text-white/60">
+        <p className="py-4 text-center text-lg text-fg-body">
           {clipStartAt == null
             ? 'Waiting for everyone…'
             : `Get ready… ${countdown > 0 ? countdown : ''}`}
@@ -245,7 +245,7 @@ export default function SyncedClipPlayer({
       )}
 
       {state === 'playing' && !revealed && (
-        <p className="py-4 text-center text-lg text-white/60">🎵 Listen…</p>
+        <p className="py-4 text-center text-lg text-fg-body">🎵 Listen…</p>
       )}
 
       {state === 'blocked' && (

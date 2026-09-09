@@ -45,7 +45,7 @@ import { railTone } from '../utils/rail';
 function EndCap({ slot, label, arrow, className = '' }) {
   return (
     <div className={`flex items-baseline justify-center gap-2 px-1 ${className}`}>
-      <span className="font-display text-xs font-black tracking-widest text-white/30">
+      <span className="font-display text-xs font-black tracking-widest text-fg-subtle">
         #{slot}
       </span>
       <span className="font-display text-sm font-black tracking-widest text-pop-amber">
@@ -76,12 +76,12 @@ export default function RankBoard({
           const tone = empty
             ? canPlace
               ? 'border-pop-amber/60 bg-pop-amber/10 hover:border-pop-amber hover:bg-pop-amber/20'
-              : 'border-white/10 bg-surface-2/40'
+              : 'border-line bg-surface-2/40'
             : held
               ? 'border-pop-amber bg-pop-amber/20'
               : canPickUp
-                ? 'border-white/15 bg-surface-2 hover:border-white/40'
-                : 'border-white/15 bg-surface-2';
+                ? 'border-line-strong bg-surface-2 hover:border-line-hover'
+                : 'border-line-strong bg-surface-2';
           const shell = `flex min-w-0 flex-1 items-center gap-3 rounded-pop-sm border-2 px-3 py-2.5
             text-left transition-colors ${tone}`;
           // Inside the <li> rather than a column beside the <ol>: as a sibling it
@@ -97,7 +97,7 @@ export default function RankBoard({
             <span
               className={`grid h-8 w-8 flex-shrink-0 place-items-center rounded-pop-sm
                 font-display text-sm font-black
-                ${empty ? 'bg-white/10 text-white/40' : 'bg-pop-amber text-ink'}`}
+                ${empty ? 'bg-wash text-fg-subtle' : 'bg-pop-amber text-ink'}`}
             >
               {i + 1}
             </span>
@@ -145,8 +145,8 @@ export default function RankBoard({
                       onClick={() => onClear(i)}
                       aria-label={`Take ${slot.title} out of slot ${i + 1}`}
                       className="focus-pop grid h-8 w-8 flex-shrink-0 place-items-center
-                        rounded-pop-sm text-base font-black text-white/40 transition-colors
-                        hover:bg-white/10 hover:text-pop-red"
+                        rounded-pop-sm text-base font-black text-fg-subtle transition-colors
+                        hover:bg-wash hover:text-pop-red"
                     >
                       ✕
                     </button>
@@ -168,7 +168,7 @@ export default function RankBoard({
                 className={`focus-pop ${shell}`}
               >
                 {rank}
-                <span className="font-display text-base font-bold text-white/30">
+                <span className="font-display text-base font-bold text-fg-subtle">
                   {canPlace ? 'Tap to place here' : '—'}
                 </span>
               </button>
@@ -189,7 +189,7 @@ export function CurrentItem({ item, index, total }) {
   if (!item) return null;
   return (
     <div className="mb-6 text-center">
-      <p className="mb-2 text-base text-white/40">
+      <p className="mb-2 text-base text-fg-subtle">
         Card {index + 1} of {total}
       </p>
       {item.imageUrl && (
@@ -201,7 +201,7 @@ export function CurrentItem({ item, index, total }) {
       )}
       <h2 className="font-display text-3xl font-extrabold text-white">{item.title}</h2>
       {/* `value` is the answer on a fact axis — never rendered before the reveal. */}
-      {item.subtitle && <p className="mt-2 text-lg text-white/60">{item.subtitle}</p>}
+      {item.subtitle && <p className="mt-2 text-lg text-fg-body">{item.subtitle}</p>}
     </div>
   );
 }
@@ -216,7 +216,7 @@ export function CardTray({ items, selectedId, onSelect }) {
   if (!items?.length) return null;
   return (
     <Card padding="sm" className="mb-4">
-      <p className="mb-3 px-1 font-display text-sm font-bold tracking-widest text-white/40">
+      <p className="mb-3 px-1 font-display text-sm font-bold tracking-widest text-fg-subtle">
         {items.length} LEFT TO PLACE
       </p>
       <ul className="flex flex-wrap justify-center gap-2">
@@ -231,7 +231,7 @@ export function CardTray({ items, selectedId, onSelect }) {
                   p-2 transition-colors
                   ${selected
                     ? 'border-pop-amber bg-pop-amber/20'
-                    : 'border-white/15 bg-surface-2 hover:border-white/40'}`}
+                    : 'border-line-strong bg-surface-2 hover:border-line-hover'}`}
               >
                 {item.imageUrl && (
                   <img
@@ -269,7 +269,7 @@ export function PlacerBanner({ name, placed, total, verb = 'placed' }) {
   return (
     <div className="mb-5 flex flex-wrap items-center justify-center gap-3">
       <Badge tone="purple" className="text-lg">{name}&rsquo;s turn</Badge>
-      <span className="text-base text-white/40">{placed} of {total} {verb}</span>
+      <span className="text-base text-fg-subtle">{placed} of {total} {verb}</span>
     </div>
   );
 }
@@ -277,7 +277,7 @@ export function PlacerBanner({ name, placed, total, verb = 'placed' }) {
 export function WaitingOn({ names }) {
   if (!names.length) return null;
   return (
-    <p className="mb-4 text-center text-base text-white/50">
+    <p className="mb-4 text-center text-base text-fg-helper">
       Waiting on {names.join(', ')}…
     </p>
   );

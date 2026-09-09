@@ -70,7 +70,7 @@ export default function SecretReveal({
             <Wordmark tone="teal" size="md" level={2} className="mb-8">
               🕵️ Pass the device
             </Wordmark>
-            <p className="mb-2 text-center text-xl text-white/60">Hand it to</p>
+            <p className="mb-2 text-center text-xl text-fg-body">Hand it to</p>
             <p className="mb-10 text-center font-display text-4xl font-extrabold text-white">
               {player.name}
             </p>
@@ -101,7 +101,7 @@ export default function SecretReveal({
             {/* True of the fake's one-word hint as much as of a character:
                 local play shows the card once and there is no private device to
                 keep it on, so the word has to be held in your head. */}
-            <p className="mb-6 text-center text-white/50">
+            <p className="mb-6 text-center text-fg-helper">
               Memorize it — you won&apos;t see it again until the reveal.
             </p>
             <Button
@@ -121,7 +121,7 @@ export default function SecretReveal({
               // Said plainly, because only this player ever reads it: without a
               // word here they are left wondering whether they missed the button
               // the player before them at the table visibly had.
-              <p className="mt-4 text-center text-sm text-white/40">
+              <p className="mt-4 text-center text-sm text-fg-subtle">
                 You hold no character, so there&apos;s nothing for you to not-know.
                 If someone else asks, you&apos;ll get a new hint.
               </p>
@@ -145,7 +145,7 @@ export default function SecretReveal({
                 {/* The last sentence matches CardCheck's word for word — see the
                     note there for why the pinned role is stated publicly, and why
                     this screen rather than the setup card is where it belongs. */}
-                <p className="mt-3 text-center text-sm text-white/40">
+                <p className="mt-3 text-center text-sm text-fg-subtle">
                   Nobody is told who asked. Nothing happens until everyone has looked —
                   then everyone gets a new character
                   {dealsLeft === 1 ? ', one more time.' : `, up to ${dealsLeft} more times.`}

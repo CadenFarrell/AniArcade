@@ -26,8 +26,8 @@ import { Avatar, Card } from '../../../shared/ui';
 function Discarded({ names, compact }) {
   if (!names?.length) return null;
   return (
-    <p className={`${compact ? 'mt-2' : 'mt-4'} text-sm text-white/40`}>
-      Thrown out this round: <span className="text-white/60">{names.join(', ')}</span> —
+    <p className={`${compact ? 'mt-2' : 'mt-4'} text-sm text-fg-subtle`}>
+      Thrown out this round: <span className="text-fg-body">{names.join(', ')}</span> —
       not the answer.
     </p>
   );
@@ -36,7 +36,7 @@ function Discarded({ names, compact }) {
 export default function SecretCard({ card, compact = false }) {
   if (!card) {
     return (
-      <Card padding="lg" className="text-center text-white/50">
+      <Card padding="lg" className="text-center text-fg-helper">
         Waiting for the deal…
       </Card>
     );
@@ -56,7 +56,7 @@ export default function SecretCard({ card, compact = false }) {
             game lying to them rather than as a hard round. */}
         {card.hint ? (
           <div className="mt-4">
-            <p className="font-display text-xs font-extrabold uppercase tracking-widest text-white/40">
+            <p className="font-display text-xs font-extrabold uppercase tracking-widest text-fg-subtle">
               Your only hint
             </p>
             <p className="mt-1 font-display text-3xl font-extrabold text-white">
@@ -64,12 +64,12 @@ export default function SecretCard({ card, compact = false }) {
             </p>
           </div>
         ) : (
-          <p className="mt-4 text-white/40">
+          <p className="mt-4 text-fg-subtle">
             No hint — this character has no genres on file. You&apos;re going in blind.
           </p>
         )}
 
-        <p className="mt-4 text-white/60">
+        <p className="mt-4 text-fg-body">
           You don&apos;t know the character. Listen to the clues, bluff one of your own,
           and don&apos;t get voted out.
         </p>
@@ -84,7 +84,7 @@ export default function SecretCard({ card, compact = false }) {
     // Only reachable if a decoy-mode deal ran on a pool of one, which
     // rules.minPool gates against. Say so rather than rendering an empty frame.
     return (
-      <Card padding="lg" className="text-center text-white/50">
+      <Card padding="lg" className="text-center text-fg-helper">
         Your card didn&apos;t load — hold on…
       </Card>
     );
@@ -101,7 +101,7 @@ export default function SecretCard({ card, compact = false }) {
           <p className="truncate font-display text-2xl font-extrabold text-white">
             {character.name}
           </p>
-          <p className="truncate text-white/50">{character.series}</p>
+          <p className="truncate text-fg-helper">{character.series}</p>
         </div>
       </div>
 

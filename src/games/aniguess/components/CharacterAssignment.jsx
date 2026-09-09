@@ -34,7 +34,7 @@ export default function CharacterAssignment({ guesser, allPlayers, sharedShowsOn
   return (
     <Screen center width="md">
       {/* Progress */}
-      <p className="mb-8 text-center text-base text-white/40">
+      <p className="mb-8 text-center text-base text-fg-subtle">
         Assigning characters — {assignmentNumber} of {totalPlayers}
       </p>
 
@@ -44,7 +44,7 @@ export default function CharacterAssignment({ guesser, allPlayers, sharedShowsOn
           <h2 className="mb-3 font-display text-4xl font-extrabold text-white">
             {guesser.name}, look away!
           </h2>
-          <p className="mb-10 text-lg text-white/60">
+          <p className="mb-10 text-lg text-fg-body">
             Everyone else — get ready to pick a character for {guesser.name}.
           </p>
           <Button variant="success" size="xl" fullWidth onClick={() => setStep('assign')}>
@@ -92,7 +92,7 @@ export default function CharacterAssignment({ guesser, allPlayers, sharedShowsOn
           <h2 className="mb-4 font-display text-3xl font-extrabold text-white">
             No shared anime found
           </h2>
-          <p className="mb-10 text-lg text-white/60">
+          <p className="mb-10 text-lg text-fg-body">
             {guesser.name} doesn&apos;t share any anime titles with the other players.{' '}
             {NO_SHARED_HELP}
           </p>
@@ -114,8 +114,8 @@ export default function CharacterAssignment({ guesser, allPlayers, sharedShowsOn
             <h3 className="font-display text-3xl font-extrabold text-white">
               {selectedCharacter.name}
             </h3>
-            <p className="text-lg text-white/60">from {selectedCharacter.series}</p>
-            <p className="mt-1 text-base text-white/40">
+            <p className="text-lg text-fg-body">from {selectedCharacter.series}</p>
+            <p className="mt-1 text-base text-fg-subtle">
               {[selectedCharacter.gender, selectedCharacter.role].filter(Boolean).join(' · ')}
             </p>
           </Card>

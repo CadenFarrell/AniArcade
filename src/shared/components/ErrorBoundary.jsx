@@ -42,7 +42,7 @@ export default class ErrorBoundary extends Component {
           <h2 className="font-display text-3xl font-extrabold text-white mb-3">
             Something went wrong
           </h2>
-          <p className="text-white/60 text-lg mb-8">
+          <p className="text-fg-body text-lg mb-8">
             {onBack
               ? 'This game hit an unexpected error. The rest of the arcade is fine — head back to the menu, or reset if it keeps happening.'
               : 'AniArcade hit an unexpected error. Resetting your in-progress game usually fixes it.'}
@@ -65,7 +65,7 @@ export default class ErrorBoundary extends Component {
             🔄 Reset Game &amp; Reload
           </Button>
           {onBack && (
-            <p className="mt-4 text-sm text-white/40">
+            <p className="mt-4 text-sm text-fg-subtle">
               Reset clears saved rooms, tier lists and settings. Your profiles and
               imported lists are kept.
             </p>

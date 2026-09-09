@@ -39,7 +39,7 @@ import { verdictsOf } from '../rules';
 export default function TrailList({ trail = [], nameFor, className = '' }) {
   if (!trail.length) {
     return (
-      <p className={`py-2 text-base text-white/40 ${className}`}>
+      <p className={`py-2 text-base text-fg-subtle ${className}`}>
         Nothing named yet. Every answer — yes or no — narrows it down.
       </p>
     );
@@ -57,20 +57,20 @@ export default function TrailList({ trail = [], nameFor, className = '' }) {
           // that de-duplicated would silently swallow the repeat.
           <li
             key={i}
-            className="flex flex-wrap items-center gap-x-3 gap-y-1.5 border-b border-white/10
+            className="flex flex-wrap items-center gap-x-3 gap-y-1.5 border-b border-line
               py-2.5 last:border-0"
           >
             <span
               className={`w-5 flex-shrink-0 text-right font-display text-sm font-extrabold
-                ${missed ? 'text-pop-red/70' : 'text-white/40'}`}
+                ${missed ? 'text-pop-red/70' : 'text-fg-subtle'}`}
             >
               {missed ? '✕' : i + 1}
             </span>
             <span className="min-w-0 flex-1 truncate text-lg text-white">
-              {missed && <span className="text-white/40">guessed </span>}
+              {missed && <span className="text-fg-subtle">guessed </span>}
               {entry.text}
               {missed && entry.targetId && (
-                <span className="text-white/40"> at {nameFor?.(entry.targetId) ?? 'someone'}</span>
+                <span className="text-fg-subtle"> at {nameFor?.(entry.targetId) ?? 'someone'}</span>
               )}
             </span>
             <span className="flex flex-shrink-0 flex-wrap justify-end gap-1.5">

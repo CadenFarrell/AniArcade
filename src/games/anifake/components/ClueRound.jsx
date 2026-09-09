@@ -62,7 +62,7 @@ export default function ClueRound({
           </div>
         )}
 
-        <p className="mb-6 text-center text-white/50">
+        <p className="mb-6 text-center text-fg-helper">
           One {wordLimit === 1 ? 'word' : `to ${wordLimit} words`} about the secret character.
           Say too little and nobody believes you; say too much and the fake learns it too.
         </p>
@@ -72,13 +72,13 @@ export default function ClueRound({
             replaces it is the only progress signal left: how far round the
             table the turn has got. */}
         {talkMode ? (
-          <p className="mb-6 text-center font-display text-lg font-extrabold text-white/40">
+          <p className="mb-6 text-center font-display text-lg font-extrabold text-fg-subtle">
             Clue {Math.min(turn + 1, total)} of {total}
           </p>
         ) : (
           <Card title={`Clues (${clues.length})`} padding="lg" className="mb-6">
             {clues.length === 0 && (
-              <p className="text-white/40">Nothing said yet.</p>
+              <p className="text-fg-subtle">Nothing said yet.</p>
             )}
             <ClueLog clues={clues} players={players} />
           </Card>
@@ -92,7 +92,7 @@ export default function ClueRound({
             <p className="mt-3 font-display text-2xl font-extrabold text-white">
               {speaker?.name ?? ''}, say your {wordLimit === 1 ? 'word' : 'clue'} out loud
             </p>
-            <p className="mt-2 text-white/50">
+            <p className="mt-2 text-fg-helper">
               Everyone heard it — tap when you&apos;re done and the turn moves on.
             </p>
             <Button
@@ -140,7 +140,7 @@ export default function ClueRound({
             <p className="font-display text-lg font-extrabold text-white">
               Waiting for {speaker?.name ?? 'the next player'}…
             </p>
-            <p className="mt-1 text-white/50">Their device has the input.</p>
+            <p className="mt-1 text-fg-helper">Their device has the input.</p>
           </Card>
         )}
 

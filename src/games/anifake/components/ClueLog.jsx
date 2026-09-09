@@ -26,7 +26,7 @@ export default function ClueLog({ clues = [], players = [] }) {
       {rounds.map(({ lap, clues: said }) => (
         <div key={lap}>
           {labelled && (
-            <p className="mb-2 font-display text-xs uppercase tracking-wider text-white/30">
+            <p className="mb-2 font-display text-xs uppercase tracking-wider text-fg-subtle">
               Round {lap + 1}
             </p>
           )}
@@ -36,14 +36,14 @@ export default function ClueLog({ clues = [], players = [] }) {
               return (
                 <span
                   key={`${lap}-${clue.by}-${i}`}
-                  className="rounded-pop-sm border-2 border-white/15 bg-surface-2 px-3 py-2"
+                  className="rounded-pop-sm border-2 border-line-strong bg-surface-2 px-3 py-2"
                 >
                   {speaker?.seat && (
                     <span className="mr-1.5 font-display text-xs font-extrabold text-pop-teal">
                       {speaker.seat}
                     </span>
                   )}
-                  <span className="font-display text-xs uppercase tracking-wider text-white/40">
+                  <span className="font-display text-xs uppercase tracking-wider text-fg-subtle">
                     {speaker?.name ?? clue.by}
                   </span>
                   <span className="ml-2 font-display text-lg font-extrabold text-white">

@@ -26,7 +26,7 @@ export default function OnlineRaceRound({
             onSubmit={onAnswer}
             submitLabel="Lock it in 🎯"
           />
-          <p className="mt-3 text-center text-sm text-white/30">
+          <p className="mt-3 text-center text-sm text-fg-subtle">
             Miss it and you&apos;re out for this song — the clip picks back up for everyone else.
           </p>
         </div>
@@ -39,7 +39,7 @@ export default function OnlineRaceRound({
         <p className="font-display text-xl font-extrabold text-white">
           {buzzer?.name || 'Someone'} buzzed
         </p>
-        <p className="mt-1 text-white/50">Hang tight — see if they get it…</p>
+        <p className="mt-1 text-fg-helper">Hang tight — see if they get it…</p>
       </div>
     );
   }
@@ -48,7 +48,7 @@ export default function OnlineRaceRound({
 
   return (
     <div className="mt-6">
-      <p className="mb-4 text-center text-base text-white/60">
+      <p className="mb-4 text-center text-base text-fg-body">
         {stillIn.length === players.length
           ? 'First one to name it takes the point'
           : `${stillIn.length} still in`}
@@ -65,7 +65,7 @@ export default function OnlineRaceRound({
       </Button>
 
       {!clipStarted && !amLockedOut && (
-        <p className="mt-3 text-center text-sm text-white/30">Wait for the clip to start…</p>
+        <p className="mt-3 text-center text-sm text-fg-subtle">Wait for the clip to start…</p>
       )}
 
       {/* Held back until the clip has finished (or failed) so it can't be tapped

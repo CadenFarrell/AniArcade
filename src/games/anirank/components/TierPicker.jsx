@@ -38,7 +38,7 @@ export default function TierPicker({
 
         {saveError && <Banner tone="danger" className="mb-4">⚠️ {saveError}</Banner>}
 
-        <p className="mb-6 text-center text-base text-white/50">
+        <p className="mb-6 text-center text-base text-fg-helper">
           {poolCounts.shows} shows · {poolCounts.characters} characters to draw from
           {players.length > 1 && ' (shared by everyone seated)'}
         </p>
@@ -48,7 +48,7 @@ export default function TierPicker({
           return (
             <Card key={player.id} title={player.name} padding="lg" className="mb-4">
               {lists.length === 0 && (
-                <p className="mb-3 text-base text-white/40">No lists yet.</p>
+                <p className="mb-3 text-base text-fg-subtle">No lists yet.</p>
               )}
 
               {lists.map((list) => (
@@ -56,12 +56,12 @@ export default function TierPicker({
                   <button
                     type="button"
                     onClick={() => onOpen(player.id, list.id)}
-                    className="focus-pop min-w-0 flex-1 rounded-pop-sm py-1 text-left hover:bg-white/5"
+                    className="focus-pop min-w-0 flex-1 rounded-pop-sm py-1 text-left hover:bg-wash-soft"
                   >
                     <span className="block truncate font-display text-lg font-extrabold text-white">
                       {list.name || 'Untitled list'}
                     </span>
-                    <span className="block truncate text-sm text-white/50">
+                    <span className="block truncate text-sm text-fg-helper">
                       {labelOf(list)} · {list.items === 'characters' ? 'Characters' : 'Shows'}
                     </span>
                   </button>
@@ -113,7 +113,7 @@ export default function TierPicker({
           ⚖️ Compare two lists
         </Button>
         {total < 2 && (
-          <p className="mt-3 text-center text-sm text-white/40">
+          <p className="mt-3 text-center text-sm text-fg-subtle">
             Save two lists to compare them.
           </p>
         )}
@@ -135,7 +135,7 @@ export default function TierPicker({
           <h2 className="mb-3 font-display text-2xl font-black text-white">
             Delete “{confirmDelete.list.name || 'Untitled list'}”?
           </h2>
-          <p className="mb-6 text-base text-white/60">This cannot be undone.</p>
+          <p className="mb-6 text-base text-fg-body">This cannot be undone.</p>
           <div className="flex gap-3">
             <Button
               variant="danger"
@@ -180,7 +180,7 @@ function NewListModal({ player, axis, defaultFormat, onCreate, onClose }) {
         />
       </Field>
 
-      <p className="mb-2 font-display text-xs font-extrabold uppercase tracking-widest text-white/50">
+      <p className="mb-2 font-display text-xs font-extrabold uppercase tracking-widest text-fg-helper">
         Format
       </p>
       <div className="mb-4 flex flex-col gap-2">
@@ -201,8 +201,8 @@ function NewListModal({ player, axis, defaultFormat, onCreate, onClose }) {
       {/* The mode is fixed at creation because it decides which pool the list
           draws from — shows or characters — and switching it later would empty
           the list. The format, which does not, is switchable on the board. */}
-      <p className="mb-6 text-sm text-white/50">
-        Ranking <strong className="text-white/80">{axis.label}</strong> over your{' '}
+      <p className="mb-6 text-sm text-fg-helper">
+        Ranking <strong className="text-fg-strong">{axis.label}</strong> over your{' '}
         {axis.items === 'characters' ? 'characters' : 'shows'}. Pick a different mode back on
         the setup screen.
       </p>
@@ -229,10 +229,10 @@ function FormatButton({ active, onClick, title, hint }) {
       onClick={onClick}
       aria-pressed={active}
       className={`focus-pop rounded-pop-sm border-2 px-3 py-2.5 text-left transition-colors
-        ${active ? 'border-pop-amber bg-pop-amber/20' : 'border-white/10 bg-surface-2/40 hover:border-white/30'}`}
+        ${active ? 'border-pop-amber bg-pop-amber/20' : 'border-line bg-surface-2/40 hover:border-line-loud'}`}
     >
       <span className="block font-display text-base font-extrabold text-white">{title}</span>
-      <span className="block text-sm text-white/50">{hint}</span>
+      <span className="block text-sm text-fg-helper">{hint}</span>
     </button>
   );
 }

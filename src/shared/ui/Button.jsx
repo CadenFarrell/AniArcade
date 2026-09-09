@@ -8,14 +8,23 @@
 
 // Bright fills take an ink border; the dark `neutral` fill takes a light one,
 // because ink-on-canvas has no edge to show.
+//
+// Each variant also sets `--glow`, the halo colour `btn-pop` paints behind the
+// hard shadow. It is set HERE rather than in the utility because only the call
+// site knows the fill, and a halo in a different colour from the block reads as
+// a rendering fault rather than as light. Keep it identical to the `bg-` token.
+//
+// `neutral` deliberately sets none. It is the unlit control — a dark block on a
+// dark ground — and giving it a white halo would make the lowest-emphasis
+// button in the app glow as brightly as the primary action.
 const VARIANTS = {
-  primary: 'bg-pop-pink text-ink border-ink',
-  secondary: 'bg-pop-purple text-ink border-ink',
-  success: 'bg-pop-lime text-ink border-ink',
-  danger: 'bg-pop-red text-ink border-ink',
-  warning: 'bg-pop-amber text-ink border-ink',
-  info: 'bg-pop-blue text-ink border-ink',
-  neutral: 'bg-surface-2 text-white border-white/20',
+  primary: 'bg-pop-pink text-ink border-ink [--glow:var(--color-pop-pink)]',
+  secondary: 'bg-pop-purple text-ink border-ink [--glow:var(--color-pop-purple)]',
+  success: 'bg-pop-lime text-ink border-ink [--glow:var(--color-pop-lime)]',
+  danger: 'bg-pop-red text-ink border-ink [--glow:var(--color-pop-red)]',
+  warning: 'bg-pop-amber text-ink border-ink [--glow:var(--color-pop-amber)]',
+  info: 'bg-pop-blue text-ink border-ink [--glow:var(--color-pop-blue)]',
+  neutral: 'bg-surface-2 text-white border-line-strong',
 };
 
 const SIZES = {
@@ -37,7 +46,7 @@ export default function Button({
   // Disabled blocks keep the border and shadow so the layout never shifts;
   // they just go flat and grey, and `btn-pop` already suppresses the motion.
   const tone = disabled
-    ? 'bg-surface-2 text-white/25 border-white/10'
+    ? 'bg-surface-2 text-fg-disabled border-line'
     : VARIANTS[variant];
 
   return (
@@ -56,7 +65,7 @@ export default function Button({
 export function GhostButton({ className = '', children, ...rest }) {
   return (
     <button
-      className={`focus-pop rounded-pop-sm px-2 py-1 font-display font-bold text-white/60
+      className={`focus-pop rounded-pop-sm px-2 py-1 font-display font-bold text-fg-body
         transition-colors hover:text-white ${className}`}
       {...rest}
     >

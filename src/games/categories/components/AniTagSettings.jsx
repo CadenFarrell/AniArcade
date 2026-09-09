@@ -76,7 +76,7 @@ export default function AniTagSettings({
         <SettingHelp className="mb-2" more={SETTING_HELP.categoryPool.more}>
           {SETTING_HELP.categoryPool.short}
         </SettingHelp>
-        <p className="text-sm text-white/50">
+        <p className="text-sm text-fg-helper">
           {poolCount({ size, players: playerCount, pool: categoryPool, dealt })}
         </p>
       </Card>

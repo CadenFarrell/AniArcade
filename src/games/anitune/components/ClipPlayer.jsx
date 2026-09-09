@@ -210,7 +210,7 @@ export default function ClipPlayer({
       </div>
 
       {state === 'loading' && (
-        <p className="py-4 text-center text-lg text-white/40">Loading clip…</p>
+        <p className="py-4 text-center text-lg text-fg-subtle">Loading clip…</p>
       )}
 
       {state === 'error' && (
@@ -220,7 +220,7 @@ export default function ClipPlayer({
       )}
 
       {state === 'playing' && !revealed && (
-        <p className="py-4 text-center text-lg text-white/60">🎵 Listen…</p>
+        <p className="py-4 text-center text-lg text-fg-body">🎵 Listen…</p>
       )}
 
       {(state === 'ready' || state === 'done') && (

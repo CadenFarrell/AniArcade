@@ -71,7 +71,7 @@ export default function SpectrumPicker({ excludeId = null, pool = null, onPick }
                 onClick={() => setEditing(s)}
                 aria-label={`Edit ${s.leftLabel} to ${s.rightLabel}`}
                 className="focus-pop grid h-11 w-11 flex-shrink-0 place-items-center rounded-pop-sm
-                  text-lg text-white/40 hover:text-white"
+                  text-lg text-fg-icon hover:text-white"
               >
                 ✏️
               </button>
@@ -88,7 +88,7 @@ export default function SpectrumPicker({ excludeId = null, pool = null, onPick }
           <button
             onClick={reroll}
             aria-label="Suggest three different spectrums"
-            className="focus-pop rounded-pop-sm px-2 py-1 text-lg text-white/40 hover:text-white"
+            className="focus-pop rounded-pop-sm px-2 py-1 text-lg text-fg-icon hover:text-white"
           >
             🔄
           </button>
@@ -126,12 +126,12 @@ function SpectrumButton({ spectrum, onClick }) {
   return (
     <button
       onClick={onClick}
-      className="focus-pop min-w-0 flex-1 rounded-pop-sm border-2 border-white/15 bg-surface-2 px-4 py-3
+      className="focus-pop min-w-0 flex-1 rounded-pop-sm border-2 border-line-strong bg-surface-2 px-4 py-3
         text-left transition-colors hover:border-pop-purple hover:bg-surface w-full"
     >
       <span className="flex items-center gap-2 font-display text-base font-extrabold text-white">
         <span className="min-w-0 flex-1 truncate">{spectrum.leftLabel}</span>
-        <span className="flex-shrink-0 text-white/30">→</span>
+        <span className="flex-shrink-0 text-fg-subtle">→</span>
         <span className="min-w-0 flex-1 truncate text-right">{spectrum.rightLabel}</span>
       </span>
     </button>

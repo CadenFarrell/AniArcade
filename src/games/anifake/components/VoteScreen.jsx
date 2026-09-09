@@ -55,7 +55,7 @@ export default function VoteScreen({
           <Wordmark tone="teal" size="md" level={2} className="mb-8">
             {isRunoff ? '⚖️ Pass the device' : '🗳️ Pass the device'}
           </Wordmark>
-          <p className="mb-2 text-center text-xl text-white/60">Hand it to</p>
+          <p className="mb-2 text-center text-xl text-fg-body">Hand it to</p>
           <p className="mb-10 text-center font-display text-4xl font-extrabold text-white">
             {voter?.name}
           </p>
@@ -109,7 +109,7 @@ export default function VoteScreen({
             <p className="mt-2 font-display text-lg font-extrabold text-white">
               You voted for {nameOf(myVote)}
             </p>
-            <p className="mt-1 text-white/50">Waiting for everyone else…</p>
+            <p className="mt-1 text-fg-helper">Waiting for everyone else…</p>
           </Card>
         ) : (
           <Card title={`${voter?.name ?? 'You'} — pick one`} padding="lg" className="mb-6">
@@ -126,7 +126,7 @@ export default function VoteScreen({
                   {/* Fixed width, so the rows read as a table and a seat sits in
                       the same place on every screen of the round. */}
                   <span className="w-6 flex-shrink-0 text-center font-display text-sm
-                    font-extrabold text-white/30">
+                    font-extrabold text-fg-subtle">
                     {p.seat ?? '–'}
                   </span>
                   {/* Their own ballot, not a vote against them. The slot is
@@ -136,7 +136,7 @@ export default function VoteScreen({
                       column and the full-roster ballot both exist to stop.
                       Weighted like the seat number rather than tinted: a colour
                       here would be read as a verdict, which is how this started. */}
-                  <span className="w-4 flex-shrink-0 text-center text-sm text-white/30">
+                  <span className="w-4 flex-shrink-0 text-center text-sm text-fg-subtle">
                     {voted.includes(p.id) && (
                       <>
                         <span aria-hidden="true">✓</span>
@@ -160,7 +160,7 @@ export default function VoteScreen({
                       Accuse
                     </Button>
                   ) : (
-                    <span className="font-display text-xs uppercase tracking-wider text-white/30">
+                    <span className="font-display text-xs uppercase tracking-wider text-fg-subtle">
                       Safe
                     </span>
                   )}
@@ -171,7 +171,7 @@ export default function VoteScreen({
                 has to name whose ballot it is — "voted" alone is the ambiguity
                 that moving the marker was meant to end. Only once one exists. */}
             {voted.length > 0 && (
-              <p className="mt-3 text-sm text-white/40">
+              <p className="mt-3 text-sm text-fg-subtle">
                 <span aria-hidden="true">✓</span> their own ballot is already in — not a vote against them
               </p>
             )}
@@ -182,7 +182,7 @@ export default function VoteScreen({
             full roster kept reading "3 of 4 in" after a departure had already
             let the room move on. */}
         {voterIds.length > 0 && (
-          <p className="text-center text-white/50">
+          <p className="text-center text-fg-helper">
             {voted.filter((id) => voterIds.includes(id)).length} of {voterIds.length} in.
           </p>
         )}

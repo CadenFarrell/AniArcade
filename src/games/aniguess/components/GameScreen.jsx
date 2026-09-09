@@ -225,7 +225,7 @@ export default function GameScreen({
         <h2 className="font-display text-3xl font-extrabold text-white">
           🎮 {guesser.name}&apos;s Turn
         </h2>
-        <p className="mt-1 text-base text-white/50">
+        <p className="mt-1 text-base text-fg-helper">
           Turn {turnCount + 1} · Ask a question or submit a guess
         </p>
       </div>
@@ -309,7 +309,7 @@ export default function GameScreen({
                     <Avatar src={s.imageUrl} size="sm" />
                     <div>
                       <p className="text-sm font-semibold text-white">{s.name}</p>
-                      <p className="text-xs text-white/40">{s.series}</p>
+                      <p className="text-xs text-fg-subtle">{s.series}</p>
                     </div>
                   </>
                 )}
@@ -338,10 +338,10 @@ export default function GameScreen({
           {/* Yes / No buttons */}
           {waitingForAnswer && (
             <div className="mb-5">
-              <p className="mb-4 text-center text-base text-white/60">
+              <p className="mb-4 text-center text-base text-fg-body">
                 ❓ <span className="font-display text-lg font-extrabold text-white">{pendingQuestion}</span>
               </p>
-              <p className="mb-4 text-center text-sm text-white/40">
+              <p className="mb-4 text-center text-sm text-fg-subtle">
                 Everyone else — answer this question
               </p>
               <div className="flex gap-4">
@@ -372,12 +372,12 @@ export default function GameScreen({
             {turnOver.reason === 'timer' ? "Time's up!" : 'Not quite!'}
           </h2>
           {turnOver.reason === 'wrong' && (
-            <p className="mb-3 text-xl text-white/60">
+            <p className="mb-3 text-xl text-fg-body">
               <span className="font-bold text-white">&quot;{turnOver.logEntry.text}&quot;</span>{' '}
               isn&apos;t your character.
             </p>
           )}
-          <p className="mb-10 text-lg text-white/50">{guesser.name}&apos;s turn is over.</p>
+          <p className="mb-10 text-lg text-fg-helper">{guesser.name}&apos;s turn is over.</p>
           {/* Talk mode only ever reaches this modal on an expired timer — a
               wrong guess commits on the tap that judged it. Nobody is passing
               the device at that table, so the label says what is happening. */}

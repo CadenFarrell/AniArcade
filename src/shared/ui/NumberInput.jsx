@@ -189,7 +189,7 @@ export default function NumberInput({
         outline-none focus-visible:bg-pop-purple/40
         ${sizing.button} ${side === 'left' ? 'border-r-2' : 'border-l-2'} border-ink
         ${disabled || atBound
-          ? 'cursor-not-allowed bg-surface-2 text-white/20'
+          ? 'cursor-not-allowed bg-surface-2 text-fg-disabled'
           : 'bg-pop-purple/20 text-white hover:bg-pop-purple/40 active:bg-pop-purple/60'}`}
     >
       {glyph}
@@ -212,10 +212,15 @@ export default function NumberInput({
     // forgot to fill in. Callers set a narrower width freely (`w-40` in
     // AniGuess's rows); `max-w-none` opts back out.
     <div
+      // `field-lit` is applied only when the value is valid. It sets
+      // border-color on :focus-within, so on an invalid stepper it would repaint
+      // the red error border pink the moment the field is focused — which is
+      // exactly when the user is looking at it and most needs to still see the
+      // error. The white focus ring is unconditional either way.
       className={`flex max-w-64 items-stretch overflow-hidden rounded-pop-sm border-2 bg-surface-2
-        transition-colors focus-within:ring-4 focus-within:ring-white/80
+        transition-colors focus-within:ring-4 focus-within:ring-focus
         focus-within:ring-offset-2 focus-within:ring-offset-canvas
-        ${invalid ? 'border-pop-red' : 'border-ink'}
+        ${invalid ? 'border-pop-red' : 'border-ink field-lit'}
         ${disabled ? 'opacity-50' : ''} ${className}`}
     >
       {stepper(-1, '−', 'Decrease', value <= min, 'left')}

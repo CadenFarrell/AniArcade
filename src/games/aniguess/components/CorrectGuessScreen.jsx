@@ -21,7 +21,7 @@ export default function CorrectGuessScreen({ lastLocked, lockedPositions, onCont
         {lastLocked.position <= 3 && `${getPositionEmoji(lastLocked.position)} `}{place}
       </Wordmark>
 
-      <p className="mb-2 text-2xl text-white/60">in {lastLocked.turnsUsed} turns</p>
+      <p className="mb-2 text-2xl text-fg-body">in {lastLocked.turnsUsed} turns</p>
       {tied && <p className="mb-2 font-display text-xl font-extrabold text-pop-amber">🤝 Tied!</p>}
       <p className="mb-10 font-display text-3xl font-extrabold text-pop-lime">
         +{lastLocked.points} points

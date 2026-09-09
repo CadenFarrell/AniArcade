@@ -75,7 +75,7 @@ export default function RoomSetup({ room, onBack, tone = 'purple', stat = () => 
 
         {!profile && (
           <Card className="mb-6 text-center">
-            <p className="mb-4 text-white/60">
+            <p className="mb-4 text-fg-body">
               Set your main profile before joining a room — it&apos;s the name and anime
               list you bring to every online game.
             </p>
@@ -132,7 +132,7 @@ export default function RoomSetup({ room, onBack, tone = 'purple', stat = () => 
         )}
 
         {room.roomCode && (
-          <p className="mt-6 text-center text-white/60">
+          <p className="mt-6 text-center text-fg-body">
             Room code:{' '}
             <Badge tone="lime" className="ml-1 text-lg tracking-widest">{room.roomCode}</Badge>
           </p>

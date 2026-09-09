@@ -93,7 +93,7 @@ export default function OnlineLobby({ room }) {
         </Wordmark>
 
         <div className="mb-8 text-center">
-          <p className="mb-3 text-white/50">Share this code with the other players:</p>
+          <p className="mb-3 text-fg-helper">Share this code with the other players:</p>
           <span className="sticker inline-block bg-pop-lime px-6 py-3 text-4xl text-ink tracking-[0.3em]">
             {room.roomCode}
           </span>
@@ -122,7 +122,7 @@ export default function OnlineLobby({ room }) {
             );
           })}
           {active.length < MIN_PLAYERS && (
-            <p className="mt-3 text-sm text-white/40">
+            <p className="mt-3 text-sm text-fg-subtle">
               Waiting for more players — AniFake needs {MIN_PLAYERS}.
             </p>
           )}
@@ -156,7 +156,7 @@ export default function OnlineLobby({ room }) {
             <p className="font-display text-lg font-extrabold text-white">
               {room.hostName ? `${room.hostName} is the host` : 'Waiting for the host'}
             </p>
-            <p className="mt-1 text-white/50">
+            <p className="mt-1 text-fg-helper">
               The host picks the settings and starts the game. Import your list above so
               you&apos;re ready.
             </p>
@@ -239,7 +239,7 @@ export default function OnlineLobby({ room }) {
                 {SETTING_HELP.allowRedeal.short}
               </SettingHelp>
 
-              <p className="mt-4 text-sm text-white/30">
+              <p className="mt-4 text-sm text-fg-subtle">
                 You&apos;re the host — your settings apply to everyone.
               </p>
 
@@ -250,7 +250,7 @@ export default function OnlineLobby({ room }) {
                 needs to see what it costs. Only when the term is live — there is
                 no count worth reading when it is not narrowing anything. */}
             {famous > 0 && (
-              <p className="mb-4 text-center text-base text-white/50">
+              <p className="mb-4 text-center text-base text-fg-helper">
                 {eligible} shared character{eligible === 1 ? '' : 's'} · “{getFame(fame).label}”
                 narrows this to {famous}
               </p>

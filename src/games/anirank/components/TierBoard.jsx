@@ -117,7 +117,7 @@ export default function TierBoard({
       <Screen width="lg" onBack={onBack} backLabel="← Saved lists">
         <header className="mb-6">
           <h1 className="font-display text-3xl font-black text-white">{list.name || 'Untitled list'}</h1>
-          <p className="mt-1 text-base text-white/50">
+          <p className="mt-1 text-base text-fg-helper">
             {axis.label} · {list.items === 'characters' ? 'Characters' : 'Shows'}
             {' · '}
             {ranked ? `#1 = ${axis.topLabel}` : `top row = ${axis.topLabel}`}
@@ -236,7 +236,7 @@ export default function TierBoard({
           <h2 className="mb-3 font-display text-2xl font-black text-white">
             {ranked ? 'Cut this ranking into tiers?' : 'Flatten these tiers into one ranking?'}
           </h2>
-          <p className="mb-6 text-base text-white/60">
+          <p className="mb-6 text-base text-fg-body">
             {ranked
               ? 'Your order is kept, split into five even rows from the top down. You can rename and resize them afterwards.'
               : 'Every card is kept, top row first. Switching back afterwards splits them into even rows rather than the ones you have now.'}
@@ -271,7 +271,7 @@ export default function TierBoard({
           <span className="font-display text-base font-extrabold text-white">
             Holding {byId.get(heldId).title}
           </span>
-          <span className="ml-2 text-base text-white/50">— tap a row to place it</span>
+          <span className="ml-2 text-base text-fg-helper">— tap a row to place it</span>
           <GhostButton className="ml-3" onClick={() => setHeldId(null)}>Put down</GhostButton>
         </div>
       )}
@@ -290,7 +290,7 @@ function TierRow({
   const tone = tierTone(index, count);
 
   return (
-    <div className="border-b-2 border-white/5 py-2 last:border-b-0">
+    <div className="border-b-2 border-line-soft py-2 last:border-b-0">
       <div className="flex items-stretch gap-2">
         {!ranked && (
           <div className="flex w-16 flex-shrink-0 flex-col gap-1">
@@ -319,7 +319,7 @@ function TierRow({
         <div
           ref={setNodeRef}
           className={`min-w-0 flex-1 rounded-pop-sm border-2 border-dashed p-1.5 transition-colors
-            ${isOver ? 'border-pop-amber bg-pop-amber/10' : 'border-white/10'}`}
+            ${isOver ? 'border-pop-amber bg-pop-amber/10' : 'border-line'}`}
         >
           <SortableContext items={row.cards} strategy={rectSortingStrategy}>
             <div className={ranked ? 'flex flex-col gap-1.5' : 'flex flex-wrap gap-1.5'}>
@@ -354,7 +354,7 @@ function TierRow({
               )}
 
               {!heldId && row.cards.length === 0 && (
-                <span className="px-2 py-6 text-sm text-white/25">Empty</span>
+                <span className="px-2 py-6 text-sm text-fg-disabled">Empty</span>
               )}
             </div>
           </SortableContext>
@@ -400,7 +400,7 @@ function TrayZone({ cards, total, matched, query, onQuery, heldId, onTile, onDro
       <div
         ref={setNodeRef}
         className={`min-h-24 rounded-pop-sm border-2 border-dashed p-1.5 transition-colors
-          ${isOver ? 'border-pop-amber bg-pop-amber/10' : 'border-white/10'}`}
+          ${isOver ? 'border-pop-amber bg-pop-amber/10' : 'border-line'}`}
       >
         <SortableContext items={cards.map((c) => c.id)} strategy={rectSortingStrategy}>
           <div className="flex flex-wrap gap-1.5">
@@ -413,7 +413,7 @@ function TrayZone({ cards, total, matched, query, onQuery, heldId, onTile, onDro
               />
             ))}
             {!cards.length && (
-              <span className="px-2 py-6 text-sm text-white/25">
+              <span className="px-2 py-6 text-sm text-fg-disabled">
                 {total ? 'Nothing matches that search.' : 'Everything is placed. 🎉'}
               </span>
             )}
@@ -424,7 +424,7 @@ function TrayZone({ cards, total, matched, query, onQuery, heldId, onTile, onDro
       {/* Said out loud rather than silently truncated: a tray that shows the
           first 120 of two thousand looks identical to one that is complete. */}
       {hidden > 0 && (
-        <p className="mt-3 text-center text-sm text-white/50">
+        <p className="mt-3 text-center text-sm text-fg-helper">
           {hidden} more not shown — search to narrow it down.
         </p>
       )}
@@ -482,7 +482,7 @@ function Tile({
       style={style}
       className={`relative touch-none rounded-pop-sm border-2 transition-colors
         ${wide ? 'flex items-center' : ''}
-        ${held ? 'border-pop-amber bg-pop-amber/20' : 'border-white/10 bg-surface-2'}
+        ${held ? 'border-pop-amber bg-pop-amber/20' : 'border-line bg-surface-2'}
         ${dragging ? 'shadow-pop' : ''}`}
     >
       <button

@@ -29,13 +29,13 @@ export default function PeekPanel({ peekList, hasPeeked, onPeek }) {
       {open && (
         <Modal onClose={() => setOpen(false)}>
           <h3 className="font-display text-2xl font-extrabold text-white">📋 Your Anime List</h3>
-          <p className="mb-5 text-base text-white/50">Titles only — no characters!</p>
+          <p className="mb-5 text-base text-fg-helper">Titles only — no characters!</p>
           {peekList.length === 0 ? (
-            <p className="text-lg text-white/50">No shared anime found.</p>
+            <p className="text-lg text-fg-helper">No shared anime found.</p>
           ) : (
             <ul className="max-h-80 space-y-2 overflow-y-auto">
               {peekList.map((anime) => (
-                <li key={anime.id} className="border-b border-white/10 py-2 text-lg text-white/80">
+                <li key={anime.id} className="border-b border-line py-2 text-lg text-fg-strong">
                   {anime.title}
                 </li>
               ))}

@@ -94,8 +94,8 @@ export default function ListManager({ profile, onProfileUpdated, className = '' 
   // render an empty state rather than crashing on profile.animeList.
   if (!hasProfile) {
     return (
-      <div className="flex min-h-screen items-center justify-center px-6">
-        <p className="text-center text-lg text-white/50">Pick a player to edit their list.</p>
+      <div className="flex min-h-dvh items-center justify-center px-6">
+        <p className="text-center text-lg text-fg-helper">Pick a player to edit their list.</p>
       </div>
     );
   }
@@ -103,9 +103,9 @@ export default function ListManager({ profile, onProfileUpdated, className = '' 
   return (
     // Not a <Screen>: the head-room above this body is the caller's call — see
     // the note on `className` at the top of the file.
-    <div className={`mx-auto min-h-screen max-w-2xl px-5 pb-8 sm:px-6 ${className}`}>
+    <div className={`mx-auto min-h-dvh max-w-2xl px-5 pb-8 sm:px-6 ${className}`}>
       <h2 className="font-display text-3xl font-extrabold text-white">{profile.name}&apos;s Anime List</h2>
-      <p className="mb-6 text-sm text-white/40">
+      <p className="mb-6 text-sm text-fg-subtle">
         {profile.animeList.length} anime · {profile.animeList.reduce((n, a) => n + a.characters.length, 0)} characters
       </p>
 
@@ -149,7 +149,7 @@ export default function ListManager({ profile, onProfileUpdated, className = '' 
 
       {/* Anime List */}
       {profile.animeList.length === 0 ? (
-        <div className="py-16 text-center text-white/30">
+        <div className="py-16 text-center text-fg-subtle">
           <div className="mb-3 text-5xl">📺</div>
           <p className="text-lg">No anime yet — add one above!</p>
         </div>
@@ -164,10 +164,10 @@ export default function ListManager({ profile, onProfileUpdated, className = '' 
                   className="focus-pop flex-1 rounded-pop-sm text-left"
                 >
                   <span className="font-display text-lg font-extrabold text-white">{anime.title}</span>
-                  <span className="ml-2 text-sm text-white/40">
+                  <span className="ml-2 text-sm text-fg-subtle">
                     {anime.characters.length === 0 ? '⚠️ No characters' : `${anime.characters.length} character${anime.characters.length !== 1 ? 's' : ''}`}
                   </span>
-                  <span className="ml-2 text-white/30">{expandedAnime === anime.id ? '▲' : '▼'}</span>
+                  <span className="ml-2 text-fg-subtle">{expandedAnime === anime.id ? '▲' : '▼'}</span>
                 </button>
                 <div className="ml-4 flex gap-2">
                   <Button
@@ -180,7 +180,7 @@ export default function ListManager({ profile, onProfileUpdated, className = '' 
                   <button
                     onClick={() => deleteAnime(anime.id)}
                     aria-label={`Delete ${anime.title}`}
-                    className="focus-pop grid h-11 w-11 place-items-center rounded-pop-sm text-white/40 hover:text-pop-red"
+                    className="focus-pop grid h-11 w-11 place-items-center rounded-pop-sm text-fg-icon hover:text-pop-red"
                   >
                     🗑️
                   </button>
@@ -189,24 +189,24 @@ export default function ListManager({ profile, onProfileUpdated, className = '' 
 
               {/* Expanded: Characters + Form */}
               {expandedAnime === anime.id && (
-                <div className="space-y-2 border-t border-white/10 px-5 py-4">
+                <div className="space-y-2 border-t border-line px-5 py-4">
                   {anime.characters.length === 0 && !addingCharacterTo && (
-                    <p className="py-2 text-center text-sm text-white/30">No characters yet</p>
+                    <p className="py-2 text-center text-sm text-fg-subtle">No characters yet</p>
                   )}
 
                   {anime.characters.map((char) => (
-                    <div key={char.id} className="flex items-center justify-between border-b border-white/5 py-2 last:border-0">
-                      <span className="text-white/80">{char.name}</span>
+                    <div key={char.id} className="flex items-center justify-between border-b border-line-soft py-2 last:border-0">
+                      <span className="text-fg-strong">{char.name}</span>
                       <div className="flex gap-1">
                         <button
                           onClick={() => openEditCharacter(anime.id, char)}
                           aria-label={`Edit ${char.name}`}
-                          className="focus-pop grid h-11 w-11 place-items-center rounded-pop-sm text-white/60 hover:text-white"
+                          className="focus-pop grid h-11 w-11 place-items-center rounded-pop-sm text-fg-body hover:text-white"
                         >✏️</button>
                         <button
                           onClick={() => deleteCharacter(anime.id, char.id)}
                           aria-label={`Delete ${char.name}`}
-                          className="focus-pop grid h-11 w-11 place-items-center rounded-pop-sm text-white/40 hover:text-pop-red"
+                          className="focus-pop grid h-11 w-11 place-items-center rounded-pop-sm text-fg-icon hover:text-pop-red"
                         >🗑️</button>
                       </div>
                     </div>
@@ -214,7 +214,7 @@ export default function ListManager({ profile, onProfileUpdated, className = '' 
 
                   {/* Add / Edit Character Form */}
                   {addingCharacterTo === anime.id && (
-                    <div className="mt-4 space-y-4 rounded-pop border-2 border-white/10 bg-surface-2 p-5">
+                    <div className="mt-4 space-y-4 rounded-pop border-2 border-line bg-surface-2 p-5">
                       <h4 className="font-display text-lg font-extrabold text-white">
                         {editingCharacter ? '✏️ Edit Character' : '➕ Add Character'}
                       </h4>

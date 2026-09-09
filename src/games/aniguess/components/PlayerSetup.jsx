@@ -44,7 +44,7 @@ function SortablePlayer({ player, isYou, onRemove, onGoToList }) {
       <span
         {...attributes}
         {...listeners}
-        className="focus-pop cursor-grab rounded-pop-sm px-1 text-2xl text-white/40 hover:text-white"
+        className="focus-pop cursor-grab rounded-pop-sm px-1 text-2xl text-fg-icon hover:text-white"
       >
         ☰
       </span>
@@ -144,7 +144,7 @@ export default function PlayerSetup({ onStartGame, onGoToList, players, onPlayer
       <Screen width="md" onBack={onBack}>
         <div className="mb-10 text-center">
           <Wordmark tone="pink">AniGuess</Wordmark>
-          <p className="mt-5 text-lg text-white/60">The anime character guessing game</p>
+          <p className="mt-5 text-lg text-fg-body">The anime character guessing game</p>
           <Button
             variant="neutral"
             size="sm"
@@ -161,7 +161,7 @@ export default function PlayerSetup({ onStartGame, onGoToList, players, onPlayer
               🏅 All-Time Wins
             </h2>
             {winsEntries.length === 0
-              ? <p className="py-4 text-center text-white/40">No games played yet!</p>
+              ? <p className="py-4 text-center text-fg-subtle">No games played yet!</p>
               : winsEntries.map(([name, count], i) => (
                 <CardRow key={name}>
                   <span className="text-lg text-white">{i === 0 ? '👑 ' : ''}{name}</span>
@@ -224,7 +224,7 @@ export default function PlayerSetup({ onStartGame, onGoToList, players, onPlayer
         </DndContext>
 
         {players.length < 2 && (
-          <p className="mb-5 text-center text-base text-white/40">
+          <p className="mb-5 text-center text-base text-fg-subtle">
             Add at least 2 players to start
           </p>
         )}
@@ -271,7 +271,7 @@ export default function PlayerSetup({ onStartGame, onGoToList, players, onPlayer
           </SettingHelp>
 
           {timerEnabled && (
-            <div className="mb-5 flex items-center gap-3 text-lg text-white/70">
+            <div className="mb-5 flex items-center gap-3 text-lg text-fg-strong">
               <span>Seconds:</span>
               {/* Steps by 15 — 30 to 300 in ones is 270 presses. */}
               <NumberInput
@@ -288,13 +288,13 @@ export default function PlayerSetup({ onStartGame, onGoToList, players, onPlayer
           )}
 
           <div>
-            <p className="mb-1 text-base text-white/70">Points per position:</p>
+            <p className="mb-1 text-base text-fg-strong">Points per position:</p>
             {/* One per row rather than four across. Four steppers sharing a row
                 left the number narrower than either of its own buttons, and the
                 online lobby's max-w-md card had no width for them at all. */}
             {POSITIONS.map(({ icon, label }, i) => (
               <CardRow key={label}>
-                <span className="text-white/80">
+                <span className="text-fg-strong">
                   <span className="mr-2 text-lg">{icon}</span>
                   {label}
                 </span>

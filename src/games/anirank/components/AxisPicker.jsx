@@ -122,7 +122,7 @@ export default function AxisPicker({
         // one of the two tabs.
         emptyText={`None selected · ${myPrompts.length + opinionAxes.length} modes`}
       >
-        <p className="mb-4 text-sm text-white/50">{OPINION_HINT}</p>
+        <p className="mb-4 text-sm text-fg-helper">{OPINION_HINT}</p>
 
         {myPrompts.length > 0 && (
           <>
@@ -148,7 +148,7 @@ export default function AxisPicker({
                       aria-label={`Edit ${axis.label}`}
                       onClick={() => setEditing(prompt)}
                       className="focus-pop grid h-11 w-11 flex-shrink-0 place-items-center rounded-pop-sm
-                        text-lg hover:bg-white/10 disabled:opacity-30"
+                        text-lg hover:bg-wash disabled:opacity-30"
                     >
                       ✏️
                     </button>
@@ -178,7 +178,7 @@ export default function AxisPicker({
             this box, when the button below it is the only thing you have not
             seen before. */}
         {myPrompts.length === 0 && (
-          <p className="mb-3 text-sm text-white/50">
+          <p className="mb-3 text-sm text-fg-helper">
             Or rank by anything you can finish &ldquo;rank these {items === 'characters' ? 'characters' : 'shows'} by&hellip;&rdquo; with.
           </p>
         )}
@@ -203,7 +203,7 @@ export default function AxisPicker({
           selectedLabel={factAxes.find((a) => a.id === selected.id)?.label ?? null}
           emptyText={`None selected · ${factAxes.length} ${factAxes.length === 1 ? 'mode' : 'modes'}`}
         >
-          <p className="mb-3 text-sm text-white/50">{FACT_HINT}</p>
+          <p className="mb-3 text-sm text-fg-helper">{FACT_HINT}</p>
           <div className="flex flex-col gap-2">
             {factAxes.map((axis) => (
               <AxisButton
@@ -247,7 +247,7 @@ function PoolTab({ active, disabled, onClick, children }) {
         font-display text-base font-extrabold transition-colors disabled:opacity-40
         ${active
           ? 'border-pop-amber bg-pop-amber/20 text-white'
-          : 'border-white/10 bg-surface-2/40 text-white/50 hover:border-white/30'}`}
+          : 'border-line bg-surface-2/40 text-fg-helper hover:border-line-loud'}`}
     >
       {children}
     </button>
@@ -258,7 +258,7 @@ function PoolTab({ active, disabled, onClick, children }) {
 // Field.jsx's Label: that renders a <label>, which has no control to point at.
 function SectionLabel({ children }) {
   return (
-    <p className="mb-2 font-display text-xs font-extrabold uppercase tracking-widest text-white/50">
+    <p className="mb-2 font-display text-xs font-extrabold uppercase tracking-widest text-fg-helper">
       {children}
     </p>
   );
@@ -284,9 +284,9 @@ function ModeBox({ title, selectedLabel, emptyText, children }) {
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
         className="focus-pop -mx-2 flex w-[calc(100%+1rem)] items-center gap-3 rounded-pop-sm
-          px-2 py-1.5 text-left transition-colors hover:bg-white/5"
+          px-2 py-1.5 text-left transition-colors hover:bg-wash-soft"
       >
-        <span className="flex-shrink-0 text-sm text-white/40">{open ? '▼' : '▶'}</span>
+        <span className="flex-shrink-0 text-sm text-fg-subtle">{open ? '▼' : '▶'}</span>
         {selectedLabel ? (
           <span className="flex min-w-0 flex-1 items-center gap-2">
             <span aria-hidden="true" className="flex-shrink-0 text-xs text-pop-amber">●</span>
@@ -295,7 +295,7 @@ function ModeBox({ title, selectedLabel, emptyText, children }) {
             </span>
           </span>
         ) : (
-          <span className="min-w-0 flex-1 truncate text-base text-white/40">{emptyText}</span>
+          <span className="min-w-0 flex-1 truncate text-base text-fg-subtle">{emptyText}</span>
         )}
       </button>
 
@@ -321,7 +321,7 @@ function AxisButton({ axis, active, disabled, count, minCount, onClick }) {
         text-left transition-colors disabled:opacity-40
         ${active
           ? 'border-pop-amber bg-pop-amber/20'
-          : 'border-white/10 bg-surface-2/40 hover:border-white/30'}`}
+          : 'border-line bg-surface-2/40 hover:border-line-loud'}`}
     >
       <span className="min-w-0 flex-1">
         <span className="block truncate font-display text-base font-extrabold text-white">
@@ -334,7 +334,7 @@ function AxisButton({ axis, active, disabled, count, minCount, onClick }) {
             needsEndLabels, which is why that rule lives in axes.js rather than
             being sniffed out of the label here. */}
         {needsEndLabels(axis) && (
-          <span className="block truncate text-sm text-white/50">
+          <span className="block truncate text-sm text-fg-helper">
             {axis.topLabel} → {axis.bottomLabel}
           </span>
         )}

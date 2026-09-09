@@ -162,12 +162,12 @@ export default function RevealScreen({
           // other two screens draw the same dial with no motion at all.
           <Dial spectrum={spectrum} target={target} markers={markers} animate={!abandoned} />
         ) : (
-          <p className="text-center text-base text-white/40">
+          <p className="text-center text-base text-fg-subtle">
             The round ended before a spectrum was chosen.
           </p>
         )}
         {!abandoned && (
-          <p className="mt-4 text-center text-base text-white/50">
+          <p className="mt-4 text-center text-base text-fg-helper">
             {mode === 'readroom' ? (
               <>
                 {psychic ? psychic.name : 'The psychic'} put it at{' '}
@@ -194,9 +194,9 @@ export default function RevealScreen({
                   different reason than one who dialled badly. Drawing them the
                   same way accuses somebody whose tab closed of guessing wrong. */}
               {r.placed ? (
-                <span className="text-sm text-white/50">off by {r.distance}</span>
+                <span className="text-sm text-fg-helper">off by {r.distance}</span>
               ) : (
-                <span className="text-sm text-white/40">no dial</span>
+                <span className="text-sm text-fg-subtle">no dial</span>
               )}
               {/* The same stagger the markers use, so a score arrives just
                   after the dial it is for — the two are one explanation. */}
@@ -208,7 +208,7 @@ export default function RevealScreen({
               <span className="min-w-0 flex-1 truncate font-display text-lg font-extrabold text-white">
                 {psychic.name}
               </span>
-              <span className="text-sm text-white/50">psychic — average of the dials</span>
+              <span className="text-sm text-fg-helper">psychic — average of the dials</span>
               <ScoreBadge
                 points={roundScores[psychic.id] ?? 0}
                 delayMs={260 + explain.length * 110}
@@ -219,7 +219,7 @@ export default function RevealScreen({
       )}
 
       {waitingFor && (
-        <p className="text-center text-base text-white/50">{waitingFor}</p>
+        <p className="text-center text-base text-fg-helper">{waitingFor}</p>
       )}
 
       {!waitingFor && (isFinalRound ? (

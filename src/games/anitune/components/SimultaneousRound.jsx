@@ -35,7 +35,7 @@ export default function SimultaneousRound({
   if (phase === 'listening') {
     return (
       <div className="mt-6">
-        <p className="mb-4 text-center text-base text-white/60">
+        <p className="mb-4 text-center text-base text-fg-body">
           Everyone listen — you&apos;ll each get to answer.
         </p>
         {/* No clock in this phase, deliberately. The table is still listening
@@ -55,7 +55,7 @@ export default function SimultaneousRound({
       <div className="mt-6">
         <Card padding="lg" className="text-center">
           <div className="mb-3 text-5xl">📲</div>
-          <p className="mb-1 text-base text-white/60">Pass the device to</p>
+          <p className="mb-1 text-base text-fg-body">Pass the device to</p>
           <p className="mb-6 font-display text-3xl font-extrabold text-white">{current?.name}</p>
           <Button variant="primary" size="lg" fullWidth onClick={onReady}>
             I&apos;m {current?.name} — ready
@@ -71,7 +71,7 @@ export default function SimultaneousRound({
       <p className="mb-1 text-center font-display text-xl font-extrabold text-white">
         {current?.name}, which anime?
       </p>
-      <p className="mb-4 text-center text-sm text-white/30">
+      <p className="mb-4 text-center text-sm text-fg-subtle">
         Hidden as you type — everyone else, no peeking at the keyboard.
       </p>
       <GuessInput

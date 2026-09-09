@@ -56,7 +56,7 @@ export default function WhoIsWhoPanel({ entries = [], gated = false, className =
           {!(gated && selected && !revealed) && (
             <>
               <h3 className="font-display text-2xl font-extrabold text-white">🙈 Who is who?</h3>
-              <p className="mb-5 text-base text-white/50">
+              <p className="mb-5 text-base text-fg-helper">
                 {gated
                   ? 'Tap a player to recheck their character.'
                   : 'Everyone else’s character — never your own.'}
@@ -65,7 +65,7 @@ export default function WhoIsWhoPanel({ entries = [], gated = false, className =
           )}
 
           {entries.length === 0 && (
-            <p className="text-lg text-white/50">Nothing to show yet.</p>
+            <p className="text-lg text-fg-helper">Nothing to show yet.</p>
           )}
 
           {/* Online: the whole roster at once. */}
@@ -84,9 +84,9 @@ export default function WhoIsWhoPanel({ entries = [], gated = false, className =
                 <button
                   key={entry.playerId}
                   onClick={() => pickPlayer(entry)}
-                  className="focus-pop flex items-center gap-2 rounded-pop-sm border-2 border-white/15
+                  className="focus-pop flex items-center gap-2 rounded-pop-sm border-2 border-line-strong
                     bg-surface-2 px-4 py-2 font-display text-base font-extrabold text-white
-                    transition-colors hover:bg-white/10"
+                    transition-colors hover:bg-wash"
                 >
                   <span>{entry.name}</span>
                   <span>{entry.locked ? '🔓' : '🙈'}</span>
@@ -102,7 +102,7 @@ export default function WhoIsWhoPanel({ entries = [], gated = false, className =
               <h3 className="mb-3 font-display text-3xl font-extrabold text-white">
                 {selected.name}, look away!
               </h3>
-              <p className="mb-8 text-lg text-white/60">
+              <p className="mb-8 text-lg text-fg-body">
                 Everyone else — here&apos;s who {selected.name} is playing as.
               </p>
               <Button variant="success" size="lg" fullWidth onClick={() => setRevealed(true)}>
@@ -142,10 +142,10 @@ function CharacterCard({ name, character }) {
     <Card padding="sm" className="flex items-center gap-4">
       <Avatar src={character.imageUrl} alt={character.name} size="md" />
       <div className="min-w-0">
-        <p className="font-display text-xs uppercase tracking-widest text-white/40">{name} is</p>
+        <p className="font-display text-xs uppercase tracking-widest text-fg-subtle">{name} is</p>
         <p className="truncate font-display text-xl font-extrabold text-white">{character.name}</p>
-        <p className="truncate text-sm text-white/50">{character.series}</p>
-        {details && <p className="truncate text-xs text-white/30">{details}</p>}
+        <p className="truncate text-sm text-fg-helper">{character.series}</p>
+        {details && <p className="truncate text-xs text-fg-subtle">{details}</p>}
       </div>
     </Card>
   );
