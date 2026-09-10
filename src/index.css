@@ -149,6 +149,32 @@
   --font-display: 'Baloo 2', 'Segoe UI', sans-serif;
   --font-sans: 'Nunito', 'Segoe UI', sans-serif;
 
+  /* -------------------------------------------------------------------------
+     Type scale. The SIZES are Tailwind's defaults and deliberately untouched —
+     eleven steps across 620 usages, distributed sanely, with no drift to fix.
+     The LINE HEIGHTS are the whole of this block, and they were the real gap:
+     `leading-*` appears in the entire app 8 times, so all 166 display-size
+     usages were riding the leading Tailwind ships for BODY text.
+
+     That is fine at text-sm and wrong by text-2xl, where the default is 1.333 —
+     a two-line game title opens a gap you could park another line in. Display
+     type is set solid: the bigger it gets, the less leading it needs, because
+     leading is there to help the eye find the next line and a 48px line is not
+     hard to find. So these tighten as the size grows and stop at 5xl, where
+     Tailwind already ships 1.
+
+     Letter-spacing is deliberately NOT set here. `btn-pop` and `sticker` apply
+     tracking-wide/wider and 43 call sites apply tracking-widest to uppercase
+     labels, all of which compile to the same `letter-spacing` property in the
+     same layer — so a value here would be decided by source order rather than
+     by intent, which is a coin flip that changes on an unrelated edit. Tracking
+     stays an explicit choice at the call site.
+  ------------------------------------------------------------------------- */
+  --text-xl--line-height: 1.25;
+  --text-2xl--line-height: 1.15;
+  --text-3xl--line-height: 1.1;
+  --text-4xl--line-height: 1.05;
+
   --radius-pop: 1.25rem;
   --radius-pop-sm: 0.875rem;
 
@@ -243,6 +269,23 @@
    measurable scroll cost for an effect nobody can point at. */
 @utility neon-text {
   text-shadow: 0 0 18px var(--glow, transparent), 0 0 42px var(--glow, transparent);
+}
+
+/* Glow for SVG geometry. `box-shadow` follows the border box and an SVG <path>
+   has none, so a halo on a needle or an arc has to come from a filter — the one
+   `neon-text` deliberately avoids.
+
+   The reason that is not a contradiction: drop-shadow's cost is that it forces
+   the element onto its own compositing layer, which is priced per element.
+   `neon-text` would land on every glowing label in a long scrolling list, where
+   the count is unbounded; this lands on a fixed handful of shapes inside one
+   dial that does not scroll. Do not reach for it in a list. */
+@utility glow-svg {
+  filter: drop-shadow(0 0 5px var(--glow, transparent));
+}
+
+@utility glow-svg-lg {
+  filter: drop-shadow(0 0 10px var(--glow, transparent));
 }
 
 /* The cabinet screen: a vignette that darkens the corners and a fixed grain.

@@ -24,10 +24,15 @@ export default function Leaderboard({
 
   // Gold / silver / bronze. The palette has no brown, so bronze is a knocked-
   // back amber — still clearly a step below gold.
+  //
+  // Only first place lights. A podium where all three blocks glow is three
+  // winners, which is exactly the thing a podium exists not to say — and the
+  // silver block is a white fill, so a halo on it would be the brightest object
+  // on the screen while ranking second.
   const podiumConfig = {
-    1: { height: 'h-44', color: 'bg-pop-amber', emoji: '🥇' },
-    2: { height: 'h-28', color: 'bg-wash-bright', emoji: '🥈' },
-    3: { height: 'h-20', color: 'bg-pop-amber/50', emoji: '🥉' },
+    1: { height: 'h-44', color: 'bg-pop-amber', emoji: '🥇', glow: 'shadow-[0_0_34px_-4px_var(--color-pop-amber)]' },
+    2: { height: 'h-28', color: 'bg-wash-bright', emoji: '🥈', glow: '' },
+    3: { height: 'h-20', color: 'bg-pop-amber/50', emoji: '🥉', glow: '' },
   };
 
   return (
@@ -43,7 +48,7 @@ export default function Leaderboard({
       {withPositions.length >= 2 && (
         <div className="mb-10 flex items-end justify-center gap-4">
           {podiumSlots.map((slot) => {
-            const { height, color, emoji } = podiumConfig[slot.pos];
+            const { height, color, emoji, glow } = podiumConfig[slot.pos];
             return (
               <div key={slot.pos} className="flex items-end gap-2">
                 {slot.players.map((player) => (
@@ -57,7 +62,7 @@ export default function Leaderboard({
                     {/* Blocks, not bars — same ink border as every other solid
                         fill. No bottom border so they sit on the baseline. */}
                     <div
-                      className={`${height} ${color} w-24 rounded-t-pop-sm border-2 border-b-0 border-ink sm:w-28`}
+                      className={`${height} ${color} ${glow} w-24 rounded-t-pop-sm border-2 border-b-0 border-ink sm:w-28`}
                     />
                   </div>
                 ))}
@@ -81,7 +86,15 @@ export default function Leaderboard({
                 {isTied(player) && <span className="ml-2 text-sm text-pop-amber">🤝 Tied</span>}
                 {left && <span className="ml-2 text-sm font-bold text-fg-helper">left</span>}
               </span>
-              <span className="font-display text-2xl font-extrabold">{player.total} pts</span>
+              {/* The leader's total lights; everyone else's does not. The row is
+                  already amber for first place, so this reinforces a distinction
+                  the screen makes rather than inventing a second one. */}
+              <span
+                className={`font-display text-2xl font-extrabold
+                  ${player.position === 1 && !left ? 'neon-text [--glow:var(--color-pop-amber)]' : ''}`}
+              >
+                {player.total} pts
+              </span>
             </CardRow>
           );
         })}

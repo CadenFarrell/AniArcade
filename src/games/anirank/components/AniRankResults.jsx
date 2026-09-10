@@ -89,7 +89,14 @@ export default function AniRankResults({
         {headline && (
           <Card padding="lg" className="mb-6 text-center">
             <div className="text-5xl">{headline.perfect ? '🏆' : '📊'}</div>
-            <p className="mt-2 font-display text-3xl font-extrabold text-white">
+            {/* A perfect board is the rarest thing this game produces — 45 of 45
+                comparisons — so it is the one that lights. A merely-best board
+                is the ordinary outcome of every round and glowing for it would
+                spend the effect on nothing. */}
+            <p
+              className={`mt-2 font-display text-3xl font-extrabold text-white
+                ${headline.perfect ? 'neon-text [--glow:var(--color-pop-amber)]' : ''}`}
+            >
               {headline.names.join(' & ')}
               {headline.perfect
                 ? ' got it perfect'
