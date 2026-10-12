@@ -45,12 +45,9 @@ export const CARD_POOLS = ['characters', 'shows'];
 // shown the eight. Twelve is small enough that a modest shared list still plays.
 export const MIN_CARD_POOL = 12;
 
-// How many cards get dealt at once. `readroom` takes one — there is nothing to
-// choose between when the card is the thing being judged — and BROWSE_SIZE below
-// takes five, which is what is left of the hand `cards` mode used to be dealt.
-export const HAND_SIZE = 5;
-
-// How many cards the search box shows before anything is typed.
+// How many cards the search box shows before anything is typed. Five is the size
+// of the hand `cards` mode used to be dealt; `readroom` deals exactly one, since
+// there is nothing to choose between when the card is the thing being judged.
 //
 // A search box is a worse cold start than a hand was: a psychic who has never
 // looked at the shared list has nothing to type. So the empty state is a handful

@@ -117,7 +117,3 @@ export async function prepareQuestions(players, {
     themeless,
   };
 }
-
-export function clearThemeCache() {
-  storage.removeItem(THEME_CACHE_KEY);
-}

@@ -44,7 +44,7 @@ export const DEFAULT_PREFS = {
   popularity: DEFAULT_POPULARITY_ID,
   yearFrom: YEAR_MIN,
   yearTo: YEAR_MAX,
-  // Plumbed through prepareQuestions since the first release and never exposed.
+  // Caps how many of one show's themes a round may draw (see pickRound).
   maxPerAnime: 2,
 };
 // Deliberately absent: allowSpoilers / allowNsfw. They gated on AnimeThemes'
