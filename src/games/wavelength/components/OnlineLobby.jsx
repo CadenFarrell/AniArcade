@@ -3,9 +3,9 @@ import SettingsFooter from '../../../shared/components/SettingsFooter';
 import SettingHelp, { DetailToggle } from '../../../shared/components/SettingHelp';
 import { useGamePrefs } from '../../../shared/hooks/useGamePrefs';
 import { useRepublishProfile } from '../../../shared/hooks/useRepublishProfile';
+import { HostWaitCard, ListBadge, PlayerRoster, RoomCode } from '../../../shared/components/Lobby';
 import {
-  Backdrop, Badge, Banner, Button, Card, CardRow, Checkbox, Field, NumberInput,
-  Screen, Wordmark,
+  Backdrop, Banner, Button, Card, Checkbox, Field, NumberInput, Screen, Wordmark,
 } from '../../../shared/ui';
 import ClueModePicker from './ClueModePicker';
 import { SETTING_HELP, poolTooSmall, sharedOnlyHelp } from '../help';
@@ -15,8 +15,9 @@ import {
 import { MIN_PLAYERS, needsCardPool } from '../rules';
 import { CARD_POOLS, MIN_CARD_POOL, eligibleCards, poolNoun } from '../utils/cards';
 
-// The online lobby. Mirrors AniFake's: room code to share, live player list,
-// host-only settings and Start.
+// The online lobby. The room code, roster and guest wait card are
+// shared/components/Lobby.jsx; what lives here is AniWave's own host-only
+// settings, its Start gates and Start.
 //
 // This lobby offers a SUPERSET of the local setup screen — the timer only makes
 // sense here, where everyone dials at once, rather than on a hot seat being
@@ -77,39 +78,20 @@ export default function OnlineLobby({ room }) {
       <Screen>
         <Wordmark tone="purple" size="md" className="mb-8">AniWave</Wordmark>
 
-        <div className="mb-8 text-center">
-          <p className="mb-3 text-fg-helper">Share this code with the other players:</p>
-          <span className="sticker inline-block bg-pop-lime px-6 py-3 text-4xl tracking-[0.3em] text-ink">
-            {room.roomCode}
-          </span>
-        </div>
+        <RoomCode code={room.roomCode} />
 
-        <Card title={`Players (${active.length})`} padding="lg" className="mb-6">
-          {players.map((p) => {
-            const status = statuses[p.id] ?? 'active';
-            const here = status === 'active' || status === 'dropping';
-            const shows = (p.animeList || []).length;
-            return (
-              <CardRow key={p.id} className={here ? '' : 'opacity-40'}>
-                <span className="min-w-0 flex-1 truncate text-white">
-                  {p.id === room.hostId && <span title="Host">👑 </span>}
-                  {p.name}{' '}
-                  {p.id === room.myPlayerId && <span className="text-pop-purple">(you)</span>}
-                </span>
-                {/* Only in the modes that deal — a list badge on a typed-clue
-                    round is a warning about nothing. Whoever it names is the
-                    person who has to go and import, so it has to be per-row. */}
-                {needsCards && here && (
-                  <Badge tone={shows ? 'lime' : 'amber'}>
-                    {shows ? `${shows} shows` : '⚠️ No list'}
-                  </Badge>
-                )}
-                {status === 'dropping' && <Badge tone="amber">Reconnecting…</Badge>}
-                {!here && <Badge tone="neutral">Left</Badge>}
-              </CardRow>
-            );
-          })}
-        </Card>
+        <PlayerRoster
+          room={room}
+          players={players}
+          active={active}
+          statuses={statuses}
+          tone="purple"
+          minPlayers={MIN_PLAYERS}
+          // Only in the modes that deal — a list badge on a typed-clue round is
+          // a warning about nothing. Whoever it names is the person who has to
+          // go and import, so it has to be per-row.
+          badgeFor={needsCards ? (p) => <ListBadge count={(p.animeList || []).length} /> : undefined}
+        />
 
         {room.isHost ? (
           <>
@@ -245,9 +227,7 @@ export default function OnlineLobby({ room }) {
             </Button>
           </>
         ) : (
-          <p className="text-center text-base text-fg-helper">
-            Waiting for {room.hostName || 'the host'} to start…
-          </p>
+          <HostWaitCard hostName={room.hostName} />
         )}
       </Screen>
     </>

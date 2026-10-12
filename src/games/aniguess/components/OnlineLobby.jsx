@@ -1,17 +1,13 @@
 import { useState } from 'react';
-import { useProfileStore } from '../../../shared/context/profileContext';
-import AniListImport from '../../../shared/components/AniListImport';
+import { HostWaitCard, ListBadge, LobbyImport, PlayerRoster, RoomCode } from '../../../shared/components/Lobby';
 import SettingsFooter from '../../../shared/components/SettingsFooter';
 import { useGamePrefs } from '../../../shared/hooks/useGamePrefs';
 import { useRepublishProfile } from '../../../shared/hooks/useRepublishProfile';
 import { normalizeTitle } from '../../../shared/utils/ranking';
 import { DEFAULT_PREFS, POSITIONS } from '../prefs';
-import {
-  Backdrop, Badge, Banner, Button, Card, CardRow, Checkbox, NumberInput, Screen, Wordmark,
-} from '../../../shared/ui';
+import { Backdrop, Banner, Button, Card, CardRow, Checkbox, NumberInput, Screen, Wordmark } from '../../../shared/ui';
 
 export default function OnlineLobby({ room }) {
-  const { activeProfile, saveProfile } = useProfileStore();
   // Shares one saved set with PlayerSetup, which offers three more options than
   // this lobby does (the timer and talk mode). savePrefs merges rather than
   // replaces precisely so hosting a room cannot wipe those.
@@ -19,9 +15,6 @@ export default function OnlineLobby({ room }) {
   const [sharedShowsOnly, setSharedShowsOnly] = useState(prefs.sharedShowsOnly);
   const [twoStepRandom, setTwoStepRandom] = useState(prefs.twoStepRandom);
   const [pointsPerPosition, setPointsPerPosition] = useState(prefs.pointsPerPosition);
-  // null | 'pick' | 'refresh' — same shape ListManager uses, so the one-tap
-  // refresh path behaves identically wherever you reach it from.
-  const [importMode, setImportMode] = useState(null);
 
   const settings = { sharedShowsOnly, twoStepRandom, pointsPerPosition };
 
@@ -82,81 +75,20 @@ export default function OnlineLobby({ room }) {
           🌐 Room Lobby
         </Wordmark>
 
-        <div className="mb-8 text-center">
-          <p className="mb-3 text-fg-helper">Share this code with the other players:</p>
-          <span className="sticker inline-block bg-pop-lime px-6 py-3 text-4xl text-ink tracking-[0.3em]">
-            {room.roomCode}
-          </span>
-        </div>
+        <RoomCode code={room.roomCode} />
 
-        <Card title={`Players (${active.length})`} padding="lg" className="mb-6">
-          {players.map((p) => {
-            const chars = charCount(p);
-            const status = statuses[p.id] ?? 'active';
-            const here = status === 'active' || status === 'dropping';
-            return (
-              <CardRow key={p.id} className={here ? '' : 'opacity-40'}>
-                <span className="text-white">
-                  {p.id === room.hostId && <span title="Host">👑 </span>}
-                  {p.name}{' '}
-                  {p.id === room.myPlayerId && <span className="text-pop-purple">(you)</span>}
-                </span>
-                {status === 'dropping' && <Badge tone="amber">🔌 Reconnecting…</Badge>}
-                {!here && <Badge tone="red">Left</Badge>}
-                {status === 'active' && (
-                  <Badge tone={chars > 0 ? 'lime' : 'amber'}>
-                    {chars > 0 ? `${chars} chars` : '⚠️ No chars'}
-                  </Badge>
-                )}
-              </CardRow>
-            );
-          })}
-          {active.length < 2 && (
-            <p className="mt-3 text-sm text-fg-subtle">Waiting for more players to join…</p>
-          )}
-        </Card>
+        <PlayerRoster
+          room={room}
+          players={players}
+          active={active}
+          statuses={statuses}
+          tone="purple"
+          badgeFor={(p) => <ListBadge count={charCount(p)} unit="chars" empty="⚠️ No chars" />}
+        />
 
-        {/* Kept here even though the hub can import too: the lobby is where you
-            find out you have a problem — the ⚠️ No chars badge and the "every
-            player needs a character" banner both render on this screen. */}
-        <div className="mb-6 flex gap-3">
-          <Button
-            variant="neutral"
-            size="md"
-            fullWidth
-            onClick={() => setImportMode('pick')}
-            disabled={!activeProfile}
-          >
-            🔗 Import my list from AniList
-          </Button>
-          {activeProfile?.anilistUsername && (
-            <Button
-              variant="neutral"
-              size="md"
-              className="flex-shrink-0 whitespace-nowrap"
-              onClick={() => setImportMode('refresh')}
-            >
-              🔄 Refresh
-            </Button>
-          )}
-        </div>
+        <LobbyImport />
 
-        {/* Only the host picks the settings and starts the game. Everyone else
-            gets a read-only wait: the settings were per-device before, which
-            read as a free-for-all — whoever hit Start first silently imposed
-            their point values on the whole table. */}
-        {!room.isHost && (
-          <Card padding="lg" className="mb-6 text-center">
-            <div className="mb-2 text-4xl">👑</div>
-            <p className="font-display text-lg font-extrabold text-white">
-              {room.hostName ? `${room.hostName} is the host` : 'Waiting for the host'}
-            </p>
-            <p className="mt-1 text-fg-helper">
-              The host picks the settings, then starts the game. Import your list above so
-              you&apos;re ready.
-            </p>
-          </Card>
-        )}
+        {!room.isHost && <HostWaitCard hostName={room.hostName} needsList />}
 
         {room.isHost && (<>
         <Card title="⚙️ Settings" padding="lg" className="mb-6">
@@ -223,23 +155,6 @@ export default function OnlineLobby({ room }) {
           🎮 Start Game
         </Button>
         </>)}
-
-        {/* Imports into the profile, never into `me`: the room copy is a
-            join-time snapshot that has been through RTDB, and merging out of it
-            would roll back any hub-side edit made since and drop the
-            anilistImportedIds/anilistImportSettings the checklist reads. The
-            effect above republishes it. */}
-        {importMode && activeProfile && (
-          <AniListImport
-            profile={activeProfile}
-            autoRefresh={importMode === 'refresh'}
-            onClose={() => setImportMode(null)}
-            onImported={(merged) => {
-              saveProfile(merged);
-              setImportMode(null);
-            }}
-          />
-        )}
       </Screen>
     </>
   );

@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useGamePrefs } from '../../../shared/hooks/useGamePrefs';
+import { HostWaitCard, PlayerRoster, RoomCode } from '../../../shared/components/Lobby';
 import {
-  Backdrop, Badge, Banner, Button, Card, CardRow, Screen, Wordmark,
+  Backdrop, Banner, Button, Screen, Wordmark,
 } from '../../../shared/ui';
 import AniTagSettings from './AniTagSettings';
 import CategoryEditor from './CategoryEditor';
@@ -10,8 +11,9 @@ import { NO_LIST_NEEDED } from '../help';
 import { DEFAULT_PREFS, POOL_LABELS } from '../prefs';
 import { MIN_PLAYERS } from '../rules';
 
-// The online lobby. Mirrors AniWave's and AniFake's: room code to share, live
-// player list, host-only settings and Start.
+// The online lobby. The room code, roster and guest wait card are
+// shared/components/Lobby.jsx; what lives here is AniTag's own banner, settings
+// and Start.
 //
 // THE SETTINGS CARD IS NOT HERE — it is AniTagSettings, shared with the local
 // setup screen. It used to be a hundred lines duplicated between the two files,
@@ -65,35 +67,21 @@ export default function OnlineLobby({ room }) {
       <Screen>
         <Wordmark tone="lime" size="md" className="mb-8">AniTag</Wordmark>
 
-        <div className="mb-8 text-center">
-          <p className="mb-3 text-fg-helper">Share this code with the other players:</p>
-          <span className="sticker inline-block bg-pop-lime px-6 py-3 text-4xl tracking-[0.3em] text-ink">
-            {room.roomCode}
-          </span>
-        </div>
+        <RoomCode code={room.roomCode} />
 
         <Banner tone="info" className="mb-6">{NO_LIST_NEEDED}</Banner>
 
-        <Card title={`Players (${active.length})`} padding="lg" className="mb-6">
-          {players.map((p) => {
-            const status = statuses[p.id] ?? 'active';
-            const here = status === 'active' || status === 'dropping';
-            return (
-              <CardRow key={p.id} className={here ? '' : 'opacity-40'}>
-                <span className="min-w-0 flex-1 truncate text-white">
-                  {p.id === room.hostId && <span title="Host">👑 </span>}
-                  {p.name}{' '}
-                  {p.id === room.myPlayerId && <span className="text-pop-lime">(you)</span>}
-                </span>
-                {/* No list badge, unlike every other lobby in the arcade —
-                    nothing here reads an anime list, so it would be a warning
-                    about nothing and would contradict the banner above. */}
-                {status === 'dropping' && <Badge tone="amber">Reconnecting…</Badge>}
-                {!here && <Badge tone="neutral">Left</Badge>}
-              </CardRow>
-            );
-          })}
-        </Card>
+        {/* No badgeFor, unlike every other lobby in the arcade — nothing here
+            reads an anime list, so a list badge would be a warning about
+            nothing and would contradict the banner above. */}
+        <PlayerRoster
+          room={room}
+          players={players}
+          active={active}
+          statuses={statuses}
+          tone="lime"
+          minPlayers={MIN_PLAYERS}
+        />
 
         {room.isHost ? (
           <>
@@ -112,9 +100,7 @@ export default function OnlineLobby({ room }) {
             )}
           </>
         ) : (
-          <p className="mb-6 text-center text-base text-fg-helper">
-            Waiting for {room.hostName || 'the host'} to start…
-          </p>
+          <HostWaitCard hostName={room.hostName} />
         )}
 
         <CategoryEditor

@@ -1,6 +1,5 @@
 import { useMemo, useState } from 'react';
-import { useProfileStore } from '../../../shared/context/profileContext';
-import AniListImport from '../../../shared/components/AniListImport';
+import { HostWaitCard, ListBadge, LobbyImport, PlayerRoster, RoomCode } from '../../../shared/components/Lobby';
 import SettingsFooter from '../../../shared/components/SettingsFooter';
 import SettingHelp, { DetailToggle } from '../../../shared/components/SettingHelp';
 import { useGamePrefs } from '../../../shared/hooks/useGamePrefs';
@@ -13,15 +12,12 @@ import { FAME_LEVELS, getFame } from '../fame';
 import { SETTING_HELP } from '../help';
 import { DEFAULT_PREFS } from '../prefs';
 import { MAX_CLUE_ROUNDS, minPool, MIN_PLAYERS } from '../rules';
-import {
-  Backdrop, Badge, Banner, Button, Card, CardRow, Checkbox, Field, NumberInput, Screen,
-  Select, Wordmark,
-} from '../../../shared/ui';
+import { Backdrop, Banner, Button, Card, Checkbox, Field, NumberInput, Screen, Select, Wordmark } from '../../../shared/ui';
 
-// The online lobby. Mirrors AniRank's: room code to share, live player list,
-// host-only settings and Start.
+// The online lobby. The room code, roster, list import and guest wait card are
+// shared/components/Lobby.jsx; what lives here is AniFake's own host-only
+// settings, its Start gates and Start.
 export default function OnlineLobby({ room }) {
-  const { activeProfile, saveProfile } = useProfileStore();
   // Shares one saved set with the local setup screen. This lobby offers a subset
   // of it (no talk mode), which is why savePrefs merges rather than replaces —
   // hosting a room must not wipe the settings only local play can reach.
@@ -31,7 +27,6 @@ export default function OnlineLobby({ room }) {
   const [laps, setLaps] = useState(prefs.laps);
   const [fame, setFame] = useState(prefs.fame);
   const [allowRedeal, setAllowRedeal] = useState(prefs.allowRedeal);
-  const [importMode, setImportMode] = useState(null); // null | 'pick' | 'refresh'
 
   const settings = { mode, laps, sharedOnly, fame, allowRedeal };
 
@@ -83,76 +78,21 @@ export default function OnlineLobby({ room }) {
           🌐 AniFake Lobby
         </Wordmark>
 
-        <div className="mb-8 text-center">
-          <p className="mb-3 text-fg-helper">Share this code with the other players:</p>
-          <span className="sticker inline-block bg-pop-lime px-6 py-3 text-4xl text-ink tracking-[0.3em]">
-            {room.roomCode}
-          </span>
-        </div>
+        <RoomCode code={room.roomCode} />
 
-        <Card title={`Players (${active.length})`} padding="lg" className="mb-6">
-          {players.map((p) => {
-            const shows = showCount(p);
-            const status = statuses[p.id] ?? 'active';
-            const here = status === 'active' || status === 'dropping';
-            return (
-              <CardRow key={p.id} className={here ? '' : 'opacity-40'}>
-                <span className="text-white">
-                  {p.id === room.hostId && <span title="Host">👑 </span>}
-                  {p.name}{' '}
-                  {p.id === room.myPlayerId && <span className="text-pop-teal">(you)</span>}
-                </span>
-                {status === 'dropping' && <Badge tone="amber">🔌 Reconnecting…</Badge>}
-                {!here && <Badge tone="red">Left</Badge>}
-                {status === 'active' && (
-                  <Badge tone={shows > 0 ? 'lime' : 'amber'}>
-                    {shows > 0 ? `${shows} shows` : '⚠️ No list'}
-                  </Badge>
-                )}
-              </CardRow>
-            );
-          })}
-          {active.length < MIN_PLAYERS && (
-            <p className="mt-3 text-sm text-fg-subtle">
-              Waiting for more players — AniFake needs {MIN_PLAYERS}.
-            </p>
-          )}
-        </Card>
+        <PlayerRoster
+          room={room}
+          players={players}
+          active={active}
+          statuses={statuses}
+          tone="teal"
+          badgeFor={(p) => <ListBadge count={showCount(p)} />}
+          minPlayers={MIN_PLAYERS}
+        />
 
-        <div className="mb-6 flex gap-3">
-          <Button
-            variant="neutral"
-            size="md"
-            fullWidth
-            onClick={() => setImportMode('pick')}
-            disabled={!activeProfile}
-          >
-            🔗 Import my list from AniList
-          </Button>
-          {activeProfile?.anilistUsername && (
-            <Button
-              variant="neutral"
-              size="md"
-              className="flex-shrink-0 whitespace-nowrap"
-              onClick={() => setImportMode('refresh')}
-            >
-              🔄 Refresh
-            </Button>
-          )}
-        </div>
+        <LobbyImport />
 
-        {!room.isHost && (
-          <Card padding="lg" className="mb-6 text-center">
-            <div className="mb-2 text-4xl">👑</div>
-            <p className="font-display text-lg font-extrabold text-white">
-              {room.hostName ? `${room.hostName} is the host` : 'Waiting for the host'}
-            </p>
-            <p className="mt-1 text-fg-helper">
-              The host picks the settings and starts the game. Import your list above so
-              you&apos;re ready.
-            </p>
-          </Card>
-        )}
+        {!room.isHost && <HostWaitCard hostName={room.hostName} needsList />}
 
         {room.isHost && (
           <>
@@ -275,21 +215,6 @@ export default function OnlineLobby({ room }) {
               🎮 Start Game
             </Button>
           </>
-        )}
-
-        {/* Imports into the profile, never into `me` — the room copy is a
-            join-time snapshot that has been through RTDB. The effect above
-            republishes it. */}
-        {importMode && activeProfile && (
-          <AniListImport
-            profile={activeProfile}
-            autoRefresh={importMode === 'refresh'}
-            onClose={() => setImportMode(null)}
-            onImported={(merged) => {
-              saveProfile(merged);
-              setImportMode(null);
-            }}
-          />
         )}
       </Screen>
     </>
