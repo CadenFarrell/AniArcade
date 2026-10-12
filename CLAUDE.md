@@ -25,6 +25,7 @@ npm run build         # production build into dist/
 npm run preview       # serve the built dist/
 npm run lint          # ESLint over the project
 npm test              # vitest run (one pass, no watch)
+npm run test:smoke    # online hooks vs the Firebase emulator (starts and stops it; ~90s)
 npm run generate      # regenerate seedProfiles.js from AniList (Node script)
 npm run generate:facts # regenerate the fact pack in public/facts/ (Node script)
 ```
@@ -48,6 +49,19 @@ its hub tile into local setup and back. Two traps it already hit: vitest 3 runs 
 own bundled Vite 7, so the `mode === 'test'` esbuild JSX line in `vite.config.js` is what
 makes JSX compile at all, and vitest loads `.env.local` (production Firebase), so a
 component test must `vi.mock('shared/services/firebase')` before anything mounts.
+
+`smoke/` is the online half, and it is kept out of `npm test` on purpose: it needs an
+emulator and sits out the 20s `GRACE_MS` again and again. It has its own
+`smoke/vitest.config.js`, and `test:smoke` wraps it in `firebase emulators:exec`, so each
+run gets a fresh database. `harness.js` mounts the game's REAL online hook once per
+simulated device with `renderHook`. Before each mount it runs `vi.resetModules` and
+`doMock`s the firebase service, giving every device its own named app and anonymous uid.
+It also gives each device in-memory storage. So the security rules see N separate
+members, and a refresh restores that one device's saved room. `crash()` is a closed tab:
+`goOffline`, so the server runs the `onDisconnect` write, then an unmount that runs no
+exits. Write scenarios against the hook's return value, the way `OnlineGame.jsx` drives
+it. Never `await` an `act()` that might not resolve: it holds every React update in the
+process.
 
 Firebase (online rooms only):
 

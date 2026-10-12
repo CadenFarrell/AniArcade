@@ -9,6 +9,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest run",
+    "test:smoke": "firebase emulators:exec --only database,auth --project demo-aniguess \"vitest run --config smoke/vitest.config.js\"",
     "generate": "node generateProfiles.js",
     "generate:facts": "node generateFacts.js"
   },
