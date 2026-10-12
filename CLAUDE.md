@@ -111,8 +111,9 @@ descriptor.** `icon` is still the emoji string and nothing about that shape chan
 `GameIcon` returns `null` when it finds no entry and the tile falls back to the emoji, so a
 game added tomorrow has a working tile the day it lands and drawing it one later is a
 single entry. The shapes live in a `.js` rather than in JSX for `wavelength/utils/arc.js`'s
-reason: vitest only runs `src/**/*.test.js` under `environment: 'node'`, so anything
-defined in a `.jsx` is untestable by construction.
+reason: a `.js` module can be checked directly by a plain `.test.js` under `node`, while
+anything defined inside a `.jsx` can only be reached by mounting it in a jsdom component
+test. That is slower, and it checks what got rendered rather than the data itself.
 
 `gameIcons.test.js` earns its place because **every failure here is silent.** A mistyped
 key is indistinguishable from a game nobody has drawn yet, and "the icon never appeared" is
@@ -399,7 +400,9 @@ button and a guest's draft would otherwise pre-place their dial in the round aft
 the one `GuessView` renders drains to the real deadline, because that is the number the table was
 promised, and a second one offset by the grace gates the reveal and nothing else. The duration
 lives in `rules.js` and the instant does not, for the reason `startRound` reads `deadline` and
-never invents one.
+never invents one. `OnlineGame.test.jsx` pins the auto-lock and the draft reset against a
+mocked room. Neither the smoke suite nor `rules.test.js` can reach them, because they live in
+the view-router.
 
 **Local and online are symmetric, and that is what keeps the game small.** `dials` is
 `{ [playerId]: number }` in both — online each guesser writes their own, locally each writes
@@ -430,7 +433,8 @@ Three traps worth knowing before touching it.
 - **A background tab does not run `requestAnimationFrame`.** The reveal's score count-up froze
   every total at `+0` until the player looked back at it, which self-heals — and that is what
   made it dangerous, since a screenshot or a second monitor showed a table where nobody scored.
-  `prefersStill()` treats `document.hidden` exactly like `prefers-reduced-motion`. Correctness
+  `prefersStill()` treats `document.hidden` exactly like `prefers-reduced-motion`, and
+  `components/RevealScreen.test.jsx` pins it with a `requestAnimationFrame` that never fires. Correctness
   must never depend on an animation completing; an animation nobody can see is worth nothing.
   The band and marker keyframes have the matching property by construction — they animate
   **from** a start state with no `to`, so removing the animation leaves the finished picture
@@ -961,9 +965,10 @@ change resets `blind` and the state has to live beside the axis it is coupled to
 that only decides which screen renders (`talkMode`) or how a pool is drawn (`sharedOnly`,
 `fame`) stays out of round state.
 
-Anything derived from a pref that is worth testing has to live in a `.js` module — the vitest
-config only runs `src/**/*.test.js` — which is why `prefs.js` and `fame.js` are separate files
-from the screens that read them.
+Anything derived from a pref that is worth testing belongs in a `.js` module, which is why
+`prefs.js` and `fame.js` are separate files from the screens that read them. A component test
+*could* reach it through the screen now (see Commands), but only by mounting that whole
+screen under jsdom just to check one derived value. A pure `.test.js` checks it directly.
 
 **A setting's note comes in two tiers, and `shared/components/SettingHelp.jsx` is the only
 place either one is styled.** Every setup screen and lobby used to hand-place a `<p
