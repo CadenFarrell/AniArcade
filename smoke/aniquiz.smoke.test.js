@@ -4,7 +4,10 @@ import { device, profile, seatTable, until, sleep, GRACE_WAIT, syncErrors, REPO 
 
 const HOOK = ['src/games/aniquiz/hooks/useQuizRoom.js', 'useQuizRoom'];
 const { indexPack } = await import(/* @vite-ignore */ `${REPO}/src/shared/utils/facts.js`);
-const PACK = indexPack(JSON.parse(fs.readFileSync(`${REPO}/public/facts/pack-v2.json`, 'utf8')));
+// Whichever pack the manifest names, so a regeneration is tested rather than
+// the file it replaced.
+const readFacts = (file) => JSON.parse(fs.readFileSync(`${REPO}/public/facts/${file}`, 'utf8'));
+const PACK = indexPack(readFacts(readFacts('index.json').current));
 
 const BASE = {
   format: 'board', answerStyle: 'choice', pool: 'everything', categories: 2, quizLength: 5,

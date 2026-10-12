@@ -1154,7 +1154,7 @@ question.** `generateFacts.js` (Node, `npm run generate:facts`) writes a pack, `
 serves it as a static file, `shared/services/factPack.js` loads it, and
 `shared/utils/facts.js` holds every pure part of it.
 
-**The pack is populated — 441 shows, 1412 characters, 11890 facts per `index.json` — and
+**The pack is populated — 441 shows, 1412 characters, 11995 facts per `index.json` — and
 AniQuiz is its one reader** (see its section). A consumer must still treat a missing entry as
 normal rather than as a failed load: most of what a player imports will not be among 441
 shows, and `factsFor` falls closed on an empty key list for exactly that case.
@@ -1164,6 +1164,19 @@ list's own order — the `anilist-popular-p*.json` pages already in `.facts-cach
 needed no fetch. It is pricing data, not clue material. A catalog show outside the top N has
 no rank, and a reader must treat that as *obscure*, never as *unknown and therefore easy*.
 v1 was deleted rather than kept beside it: nothing had ever read it.
+
+`pack-v3` pages the staff list. `MEDIA_QUERY` fetches 20 staff entries by relevance, and on
+a big production those are all directors and designers — Frieren's "Music" credit is entry 26
+— so v2 had no composer for one show in five, Demon Slayer and Spirited Away included.
+`allStaffEdges` in `factSources/anilist.js` fetches further pages only while a credit is
+missing, at the **same 20 per page** (page 2 at 25 would start at entry 26 and skip 21–25), and
+roles are matched trimmed, because some arrive as `"Music "`. Composer went from 79% to 98%
+of shows and director from 93% to 98%, with no v2 value changed. Series composition stayed at
+79%: the rest are films, or shows that credit their writer as "Script", which is a different
+credit and is deliberately not read as one. That measurement is also why the outside source
+(Wikidata vs Jikan) is still undecided — the gaps it was meant to fill were ours. v2 was
+deleted: the loader fetches `index.json` with `no-store`, so nothing asks for an old pack by
+name.
 
 It shipped empty at first, and the reason is worth knowing before the next 403. AniList
 answers any request carrying **no `Referer`** with a 403 claiming the API is "temporarily
@@ -1351,7 +1364,7 @@ lockfile:
 | `seedProfiles.js` | ~22K lines / ~950 KB | generated console seed script |
 | `.anilist-cache/` | ~130 files / ~1.7 MB | raw AniList API responses (gitignored) |
 | `.facts-cache/` | grows with the catalog | same, for `generateFacts.js` (gitignored) |
-| `public/facts/pack-v2.json` | ~30K lines / ~740 KB | generated fact pack |
+| `public/facts/pack-v3.json` | ~30K lines / ~720 KB | generated fact pack |
 | `package-lock.json` | ~13K lines / ~460 KB | npm lockfile |
 
 None of them carries architectural information. `Grep` them for a specific key when you

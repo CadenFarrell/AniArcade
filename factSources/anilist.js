@@ -1,10 +1,15 @@
 #!/usr/bin/env node
 // The one fact source implemented today.
 //
-// The Wikidata-vs-Jikan choice is deliberately still deferred — it is a
-// licence-versus-coverage trade that cannot be settled without real clues to aim
-// it at. A second source is a second file in this directory exporting the same
-// `collect`, and nothing in generateFacts.js changes.
+// The Wikidata-vs-Jikan choice is still deferred, and now for a measured
+// reason. Once AniQuiz gave the pack real clues to aim at, the worst gaps
+// (composer and series composition, each missing on about one show in five)
+// turned out to be THIS adapter reading only the first page of staff, not
+// AniList lacking the credit — see STAFF_QUERY. Wikidata, measured against the
+// same 441 shows, had a composer for under half of them. So the outside source
+// waits until the gaps left after paging are known. A second source is a second
+// file in this directory exporting the same `collect`, and nothing in
+// generateFacts.js changes.
 //
 // Why AniList is the first source rather than an odd one out: the import
 // deliberately shipped only a "cheap tier" of per-show fields, because every
@@ -44,6 +49,30 @@ query ($id: Int) {
   }
 }`;
 
+// Later pages of one show's staff, fetched only while a credit in STAFF_ROLES is
+// still missing. MEDIA_QUERY's first page is 20 entries sorted by RELEVANCE, and
+// on a big production that page is all directors and designers: Frieren's
+// "Music: Evan Call" is entry 26. That one page was why Frieren, Demon Slayer
+// and Spirited Away shipped with no composer at all.
+//
+// The page size MUST stay MEDIA_QUERY's 20. Pages are offsets of perPage, so
+// page 2 at 25 would start at entry 26 and silently skip 21–25.
+const STAFF_PAGE_SIZE = 20;
+const STAFF_QUERY = `
+query ($id: Int, $page: Int) {
+  Media(id: $id, type: ANIME) {
+    staff(sort: RELEVANCE, perPage: ${STAFF_PAGE_SIZE}, page: $page) {
+      pageInfo { hasNextPage }
+      edges { role node { name { full } } }
+    }
+  }
+}`;
+
+// A ceiling, not a target: 100 entries. A film has no "Series Composition" and
+// a short has no composer, so the search for a credit that does not exist has
+// to stop somewhere. Paging stops sooner the moment every credit is found.
+const MAX_STAFF_PAGES = 5;
+
 const POPULAR_QUERY = `
 query ($page: Int, $perPage: Int) {
   Page(page: $page, perPage: $perPage) {
@@ -52,7 +81,10 @@ query ($page: Int, $perPage: Int) {
   }
 }`;
 
-// Staff `role` is free text, so match rather than compare. First match wins:
+// Staff `role` is free text, so match rather than compare — and match it
+// trimmed: Chainsaw Man credits its composer as "Music " with a trailing space,
+// which an anchored /^music$/ never matched, so the show shipped with no
+// composer however many staff pages were read. First match wins:
 // the connection is sorted by RELEVANCE, so the first Director listed is the
 // one the show is actually credited to rather than a per-episode director.
 const STAFF_ROLES = [
@@ -67,9 +99,11 @@ const STAFF_ROLES = [
 const TAG_RANK_FLOOR = 60;
 const MAX_TAGS = 6;
 
+const roleOf = (edge) => (edge?.role || '').trim();
+
 const filled = (v) => (typeof v === 'string' && v.trim() ? v.trim() : null);
 
-function showRows(key, media) {
+function showRows(key, media, staffEdges) {
   const rows = [];
   const add = (field, value) => { if (value != null) rows.push({ kind: 'show', key, field, value }); };
 
@@ -78,9 +112,8 @@ function showRows(key, media) {
   const producers = studioEdges.filter((e) => !e.isMain).map((e) => filled(e.node?.name)).filter(Boolean);
   if (producers.length) add('producers', producers);
 
-  const staffEdges = media.staff?.edges ?? [];
   for (const [field, pattern] of STAFF_ROLES) {
-    const hit = staffEdges.find((e) => pattern.test(e.role || ''));
+    const hit = staffEdges.find((e) => pattern.test(roleOf(e)));
     add(field, filled(hit?.node?.name?.full));
   }
 
@@ -134,6 +167,47 @@ function characterRows(media, showKey, meta) {
   return rows;
 }
 
+const staffMissing = (edges, have) =>
+  STAFF_ROLES.filter(([field, pattern]) => !have.has(field) && !edges.some((e) => pattern.test(roleOf(e))));
+
+/**
+ * One show's staff, paged until every STAFF_ROLES credit is found or the list
+ * runs out. Page 1 is the MEDIA_QUERY response already in hand; later pages are
+ * cached one file each, so a regeneration over a warm cache stays offline.
+ *
+ * `have` is the credits this subject key already holds from an earlier season:
+ * a sequel does not page through its whole crew hunting for a composer that
+ * first-write-wins will shadow anyway.
+ *
+ * Order is preserved — page 1 first — so "first match wins" still means "most
+ * relevant credit wins".
+ */
+async function allStaffEdges(media, have, { cache, log }) {
+  const edges = [...(media.staff?.edges ?? [])];
+  // A short first page is the whole list. (The cached MEDIA_QUERY responses
+  // predate asking for pageInfo, so a full page is the only signal they carry.)
+  let more = edges.length === STAFF_PAGE_SIZE;
+  for (let page = 2; more && page <= MAX_STAFF_PAGES && staffMissing(edges, have).length; page++) {
+    const file = `anilist-staff-${media.id}-p${page}.json`;
+    let data = cache.read(file);
+    if (!data) {
+      try {
+        data = await anilistRequest(STAFF_QUERY, { id: media.id, page });
+      } catch (err) {
+        // Keep what is already in hand. A failed page costs this show a credit,
+        // never the show.
+        log(`      staff page ${page} failed: ${err.message}`);
+        break;
+      }
+      cache.write(file, data);
+    }
+    const staff = data?.Media?.staff;
+    edges.push(...(staff?.edges ?? []));
+    more = Boolean(staff?.pageInfo?.hasNextPage);
+  }
+  return edges;
+}
+
 /** The top `limit` anime by popularity, as AniList ids. */
 export async function popularIds(limit, { cache, log }) {
   const PER_PAGE = 50;
@@ -165,6 +239,9 @@ export async function popularIds(limit, { cache, log }) {
 export async function collect(anilistIds, { cache, log, ranks = new Map() }) {
   const rows = [];
   const meta = { shows: {}, characters: {} };
+  // Staff credits each subject key already holds, so a later season only pages
+  // for what the canonical one lacked. See allStaffEdges.
+  const credited = new Map();
   let done = 0;
 
   for (const id of anilistIds) {
@@ -195,7 +272,14 @@ export async function collect(anilistIds, { cache, log, ranks = new Map() }) {
     if (!meta.shows[key]) meta.shows[key] = { anilistId: media.id, title };
 
     const before = rows.length;
-    rows.push(...showRows(key, media));
+    const have = credited.get(key) ?? new Set();
+    const staffEdges = await allStaffEdges(media, have, { cache, log });
+    const showRowsForMedia = showRows(key, media, staffEdges);
+    for (const row of showRowsForMedia) {
+      if (STAFF_ROLES.some(([field]) => field === row.field)) have.add(row.field);
+    }
+    credited.set(key, have);
+    rows.push(...showRowsForMedia);
     if (ranks.has(media.id)) rows.push({ kind: 'show', key, field: 'popularityRank', value: ranks.get(media.id) });
     rows.push(...characterRows(media, key, meta));
     log(`  [${done}/${anilistIds.length}] ${title} → ${rows.length - before} rows`);

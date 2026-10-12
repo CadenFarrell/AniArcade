@@ -4,7 +4,7 @@
  *
  * Regenerate with: npm run generate:facts  [-- --limit 500]
  *
- * Writes public/facts/pack-v1.json and public/facts/index.json. Both are checked
+ * Writes public/facts/pack-v<N>.json and public/facts/index.json. Both are checked
  * in: public/ is copied verbatim into dist/, so `firebase deploy --only hosting`
  * carries them with no bundler involvement, and the manifest indirection means a
  * data fix is two files rather than an app release.
@@ -33,9 +33,13 @@ const REVIEW_DIR = path.join(__dirname, 'facts');
 const OVERRIDES = path.join(REVIEW_DIR, 'overrides.json');
 const REJECTED = path.join(REVIEW_DIR, 'rejected.json');
 
-// v2 added popularityRank. A new file rather than a rewrite of v1, because the
-// pack file is the half that is cached hard — see factPack.js.
-const PACK_VERSION = 2;
+// v2 added popularityRank; v3 pages past the first 20 staff entries, filling
+// composer and series-composition credits v2 never reached. A new file rather
+// than a rewrite, because the pack file is the half that is cached hard — see
+// factPack.js. The file it replaces can simply be deleted: the loader fetches
+// index.json with `no-store`, so no browser ever asks for a superseded pack by
+// name.
+const PACK_VERSION = 3;
 const PACK_FILE = `pack-v${PACK_VERSION}.json`;
 const DEFAULT_LIMIT = 500;
 
