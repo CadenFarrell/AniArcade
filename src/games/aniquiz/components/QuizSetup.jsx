@@ -104,7 +104,7 @@ export default function QuizSetup({ pack, onStart, error, onBack }) {
 
         <QuizSettings
           values={settings}
-          onChange={(patch) => setSettings((s) => ({ ...s, ...patch }))}
+          onChange={(key, value) => setSettings((s) => ({ ...s, [key]: value }))}
           report={report}
           packStatus={pack.status}
           onRetryPack={pack.retry}

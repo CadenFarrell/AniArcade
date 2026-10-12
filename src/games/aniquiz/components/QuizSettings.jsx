@@ -8,9 +8,9 @@ import { Banner, Button, Card, Checkbox, Field, NumberInput, Select } from '../.
 
 // The format picker and both settings cards, rendered identically by QuizSetup
 // and the online lobby — AniTuneSettings' arrangement, for its reason: two
-// hand-kept copies of a settings card are a promise to drift.
+// hand-kept copies of a settings card are a promise to drift. Changes go out as
+// one onChange(key, value), the convention CLAUDE.md sets for settings cards.
 export default function QuizSettings({ values, onChange, report, packStatus, onRetryPack, players, disabled = false }) {
-  const set = (patch) => onChange(patch);
   const board = values.format === BOARD;
 
   return (
@@ -22,7 +22,7 @@ export default function QuizSettings({ values, onChange, report, packStatus, onR
             <button
               key={f.id}
               type="button"
-              onClick={() => set({ format: f.id })}
+              onClick={() => onChange('format', f.id)}
               disabled={disabled}
               aria-pressed={on}
               className={`focus-pop rounded-pop border-2 p-4 text-left transition-colors disabled:opacity-40
@@ -42,7 +42,7 @@ export default function QuizSettings({ values, onChange, report, packStatus, onR
             id="aniquiz-answer-style"
             value={values.answerStyle}
             disabled={disabled}
-            onChange={(e) => set({ answerStyle: e.target.value })}
+            onChange={(e) => onChange('answerStyle', e.target.value)}
           >
             {ANSWER_STYLES.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
           </Select>
@@ -60,7 +60,7 @@ export default function QuizSettings({ values, onChange, report, packStatus, onR
               max={CATEGORY_RANGE.max}
               value={values.categories}
               disabled={disabled}
-              onChange={(categories) => set({ categories })}
+              onChange={(categories) => onChange('categories', categories)}
             />
           </Field>
         ) : (
@@ -72,7 +72,7 @@ export default function QuizSettings({ values, onChange, report, packStatus, onR
               max={QUIZ_RANGE.max}
               value={values.quizLength}
               disabled={disabled}
-              onChange={(quizLength) => set({ quizLength })}
+              onChange={(quizLength) => onChange('quizLength', quizLength)}
             />
           </Field>
         )}
@@ -83,7 +83,7 @@ export default function QuizSettings({ values, onChange, report, packStatus, onR
               label="Daily Double"
               checked={values.dailyDouble}
               disabled={disabled}
-              onChange={(e) => set({ dailyDouble: e.target.checked })}
+              onChange={(e) => onChange('dailyDouble', e.target.checked)}
               className="mb-2"
             />
             <SettingHelp
@@ -98,7 +98,7 @@ export default function QuizSettings({ values, onChange, report, packStatus, onR
               label="Final round"
               checked={values.finalRound}
               disabled={disabled}
-              onChange={(e) => set({ finalRound: e.target.checked })}
+              onChange={(e) => onChange('finalRound', e.target.checked)}
               className="mb-2"
             />
             <SettingHelp
@@ -115,7 +115,7 @@ export default function QuizSettings({ values, onChange, report, packStatus, onR
           label="Timed answers"
           checked={values.timed}
           disabled={disabled}
-          onChange={(e) => set({ timed: e.target.checked })}
+          onChange={(e) => onChange('timed', e.target.checked)}
           className="mb-2"
         />
         <SettingHelp
@@ -135,7 +135,7 @@ export default function QuizSettings({ values, onChange, report, packStatus, onR
               step={5}
               value={values.answerSeconds}
               disabled={disabled}
-              onChange={(answerSeconds) => set({ answerSeconds })}
+              onChange={(answerSeconds) => onChange('answerSeconds', answerSeconds)}
             />
           </Field>
         )}
@@ -147,7 +147,7 @@ export default function QuizSettings({ values, onChange, report, packStatus, onR
             id="aniquiz-pool"
             value={values.pool}
             disabled={disabled}
-            onChange={(e) => set({ pool: e.target.value })}
+            onChange={(e) => onChange('pool', e.target.value)}
           >
             {POOLS.map((p) => <option key={p.id} value={p.id}>{p.label}</option>)}
           </Select>

@@ -60,7 +60,7 @@ export default function OnlineLobby({ room, pack }) {
           <>
             <QuizSettings
               values={settings}
-              onChange={(patch) => setSettings((s) => ({ ...s, ...patch }))}
+              onChange={(key, value) => setSettings((s) => ({ ...s, [key]: value }))}
               report={report}
               packStatus={pack.status}
               onRetryPack={pack.retry}
