@@ -219,9 +219,16 @@ badge reddens below what *this screen* needs, which is ten for a round and two f
 
 `anirank/tiers.js` is a second pure module beside `rules.js`, not an extension of it. A
 round deals ten cards and scores one board against an answer key; a tier list takes *every*
-eligible show or character, has no answer key at all, and is kept afterwards. It is local
-only — `format` in `prefs.js` routes `LocalGame` to `TierMode.jsx`, and the online path is
-untouched.
+eligible show or character, has no answer key at all, and is kept afterwards. **Building one
+is local and solo; comparing them is the only part that goes online.** Locally, `format` in
+`prefs.js` routes `LocalGame` to `TierMode.jsx`. Online, the host's `startCompare` moves the
+room to a `tiers` view that `RoomTiers.jsx` routes (publish → compare), where each player
+sends one saved list to `state/tierLists/{playerId}` and `RoomCompare` draws everyone's
+`compareLists` as a matrix. Nothing in a room edits a list — a list is every show on a
+profile, sorted over an hour, and a room is not where that happens — so `TierPublish` reads
+lists from localStorage and only chooses one. `startCompare` writes `tierLists: null`, so a
+list published two sessions ago can never be compared as if it were sent just now, and the
+room stays open, because publishing is not a turn and a late arrival can still join in.
 
 **One shape covers both formats, and that is the load-bearing decision.** A list is rows,
 each holding an ordered array of card ids; `format: 'ranked'` is *exactly one row* whose
