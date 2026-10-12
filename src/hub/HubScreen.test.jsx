@@ -9,6 +9,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { readFile } from 'node:fs/promises';
 import HubScreen from './HubScreen';
 import { games } from './registry';
 import { makeProfile, renderArcade, seedProfiles } from '../shared/testing/arcade';
@@ -28,9 +29,18 @@ const CRASH = /something went wrong/i;
 let errors;
 beforeEach(() => {
   localStorage.clear();
-  // Any network call from a local screen is a bug (see CLAUDE.md: with no
-  // Firebase config, local play touches no network at all). Fail it loudly.
-  vi.stubGlobal('fetch', vi.fn(() => Promise.reject(new Error('unexpected fetch'))));
+  // A network call from a local screen is a bug (see CLAUDE.md: with no
+  // Firebase config, local play touches no network at all) — with ONE
+  // exception: the fact pack, which is a static file the app serves itself
+  // and which the quiz must load to have any questions. Serve that from
+  // public/ on disk, so the real loader runs; fail everything else loudly.
+  vi.stubGlobal('fetch', vi.fn(async (url) => {
+    const path = String(url);
+    const at = path.indexOf('/facts/');
+    if (at === -1) throw new Error(`unexpected fetch: ${path}`);
+    const file = path.slice(at + 1).split(/[?#]/)[0];
+    return new Response(await readFile(`public/${file}`), { status: 200 });
+  }));
   // ErrorBoundary logs through console.error, as does React for a failed
   // render — collect both so a test can assert the screen was clean.
   errors = [];
@@ -85,7 +95,9 @@ describe.each(games.map((g) => [g.title, g]))('%s', (_title, game) => {
       expect(screen.queryByText(CRASH)).toBeNull();
       expect(screen.getByRole('button', { name: /hub/i })).toBeTruthy();
       expect(errors).toEqual([]);
-      expect(fetch).not.toHaveBeenCalled();
+      // Asserted, not left to the stub's throw: a caller that swallows a failed
+      // fetch would otherwise hide the request from this test entirely.
+      for (const [url] of fetch.mock.calls) expect(String(url)).toContain('/facts/');
     });
   }
 
