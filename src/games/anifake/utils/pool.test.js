@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
-  eligibleCharacters, fameFloor, famousCount, hasAnyFameData, hasFameSignal, hintFor,
-  pickDecoy, pickSecret,
+  eligibleCharacters, fameFloor, fameReport, famousCount, hasAnyFameData, hasFameSignal,
+  hintFor, pickDecoy, pickSecret, MIN_FAME_POOL,
 } from './pool';
 
 const seq = (...values) => {
@@ -364,5 +364,31 @@ describe('hintFor', () => {
     expect(hintFor({ genres: [] })).toBeNull();
     expect(hintFor({})).toBeNull();
     expect(hintFor(null)).toBeNull();
+  });
+});
+
+describe('fameReport', () => {
+  const entry = (favourites) => ({ id: `${favourites}`, role: 'Main', genres: [], favourites });
+
+  it('says nothing at all when the level is off', () => {
+    const pool = [entry(0), entry(0)];
+    expect(fameReport(pool, 'any')).toEqual({ blind: false, famous: 0, tooTight: false });
+  });
+
+  it('is blind when the pool cannot answer, but never on an empty pool', () => {
+    // An empty pool already has its own warning; a fame note on top of it would
+    // be blaming the level for a problem the lists have.
+    expect(fameReport([], 'known').blind).toBe(false);
+    expect(fameReport([entry(0), entry(0), entry(0)], 'known').blind).toBe(true);
+  });
+
+  it('flags a working level that leaves too few to draw from', () => {
+    const small = Array.from({ length: MIN_FAME_POOL }, (_, i) => entry(i + 1));
+    const report = fameReport(small, 'known');
+    expect(report.blind).toBe(false);
+    expect(report.famous).toBe(famousCount(small, 'known'));
+    expect(report.tooTight).toBe(report.famous < MIN_FAME_POOL);
+    const big = Array.from({ length: MIN_FAME_POOL * 4 }, (_, i) => entry(i + 1));
+    expect(fameReport(big, 'known').tooTight).toBe(false);
   });
 });

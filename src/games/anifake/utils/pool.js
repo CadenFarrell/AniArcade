@@ -193,6 +193,25 @@ export function famousCount(pool, fame = DEFAULT_FAME_ID) {
   return entries.filter((e) => (e?.favourites ?? 0) >= floor).length;
 }
 
+/**
+ * Everything a settings screen says about the fame level, in one call, so the
+ * local setup and the online lobby cannot disagree about when to warn.
+ *
+ * `blind`: the level is on but the pool cannot answer it — nothing carries a
+ * favourites count, or too little does (see fameFloor). The deal degrades to
+ * the role ladder rather than failing, so this is a note and never a gate.
+ * `famous`: what the level leaves; zero when it is narrowing nothing, so
+ * `famous > 0` doubles as "the setting is doing something".
+ * `tooTight`: the level is working but leaves fewer than MIN_FAME_POOL, so
+ * rounds will repeat. Warned, never enforced, for famousCount's reason.
+ */
+export function fameReport(pool, fame = DEFAULT_FAME_ID) {
+  const entries = pool ?? [];
+  const blind = fame !== 'any' && entries.length > 0 && !hasFameSignal(entries);
+  const famous = fame === 'any' ? 0 : famousCount(entries, fame);
+  return { blind, famous, tooTight: famous > 0 && famous < MIN_FAME_POOL };
+}
+
 // How playable an entry is, as one number. The three terms replace what used to
 // be a four-tier ladder ([main&&hint, main, hint, all], first non-empty wins),
 // and reproduce it exactly: with s = 2*isMain + hasHint, the old tier 1 is

@@ -2,18 +2,16 @@ import { useMemo, useState } from 'react';
 import { useProfileStore } from '../../../shared/context/profileContext';
 import AniListImport from '../../../shared/components/AniListImport';
 import ProfilePicker from '../../../shared/components/ProfilePicker';
-import SettingsFooter from '../../../shared/components/SettingsFooter';
-import SettingHelp, { DetailToggle } from '../../../shared/components/SettingHelp';
 import { useGamePrefs } from '../../../shared/hooks/useGamePrefs';
 import {
-  Backdrop, Badge, Banner, Button, Card, CardRow, Checkbox, Field, NumberInput,
-  Screen, Wordmark,
+  Backdrop, Badge, Banner, Button, Card, CardRow, Screen, Wordmark,
 } from '../../../shared/ui';
 import ClueModePicker from './ClueModePicker';
-import { SETTING_HELP, poolTooSmall, sharedOnlyHelp } from '../help';
-import { DEFAULT_PREFS, MAX_ROUNDS, MIN_ROUNDS } from '../prefs';
+import WavelengthSettings from './WavelengthSettings';
+import { poolTooSmall } from '../help';
+import { DEFAULT_PREFS } from '../prefs';
 import { MIN_PLAYERS, needsCardPool } from '../rules';
-import { CARD_POOLS, MIN_CARD_POOL, eligibleCards, poolNoun } from '../utils/cards';
+import { MIN_CARD_POOL, eligibleCards, poolNoun } from '../utils/cards';
 
 // Local setup.
 //
@@ -33,10 +31,16 @@ export default function WavelengthSetup({ onStart, onBack }) {
   const [players, setPlayers] = useState(() => (activeProfile ? [activeProfile] : []));
   const [showPicker, setShowPicker] = useState(false);
   const [importTarget, setImportTarget] = useState(null);
-  const [rounds, setRounds] = useState(prefs.rounds);
-  const [clueMode, setClueMode] = useState(prefs.clueMode);
-  const [cardPool, setCardPool] = useState(prefs.cardPool);
-  const [sharedOnly, setSharedOnly] = useState(prefs.sharedOnly);
+  // Only the keys this screen owns — the timer is online-only. writePrefs merges
+  // a partial, so saving this set leaves those untouched; see prefs.js.
+  const [settings, setSettings] = useState(() => ({
+    rounds: prefs.rounds,
+    clueMode: prefs.clueMode,
+    cardPool: prefs.cardPool,
+    sharedOnly: prefs.sharedOnly,
+  }));
+  const change = (key, value) => setSettings((s) => ({ ...s, [key]: value }));
+  const { rounds, clueMode, cardPool, sharedOnly } = settings;
 
   const needsCards = needsCardPool(clueMode);
 
@@ -59,10 +63,20 @@ export default function WavelengthSetup({ onStart, onBack }) {
   const enoughCards = !needsCards || eligible >= MIN_CARD_POOL;
   const canStart = enoughPlayers && enoughCards;
 
+  // resetPrefs drops the whole slice regardless, which is what "reset to
+  // defaults" has to mean — the online-only timer options have no other way back.
+  const applyDefaults = () => {
+    resetPrefs();
+    setSettings({
+      rounds: DEFAULT_PREFS.rounds,
+      clueMode: DEFAULT_PREFS.clueMode,
+      cardPool: DEFAULT_PREFS.cardPool,
+      sharedOnly: DEFAULT_PREFS.sharedOnly,
+    });
+  };
+
   const start = () => {
-    // Only the keys this screen owns. writePrefs merges a partial, so the
-    // online-only timer settings survive untouched — see prefs.js.
-    savePrefs({ rounds, clueMode, cardPool, sharedOnly });
+    savePrefs(settings);
     onStart({ players, rounds, mode: clueMode, cardPool, sharedOnly });
   };
 
@@ -148,66 +162,15 @@ export default function WavelengthSetup({ onStart, onBack }) {
           </Card>
         )}
 
-        <ClueModePicker value={clueMode} onChange={setClueMode} />
+        <ClueModePicker value={clueMode} onChange={(m) => change('clueMode', m)} />
 
-        <Card title="⚙️ Settings" action={<DetailToggle />} padding="lg" className="mb-6">
-          <Field label="Rounds" htmlFor="aniwave-rounds" className="mb-2">
-            <NumberInput
-              id="aniwave-rounds"
-              ariaLabel="Rounds"
-              min={MIN_ROUNDS}
-              max={MAX_ROUNDS}
-              value={rounds}
-              onChange={setRounds}
-            />
-          </Field>
-          <SettingHelp className="mb-5" more={SETTING_HELP.rounds.more}>
-            {SETTING_HELP.rounds.short}
-          </SettingHelp>
-
-          {needsCards && (
-            <>
-              <Field label="Cards" className="mb-2">
-                <div className="flex gap-3">
-                  {CARD_POOLS.map((pool) => (
-                    <Button
-                      key={pool}
-                      variant={cardPool === pool ? 'secondary' : 'neutral'}
-                      size="md"
-                      fullWidth
-                      aria-pressed={cardPool === pool}
-                      onClick={() => setCardPool(pool)}
-                    >
-                      {pool === 'shows' ? 'Shows' : 'Characters'}
-                    </Button>
-                  ))}
-                </div>
-              </Field>
-              <SettingHelp className="mb-5" more={SETTING_HELP.cardPool.more}>
-                {SETTING_HELP.cardPool.short}
-              </SettingHelp>
-
-              <Checkbox
-                label="Shared cards only"
-                checked={sharedOnly}
-                onChange={(e) => setSharedOnly(e.target.checked)}
-                className="mb-2"
-              />
-              <SettingHelp indent more={sharedOnlyHelp({ noun }).more}>
-                {sharedOnlyHelp({ noun }).short}
-              </SettingHelp>
-
-              {/* The count itself, not only the warning: a mode can be
-                  perfectly playable and still narrow a small shared list more
-                  than anyone expected, and seeing the number is what makes the
-                  shared-only checkbox above it legible. */}
-              <p className="mt-3 text-sm text-fg-helper">
-                {eligible} {noun} to draw from
-                {sharedOnly && players.length > 1 && ' (shared by everyone)'}
-              </p>
-            </>
-          )}
-        </Card>
+        <WavelengthSettings
+          values={settings}
+          onChange={change}
+          eligible={eligible}
+          playerCount={players.length}
+          onReset={applyDefaults}
+        />
 
         {players.length > 0 && !enoughPlayers && (
           <Banner tone="warning" className="mb-6">
@@ -242,26 +205,6 @@ export default function WavelengthSetup({ onStart, onBack }) {
         >
           Start
         </Button>
-
-        {/* Only the keys this screen renders. resetPrefs drops the whole slice
-            regardless, which is what "reset to defaults" has to mean — the
-            online-only timer options have no other way back. */}
-        <SettingsFooter
-          values={{ rounds, clueMode, cardPool, sharedOnly }}
-          defaults={{
-            rounds: DEFAULT_PREFS.rounds,
-            clueMode: DEFAULT_PREFS.clueMode,
-            cardPool: DEFAULT_PREFS.cardPool,
-            sharedOnly: DEFAULT_PREFS.sharedOnly,
-          }}
-          onReset={() => {
-            resetPrefs();
-            setRounds(DEFAULT_PREFS.rounds);
-            setClueMode(DEFAULT_PREFS.clueMode);
-            setCardPool(DEFAULT_PREFS.cardPool);
-            setSharedOnly(DEFAULT_PREFS.sharedOnly);
-          }}
-        />
       </Screen>
     </>
   );

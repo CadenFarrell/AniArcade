@@ -2,19 +2,17 @@ import { useMemo, useState } from 'react';
 import { useProfileStore } from '../../../shared/context/profileContext';
 import AniListImport from '../../../shared/components/AniListImport';
 import ProfilePicker from '../../../shared/components/ProfilePicker';
-import SettingsFooter from '../../../shared/components/SettingsFooter';
-import SettingHelp, { DetailToggle } from '../../../shared/components/SettingHelp';
 import { useGamePrefs } from '../../../shared/hooks/useGamePrefs';
+import AniRankSettings from './AniRankSettings';
 import AxisPicker from './AxisPicker';
 import FormatOption from './FormatOption';
 import { useCustomPrompts } from '../hooks/useCustomPrompts';
-import { SETTING_HELP, sharedOnlyHelp } from '../help';
 import { eligibleItems, opinionPoolCounts } from '../utils/deck';
 import { DEFAULT_PREFS, axisIdOf, resolveSavedAxis } from '../prefs';
 import { AXES, axisForPool, getAxis, isOpinion } from '../axes';
 import { BOARD_SIZE } from '../rules';
 import {
-  Backdrop, Badge, Banner, Button, Card, CardRow, Checkbox, Screen, Wordmark,
+  Backdrop, Badge, Banner, Button, Card, CardRow, Screen, Wordmark,
 } from '../../../shared/ui';
 
 // Local setup. Same shape as AniTuneSetup — your main profile is already
@@ -83,6 +81,14 @@ export default function AniRankSetup({ onStart, error, onBack }) {
     setImportTarget(null);
   };
 
+  // The settings card reports every change as (key, value); the axis-coupled
+  // state stays here, because an axis change resets `blind`.
+  const changeSetting = (key, value) => {
+    if (key === 'sharedOnly') setSharedOnly(value);
+    else if (key === 'blind') setBlind(value);
+    else if (key === 'scoring') setScoring(value);
+  };
+
   const resolved = getAxis(axis);
   const opinion = isOpinion(resolved);
   const tiering = format !== 'round';
@@ -116,9 +122,6 @@ export default function AniRankSetup({ onStart, error, onBack }) {
   // list has no answer key at all, so one person is a full table.
   const enoughPlayers = opinion && scoring && !tiering ? players.length >= 2 : players.length >= 1;
   const canStart = enoughPlayers && enough;
-  // Both halves depend on the pool AND the format, so they are resolved together
-  // rather than branched twice at the call site. See help.js.
-  const sharedHelp = sharedOnlyHelp({ noun, tiering });
 
   return (
     <>
@@ -232,46 +235,14 @@ export default function AniRankSetup({ onStart, error, onBack }) {
           onDeletePrompt={deletePrompt}
         />
 
-        <Card title="⚙️ Settings" action={<DetailToggle />} padding="lg" className="mb-6">
-          <Checkbox
-            label={`Shared ${noun} only`}
-            checked={sharedOnly}
-            onChange={(e) => setSharedOnly(e.target.checked)}
-            className="mb-2"
-          />
-          <SettingHelp indent className="mb-4" more={sharedHelp.more}>
-            {sharedHelp.short}
-          </SettingHelp>
-
-          {/* Neither applies to a tier list — there is no deal to make blind and
-              no answer key to score against — and a visible-but-inert checkbox
-              is worse than one that is not there. */}
-          {!tiering && (
-            <>
-              <Checkbox
-                label="Blind ranking"
-                checked={blind}
-                onChange={(e) => setBlind(e.target.checked)}
-                className="mb-2"
-              />
-              <SettingHelp indent className="mb-4" more={SETTING_HELP.blind.more}>
-                {SETTING_HELP.blind.short}
-              </SettingHelp>
-
-              <Checkbox
-                label="Keep score"
-                checked={scoring}
-                onChange={(e) => setScoring(e.target.checked)}
-                className="mb-2"
-              />
-              <SettingHelp indent more={SETTING_HELP.scoring.more}>
-                {SETTING_HELP.scoring.short}
-              </SettingHelp>
-            </>
-          )}
-
-          <SettingsFooter values={remembered} defaults={DEFAULT_PREFS} onReset={applyDefaults} />
-        </Card>
+        <AniRankSettings
+          values={{ sharedOnly, blind, scoring }}
+          onChange={changeSetting}
+          noun={noun}
+          tiering={tiering}
+          remembered={remembered}
+          onReset={applyDefaults}
+        />
 
         {players.length > 0 && (
           <p className="mb-4 text-center text-base text-fg-helper">

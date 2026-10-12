@@ -624,6 +624,13 @@ subscription, presence and the grace-window clock, `guard`/`bestEffort`, `patchS
 departure-reconciliation effect: noticing *that* someone left is generic, deciding what
 their absence broke is not.
 
+**The lobby screen follows the same split.** `shared/components/Lobby.jsx` draws what every
+`OnlineLobby` drew identically — `RoomCode`, `PlayerRoster` (with the game's own row badge as
+`badgeFor`, omitted where nothing reads a list), `LobbyImport` and the guest's `HostWaitCard`
+— and each lobby keeps its wordmark, settings, Start gates and Start. The six hand-copied
+rosters had already split two ways on how a departed player looks; build a new lobby from
+these pieces rather than from another game's file.
+
 All games share one `rooms/{code}` namespace — codes are unique across the whole app, not
 per game, so a new game cannot assume it has the code space to itself. A code is claimed by
 a `runTransaction` on `rooms/{code}/createdAt`. Codes are 5 chars from an alphabet with
@@ -844,13 +851,23 @@ type-mismatched values against it. Two consequences that are easy to get wrong:
   who never opens the settings card — usually what you want, but decide it rather than
   discover it.
 
-Adding an option means: the key in `prefs.js`, a `useState(prefs.X)` plus a line in
-`applyDefaults` in **both** screens, the key in the `settings`/`remembered` object at Start
-(the lobby's object is what reaches `startGame`, so a key missing there never leaves the
-host's device), and — only if the *rules* act on it — a copy onto the round node in the room
-hook with a `!== false`-style back-compat default in `normalizeGame`. An option that only
-decides which screen renders (`talkMode`) or how a pool is drawn (`sharedOnly`, `fame`) stays
-out of round state.
+**Every game's settings card is one component rendered by both screens** —
+`AniFakeSettings`, `AniRankSettings`, `AniTuneSettings`, `AniTagSettings`,
+`WavelengthSettings`, each beside its game's setup screen. They were hand-kept copies first,
+and every pair had drifted somewhere (AniWave's reset link sat inside the card online and
+under Start locally). A local-only or online-only option is a prop on the card (`local`,
+`online`), never a second copy of it. Each card reports changes as one `onChange(key, value)`
+because the lobby's settings object *is* what leaves the host's device, and a setter per prop
+puts the drift back one level down. AniGuess is the exception that is not yet folded in.
+
+Adding an option means: the key in `prefs.js`; the control in the game's settings card; the
+key in **both** screens' settings object, seeded from `prefs` (the lobby's object is what
+reaches `startGame`, so a key missing there never leaves the host's device); and — only if
+the *rules* act on it — a copy onto the round node in the room hook with a `!== false`-style
+back-compat default in `normalizeGame`. AniRank keeps separate `useState`s, because an axis
+change resets `blind` and the state has to live beside the axis it is coupled to. An option
+that only decides which screen renders (`talkMode`) or how a pool is drawn (`sharedOnly`,
+`fame`) stays out of round state.
 
 Anything derived from a pref that is worth testing has to live in a `.js` module — the vitest
 config only runs `src/**/*.test.js` — which is why `prefs.js` and `fame.js` are separate files
@@ -989,9 +1006,10 @@ Online adds a third step, and it is easy to miss: the room stores a *copy* of th
 profile (the player record in `state/` **is** the profile, lists and all), written at
 exactly three moments — `createRoom`, `joinRoom`, and `updateMyProfile`. `saveProfile`
 reaches localStorage and the provider and stops there. So the store is the source of truth
-and the room copy is derived, and each `OnlineLobby` runs an effect that republishes via
-`updateMyProfile` when `profileFingerprint` (`shared/utils/profileStats.js`) says the two
-have diverged. Import into `activeProfile`, never into the room copy: that copy is a
+and the room copy is derived, and every lobby that reads a list calls
+`shared/hooks/useRepublishProfile.js`, which republishes via `updateMyProfile` when
+`profileFingerprint` (`shared/utils/profileStats.js`) says the two have diverged. AniTag's
+lobby deliberately does not: it reads nobody's list. Import into `activeProfile`, never into the room copy: that copy is a
 join-time snapshot that has been through RTDB, so merging out of it rolls back later edits
 and drops the empty-array fields the import checklist reads.
 

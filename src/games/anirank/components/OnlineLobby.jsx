@@ -1,18 +1,17 @@
 import { useMemo, useState } from 'react';
 import { HostWaitCard, ListBadge, LobbyImport, PlayerRoster, RoomCode } from '../../../shared/components/Lobby';
 import SettingsFooter from '../../../shared/components/SettingsFooter';
-import SettingHelp, { DetailToggle } from '../../../shared/components/SettingHelp';
 import { useGamePrefs } from '../../../shared/hooks/useGamePrefs';
 import { useRepublishProfile } from '../../../shared/hooks/useRepublishProfile';
+import AniRankSettings from './AniRankSettings';
 import AxisPicker from './AxisPicker';
 import FormatOption from './FormatOption';
 import { useCustomPrompts } from '../hooks/useCustomPrompts';
-import { SETTING_HELP, sharedOnlyHelp } from '../help';
 import { eligibleItems, opinionPoolCounts } from '../utils/deck';
 import { DEFAULT_PREFS, axisIdOf, resolveSavedAxis } from '../prefs';
 import { AXES, getAxis } from '../axes';
 import { BOARD_SIZE } from '../rules';
-import { Backdrop, Banner, Button, Card, Checkbox, Screen, Wordmark } from '../../../shared/ui';
+import { Backdrop, Banner, Button, Card, Screen, Wordmark } from '../../../shared/ui';
 
 // The online lobby. The room code, roster, list import and guest wait card are
 // shared/components/Lobby.jsx; what lives here is AniRank's own host-only
@@ -53,6 +52,14 @@ export default function OnlineLobby({ room }) {
 
   const remembered = { sharedOnly, scoring, blind, format, axisId: axisIdOf(axis) };
 
+  // The settings card reports every change as (key, value); the axis-coupled
+  // state stays here, because an axis change resets `blind`.
+  const changeSetting = (key, value) => {
+    if (key === 'sharedOnly') setSharedOnly(value);
+    else if (key === 'blind') setBlind(value);
+    else if (key === 'scoring') setScoring(value);
+  };
+
   const applyDefaults = () => {
     setSharedOnly(DEFAULT_PREFS.sharedOnly);
     setScoring(DEFAULT_PREFS.scoring);
@@ -78,10 +85,6 @@ export default function OnlineLobby({ room }) {
 
   const resolved = getAxis(axis);
   const noun = resolved.items === 'characters' ? 'characters' : 'shows';
-  // Always the round wording — the settings card below only renders when the
-  // room is not comparing tier lists, and a comparison has no board to share a
-  // pool for. See help.js.
-  const sharedHelp = sharedOnlyHelp({ noun, tiering: false });
   // Counted for every axis so the picker can show which modes this room can
   // actually play — a fact axis reads 0 until someone re-imports their list.
   // Custom prompts share two pool counts; see the same memo in AniRankSetup.
@@ -180,43 +183,17 @@ export default function OnlineLobby({ room }) {
               onDeletePrompt={deletePrompt}
             />
 
-            <Card title="⚙️ Settings" action={<DetailToggle />} padding="lg" className="mb-6">
-              <Checkbox
-                label={`Shared ${noun} only`}
-                checked={sharedOnly}
-                onChange={(e) => setSharedOnly(e.target.checked)}
-                className="mb-2"
-              />
-              <SettingHelp indent className="mb-4" more={sharedHelp.more}>
-                {sharedHelp.short}
-              </SettingHelp>
-
-              <Checkbox
-                label="Blind ranking"
-                checked={blind}
-                onChange={(e) => setBlind(e.target.checked)}
-                className="mb-2"
-              />
-              <SettingHelp indent className="mb-4" more={SETTING_HELP.blind.more}>
-                {SETTING_HELP.blind.short}
-              </SettingHelp>
-
-              <Checkbox
-                label="Keep score"
-                checked={scoring}
-                onChange={(e) => setScoring(e.target.checked)}
-                className="mb-2"
-              />
-              <SettingHelp indent more={SETTING_HELP.scoring.more}>
-                {SETTING_HELP.scoring.short}
-              </SettingHelp>
-
-              <p className="mt-4 text-sm text-fg-subtle">
-                You&apos;re the host — your settings apply to everyone.
-              </p>
-
-              <SettingsFooter values={remembered} defaults={DEFAULT_PREFS} onReset={applyDefaults} />
-            </Card>
+            {/* Never `tiering` here: this card renders only for a round, so it
+                always takes the round wording — a comparison has no board to
+                share a pool for. */}
+            <AniRankSettings
+              values={{ sharedOnly, blind, scoring }}
+              onChange={changeSetting}
+              noun={noun}
+              remembered={remembered}
+              onReset={applyDefaults}
+              hostNote
+            />
 
             {active.length >= 2 && !everyoneHasShows && (
               <Banner tone="warning" className="mb-4">

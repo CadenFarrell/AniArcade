@@ -1,19 +1,14 @@
 import { useMemo, useState } from 'react';
-import SettingsFooter from '../../../shared/components/SettingsFooter';
-import SettingHelp, { DetailToggle } from '../../../shared/components/SettingHelp';
 import { useGamePrefs } from '../../../shared/hooks/useGamePrefs';
 import { useRepublishProfile } from '../../../shared/hooks/useRepublishProfile';
 import { HostWaitCard, ListBadge, PlayerRoster, RoomCode } from '../../../shared/components/Lobby';
-import {
-  Backdrop, Banner, Button, Card, Checkbox, Field, NumberInput, Screen, Wordmark,
-} from '../../../shared/ui';
+import { Backdrop, Banner, Button, Screen, Wordmark } from '../../../shared/ui';
 import ClueModePicker from './ClueModePicker';
-import { SETTING_HELP, poolTooSmall, sharedOnlyHelp } from '../help';
-import {
-  DEFAULT_PREFS, MAX_GUESS_SECONDS, MAX_ROUNDS, MIN_GUESS_SECONDS, MIN_ROUNDS,
-} from '../prefs';
+import WavelengthSettings from './WavelengthSettings';
+import { poolTooSmall } from '../help';
+import { DEFAULT_PREFS } from '../prefs';
 import { MIN_PLAYERS, needsCardPool } from '../rules';
-import { CARD_POOLS, MIN_CARD_POOL, eligibleCards, poolNoun } from '../utils/cards';
+import { MIN_CARD_POOL, eligibleCards, poolNoun } from '../utils/cards';
 
 // The online lobby. The room code, roster and guest wait card are
 // shared/components/Lobby.jsx; what lives here is AniWave's own host-only
@@ -26,26 +21,23 @@ import { CARD_POOLS, MIN_CARD_POOL, eligibleCards, poolNoun } from '../utils/car
 export default function OnlineLobby({ room }) {
   const { prefs, savePrefs, resetPrefs } = useGamePrefs('aniwave', DEFAULT_PREFS);
 
-  const [rounds, setRounds] = useState(prefs.rounds);
-  const [timed, setTimed] = useState(prefs.timed);
-  const [guessSeconds, setGuessSeconds] = useState(prefs.guessSeconds);
-  const [clueMode, setClueMode] = useState(prefs.clueMode);
-  const [cardPool, setCardPool] = useState(prefs.cardPool);
-  const [sharedOnly, setSharedOnly] = useState(prefs.sharedOnly);
-
   // Everything reaching startGame has to be in here: this object IS what leaves
   // the host's device, so a key missing from it never reaches the room at all.
   // clueMode in particular — without it every room would play a typed clue
   // whatever the host chose, and nothing on any screen would look wrong.
-  const settings = { rounds, timed, guessSeconds, clueMode, cardPool, sharedOnly };
+  const [settings, setSettings] = useState(() => ({
+    rounds: prefs.rounds,
+    timed: prefs.timed,
+    guessSeconds: prefs.guessSeconds,
+    clueMode: prefs.clueMode,
+    cardPool: prefs.cardPool,
+    sharedOnly: prefs.sharedOnly,
+  }));
+  const change = (key, value) => setSettings((s) => ({ ...s, [key]: value }));
+  const { clueMode, cardPool, sharedOnly } = settings;
 
   const applyDefaults = () => {
-    setRounds(DEFAULT_PREFS.rounds);
-    setTimed(DEFAULT_PREFS.timed);
-    setGuessSeconds(DEFAULT_PREFS.guessSeconds);
-    setClueMode(DEFAULT_PREFS.clueMode);
-    setCardPool(DEFAULT_PREFS.cardPool);
-    setSharedOnly(DEFAULT_PREFS.sharedOnly);
+    setSettings({ ...DEFAULT_PREFS });
     resetPrefs();
   };
 
@@ -95,99 +87,16 @@ export default function OnlineLobby({ room }) {
 
         {room.isHost ? (
           <>
-            <ClueModePicker value={clueMode} onChange={setClueMode} />
+            <ClueModePicker value={clueMode} onChange={(m) => change('clueMode', m)} />
 
-            <Card title="⚙️ Settings" action={<DetailToggle />} padding="lg" className="mb-6">
-              <Field label="Rounds" htmlFor="aniwave-rounds" className="mb-2">
-                <NumberInput
-                  id="aniwave-rounds"
-                  ariaLabel="Rounds"
-                  min={MIN_ROUNDS}
-                  max={MAX_ROUNDS}
-                  value={rounds}
-                  onChange={setRounds}
-                />
-              </Field>
-              <SettingHelp className="mb-5" more={SETTING_HELP.rounds.more}>
-                {SETTING_HELP.rounds.short}
-              </SettingHelp>
-
-              {needsCards && (
-                <>
-                  <Field label="Cards" className="mb-2">
-                    <div className="flex gap-3">
-                      {CARD_POOLS.map((pool) => (
-                        <Button
-                          key={pool}
-                          variant={cardPool === pool ? 'secondary' : 'neutral'}
-                          size="md"
-                          fullWidth
-                          aria-pressed={cardPool === pool}
-                          onClick={() => setCardPool(pool)}
-                        >
-                          {pool === 'shows' ? 'Shows' : 'Characters'}
-                        </Button>
-                      ))}
-                    </div>
-                  </Field>
-                  <SettingHelp className="mb-5" more={SETTING_HELP.cardPool.more}>
-                    {SETTING_HELP.cardPool.short}
-                  </SettingHelp>
-
-                  <Checkbox
-                    label="Shared cards only"
-                    checked={sharedOnly}
-                    onChange={(e) => setSharedOnly(e.target.checked)}
-                    className="mb-2"
-                  />
-                  <SettingHelp indent more={sharedOnlyHelp({ noun }).more}>
-                    {sharedOnlyHelp({ noun }).short}
-                  </SettingHelp>
-
-                  <p className="mt-3 mb-5 text-sm text-fg-helper">
-                    {eligible} {noun} to draw from
-                    {sharedOnly && active.length > 1 && ' (shared by everyone)'}
-                  </p>
-                </>
-              )}
-
-              <Checkbox
-                label="Time the guessing"
-                checked={timed}
-                onChange={(e) => setTimed(e.target.checked)}
-                className="mb-2"
-              />
-              <SettingHelp indent className="mb-5" more={SETTING_HELP.timed.more}>
-                {SETTING_HELP.timed.short}
-              </SettingHelp>
-
-              {timed && (
-                <Field label="Seconds to dial" htmlFor="aniwave-seconds">
-                  <NumberInput
-                    id="aniwave-seconds"
-                    ariaLabel="Seconds to dial"
-                    min={MIN_GUESS_SECONDS}
-                    max={MAX_GUESS_SECONDS}
-                    step={5}
-                    value={guessSeconds}
-                    onChange={setGuessSeconds}
-                  />
-                </Field>
-              )}
-
-              <SettingsFooter
-                values={settings}
-                defaults={{
-                  rounds: DEFAULT_PREFS.rounds,
-                  timed: DEFAULT_PREFS.timed,
-                  guessSeconds: DEFAULT_PREFS.guessSeconds,
-                  clueMode: DEFAULT_PREFS.clueMode,
-                  cardPool: DEFAULT_PREFS.cardPool,
-                  sharedOnly: DEFAULT_PREFS.sharedOnly,
-                }}
-                onReset={applyDefaults}
-              />
-            </Card>
+            <WavelengthSettings
+              values={settings}
+              onChange={change}
+              eligible={eligible}
+              playerCount={active.length}
+              online
+              onReset={applyDefaults}
+            />
 
             {!enoughPlayers && (
               <Banner tone="warning" className="mb-6">

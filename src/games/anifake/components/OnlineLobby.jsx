@@ -1,18 +1,14 @@
 import { useMemo, useState } from 'react';
 import { HostWaitCard, ListBadge, LobbyImport, PlayerRoster, RoomCode } from '../../../shared/components/Lobby';
-import SettingsFooter from '../../../shared/components/SettingsFooter';
-import SettingHelp, { DetailToggle } from '../../../shared/components/SettingHelp';
 import { useGamePrefs } from '../../../shared/hooks/useGamePrefs';
 import { useRepublishProfile } from '../../../shared/hooks/useRepublishProfile';
 import ModePicker from './ModePicker';
-import {
-  eligibleCharacters, famousCount, hasAnyFameData, hasFameSignal, MIN_FAME_POOL,
-} from '../utils/pool';
-import { FAME_LEVELS, getFame } from '../fame';
-import { SETTING_HELP } from '../help';
+import AniFakeSettings from './AniFakeSettings';
+import { eligibleCharacters, fameReport } from '../utils/pool';
+import { getFame } from '../fame';
 import { DEFAULT_PREFS } from '../prefs';
-import { MAX_CLUE_ROUNDS, minPool, MIN_PLAYERS } from '../rules';
-import { Backdrop, Banner, Button, Card, Checkbox, Field, NumberInput, Screen, Select, Wordmark } from '../../../shared/ui';
+import { minPool, MIN_PLAYERS } from '../rules';
+import { Backdrop, Banner, Button, Screen, Wordmark } from '../../../shared/ui';
 
 // The online lobby. The room code, roster, list import and guest wait card are
 // shared/components/Lobby.jsx; what lives here is AniFake's own host-only
@@ -22,20 +18,21 @@ export default function OnlineLobby({ room }) {
   // of it (no talk mode), which is why savePrefs merges rather than replaces —
   // hosting a room must not wipe the settings only local play can reach.
   const { prefs, savePrefs, resetPrefs } = useGamePrefs('anifake', DEFAULT_PREFS);
-  const [sharedOnly, setSharedOnly] = useState(prefs.sharedOnly);
-  const [mode, setMode] = useState(prefs.mode);
-  const [laps, setLaps] = useState(prefs.laps);
-  const [fame, setFame] = useState(prefs.fame);
-  const [allowRedeal, setAllowRedeal] = useState(prefs.allowRedeal);
-
-  const settings = { mode, laps, sharedOnly, fame, allowRedeal };
+  // ONE OBJECT, because it IS what leaves the host's device: a key missing from
+  // it never reaches the room. No talkMode — see AniFakeSettings' `local`.
+  const [settings, setSettings] = useState(() => ({
+    mode: prefs.mode,
+    laps: prefs.laps,
+    sharedOnly: prefs.sharedOnly,
+    fame: prefs.fame,
+    allowRedeal: prefs.allowRedeal,
+  }));
+  const change = (key, value) => setSettings((s) => ({ ...s, [key]: value }));
+  const { mode, sharedOnly, fame } = settings;
 
   const applyDefaults = () => {
-    setSharedOnly(DEFAULT_PREFS.sharedOnly);
-    setMode(DEFAULT_PREFS.mode);
-    setLaps(DEFAULT_PREFS.laps);
-    setFame(DEFAULT_PREFS.fame);
-    setAllowRedeal(DEFAULT_PREFS.allowRedeal);
+    const { talkMode: _LOCAL_ONLY, ...online } = DEFAULT_PREFS;
+    setSettings(online);
     resetPrefs();
   };
 
@@ -61,9 +58,7 @@ export default function OnlineLobby({ room }) {
     [active, sharedOnly]
   );
   const eligible = poolEntries.length;
-  const fameBlind = fame !== 'any' && eligible > 0 && !hasFameSignal(poolEntries);
-  const famous = fame === 'any' ? 0 : famousCount(poolEntries, fame);
-  const fameTooTight = famous > 0 && famous < MIN_FAME_POOL;
+  const { famous } = fameReport(poolEntries, fame);
   // The bar is what the mode needs to deal, not a board size — see the note on
   // rules.minPool. Keyed on `mode` because switching to decoy raises it.
   const needed = minPool(mode);
@@ -96,86 +91,15 @@ export default function OnlineLobby({ room }) {
 
         {room.isHost && (
           <>
-            <ModePicker value={mode} onChange={setMode} />
+            <ModePicker value={mode} onChange={(m) => change('mode', m)} />
 
-            <Card title="⚙️ Settings" action={<DetailToggle />} padding="lg" className="mb-6">
-              <Field label="Clue rounds" htmlFor="anifake-laps" className="mb-2">
-                <NumberInput
-                  id="anifake-laps"
-                  ariaLabel="Clue rounds"
-                  min={1}
-                  max={MAX_CLUE_ROUNDS}
-                  value={laps}
-                  onChange={setLaps}
-                />
-              </Field>
-              <SettingHelp className="mb-5" more={SETTING_HELP.laps.more}>
-                {SETTING_HELP.laps.short}
-              </SettingHelp>
-
-              <Checkbox
-                label="Shared characters only"
-                checked={sharedOnly}
-                onChange={(e) => setSharedOnly(e.target.checked)}
-                className="mb-2"
-              />
-              <SettingHelp indent className="mb-5" more={SETTING_HELP.sharedOnly.more}>
-                {SETTING_HELP.sharedOnly.short}
-              </SettingHelp>
-
-              <Field label="How well known">
-                <Select value={fame} onChange={(e) => setFame(e.target.value)} className="text-lg">
-                  {FAME_LEVELS.map((f) => (
-                    <option key={f.id} value={f.id}>{f.label}</option>
-                  ))}
-                </Select>
-              </Field>
-              <SettingHelp className="mb-2" more={SETTING_HELP.fame.more}>
-                {getFame(fame).blurb}
-              </SettingHelp>
-              {fameBlind && (
-                <Banner tone="warning" className="mb-5">
-                  {/* Naming which dead end it is, because only one of them is
-                      fixed by importing more. See AniFakeSetup, its twin. */}
-                  ⚠️ {hasAnyFameData(poolEntries)
-                    ? `Only some of these characters have popularity data, so
-                       “${getFame(fame).label}” would be judging the whole table on a handful
-                       of them.`
-                    : `No popularity data on these lists, so “${getFame(fame).label}” has
-                       nothing to go on.`}
-                  {' '}The deal falls back to picking a lead. Popularity arrived after these
-                  lists were imported — open 🔗 and re-import the shows marked “Missing
-                  details” to fill it in.
-                </Banner>
-              )}
-              {fameTooTight && (
-                <Banner tone="warning" className="mb-5">
-                  ⚠️ Only {famous} character{famous === 1 ? '' : 's'}{' '}
-                  {famous === 1 ? 'is' : 'are'} well known enough for
-                  “{getFame(fame).label}”, so rounds will start repeating. Try a broader
-                  setting, or import more lists.
-                </Banner>
-              )}
-
-              <Checkbox
-                label="🃏 Card check before the clues"
-                checked={allowRedeal}
-                onChange={(e) => setAllowRedeal(e.target.checked)}
-                className="mb-2"
-              />
-              {/* Shares AniFakeSetup's strings rather than restating them — the
-                  two used to be "word for word identical" by convention and had
-                  already drifted apart. See help.js. */}
-              <SettingHelp indent more={SETTING_HELP.allowRedeal.more}>
-                {SETTING_HELP.allowRedeal.short}
-              </SettingHelp>
-
-              <p className="mt-4 text-sm text-fg-subtle">
-                You&apos;re the host — your settings apply to everyone.
-              </p>
-
-              <SettingsFooter values={settings} defaults={DEFAULT_PREFS} onReset={applyDefaults} />
-            </Card>
+            <AniFakeSettings
+              values={settings}
+              onChange={change}
+              poolEntries={poolEntries}
+              local={false}
+              onReset={applyDefaults}
+            />
 
             {/* The host picks the level for the whole room, so the host is who
                 needs to see what it costs. Only when the term is live — there is
