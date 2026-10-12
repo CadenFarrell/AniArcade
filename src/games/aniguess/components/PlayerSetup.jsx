@@ -4,12 +4,10 @@ import { useWins } from '../../../shared/hooks/useWins';
 import { useGamePrefs } from '../../../shared/hooks/useGamePrefs';
 import { normalizeTitle } from '../../../shared/utils/ranking';
 import ProfilePicker from '../../../shared/components/ProfilePicker';
-import SettingsFooter from '../../../shared/components/SettingsFooter';
-import SettingHelp, { DetailToggle } from '../../../shared/components/SettingHelp';
-import { DEFAULT_PREFS, POSITIONS } from '../prefs';
+import AniGuessSettings from './AniGuessSettings';
+import { DEFAULT_PREFS } from '../prefs';
 import {
-  Backdrop, Badge, Banner, Button, Card, CardRow, Checkbox, Modal, NumberInput, Screen,
-  Wordmark,
+  Backdrop, Badge, Banner, Button, CardRow, Modal, Screen, Wordmark,
 } from '../../../shared/ui';
 import {
   DndContext,
@@ -77,26 +75,16 @@ export default function PlayerSetup({ onStartGame, onGoToList, players, onPlayer
   // Seeded from whatever this device last started a game with, not from the
   // literal defaults — see shared/hooks/useGamePrefs.js.
   const { prefs, savePrefs, resetPrefs } = useGamePrefs('aniguess', DEFAULT_PREFS);
-  const [twoStepRandom, setTwoStepRandom] = useState(prefs.twoStepRandom);
-  const [timerEnabled, setTimerEnabled] = useState(prefs.timerEnabled);
-  const [sharedShowsOnly, setSharedShowsOnly] = useState(prefs.sharedShowsOnly);
-  const [talkMode, setTalkMode] = useState(prefs.talkMode);
-  const [timerSeconds, setTimerSeconds] = useState(prefs.timerSeconds);
-  const [pointsPerPosition, setPointsPerPosition] = useState(prefs.pointsPerPosition);
-
-  const settings = {
-    timerEnabled, timerSeconds, pointsPerPosition, sharedShowsOnly, twoStepRandom, talkMode,
-  };
+  // ONE OBJECT, the shape AniGuessSettings reports into. Local play offers
+  // every option, so it is simply the whole saved slice.
+  const [settings, setSettings] = useState(prefs);
+  const change = (key, value) => setSettings((s) => ({ ...s, [key]: value }));
+  const { sharedShowsOnly } = settings;
 
   const applyDefaults = () => {
-    setTwoStepRandom(DEFAULT_PREFS.twoStepRandom);
-    setTimerEnabled(DEFAULT_PREFS.timerEnabled);
-    setSharedShowsOnly(DEFAULT_PREFS.sharedShowsOnly);
-    setTalkMode(DEFAULT_PREFS.talkMode);
-    setTimerSeconds(DEFAULT_PREFS.timerSeconds);
-    // Copied, not shared — updatePoints edits a clone today, but handing module
-    // state straight into a setter is a trap waiting for the next edit.
-    setPointsPerPosition([...DEFAULT_PREFS.pointsPerPosition]);
+    // Copied, not shared — the card writes a fresh array today, but handing
+    // module state straight into a setter is a trap waiting for the next edit.
+    setSettings({ ...DEFAULT_PREFS, pointsPerPosition: [...DEFAULT_PREFS.pointsPerPosition] });
     resetPrefs();
   };
 
@@ -110,14 +98,6 @@ export default function PlayerSetup({ onStartGame, onGoToList, players, onPlayer
       const newIndex = players.findIndex((p) => p.id === over.id);
       onPlayersChange(arrayMove(players, oldIndex, newIndex));
     }
-  };
-
-  // NumberInput hands over an already-parsed, already-clamped number, so this
-  // no longer parses anything — it only writes the slot.
-  const updatePoints = (i, n) => {
-    const updated = [...pointsPerPosition];
-    updated[i] = n;
-    setPointsPerPosition(updated);
   };
 
   const allHaveChars = players.every(
@@ -230,89 +210,16 @@ export default function PlayerSetup({ onStartGame, onGoToList, players, onPlayer
         )}
         {players.length >= 2 && sharedShowsOnly && !hasSharedAnime && (
           <Banner tone="warning" className="mb-5">
-            ⚠️ No anime titles are shared between all players — uncheck &quot;Shared shows
+            ⚠️ No two players share an anime title — uncheck &quot;Shared shows
             only&quot; or add matching titles.
           </Banner>
         )}
 
-        <Card title="⚙️ Settings" action={<DetailToggle />} padding="lg" className="mb-8 mt-4">
-          <Checkbox
-            label="Anime-first randomizer"
-            checked={twoStepRandom}
-            onChange={(e) => setTwoStepRandom(e.target.checked)}
-            className="mb-4"
-          />
-          <Checkbox
-            label="Enable Timer"
-            checked={timerEnabled}
-            onChange={(e) => setTimerEnabled(e.target.checked)}
-            className="mb-4"
-          />
-          <Checkbox
-            label="Shared shows only"
-            checked={sharedShowsOnly}
-            onChange={(e) => setSharedShowsOnly(e.target.checked)}
-            className="mb-4"
-          />
-          <Checkbox
-            label="🗣️ Talk it out"
-            checked={talkMode}
-            onChange={(e) => setTalkMode(e.target.checked)}
-            className="mb-2"
-          />
-          <SettingHelp
-            indent
-            className="mb-5"
-            more="Nothing is typed, so instead of a question history you get a running ✅/❌
-                  trail of each player's answers."
-          >
-            Ask your questions and say your guess out loud — the table taps what happened
-            and the turn passes on that one tap.
-          </SettingHelp>
-
-          {timerEnabled && (
-            <div className="mb-5 flex items-center gap-3 text-lg text-fg-strong">
-              <span>Seconds:</span>
-              {/* Steps by 15 — 30 to 300 in ones is 270 presses. */}
-              <NumberInput
-                size="sm"
-                value={timerSeconds}
-                min={30}
-                max={300}
-                step={15}
-                ariaLabel="Timer seconds"
-                onChange={setTimerSeconds}
-                className="w-44"
-              />
-            </div>
-          )}
-
-          <div>
-            <p className="mb-1 text-base text-fg-strong">Points per position:</p>
-            {/* One per row rather than four across. Four steppers sharing a row
-                left the number narrower than either of its own buttons, and the
-                online lobby's max-w-md card had no width for them at all. */}
-            {POSITIONS.map(({ icon, label }, i) => (
-              <CardRow key={label}>
-                <span className="text-fg-strong">
-                  <span className="mr-2 text-lg">{icon}</span>
-                  {label}
-                </span>
-                <NumberInput
-                  size="sm"
-                  value={pointsPerPosition[i]}
-                  min={0}
-                  max={99}
-                  ariaLabel={`Points for ${label}`}
-                  onChange={(n) => updatePoints(i, n)}
-                  className="w-40 flex-shrink-0"
-                />
-              </CardRow>
-            ))}
-          </div>
-
-          <SettingsFooter values={settings} defaults={DEFAULT_PREFS} onReset={applyDefaults} />
-        </Card>
+        {/* mb-2 on top of the card's own mb-6 keeps the gap above Start this
+            screen always had. */}
+        <div className="mb-2 mt-4">
+          <AniGuessSettings values={settings} onChange={change} local onReset={applyDefaults} />
+        </div>
 
         <Button
           variant="primary"

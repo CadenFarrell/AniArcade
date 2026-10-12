@@ -959,13 +959,14 @@ type-mismatched values against it. Two consequences that are easy to get wrong:
   discover it.
 
 **Every game's settings card is one component rendered by both screens** —
-`AniFakeSettings`, `AniRankSettings`, `AniTuneSettings`, `AniTagSettings`,
-`WavelengthSettings`, each beside its game's setup screen. They were hand-kept copies first,
-and every pair had drifted somewhere (AniWave's reset link sat inside the card online and
-under Start locally). A local-only or online-only option is a prop on the card (`local`,
+`AniGuessSettings`, `AniFakeSettings`, `AniRankSettings`, `AniTuneSettings`,
+`AniTagSettings`, `WavelengthSettings` and AniQuiz's `QuizSettings`, each beside its game's
+setup screen. They were hand-kept copies first, and every pair had drifted somewhere
+(AniWave's reset link sat inside the card online and under Start locally; AniGuess's two
+screens listed the same options in different orders). A local-only or online-only option is a prop on the card (`local`,
 `online`), never a second copy of it. Each card reports changes as one `onChange(key, value)`
 because the lobby's settings object *is* what leaves the host's device, and a setter per prop
-puts the drift back one level down. AniGuess is the exception that is not yet folded in.
+puts the drift back one level down.
 
 Adding an option means: the key in `prefs.js`; the control in the game's settings card; the
 key in **both** screens' settings object, seeded from `prefs` (the lobby's object is what
