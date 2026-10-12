@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "shows": {
     "5 centimeters per second": {
       "anilistId": 1689,
@@ -28,7 +28,8 @@
         "Travel",
         "Trains",
         "Male Protagonist"
-      ]
+      ],
+      "popularityRank": 205
     },
     "86 eighty-six": {
       "anilistId": 116589,
@@ -62,7 +63,8 @@
         "Dystopian",
         "Survival",
         "Ensemble Cast"
-      ]
+      ],
+      "popularityRank": 127
     },
     "91 days": {
       "anilistId": 21711,
@@ -92,7 +94,8 @@
         "Male Protagonist",
         "Gangs",
         "Anti-Hero"
-      ]
+      ],
+      "popularityRank": 294
     },
     "a certain magical index": {
       "anilistId": 4654,
@@ -128,7 +131,8 @@
         "Urban",
         "Tsundere",
         "Male Protagonist"
-      ]
+      ],
+      "popularityRank": 318
     },
     "a certain scientific railgun": {
       "anilistId": 6213,
@@ -164,7 +168,8 @@
         "Female Protagonist",
         "Urban Fantasy",
         "Robots"
-      ]
+      ],
+      "popularityRank": 429
     },
     "a couple of cuckoos": {
       "anilistId": 132052,
@@ -229,7 +234,8 @@
         "Heterosexual",
         "Unrequited Love",
         "Ensemble Cast"
-      ]
+      ],
+      "popularityRank": 496
     },
     "a place further than the universe": {
       "anilistId": 99426,
@@ -263,7 +269,8 @@
         "Primarily Female Cast",
         "Female Protagonist",
         "Snowscape"
-      ]
+      ],
+      "popularityRank": 395
     },
     "a sign of affection": {
       "anilistId": 166794,
@@ -298,7 +305,8 @@
         "Language Barrier",
         "Heterosexual",
         "College"
-      ]
+      ],
+      "popularityRank": 486
     },
     "a silent voice": {
       "anilistId": 20954,
@@ -329,7 +337,8 @@
         "Language Barrier",
         "Coming of Age",
         "Male Protagonist"
-      ]
+      ],
+      "popularityRank": 14
     },
     "a whisker away": {
       "anilistId": 114963,
@@ -366,7 +375,8 @@
         "Henshin",
         "Kemonomimi",
         "Family Life"
-      ]
+      ],
+      "popularityRank": 317
     },
     "akame ga kill!": {
       "anilistId": 20613,
@@ -405,7 +415,8 @@
         "Gore",
         "Crime",
         "Henshin"
-      ]
+      ],
+      "popularityRank": 41
     },
     "akashic records of bastard magic instructor": {
       "anilistId": 21700,
@@ -432,7 +443,8 @@
         "Male Protagonist",
         "Primarily Female Cast",
         "Tsundere"
-      ]
+      ],
+      "popularityRank": 291
     },
     "akira": {
       "anilistId": 47,
@@ -470,7 +482,8 @@
         "Urban",
         "Super Power",
         "Male Protagonist"
-      ]
+      ],
+      "popularityRank": 240
     },
     "akudama drive": {
       "anilistId": 116566,
@@ -502,7 +515,8 @@
         "Cyberpunk",
         "Fugitive",
         "Dystopian"
-      ]
+      ],
+      "popularityRank": 403
     },
     "alya sometimes hides her feelings in russian": {
       "anilistId": 162804,
@@ -534,7 +548,8 @@
         "Tsundere",
         "Male Protagonist",
         "School Club"
-      ]
+      ],
+      "popularityRank": 279
     },
     "amagi brilliant park": {
       "anilistId": 20602,
@@ -564,7 +579,8 @@
         "Magic",
         "Male Protagonist",
         "Economics"
-      ]
+      ],
+      "popularityRank": 401
     },
     "and you thought there is never a girl online?": {
       "anilistId": 21290,
@@ -597,7 +613,8 @@
         "Virtual World",
         "Male Protagonist",
         "School Club"
-      ]
+      ],
+      "popularityRank": 464
     },
     "angel beats!": {
       "anilistId": 6547,
@@ -635,7 +652,8 @@
         "Coming of Age",
         "Boarding School",
         "Male Protagonist"
-      ]
+      ],
+      "popularityRank": 71
     },
     "angels of death": {
       "anilistId": 99629,
@@ -667,7 +685,8 @@
         "Female Protagonist",
         "Assassins",
         "Suicide"
-      ]
+      ],
+      "popularityRank": 261
     },
     "anohana: the flower we saw that day": {
       "anilistId": 9989,
@@ -703,7 +722,8 @@
         "Rural",
         "Primarily Teen Cast",
         "Heterosexual"
-      ]
+      ],
+      "popularityRank": 88
     },
     "another": {
       "anilistId": 11111,
@@ -742,7 +762,8 @@
         "Survival",
         "Urban Fantasy",
         "Curses"
-      ]
+      ],
+      "popularityRank": 91
     },
     "arifureta: from commonplace to world's strongest": {
       "anilistId": 100668,
@@ -781,7 +802,8 @@
         "Dungeon",
         "Anti-Hero",
         "Nudity"
-      ]
+      ],
+      "popularityRank": 244
     },
     "asobi asobase - workshop of fun -": {
       "anilistId": 101001,
@@ -808,7 +830,8 @@
         "Primarily Female Cast",
         "Primarily Teen Cast",
         "School Club"
-      ]
+      ],
+      "popularityRank": 448
     },
     "assassination classroom": {
       "anilistId": 20755,
@@ -840,7 +863,8 @@
         "Primarily Teen Cast",
         "Shounen",
         "Ensemble Cast"
-      ]
+      ],
+      "popularityRank": 21
     },
     "assassination classroom second season": {
       "anilistId": 21170,
@@ -869,7 +893,8 @@
         "Primarily Teen Cast",
         "Coming of Age",
         "Ensemble Cast"
-      ]
+      ],
+      "popularityRank": 101
     },
     "attack on titan": {
       "anilistId": 16498,
@@ -906,6 +931,7 @@
         "Primarily Teen Cast",
         "Post-Apocalyptic"
       ],
+      "popularityRank": 1,
       "composer": "Hiroyuki Sawano"
     },
     "attack on titan final season the final chapters special 1": {
@@ -944,7 +970,8 @@
         "Military",
         "Gore",
         "Anti-Hero"
-      ]
+      ],
+      "popularityRank": 207
     },
     "attack on titan final season the final chapters special 2": {
       "anilistId": 162314,
@@ -982,7 +1009,8 @@
         "Super Power",
         "Male Protagonist",
         "Revenge"
-      ]
+      ],
+      "popularityRank": 392
     },
     "attack on titan: no regrets": {
       "anilistId": 20811,
@@ -1012,7 +1040,8 @@
         "Gore",
         "Orphan",
         "Anti-Hero"
-      ]
+      ],
+      "popularityRank": 435
     },
     "baccano!": {
       "anilistId": 2251,
@@ -1046,7 +1075,8 @@
         "Achronological Order",
         "Alchemy",
         "Historical"
-      ]
+      ],
+      "popularityRank": 321
     },
     "bakemonogatari": {
       "anilistId": 5081,
@@ -1083,7 +1113,8 @@
         "Surreal Comedy",
         "Male Protagonist",
         "Philosophy"
-      ]
+      ],
+      "popularityRank": 115
     },
     "baki": {
       "anilistId": 97888,
@@ -1110,7 +1141,8 @@
         "Primarily Male Cast",
         "Primarily Adult Cast",
         "Shounen"
-      ]
+      ],
+      "popularityRank": 489
     },
     "banana fish": {
       "anilistId": 100388,
@@ -1146,7 +1178,8 @@
         "Drugs",
         "Male Protagonist",
         "Criminal Organization"
-      ]
+      ],
+      "popularityRank": 139
     },
     "barakamon": {
       "anilistId": 20722,
@@ -1176,7 +1209,8 @@
         "Iyashikei",
         "Episodic",
         "Rehabilitation"
-      ]
+      ],
+      "popularityRank": 434
     },
     "beastars": {
       "anilistId": 107660,
@@ -1216,7 +1250,8 @@
         "Primarily Teen Cast",
         "Full CGI",
         "Cannibalism"
-      ]
+      ],
+      "popularityRank": 196
     },
     "berserk": {
       "anilistId": 33,
@@ -1253,7 +1288,8 @@
         "Male Protagonist",
         "Gore",
         "Medieval"
-      ]
+      ],
+      "popularityRank": 337
     },
     "beyond the boundary": {
       "anilistId": 18153,
@@ -1289,7 +1325,8 @@
         "School",
         "Primarily Teen Cast",
         "Heterosexual"
-      ]
+      ],
+      "popularityRank": 167
     },
     "black bullet": {
       "anilistId": 20457,
@@ -1324,7 +1361,8 @@
         "Military",
         "Kaiju",
         "Pandemic"
-      ]
+      ],
+      "popularityRank": 305
     },
     "black butler": {
       "anilistId": 4898,
@@ -1363,7 +1401,8 @@
         "Demons",
         "Detective",
         "Historical"
-      ]
+      ],
+      "popularityRank": 189
     },
     "black clover": {
       "anilistId": 97940,
@@ -1396,7 +1435,8 @@
         "Male Protagonist",
         "Super Power",
         "Ensemble Cast"
-      ]
+      ],
+      "popularityRank": 31
     },
     "black lagoon": {
       "anilistId": 889,
@@ -1430,7 +1470,8 @@
         "Seinen",
         "Pirates",
         "Primarily Adult Cast"
-      ]
+      ],
+      "popularityRank": 203
     },
     "bleach": {
       "anilistId": 269,
@@ -1463,7 +1504,8 @@
         "Ghost",
         "Male Protagonist",
         "Exorcism"
-      ]
+      ],
+      "popularityRank": 45
     },
     "bleach: thousand-year blood war": {
       "anilistId": 116674,
@@ -1497,7 +1539,8 @@
         "Super Power",
         "Male Protagonist",
         "Gore"
-      ]
+      ],
+      "popularityRank": 275
     },
     "bleach: thousand-year blood war - the separation": {
       "anilistId": 159322,
@@ -1532,7 +1575,8 @@
         "Male Protagonist",
         "Swordplay",
         "Urban Fantasy"
-      ]
+      ],
+      "popularityRank": 470
     },
     "blend-s": {
       "anilistId": 97994,
@@ -1564,7 +1608,8 @@
         "Female Protagonist",
         "Restaurant",
         "Maids"
-      ]
+      ],
+      "popularityRank": 349
     },
     "blood blockade battlefront": {
       "anilistId": 20727,
@@ -1592,7 +1637,8 @@
         "Ensemble Cast",
         "Urban",
         "Slapstick"
-      ]
+      ],
+      "popularityRank": 243
     },
     "blood lad": {
       "anilistId": 11633,
@@ -1625,7 +1671,8 @@
         "Delinquents",
         "Male Protagonist",
         "Urban"
-      ]
+      ],
+      "popularityRank": 482
     },
     "bloom into you": {
       "anilistId": 101573,
@@ -1659,7 +1706,8 @@
         "LGBTQ+ Themes",
         "Coming of Age",
         "School"
-      ]
+      ],
+      "popularityRank": 499
     },
     "blue box": {
       "anilistId": 170942,
@@ -1692,7 +1740,8 @@
         "Coming of Age",
         "Athletics",
         "Male Protagonist"
-      ]
+      ],
+      "popularityRank": 451
     },
     "blue exorcist": {
       "anilistId": 9919,
@@ -1729,7 +1778,8 @@
         "Youkai",
         "Male Protagonist",
         "Twins"
-      ]
+      ],
+      "popularityRank": 62
     },
     "blue exorcist: kyoto saga": {
       "anilistId": 21861,
@@ -1764,7 +1814,8 @@
         "Urban Fantasy",
         "Exorcism",
         "Swordplay"
-      ]
+      ],
+      "popularityRank": 352
     },
     "blue lock": {
       "anilistId": 137822,
@@ -1801,7 +1852,8 @@
         "Athletics",
         "Primarily Male Cast",
         "Battle Royale"
-      ]
+      ],
+      "popularityRank": 125
     },
     "blue period": {
       "anilistId": 128705,
@@ -1836,7 +1888,8 @@
         "School",
         "Philosophy",
         "Educational"
-      ]
+      ],
+      "popularityRank": 427
     },
     "blue spring ride": {
       "anilistId": 20596,
@@ -1875,7 +1928,8 @@
         "Heterosexual",
         "Coming of Age",
         "Primarily Teen Cast"
-      ]
+      ],
+      "popularityRank": 217
     },
     "bocchi the rock!": {
       "anilistId": 130003,
@@ -1907,7 +1961,8 @@
         "Primarily Teen Cast",
         "Rock Music",
         "Cute Girls Doing Cute Things"
-      ]
+      ],
+      "popularityRank": 184
     },
     "bofuri: i don't want to get hurt, so i'll max out my defense.": {
       "anilistId": 106479,
@@ -1946,7 +2001,8 @@
         "Cute Girls Doing Cute Things",
         "Isekai",
         "Magic"
-      ]
+      ],
+      "popularityRank": 347
     },
     "boruto: naruto next generations": {
       "anilistId": 97938,
@@ -1980,7 +2036,8 @@
         "Male Protagonist",
         "Primarily Child Cast",
         "Battle Royale"
-      ]
+      ],
+      "popularityRank": 249
     },
     "bottom-tier character tomozaki": {
       "anilistId": 112443,
@@ -2014,7 +2071,8 @@
         "Video Games",
         "School",
         "Heterosexual"
-      ]
+      ],
+      "popularityRank": 473
     },
     "btooom!": {
       "anilistId": 14345,
@@ -2044,7 +2102,8 @@
         "Video Games",
         "Female Protagonist",
         "Heterosexual"
-      ]
+      ],
+      "popularityRank": 402
     },
     "bungo stray dogs": {
       "anilistId": 21311,
@@ -2076,7 +2135,8 @@
         "Mafia",
         "Urban Fantasy",
         "Male Protagonist"
-      ]
+      ],
+      "popularityRank": 78
     },
     "bungo stray dogs 2": {
       "anilistId": 21679,
@@ -2108,7 +2168,8 @@
         "Classic Literature",
         "Mafia",
         "Male Protagonist"
-      ]
+      ],
+      "popularityRank": 225
     },
     "bungo stray dogs 3": {
       "anilistId": 103223,
@@ -2139,7 +2200,8 @@
         "Urban Fantasy",
         "Seinen",
         "Male Protagonist"
-      ]
+      ],
+      "popularityRank": 295
     },
     "call of the night": {
       "anilistId": 141391,
@@ -2181,7 +2243,8 @@
         "Female Protagonist",
         "Male Protagonist",
         "Heterosexual"
-      ]
+      ],
+      "popularityRank": 163
     },
     "cautious hero: the hero is overpowered but overly cautious": {
       "anilistId": 105156,
@@ -2213,7 +2276,8 @@
         "Cultivation",
         "Gods",
         "Female Protagonist"
-      ]
+      ],
+      "popularityRank": 292
     },
     "cells at work!": {
       "anilistId": 100977,
@@ -2246,7 +2310,8 @@
         "Anthropomorphism",
         "Episodic",
         "Female Protagonist"
-      ]
+      ],
+      "popularityRank": 286
     },
     "chainsaw man": {
       "anilistId": 127230,
@@ -2276,7 +2341,8 @@
         "Male Protagonist",
         "Gore",
         "Shapeshifting"
-      ]
+      ],
+      "popularityRank": 20
     },
     "chainsaw man – the movie: reze arc": {
       "anilistId": 171627,
@@ -2309,7 +2375,8 @@
         "Male Protagonist",
         "Urban",
         "Heterosexual"
-      ]
+      ],
+      "popularityRank": 231
     },
     "charlotte": {
       "anilistId": 20997,
@@ -2349,7 +2416,8 @@
         "Male Protagonist",
         "Urban",
         "School Club"
-      ]
+      ],
+      "popularityRank": 75
     },
     "chivalry of a failed knight": {
       "anilistId": 21092,
@@ -2378,7 +2446,8 @@
         "Tsundere",
         "Heterosexual",
         "Magic"
-      ]
+      ],
+      "popularityRank": 215
     },
     "citrus": {
       "anilistId": 97832,
@@ -2410,7 +2479,8 @@
         "Female Protagonist",
         "LGBTQ+ Themes",
         "Primarily Female Cast"
-      ]
+      ],
+      "popularityRank": 467
     },
     "clannad": {
       "anilistId": 2167,
@@ -2448,7 +2518,8 @@
         "Family Life",
         "Urban Fantasy",
         "Male Protagonist"
-      ]
+      ],
+      "popularityRank": 147
     },
     "clannad: after story": {
       "anilistId": 4181,
@@ -2483,7 +2554,8 @@
         "Philosophy",
         "Marriage",
         "Male Protagonist"
-      ]
+      ],
+      "popularityRank": 254
     },
     "classroom of the elite": {
       "anilistId": 98659,
@@ -2521,7 +2593,8 @@
         "Male Protagonist",
         "Survival",
         "Blackmail"
-      ]
+      ],
+      "popularityRank": 68
     },
     "code geass: lelouch of the rebellion": {
       "anilistId": 1575,
@@ -2556,7 +2629,8 @@
         "Class Struggle",
         "Politics",
         "Revenge"
-      ]
+      ],
+      "popularityRank": 50
     },
     "code geass: lelouch of the rebellion r2": {
       "anilistId": 2904,
@@ -2591,7 +2665,8 @@
         "Class Struggle",
         "Revenge",
         "Politics"
-      ]
+      ],
+      "popularityRank": 103
     },
     "cowboy bebop": {
       "anilistId": 1,
@@ -2624,7 +2699,8 @@
         "Ensemble Cast",
         "Primarily Adult Cast",
         "Philosophy"
-      ]
+      ],
+      "popularityRank": 58
     },
     "cyberpunk: edgerunners": {
       "anilistId": 120377,
@@ -2657,7 +2733,8 @@
         "Cyborg",
         "Male Protagonist",
         "Urban"
-      ]
+      ],
+      "popularityRank": 90
     },
     "daily lives of high school boys": {
       "anilistId": 11843,
@@ -2689,7 +2766,8 @@
         "Slapstick",
         "Satire",
         "Meta"
-      ]
+      ],
+      "popularityRank": 312
     },
     "dan da dan": {
       "anilistId": 171018,
@@ -2728,7 +2806,8 @@
         "Aliens",
         "Primarily Teen Cast",
         "Surreal Comedy"
-      ]
+      ],
+      "popularityRank": 92
     },
     "danganronpa: the animation": {
       "anilistId": 16592,
@@ -2763,7 +2842,8 @@
         "Detective",
         "Amnesia",
         "School"
-      ]
+      ],
+      "popularityRank": 236
     },
     "darker than black": {
       "anilistId": 2025,
@@ -2798,7 +2878,8 @@
         "Crime",
         "Urban",
         "Assassins"
-      ]
+      ],
+      "popularityRank": 359
     },
     "darling in the franxx": {
       "anilistId": 99423,
@@ -2835,7 +2916,8 @@
         "Post-Apocalyptic",
         "Primarily Teen Cast",
         "Dystopian"
-      ]
+      ],
+      "popularityRank": 49
     },
     "darwin's game": {
       "anilistId": 105190,
@@ -2870,7 +2952,8 @@
         "Battle Royale",
         "Male Protagonist",
         "Yandere"
-      ]
+      ],
+      "popularityRank": 371
     },
     "date a live": {
       "anilistId": 15583,
@@ -2906,7 +2989,8 @@
         "Male Protagonist",
         "Super Power",
         "Urban Fantasy"
-      ]
+      ],
+      "popularityRank": 210
     },
     "deadman wonderland": {
       "anilistId": 6880,
@@ -2938,7 +3022,8 @@
         "Gore",
         "Death Game",
         "Anti-Hero"
-      ]
+      ],
+      "popularityRank": 206
     },
     "death note": {
       "anilistId": 1535,
@@ -2976,7 +3061,8 @@
         "Male Protagonist",
         "Fugitive",
         "Police"
-      ]
+      ],
+      "popularityRank": 4
     },
     "death parade": {
       "anilistId": 20931,
@@ -3011,7 +3097,8 @@
         "Bar",
         "Primarily Adult Cast",
         "Episodic"
-      ]
+      ],
+      "popularityRank": 59
     },
     "delicious in dungeon": {
       "anilistId": 153518,
@@ -3045,7 +3132,8 @@
         "Primarily Adult Cast",
         "Ensemble Cast",
         "Elf"
-      ]
+      ],
+      "popularityRank": 248
     },
     "demon slayer -kimetsu no yaiba- the movie: mugen train": {
       "anilistId": 112151,
@@ -3080,7 +3168,8 @@
         "Trains",
         "Curses",
         "Male Protagonist"
-      ]
+      ],
+      "popularityRank": 47
     },
     "demon slayer: kimetsu no yaiba": {
       "anilistId": 101922,
@@ -3114,7 +3203,8 @@
         "Male Protagonist",
         "Vampire",
         "Travel"
-      ]
+      ],
+      "popularityRank": 2
     },
     "demon slayer: kimetsu no yaiba entertainment district arc": {
       "anilistId": 142329,
@@ -3148,7 +3238,8 @@
         "Male Protagonist",
         "Oiran",
         "Curses"
-      ]
+      ],
+      "popularityRank": 53
     },
     "demon slayer: kimetsu no yaiba hashira training arc": {
       "anilistId": 166240,
@@ -3181,7 +3272,8 @@
         "Cultivation",
         "Male Protagonist",
         "Curses"
-      ]
+      ],
+      "popularityRank": 172
     },
     "demon slayer: kimetsu no yaiba infinity castle": {
       "anilistId": 178788,
@@ -3215,7 +3307,8 @@
         "War",
         "Shounen",
         "Revenge"
-      ]
+      ],
+      "popularityRank": 304
     },
     "demon slayer: kimetsu no yaiba mugen train arc": {
       "anilistId": 129874,
@@ -3251,7 +3344,8 @@
         "Male Protagonist",
         "Curses",
         "Trains"
-      ]
+      ],
+      "popularityRank": 106
     },
     "demon slayer: kimetsu no yaiba swordsmith village arc": {
       "anilistId": 145139,
@@ -3286,7 +3380,8 @@
         "Male Protagonist",
         "Super Power",
         "Curses"
-      ]
+      ],
+      "popularityRank": 100
     },
     "devilman crybaby": {
       "anilistId": 98460,
@@ -3320,7 +3415,8 @@
         "Gore",
         "Urban Fantasy",
         "Shapeshifting"
-      ]
+      ],
+      "popularityRank": 111
     },
     "domestic girlfriend": {
       "anilistId": 103139,
@@ -3351,7 +3447,8 @@
         "Family Life",
         "Teacher",
         "Heterosexual"
-      ]
+      ],
+      "popularityRank": 256
     },
     "don't toy with me, miss nagatoro": {
       "anilistId": 120697,
@@ -3381,7 +3478,8 @@
         "School",
         "Heterosexual",
         "Tsundere"
-      ]
+      ],
+      "popularityRank": 178
     },
     "dorohedoro": {
       "anilistId": 105228,
@@ -3416,7 +3514,8 @@
         "Magic",
         "Amnesia",
         "CGI"
-      ]
+      ],
+      "popularityRank": 320
     },
     "dororo": {
       "anilistId": 101347,
@@ -3449,7 +3548,8 @@
         "Curses",
         "Swordplay",
         "Samurai"
-      ]
+      ],
+      "popularityRank": 98
     },
     "dr. stone": {
       "anilistId": 105333,
@@ -3478,7 +3578,8 @@
         "Educational",
         "Male Protagonist",
         "Shounen"
-      ]
+      ],
+      "popularityRank": 35
     },
     "dr. stone new world": {
       "anilistId": 131518,
@@ -3511,7 +3612,8 @@
         "Male Protagonist",
         "Shounen",
         "Primarily Male Cast"
-      ]
+      ],
+      "popularityRank": 287
     },
     "dr. stone: stone wars": {
       "anilistId": 113936,
@@ -3540,7 +3642,8 @@
         "Male Protagonist",
         "War",
         "Lost Civilization"
-      ]
+      ],
+      "popularityRank": 118
     },
     "dragon ball": {
       "anilistId": 223,
@@ -3575,7 +3678,8 @@
         "Travel",
         "Male Protagonist",
         "Cultivation"
-      ]
+      ],
+      "popularityRank": 235
     },
     "dragon ball super": {
       "anilistId": 21175,
@@ -3611,7 +3715,8 @@
         "Aliens",
         "Space",
         "Gods"
-      ]
+      ],
+      "popularityRank": 262
     },
     "dragon ball z": {
       "anilistId": 813,
@@ -3644,7 +3749,8 @@
         "Henshin",
         "Male Protagonist",
         "Cultivation"
-      ]
+      ],
+      "popularityRank": 194
     },
     "durarara!!": {
       "anilistId": 6746,
@@ -3680,7 +3786,8 @@
         "Ensemble Cast",
         "Dullahan",
         "Delinquents"
-      ]
+      ],
+      "popularityRank": 151
     },
     "elfen lied": {
       "anilistId": 226,
@@ -3718,7 +3825,8 @@
         "Monster Girl",
         "Amnesia",
         "Urban Fantasy"
-      ]
+      ],
+      "popularityRank": 173
     },
     "erased": {
       "anilistId": 21234,
@@ -3758,7 +3866,8 @@
         "Male Protagonist",
         "Primarily Child Cast",
         "Detective"
-      ]
+      ],
+      "popularityRank": 27
     },
     "ergo proxy": {
       "anilistId": 790,
@@ -3793,7 +3902,8 @@
         "Cyberpunk",
         "Robots",
         "Amnesia"
-      ]
+      ],
+      "popularityRank": 418
     },
     "eromanga sensei": {
       "anilistId": 21685,
@@ -3830,7 +3940,8 @@
         "Drawing",
         "Hikikomori",
         "Tsundere"
-      ]
+      ],
+      "popularityRank": 329
     },
     "evangelion: 1.0 you are (not) alone": {
       "anilistId": 2759,
@@ -3864,7 +3975,8 @@
         "Dystopian",
         "Male Protagonist",
         "Military"
-      ]
+      ],
+      "popularityRank": 465
     },
     "fairy tail": {
       "anilistId": 6702,
@@ -3902,7 +4014,8 @@
         "Found Family",
         "Ensemble Cast",
         "Male Protagonist"
-      ]
+      ],
+      "popularityRank": 94
     },
     "fairy tail series 2": {
       "anilistId": 20626,
@@ -3933,7 +4046,8 @@
         "Anthropomorphism",
         "Super Power",
         "Dragons"
-      ]
+      ],
+      "popularityRank": 335
     },
     "fate/stay night": {
       "anilistId": 356,
@@ -3970,7 +4084,8 @@
         "Urban Fantasy",
         "Mythology",
         "Heterosexual"
-      ]
+      ],
+      "popularityRank": 324
     },
     "fate/stay night [heaven's feel] i. presage flower": {
       "anilistId": 20791,
@@ -4004,7 +4119,8 @@
         "Assassins",
         "Swordplay",
         "Orphan"
-      ]
+      ],
+      "popularityRank": 459
     },
     "fate/stay night: unlimited blade works": {
       "anilistId": 19603,
@@ -4037,7 +4153,8 @@
         "Super Power",
         "Urban Fantasy",
         "Mythology"
-      ]
+      ],
+      "popularityRank": 183
     },
     "fate/zero": {
       "anilistId": 10087,
@@ -4072,7 +4189,8 @@
         "Ensemble Cast",
         "Anti-Hero",
         "Death Game"
-      ]
+      ],
+      "popularityRank": 113
     },
     "fire force": {
       "anilistId": 105310,
@@ -4108,7 +4226,8 @@
         "Shounen",
         "Demons",
         "Urban"
-      ]
+      ],
+      "popularityRank": 54
     },
     "flcl": {
       "anilistId": 227,
@@ -4140,7 +4259,8 @@
         "Meta",
         "Female Protagonist",
         "Philosophy"
-      ]
+      ],
+      "popularityRank": 274
     },
     "food wars!": {
       "anilistId": 20923,
@@ -4176,7 +4296,8 @@
         "School",
         "Shounen",
         "Nudity"
-      ]
+      ],
+      "popularityRank": 84
     },
     "food wars! the fifth plate": {
       "anilistId": 114043,
@@ -4206,7 +4327,8 @@
         "Nudity",
         "Primarily Teen Cast",
         "Super Power"
-      ]
+      ],
+      "popularityRank": 445
     },
     "food wars! the fourth plate": {
       "anilistId": 109963,
@@ -4233,7 +4355,8 @@
         "School",
         "Male Protagonist",
         "Nudity"
-      ]
+      ],
+      "popularityRank": 361
     },
     "food wars! the second plate": {
       "anilistId": 21518,
@@ -4268,7 +4391,8 @@
         "Shounen",
         "Educational",
         "Nudity"
-      ]
+      ],
+      "popularityRank": 190
     },
     "food wars! the third plate": {
       "anilistId": 99255,
@@ -4299,7 +4423,8 @@
         "Primarily Teen Cast",
         "Male Protagonist",
         "Educational"
-      ]
+      ],
+      "popularityRank": 245
     },
     "food wars! the third plate: totsuki train arc": {
       "anilistId": 100773,
@@ -4329,7 +4454,8 @@
         "School",
         "Educational",
         "Nudity"
-      ]
+      ],
+      "popularityRank": 378
     },
     "free! -iwatobi swim club-": {
       "anilistId": 18507,
@@ -4362,7 +4488,8 @@
         "Male Protagonist",
         "Coming of Age",
         "Cute Boys Doing Cute Things"
-      ]
+      ],
+      "popularityRank": 341
     },
     "frieren: beyond journey’s end": {
       "anilistId": 154587,
@@ -4397,7 +4524,8 @@
         "Female Protagonist",
         "Philosophy",
         "Medieval"
-      ]
+      ],
+      "popularityRank": 56
     },
     "from the new world": {
       "anilistId": 13125,
@@ -4434,7 +4562,8 @@
         "Coming of Age",
         "Super Power",
         "Female Protagonist"
-      ]
+      ],
+      "popularityRank": 354
     },
     "fruits basket": {
       "anilistId": 111762,
@@ -4468,7 +4597,8 @@
         "Coming of Age",
         "Found Family",
         "Mythology"
-      ]
+      ],
+      "popularityRank": 332
     },
     "fruits basket (2019)": {
       "anilistId": 105334,
@@ -4502,7 +4632,8 @@
         "Family Life",
         "Shoujo",
         "Mythology"
-      ]
+      ],
+      "popularityRank": 138
     },
     "fullmetal alchemist": {
       "anilistId": 121,
@@ -4535,7 +4666,8 @@
         "Male Protagonist",
         "Military",
         "Coming of Age"
-      ]
+      ],
+      "popularityRank": 181
     },
     "fullmetal alchemist: brotherhood": {
       "anilistId": 5114,
@@ -4570,7 +4702,8 @@
         "Shounen",
         "Politics",
         "Male Protagonist"
-      ]
+      ],
+      "popularityRank": 11
     },
     "gachiakuta": {
       "anilistId": 178025,
@@ -4607,7 +4740,8 @@
         "Dystopian",
         "Shounen",
         "Revenge"
-      ]
+      ],
+      "popularityRank": 199
     },
     "gamers!": {
       "anilistId": 97766,
@@ -4639,7 +4773,8 @@
         "School",
         "Ensemble Cast",
         "Urban"
-      ]
+      ],
+      "popularityRank": 367
     },
     "gate": {
       "anilistId": 20994,
@@ -4671,7 +4806,8 @@
         "Politics",
         "Male Protagonist",
         "Primarily Adult Cast"
-      ]
+      ],
+      "popularityRank": 298
     },
     "ghost in the shell": {
       "anilistId": 43,
@@ -4703,7 +4839,8 @@
         "Urban",
         "Cyborg",
         "Robots"
-      ]
+      ],
+      "popularityRank": 363
     },
     "gintama": {
       "anilistId": 918,
@@ -4739,7 +4876,8 @@
         "Found Family",
         "Meta",
         "Slapstick"
-      ]
+      ],
+      "popularityRank": 150
     },
     "given": {
       "anilistId": 108430,
@@ -4768,7 +4906,8 @@
         "Male Protagonist",
         "Primarily Male Cast",
         "LGBTQ+ Themes"
-      ]
+      ],
+      "popularityRank": 267
     },
     "gleipnir": {
       "anilistId": 108241,
@@ -4802,7 +4941,8 @@
         "Death Game",
         "Gore",
         "Body Horror"
-      ]
+      ],
+      "popularityRank": 437
     },
     "goblin slayer": {
       "anilistId": 101165,
@@ -4840,7 +4980,8 @@
         "Rescue",
         "Rehabilitation",
         "Male Protagonist"
-      ]
+      ],
+      "popularityRank": 144
     },
     "golden kamuy": {
       "anilistId": 99699,
@@ -4877,7 +5018,8 @@
         "Outdoor Activities",
         "Survival",
         "Military"
-      ]
+      ],
+      "popularityRank": 491
     },
     "golden time": {
       "anilistId": 17895,
@@ -4909,7 +5051,8 @@
         "College",
         "Love Triangle",
         "Heterosexual"
-      ]
+      ],
+      "popularityRank": 182
     },
     "grand blue dreaming": {
       "anilistId": 100922,
@@ -4942,7 +5085,8 @@
         "Nudity",
         "College",
         "Primarily Adult Cast"
-      ]
+      ],
+      "popularityRank": 234
     },
     "grave of the fireflies": {
       "anilistId": 578,
@@ -4970,7 +5114,8 @@
         "Family Life",
         "Historical",
         "Primarily Child Cast"
-      ]
+      ],
+      "popularityRank": 285
     },
     "great pretender": {
       "anilistId": 110349,
@@ -5005,7 +5150,8 @@
         "Primarily Adult Cast",
         "Male Protagonist",
         "Urban"
-      ]
+      ],
+      "popularityRank": 241
     },
     "grimgar of fantasy and ash": {
       "anilistId": 21428,
@@ -5038,7 +5184,8 @@
         "Ensemble Cast",
         "Magic",
         "Male Protagonist"
-      ]
+      ],
+      "popularityRank": 342
     },
     "gto: great teacher onizuka": {
       "anilistId": 245,
@@ -5070,7 +5217,8 @@
         "Delinquents",
         "Male Protagonist",
         "Coming of Age"
-      ]
+      ],
+      "popularityRank": 364
     },
     "guilty crown": {
       "anilistId": 10793,
@@ -5106,7 +5254,8 @@
         "Pandemic",
         "Post-Apocalyptic",
         "Anti-Hero"
-      ]
+      ],
+      "popularityRank": 222
     },
     "gurren lagann": {
       "anilistId": 2001,
@@ -5144,7 +5293,8 @@
         "Male Protagonist",
         "Dystopian",
         "Philosophy"
-      ]
+      ],
+      "popularityRank": 95
     },
     "haganai": {
       "anilistId": 10719,
@@ -5178,7 +5328,8 @@
         "Female Harem",
         "Primarily Female Cast",
         "Heterosexual"
-      ]
+      ],
+      "popularityRank": 397
     },
     "haikyu!!": {
       "anilistId": 20464,
@@ -5209,7 +5360,8 @@
         "Primarily Male Cast",
         "Shounen",
         "Ensemble Cast"
-      ]
+      ],
+      "popularityRank": 30
     },
     "haikyu!! to the top": {
       "anilistId": 106625,
@@ -5238,6 +5390,7 @@
         "Primarily Male Cast",
         "Ensemble Cast"
       ],
+      "popularityRank": 152,
       "producers": [
         "Rakuonsha"
       ]
@@ -5273,7 +5426,8 @@
         "Shounen",
         "Martial Arts",
         "Coming of Age"
-      ]
+      ],
+      "popularityRank": 466
     },
     "haven't you heard? i'm sakamoto": {
       "anilistId": 21595,
@@ -5304,7 +5458,8 @@
         "Male Protagonist",
         "Cute Boys Doing Cute Things",
         "Delinquents"
-      ]
+      ],
+      "popularityRank": 315
     },
     "hellsing": {
       "anilistId": 270,
@@ -5336,7 +5491,8 @@
         "Noir",
         "Gore",
         "Military"
-      ]
+      ],
+      "popularityRank": 462
     },
     "hellsing ultimate": {
       "anilistId": 777,
@@ -5369,7 +5525,8 @@
         "War",
         "Urban Fantasy",
         "Foreign"
-      ]
+      ],
+      "popularityRank": 336
     },
     "hell’s paradise": {
       "anilistId": 128893,
@@ -5402,6 +5559,7 @@
         "Shounen",
         "Ninja"
       ],
+      "popularityRank": 105,
       "composer": "Yoshiaki Dewa"
     },
     "higehiro: after being rejected, i shaved and took in a high school runaway": {
@@ -5435,7 +5593,8 @@
         "Male Protagonist",
         "Heterosexual",
         "Love Triangle"
-      ]
+      ],
+      "popularityRank": 327
     },
     "high school dxd": {
       "anilistId": 11617,
@@ -5473,7 +5632,8 @@
         "Primarily Female Cast",
         "Male Protagonist",
         "Heterosexual"
-      ]
+      ],
+      "popularityRank": 135
     },
     "high school dxd born": {
       "anilistId": 20745,
@@ -5512,7 +5672,8 @@
         "Demons",
         "Nudity",
         "Magic"
-      ]
+      ],
+      "popularityRank": 358
     },
     "high school dxd hero": {
       "anilistId": 97767,
@@ -5551,7 +5712,8 @@
         "Primarily Female Cast",
         "Demons",
         "Male Protagonist"
-      ]
+      ],
+      "popularityRank": 500
     },
     "high school dxd new": {
       "anilistId": 15451,
@@ -5592,7 +5754,8 @@
         "Male Protagonist",
         "Demons",
         "Angels"
-      ]
+      ],
+      "popularityRank": 299
     },
     "high school of the dead": {
       "anilistId": 8074,
@@ -5629,7 +5792,8 @@
         "Gore",
         "Urban Fantasy",
         "Primarily Teen Cast"
-      ]
+      ],
+      "popularityRank": 159
     },
     "himouto! umaru-chan": {
       "anilistId": 20987,
@@ -5660,7 +5824,8 @@
         "Female Protagonist",
         "Family Life",
         "Primarily Female Cast"
-      ]
+      ],
+      "popularityRank": 376
     },
     "hinamatsuri": {
       "anilistId": 100077,
@@ -5697,7 +5862,8 @@
         "Ensemble Cast",
         "Parenthood",
         "Surreal Comedy"
-      ]
+      ],
+      "popularityRank": 446
     },
     "hokkaido gals are super adorable!": {
       "anilistId": 155963,
@@ -5770,7 +5936,8 @@
         "Male Protagonist",
         "Heterosexual",
         "Ensemble Cast"
-      ]
+      ],
+      "popularityRank": 40
     },
     "horimiya: the missing pieces": {
       "anilistId": 163132,
@@ -5805,7 +5972,8 @@
         "School",
         "Slapstick",
         "Ensemble Cast"
-      ]
+      ],
+      "popularityRank": 404
     },
     "how a realist hero rebuilt the kingdom": {
       "anilistId": 117612,
@@ -5839,7 +6007,8 @@
         "Economics",
         "Male Protagonist",
         "Royal Affairs"
-      ]
+      ],
+      "popularityRank": 487
     },
     "how not to summon a demon lord": {
       "anilistId": 101004,
@@ -5870,7 +6039,8 @@
         "Male Protagonist",
         "Anti-Hero",
         "Elf"
-      ]
+      ],
+      "popularityRank": 276
     },
     "howl‘s moving castle": {
       "anilistId": 431,
@@ -5904,7 +6074,8 @@
         "Witch",
         "Elderly Protagonist",
         "Found Family"
-      ]
+      ],
+      "popularityRank": 102
     },
     "hunter x hunter (2011)": {
       "anilistId": 11061,
@@ -5938,7 +6109,8 @@
         "Travel",
         "Philosophy",
         "Ensemble Cast"
-      ]
+      ],
+      "popularityRank": 6
     },
     "hyouka": {
       "anilistId": 12189,
@@ -5973,7 +6145,8 @@
         "Primarily Teen Cast",
         "Male Protagonist",
         "Coming of Age"
-      ]
+      ],
+      "popularityRank": 112
     },
     "i got a cheat skill in another world and became unrivaled in the real world, too": {
       "anilistId": 153845,
@@ -6010,7 +6183,8 @@
         "School",
         "Animals",
         "Female Harem"
-      ]
+      ],
+      "popularityRank": 443
     },
     "i want to eat your pancreas": {
       "anilistId": 99750,
@@ -6045,7 +6219,8 @@
         "Female Protagonist",
         "Heterosexual",
         "Primarily Teen Cast"
-      ]
+      ],
+      "popularityRank": 99
     },
     "i've been killing slimes for 300 years and maxed out my level": {
       "anilistId": 112608,
@@ -6088,7 +6263,8 @@
         "Family Life",
         "Witch",
         "Cute Girls Doing Cute Things"
-      ]
+      ],
+      "popularityRank": 488
     },
     "in another world with my smartphone": {
       "anilistId": 98491,
@@ -6119,7 +6295,8 @@
         "Magic",
         "Medieval",
         "Anachronism"
-      ]
+      ],
+      "popularityRank": 422
     },
     "in/spectre": {
       "anilistId": 107201,
@@ -6154,7 +6331,8 @@
         "Female Protagonist",
         "Youkai",
         "Detective"
-      ]
+      ],
+      "popularityRank": 409
     },
     "into the forest of fireflies' light": {
       "anilistId": 10408,
@@ -6189,7 +6367,8 @@
         "Urban Fantasy",
         "Male Protagonist",
         "Shoujo"
-      ]
+      ],
+      "popularityRank": 307
     },
     "inuyasha": {
       "anilistId": 249,
@@ -6223,7 +6402,8 @@
         "Female Protagonist",
         "Love Triangle",
         "Rural"
-      ]
+      ],
+      "popularityRank": 373
     },
     "inuyashiki last hero": {
       "anilistId": 97922,
@@ -6259,7 +6439,8 @@
         "Male Protagonist",
         "Urban",
         "CGI"
-      ]
+      ],
+      "popularityRank": 370
     },
     "is it wrong to try to pick up girls in a dungeon?": {
       "anilistId": 20920,
@@ -6294,7 +6475,8 @@
         "Medieval",
         "Magic",
         "Ensemble Cast"
-      ]
+      ],
+      "popularityRank": 86
     },
     "jojo's bizarre adventure (tv)": {
       "anilistId": 14719,
@@ -6324,7 +6506,8 @@
         "Primarily Male Cast",
         "Cultivation",
         "Shounen"
-      ]
+      ],
+      "popularityRank": 57
     },
     "jojo's bizarre adventure: diamond is unbreakable": {
       "anilistId": 21450,
@@ -6358,7 +6541,8 @@
         "Urban",
         "Shounen",
         "Male Protagonist"
-      ]
+      ],
+      "popularityRank": 134
     },
     "jojo's bizarre adventure: golden wind": {
       "anilistId": 102883,
@@ -6392,7 +6576,8 @@
         "Gangs",
         "Urban Fantasy",
         "Male Protagonist"
-      ]
+      ],
+      "popularityRank": 148
     },
     "jojo's bizarre adventure: stardust crusaders": {
       "anilistId": 20474,
@@ -6424,7 +6609,8 @@
         "Primarily Male Cast",
         "Shounen",
         "Male Protagonist"
-      ]
+      ],
+      "popularityRank": 114
     },
     "jojo's bizarre adventure: stardust crusaders - battle in egypt": {
       "anilistId": 20799,
@@ -6457,7 +6643,8 @@
         "Travel",
         "Shounen",
         "Foreign"
-      ]
+      ],
+      "popularityRank": 154
     },
     "jojo's bizarre adventure: stone ocean": {
       "anilistId": 131942,
@@ -6491,7 +6678,8 @@
         "Foreign",
         "Urban Fantasy",
         "Prison"
-      ]
+      ],
+      "popularityRank": 313
     },
     "josee, the tiger and the fish": {
       "anilistId": 113596,
@@ -6524,7 +6712,8 @@
         "Tsundere",
         "Heterosexual",
         "Primarily Adult Cast"
-      ]
+      ],
+      "popularityRank": 334
     },
     "jujutsu kaisen": {
       "anilistId": 113415,
@@ -6558,7 +6747,8 @@
         "Super Power",
         "Youkai",
         "Exorcism"
-      ]
+      ],
+      "popularityRank": 3
     },
     "jujutsu kaisen 0": {
       "anilistId": 131573,
@@ -6589,7 +6779,8 @@
         "Urban Fantasy",
         "Shounen",
         "Super Power"
-      ]
+      ],
+      "popularityRank": 73
     },
     "jujutsu kaisen season 3: the culling game": {
       "anilistId": 172463,
@@ -6622,7 +6813,8 @@
         "Shounen",
         "Death Game",
         "Super Power"
-      ]
+      ],
+      "popularityRank": 198
     },
     "k": {
       "anilistId": 14467,
@@ -6655,7 +6847,8 @@
         "Urban",
         "Shapeshifting",
         "Revenge"
-      ]
+      ],
+      "popularityRank": 372
     },
     "k-on!": {
       "anilistId": 5680,
@@ -6691,7 +6884,8 @@
         "Primarily Female Cast",
         "Female Protagonist",
         "School"
-      ]
+      ],
+      "popularityRank": 168
     },
     "kabaneri of the iron fortress": {
       "anilistId": 21196,
@@ -6729,7 +6923,8 @@
         "Trains",
         "Pandemic",
         "Guns"
-      ]
+      ],
+      "popularityRank": 300
     },
     "kaguya-sama: love is war": {
       "anilistId": 101921,
@@ -6764,7 +6959,8 @@
         "Primarily Teen Cast",
         "School Club",
         "Surreal Comedy"
-      ]
+      ],
+      "popularityRank": 34
     },
     "kaguya-sama: love is war -the first kiss that never ends-": {
       "anilistId": 151384,
@@ -6796,7 +6992,8 @@
         "School",
         "Male Protagonist",
         "Primarily Teen Cast"
-      ]
+      ],
+      "popularityRank": 455
     },
     "kaguya-sama: love is war -ultra romantic-": {
       "anilistId": 125367,
@@ -6830,7 +7027,8 @@
         "Slapstick",
         "Primarily Teen Cast",
         "Ensemble Cast"
-      ]
+      ],
+      "popularityRank": 153
     },
     "kaguya-sama: love is war?": {
       "anilistId": 112641,
@@ -6865,7 +7063,8 @@
         "Tsundere",
         "Female Protagonist",
         "Male Protagonist"
-      ]
+      ],
+      "popularityRank": 74
     },
     "kaiju no. 8": {
       "anilistId": 153288,
@@ -6897,6 +7096,7 @@
         "Super Power",
         "Henshin"
       ],
+      "popularityRank": 164,
       "director": "Shigeyuki Miya"
     },
     "kakegurui": {
@@ -6933,7 +7133,8 @@
         "Primarily Female Cast",
         "Primarily Teen Cast",
         "Ojou-sama"
-      ]
+      ],
+      "popularityRank": 65
     },
     "kakegurui xx": {
       "anilistId": 100876,
@@ -6972,7 +7173,8 @@
         "Primarily Female Cast",
         "Primarily Teen Cast",
         "Anti-Hero"
-      ]
+      ],
+      "popularityRank": 229
     },
     "kamisama kiss": {
       "anilistId": 14713,
@@ -7009,7 +7211,8 @@
         "Youkai",
         "Kemonomimi",
         "Heterosexual"
-      ]
+      ],
+      "popularityRank": 384
     },
     "kiki's delivery service": {
       "anilistId": 512,
@@ -7042,7 +7245,8 @@
         "Female Protagonist",
         "Magic",
         "Primarily Female Cast"
-      ]
+      ],
+      "popularityRank": 331
     },
     "kill la kill": {
       "anilistId": 18679,
@@ -7079,7 +7283,8 @@
         "Nudity",
         "Surreal Comedy",
         "Class Struggle"
-      ]
+      ],
+      "popularityRank": 79
     },
     "kimi ni todoke: from me to you": {
       "anilistId": 6045,
@@ -7114,7 +7319,8 @@
         "Primarily Teen Cast",
         "School",
         "Heterosexual"
-      ]
+      ],
+      "popularityRank": 204
     },
     "kiznaiver": {
       "anilistId": 21421,
@@ -7150,7 +7356,8 @@
         "Human Experimentation",
         "Unrequited Love",
         "Coming of Age"
-      ]
+      ],
+      "popularityRank": 284
     },
     "kizumonogatari part 1: tekketsu": {
       "anilistId": 9260,
@@ -7184,7 +7391,8 @@
         "Urban",
         "Body Horror",
         "Male Protagonist"
-      ]
+      ],
+      "popularityRank": 393
     },
     "kizumonogatari part 2: nekketsu": {
       "anilistId": 21399,
@@ -7219,7 +7427,8 @@
         "Urban Fantasy",
         "Body Horror",
         "Noir"
-      ]
+      ],
+      "popularityRank": 468
     },
     "kizumonogatari part 3: reiketsu": {
       "anilistId": 21400,
@@ -7254,7 +7463,8 @@
         "Body Horror",
         "Rotoscoping",
         "Philosophy"
-      ]
+      ],
+      "popularityRank": 454
     },
     "kokoro connect": {
       "anilistId": 11887,
@@ -7288,7 +7498,8 @@
         "Urban Fantasy",
         "Love Triangle",
         "Chuunibyou"
-      ]
+      ],
+      "popularityRank": 314
     },
     "komi can't communicate": {
       "anilistId": 142984,
@@ -7319,7 +7530,8 @@
         "Primarily Teen Cast",
         "Disability",
         "Male Protagonist"
-      ]
+      ],
+      "popularityRank": 388
     },
     "komi can’t communicate": {
       "anilistId": 133965,
@@ -7351,7 +7563,8 @@
         "Female Protagonist",
         "Episodic",
         "Slapstick"
-      ]
+      ],
+      "popularityRank": 132
     },
     "konosuba -god's blessing on this wonderful world!": {
       "anilistId": 21202,
@@ -7383,7 +7596,8 @@
         "Primarily Female Cast",
         "Ensemble Cast",
         "Male Protagonist"
-      ]
+      ],
+      "popularityRank": 46
     },
     "konosuba -god's blessing on this wonderful world! 2": {
       "anilistId": 21699,
@@ -7412,7 +7626,8 @@
         "Magic",
         "Male Protagonist",
         "Anti-Hero"
-      ]
+      ],
+      "popularityRank": 97
     },
     "konosuba -god's blessing on this wonderful world! 3": {
       "anilistId": 136804,
@@ -7448,7 +7663,8 @@
         "Anti-Hero",
         "Slapstick",
         "Magic"
-      ]
+      ],
+      "popularityRank": 351
     },
     "konosuba -god's blessing on this wonderful world!- legend of crimson": {
       "anilistId": 102976,
@@ -7491,7 +7707,8 @@
         "Magic",
         "Chuunibyou",
         "Male Protagonist"
-      ]
+      ],
+      "popularityRank": 220
     },
     "kuroko's basketball": {
       "anilistId": 11771,
@@ -7523,7 +7740,8 @@
         "Primarily Male Cast",
         "School Club",
         "Tomboy"
-      ]
+      ],
+      "popularityRank": 161
     },
     "kuroko's basketball 2": {
       "anilistId": 16894,
@@ -7556,7 +7774,8 @@
         "Shounen",
         "School Club",
         "Primarily Male Cast"
-      ]
+      ],
+      "popularityRank": 343
     },
     "kuroko's basketball 3": {
       "anilistId": 20725,
@@ -7585,7 +7804,8 @@
         "School Club",
         "Primarily Teen Cast",
         "Shounen"
-      ]
+      ],
+      "popularityRank": 407
     },
     "laid-back camp": {
       "anilistId": 98444,
@@ -7615,7 +7835,8 @@
         "Cute Girls Doing Cute Things",
         "Primarily Female Cast",
         "Female Protagonist"
-      ]
+      ],
+      "popularityRank": 396
     },
     "land of the lustrous": {
       "anilistId": 98707,
@@ -7654,7 +7875,8 @@
         "Philosophy",
         "Anthropomorphism",
         "Agender"
-      ]
+      ],
+      "popularityRank": 412
     },
     "link click": {
       "anilistId": 126403,
@@ -7685,7 +7907,8 @@
         "Primarily Adult Cast",
         "Crime",
         "Urban Fantasy"
-      ]
+      ],
+      "popularityRank": 366
     },
     "little witch academia (tv)": {
       "anilistId": 21858,
@@ -7712,7 +7935,8 @@
         "School",
         "Female Protagonist",
         "Primarily Female Cast"
-      ]
+      ],
+      "popularityRank": 391
     },
     "log horizon": {
       "anilistId": 17265,
@@ -7745,7 +7969,8 @@
         "Video Games",
         "Male Protagonist",
         "Magic"
-      ]
+      ],
+      "popularityRank": 227
     },
     "love, chunibyo & other delusions": {
       "anilistId": 14741,
@@ -7782,7 +8007,8 @@
         "School",
         "School Club",
         "Heterosexual"
-      ]
+      ],
+      "popularityRank": 110
     },
     "love, chunibyo & other delusions - heart throb -": {
       "anilistId": 18671,
@@ -7816,7 +8042,8 @@
         "Primarily Female Cast",
         "Primarily Teen Cast",
         "Slapstick"
-      ]
+      ],
+      "popularityRank": 340
     },
     "lucky☆star": {
       "anilistId": 1887,
@@ -7848,7 +8075,8 @@
         "Otaku Culture",
         "Parody",
         "School"
-      ]
+      ],
+      "popularityRank": 463
     },
     "lycoris recoil": {
       "anilistId": 143270,
@@ -7878,7 +8106,8 @@
         "Urban",
         "Found Family",
         "Work"
-      ]
+      ],
+      "popularityRank": 268
     },
     "made in abyss": {
       "anilistId": 97986,
@@ -7916,7 +8145,8 @@
         "Environmental",
         "Travel",
         "Cosmic Horror"
-      ]
+      ],
+      "popularityRank": 82
     },
     "made in abyss: dawn of the deep soul": {
       "anilistId": 100643,
@@ -7950,7 +8180,8 @@
         "Lost Civilization",
         "Body Horror",
         "Human Experimentation"
-      ]
+      ],
+      "popularityRank": 406
     },
     "made in abyss: the golden city of the scorching sun": {
       "anilistId": 114745,
@@ -7990,7 +8221,8 @@
         "Ensemble Cast",
         "Gore",
         "Lost Civilization"
-      ]
+      ],
+      "popularityRank": 425
     },
     "magi: the kingdom of magic": {
       "anilistId": 18115,
@@ -8016,7 +8248,8 @@
         "Male Protagonist",
         "Class Struggle",
         "Dystopian"
-      ]
+      ],
+      "popularityRank": 386
     },
     "magi: the labyrinth of magic": {
       "anilistId": 14513,
@@ -8051,7 +8284,8 @@
         "Politics",
         "Royal Affairs",
         "Dungeon"
-      ]
+      ],
+      "popularityRank": 238
     },
     "maid-sama!": {
       "anilistId": 7054,
@@ -8085,7 +8319,8 @@
         "School",
         "Work",
         "Tsundere"
-      ]
+      ],
+      "popularityRank": 158
     },
     "maquia: when the promised flower blooms": {
       "anilistId": 99457,
@@ -8117,7 +8352,8 @@
         "Female Protagonist",
         "Adoption",
         "Orphan"
-      ]
+      ],
+      "popularityRank": 458
     },
     "march comes in like a lion": {
       "anilistId": 21366,
@@ -8147,7 +8383,8 @@
         "Found Family",
         "Seinen",
         "Board Game"
-      ]
+      ],
+      "popularityRank": 265
     },
     "masamune-kun's revenge": {
       "anilistId": 21857,
@@ -8186,7 +8423,8 @@
         "School",
         "Primarily Female Cast",
         "Ojou-sama"
-      ]
+      ],
+      "popularityRank": 219
     },
     "mashle: magic and muscles": {
       "anilistId": 151801,
@@ -8217,7 +8455,8 @@
         "Parody",
         "School",
         "Fitness"
-      ]
+      ],
+      "popularityRank": 157
     },
     "megalobox": {
       "anilistId": 100298,
@@ -8253,7 +8492,8 @@
         "Athletics",
         "Primarily Male Cast",
         "Revenge"
-      ]
+      ],
+      "popularityRank": 492
     },
     "mieruko-chan": {
       "anilistId": 131083,
@@ -8291,7 +8531,8 @@
         "Primarily Female Cast",
         "Urban Fantasy",
         "Body Horror"
-      ]
+      ],
+      "popularityRank": 408
     },
     "miss kobayashi's dragon maid": {
       "anilistId": 21776,
@@ -8325,7 +8566,8 @@
         "Monster Girl",
         "Family Life",
         "Cute Girls Doing Cute Things"
-      ]
+      ],
+      "popularityRank": 119
     },
     "miss kobayashi's dragon maid s": {
       "anilistId": 107717,
@@ -8361,7 +8603,8 @@
         "Family Life",
         "Found Family",
         "Primarily Female Cast"
-      ]
+      ],
+      "popularityRank": 398
     },
     "mob psycho 100": {
       "anilistId": 21507,
@@ -8396,7 +8639,8 @@
         "Philosophy",
         "Ghost",
         "Surreal Comedy"
-      ]
+      ],
+      "popularityRank": 22
     },
     "monogatari series second season": {
       "anilistId": 17074,
@@ -8431,7 +8675,8 @@
         "Ensemble Cast",
         "Youkai",
         "Philosophy"
-      ]
+      ],
+      "popularityRank": 380
     },
     "monster": {
       "anilistId": 19,
@@ -8466,7 +8711,8 @@
         "Philosophy",
         "Ensemble Cast",
         "Primarily Adult Cast"
-      ]
+      ],
+      "popularityRank": 116
     },
     "monster musume: everyday life with monster girls": {
       "anilistId": 21093,
@@ -8499,7 +8745,8 @@
         "Nudity",
         "Male Protagonist",
         "Primarily Female Cast"
-      ]
+      ],
+      "popularityRank": 381
     },
     "monthly girls' nozaki-kun": {
       "anilistId": 20668,
@@ -8535,7 +8782,8 @@
         "Ensemble Cast",
         "School",
         "Unrequited Love"
-      ]
+      ],
+      "popularityRank": 255
     },
     "more than a married couple, but not lovers.": {
       "anilistId": 141949,
@@ -8571,7 +8819,8 @@
         "Primarily Teen Cast",
         "Tsundere",
         "Gyaru"
-      ]
+      ],
+      "popularityRank": 400
     },
     "moriarty the patriot": {
       "anilistId": 114124,
@@ -8607,7 +8856,8 @@
         "Foreign",
         "Detective",
         "Revenge"
-      ]
+      ],
+      "popularityRank": 420
     },
     "mushi-shi": {
       "anilistId": 457,
@@ -8643,7 +8893,8 @@
         "Mythology",
         "Episodic",
         "Philosophy"
-      ]
+      ],
+      "popularityRank": 310
     },
     "mushoku tensei: jobless reincarnation": {
       "anilistId": 108465,
@@ -8681,6 +8932,7 @@
         "Coming of Age",
         "Travel"
       ],
+      "popularityRank": 64,
       "composer": "Yoshiaki Fujisawa"
     },
     "my dress-up darling": {
@@ -8718,7 +8970,8 @@
         "Male Protagonist",
         "Heterosexual",
         "Primarily Teen Cast"
-      ]
+      ],
+      "popularityRank": 77
     },
     "my first girlfriend is a gal": {
       "anilistId": 97863,
@@ -8751,7 +9004,8 @@
         "Female Harem",
         "Male Protagonist",
         "Slapstick"
-      ]
+      ],
+      "popularityRank": 453
     },
     "my happy marriage": {
       "anilistId": 147103,
@@ -8784,7 +9038,8 @@
         "Bullying",
         "Historical",
         "Heterosexual"
-      ]
+      ],
+      "popularityRank": 472
     },
     "my hero academia": {
       "anilistId": 21459,
@@ -8818,7 +9073,8 @@
         "Primarily Teen Cast",
         "Male Protagonist",
         "Crime"
-      ]
+      ],
+      "popularityRank": 5
     },
     "my hero academia: heroes rising": {
       "anilistId": 108553,
@@ -8850,7 +9106,8 @@
         "Rural",
         "Shounen",
         "Male Protagonist"
-      ]
+      ],
+      "popularityRank": 368
     },
     "my hero academia: two heroes": {
       "anilistId": 100723,
@@ -8876,7 +9133,8 @@
         "Shounen",
         "Urban",
         "Urban Fantasy"
-      ]
+      ],
+      "popularityRank": 258
     },
     "my little monster": {
       "anilistId": 14227,
@@ -8911,7 +9169,8 @@
         "Primarily Teen Cast",
         "Kuudere",
         "Heterosexual"
-      ]
+      ],
+      "popularityRank": 187
     },
     "my love story with yamada-kun at lv999": {
       "anilistId": 154965,
@@ -8947,7 +9206,8 @@
         "Heterosexual",
         "Shoujo",
         "Otaku Culture"
-      ]
+      ],
+      "popularityRank": 277
     },
     "my love story!!": {
       "anilistId": 20946,
@@ -8981,7 +9241,8 @@
         "Primarily Teen Cast",
         "School",
         "Episodic"
-      ]
+      ],
+      "popularityRank": 419
     },
     "my neighbor totoro": {
       "anilistId": 523,
@@ -9014,7 +9275,8 @@
         "Youkai",
         "Wilderness",
         "Female Protagonist"
-      ]
+      ],
+      "popularityRank": 165
     },
     "my next life as a villainess: all routes lead to doom!": {
       "anilistId": 104647,
@@ -9047,7 +9309,8 @@
         "Villainess",
         "Ensemble Cast",
         "Slapstick"
-      ]
+      ],
+      "popularityRank": 456
     },
     "my teen romantic comedy snafu": {
       "anilistId": 14813,
@@ -9080,7 +9343,8 @@
         "Male Protagonist",
         "Philosophy",
         "Anti-Hero"
-      ]
+      ],
+      "popularityRank": 93
     },
     "my teen romantic comedy snafu climax!": {
       "anilistId": 108489,
@@ -9116,7 +9380,8 @@
         "School Club",
         "School",
         "Heterosexual"
-      ]
+      ],
+      "popularityRank": 250
     },
     "my teen romantic comedy snafu too!": {
       "anilistId": 20698,
@@ -9149,7 +9414,8 @@
         "Love Triangle",
         "Coming of Age",
         "Philosophy"
-      ]
+      ],
+      "popularityRank": 171
     },
     "myriad colors phantom world": {
       "anilistId": 21306,
@@ -9182,7 +9448,8 @@
         "Urban Fantasy",
         "School",
         "Primarily Female Cast"
-      ]
+      ],
+      "popularityRank": 495
     },
     "nana": {
       "anilistId": 877,
@@ -9217,7 +9484,8 @@
         "Coming of Age",
         "Band",
         "Rock Music"
-      ]
+      ],
+      "popularityRank": 272
     },
     "naruto": {
       "anilistId": 20,
@@ -9257,7 +9525,8 @@
         "Male Protagonist",
         "Orphan",
         "Super Power"
-      ]
+      ],
+      "popularityRank": 12
     },
     "naruto: shippuden": {
       "anilistId": 1735,
@@ -9294,7 +9563,8 @@
         "Male Protagonist",
         "Super Power",
         "Orphan"
-      ]
+      ],
+      "popularityRank": 26
     },
     "nekomonogatari black": {
       "anilistId": 15689,
@@ -9328,7 +9598,8 @@
         "Female Protagonist",
         "Philosophy",
         "Vampire"
-      ]
+      ],
+      "popularityRank": 441
     },
     "neon genesis evangelion": {
       "anilistId": 30,
@@ -9366,7 +9637,8 @@
         "Dystopian",
         "Post-Apocalyptic",
         "Angels"
-      ]
+      ],
+      "popularityRank": 51
     },
     "neon genesis evangelion: the end of evangelion": {
       "anilistId": 32,
@@ -9404,7 +9676,8 @@
         "Dystopian",
         "Denpa",
         "Male Protagonist"
-      ]
+      ],
+      "popularityRank": 201
     },
     "nichijou - my ordinary life": {
       "anilistId": 10165,
@@ -9441,7 +9714,8 @@
         "School",
         "Female Protagonist",
         "Ensemble Cast"
-      ]
+      ],
+      "popularityRank": 224
     },
     "nisekoi": {
       "anilistId": 18897,
@@ -9472,7 +9746,8 @@
         "Tsundere",
         "School",
         "Fake Relationship"
-      ]
+      ],
+      "popularityRank": 177
     },
     "nisekoi:": {
       "anilistId": 20876,
@@ -9499,7 +9774,8 @@
         "Male Protagonist",
         "Primarily Female Cast",
         "Heterosexual"
-      ]
+      ],
+      "popularityRank": 399
     },
     "nisemonogatari": {
       "anilistId": 11597,
@@ -9537,7 +9813,8 @@
         "Primarily Female Cast",
         "Philosophy",
         "Incest"
-      ]
+      ],
+      "popularityRank": 333
     },
     "no game, no life": {
       "anilistId": 19815,
@@ -9573,7 +9850,8 @@
         "Hikikomori",
         "Magic",
         "Male Protagonist"
-      ]
+      ],
+      "popularityRank": 39
     },
     "no game, no life zero": {
       "anilistId": 21875,
@@ -9610,7 +9888,8 @@
         "Female Protagonist",
         "Male Protagonist",
         "Espionage"
-      ]
+      ],
+      "popularityRank": 242
     },
     "noragami": {
       "anilistId": 20447,
@@ -9651,7 +9930,8 @@
         "Urban Fantasy",
         "Shounen",
         "Mythology"
-      ]
+      ],
+      "popularityRank": 42
     },
     "noragami aragoto": {
       "anilistId": 21128,
@@ -9689,7 +9969,8 @@
         "Shounen",
         "Urban Fantasy",
         "Youkai"
-      ]
+      ],
+      "popularityRank": 137
     },
     "oddtaxi": {
       "anilistId": 128547,
@@ -9725,7 +10006,8 @@
         "Animals",
         "Ensemble Cast",
         "Primarily Adult Cast"
-      ]
+      ],
+      "popularityRank": 442
     },
     "one piece": {
       "anilistId": 21,
@@ -9764,7 +10046,8 @@
         "Ensemble Cast",
         "Super Power",
         "Found Family"
-      ]
+      ],
+      "popularityRank": 8
     },
     "one-punch man": {
       "anilistId": 21087,
@@ -9803,7 +10086,8 @@
         "Male Protagonist",
         "Satire",
         "Surreal Comedy"
-      ]
+      ],
+      "popularityRank": 7
     },
     "orange": {
       "anilistId": 21647,
@@ -9841,7 +10125,8 @@
         "Female Protagonist",
         "Urban Fantasy",
         "Ensemble Cast"
-      ]
+      ],
+      "popularityRank": 232
     },
     "oreimo": {
       "anilistId": 8769,
@@ -9875,7 +10160,8 @@
         "Urban",
         "Primarily Female Cast",
         "Primarily Teen Cast"
-      ]
+      ],
+      "popularityRank": 457
     },
     "oresuki: are you the only one who loves me?": {
       "anilistId": 104464,
@@ -9916,7 +10202,8 @@
         "Female Harem",
         "Anti-Hero",
         "Meta"
-      ]
+      ],
+      "popularityRank": 484
     },
     "oshi no ko": {
       "anilistId": 150672,
@@ -9950,7 +10237,8 @@
         "Twins",
         "Male Protagonist",
         "Urban"
-      ]
+      ],
+      "popularityRank": 120
     },
     "ouran high school host club": {
       "anilistId": 853,
@@ -9986,7 +10274,8 @@
         "Parody",
         "Surreal Comedy",
         "School"
-      ]
+      ],
+      "popularityRank": 197
     },
     "overlord": {
       "anilistId": 20832,
@@ -10018,7 +10307,8 @@
         "Ensemble Cast",
         "Virtual World",
         "Male Protagonist"
-      ]
+      ],
+      "popularityRank": 83
     },
     "paprika": {
       "anilistId": 1943,
@@ -10053,7 +10343,8 @@
         "Denpa",
         "Mythology",
         "Software Development"
-      ]
+      ],
+      "popularityRank": 424
     },
     "parasyte -the maxim-": {
       "anilistId": 20623,
@@ -10090,7 +10381,8 @@
         "Philosophy",
         "Male Protagonist",
         "Seinen"
-      ]
+      ],
+      "popularityRank": 48
     },
     "perfect blue": {
       "anilistId": 437,
@@ -10124,7 +10416,8 @@
         "Primarily Adult Cast",
         "Work",
         "Filmmaking"
-      ]
+      ],
+      "popularityRank": 216
     },
     "plastic memories": {
       "anilistId": 20872,
@@ -10162,7 +10455,8 @@
         "Female Protagonist",
         "Memory Manipulation",
         "Kuudere"
-      ]
+      ],
+      "popularityRank": 195
     },
     "please put them on, takamine-san": {
       "anilistId": 179965,
@@ -10236,7 +10530,8 @@
         "Shounen",
         "Heterosexual",
         "Swordplay"
-      ]
+      ],
+      "popularityRank": 480
     },
     "pokémon": {
       "anilistId": 527,
@@ -10270,7 +10565,8 @@
         "Animals",
         "Kids",
         "Primarily Child Cast"
-      ]
+      ],
+      "popularityRank": 452
     },
     "ponyo": {
       "anilistId": 2890,
@@ -10302,7 +10598,8 @@
         "Environmental",
         "Urban Fantasy",
         "Anthropomorphism"
-      ]
+      ],
+      "popularityRank": 326
     },
     "princess mononoke": {
       "anilistId": 164,
@@ -10335,7 +10632,8 @@
         "War",
         "Gods",
         "Exiled"
-      ]
+      ],
+      "popularityRank": 145
     },
     "prison school": {
       "anilistId": 20807,
@@ -10365,7 +10663,8 @@
         "Nudity",
         "Parody",
         "Male Protagonist"
-      ]
+      ],
+      "popularityRank": 208
     },
     "psycho-pass": {
       "anilistId": 13601,
@@ -10402,7 +10701,8 @@
         "Cyberpunk",
         "Philosophy",
         "Primarily Adult Cast"
-      ]
+      ],
+      "popularityRank": 108
     },
     "psycho-pass 2": {
       "anilistId": 20513,
@@ -10440,7 +10740,8 @@
         "Cyberpunk",
         "Female Protagonist",
         "Urban"
-      ]
+      ],
+      "popularityRank": 493
     },
     "puella magi madoka magica": {
       "anilistId": 9756,
@@ -10481,7 +10782,8 @@
         "Primarily Female Cast",
         "Urban Fantasy",
         "Philosophy"
-      ]
+      ],
+      "popularityRank": 124
     },
     "ranking of kings": {
       "anilistId": 113717,
@@ -10515,7 +10817,8 @@
         "Male Protagonist",
         "Language Barrier",
         "Ensemble Cast"
-      ]
+      ],
+      "popularityRank": 251
     },
     "rascal does not dream of a dreaming girl": {
       "anilistId": 104157,
@@ -10546,7 +10849,8 @@
         "Urban Fantasy",
         "Heterosexual",
         "Primarily Teen Cast"
-      ]
+      ],
+      "popularityRank": 191
     },
     "rascal does not dream of bunny girl senpai": {
       "anilistId": 101291,
@@ -10585,7 +10889,8 @@
         "Male Protagonist",
         "Kuudere",
         "Coming of Age"
-      ]
+      ],
+      "popularityRank": 32
     },
     "re:zero -starting life in another world": {
       "anilistId": 108632,
@@ -10623,7 +10928,8 @@
         "Witch",
         "Medieval",
         "Monster Boy"
-      ]
+      ],
+      "popularityRank": 96
     },
     "re:zero -starting life in another world-": {
       "anilistId": 21355,
@@ -10662,7 +10968,8 @@
         "Seinen",
         "Witch",
         "Curses"
-      ]
+      ],
+      "popularityRank": 23
     },
     "relife": {
       "anilistId": 21049,
@@ -10698,7 +11005,8 @@
         "Male Protagonist",
         "Heterosexual",
         "Primarily Teen Cast"
-      ]
+      ],
+      "popularityRank": 193
     },
     "rent-a-girlfriend": {
       "anilistId": 113813,
@@ -10731,7 +11039,8 @@
         "Heterosexual",
         "Slapstick",
         "Primarily Female Cast"
-      ]
+      ],
+      "popularityRank": 140
     },
     "saekano: how to raise a boring girlfriend": {
       "anilistId": 20657,
@@ -10763,7 +11072,8 @@
         "Software Development",
         "Male Protagonist",
         "Meta"
-      ]
+      ],
+      "popularityRank": 353
     },
     "saga of tanya the evil": {
       "anilistId": 21613,
@@ -10790,7 +11100,8 @@
         "Female Protagonist",
         "Revenge",
         "Isekai"
-      ]
+      ],
+      "popularityRank": 169
     },
     "sakamoto days": {
       "anilistId": 177709,
@@ -10822,7 +11133,8 @@
         "Konbini",
         "Crime",
         "Primarily Adult Cast"
-      ]
+      ],
+      "popularityRank": 260
     },
     "samurai champloo": {
       "anilistId": 205,
@@ -10853,7 +11165,8 @@
         "Rural",
         "Assassins",
         "Historical"
-      ]
+      ],
+      "popularityRank": 166
     },
     "say \"i love you\".": {
       "anilistId": 14289,
@@ -10888,7 +11201,8 @@
         "Female Protagonist",
         "Heterosexual",
         "Rehabilitation"
-      ]
+      ],
+      "popularityRank": 426
     },
     "scum's wish": {
       "anilistId": 21701,
@@ -10921,7 +11235,8 @@
         "Heterosexual",
         "Psychosexual",
         "Female Protagonist"
-      ]
+      ],
+      "popularityRank": 344
     },
     "seirei gensouki: spirit chronicles": {
       "anilistId": 126546,
@@ -10964,7 +11279,8 @@
         "Medieval",
         "Female Harem",
         "Swordplay"
-      ]
+      ],
+      "popularityRank": 485
     },
     "sentenced to be a hero": {
       "anilistId": 167152,
@@ -10998,7 +11314,8 @@
         "Anti-Hero",
         "Gods",
         "Gore"
-      ]
+      ],
+      "popularityRank": 413
     },
     "seraph of the end: battle in nagoya": {
       "anilistId": 20993,
@@ -11034,7 +11351,8 @@
         "Demons",
         "Military",
         "War"
-      ]
+      ],
+      "popularityRank": 296
     },
     "seraph of the end: vampire reign": {
       "anilistId": 20829,
@@ -11070,7 +11388,8 @@
         "Male Protagonist",
         "Shounen",
         "Military"
-      ]
+      ],
+      "popularityRank": 122
     },
     "serial experiments lain": {
       "anilistId": 339,
@@ -11108,7 +11427,8 @@
         "Female Protagonist",
         "Artificial Intelligence",
         "Cyberpunk"
-      ]
+      ],
+      "popularityRank": 202
     },
     "shangri-la frontier": {
       "anilistId": 151970,
@@ -11139,7 +11459,8 @@
         "Anthropomorphism",
         "Swordplay",
         "Travel"
-      ]
+      ],
+      "popularityRank": 328
     },
     "shikimori's not just a cutie": {
       "anilistId": 127911,
@@ -11174,7 +11495,8 @@
         "Male Protagonist",
         "School",
         "Tomboy"
-      ]
+      ],
+      "popularityRank": 264
     },
     "shimoneta: a boring world where the concept of dirty jokes doesn’t exist": {
       "anilistId": 20910,
@@ -11205,7 +11527,8 @@
         "Terrorism",
         "Parody",
         "Male Protagonist"
-      ]
+      ],
+      "popularityRank": 273
     },
     "sk8 the infinity": {
       "anilistId": 124153,
@@ -11238,7 +11561,8 @@
         "Ensemble Cast",
         "Parkour",
         "Found Family"
-      ]
+      ],
+      "popularityRank": 233
     },
     "snow white with the red hair": {
       "anilistId": 21058,
@@ -11266,7 +11590,8 @@
         "Heterosexual",
         "Medieval",
         "Primarily Adult Cast"
-      ]
+      ],
+      "popularityRank": 348
     },
     "so i'm a spider, so what?": {
       "anilistId": 103632,
@@ -11299,7 +11624,8 @@
         "Magic",
         "Conspiracy",
         "CGI"
-      ]
+      ],
+      "popularityRank": 433
     },
     "solo leveling": {
       "anilistId": 151807,
@@ -11333,7 +11659,8 @@
         "Super Power",
         "Magic",
         "Cultivation"
-      ]
+      ],
+      "popularityRank": 70
     },
     "solo leveling season 2 -arise from the shadow-": {
       "anilistId": 176496,
@@ -11367,7 +11694,8 @@
         "Necromancy",
         "Magic",
         "Super Power"
-      ]
+      ],
+      "popularityRank": 141
     },
     "soul eater": {
       "anilistId": 3588,
@@ -11404,7 +11732,8 @@
         "Magic",
         "School",
         "Female Protagonist"
-      ]
+      ],
+      "popularityRank": 89
     },
     "sound! euphonium": {
       "anilistId": 20912,
@@ -11437,7 +11766,8 @@
         "Coming of Age",
         "Classical Music",
         "School"
-      ]
+      ],
+      "popularityRank": 438
     },
     "spice and wolf": {
       "anilistId": 2966,
@@ -11473,7 +11803,8 @@
         "Work",
         "Primarily Adult Cast",
         "Religion"
-      ]
+      ],
+      "popularityRank": 345
     },
     "spirited away": {
       "anilistId": 199,
@@ -11505,7 +11836,8 @@
         "Curses",
         "Magic",
         "Mythology"
-      ]
+      ],
+      "popularityRank": 55
     },
     "spy x family": {
       "anilistId": 140960,
@@ -11539,7 +11871,8 @@
         "Fake Relationship",
         "Parenthood",
         "Assassins"
-      ]
+      ],
+      "popularityRank": 33
     },
     "steins;gate": {
       "anilistId": 9253,
@@ -11576,7 +11909,8 @@
         "Urban",
         "Primarily Adult Cast",
         "Philosophy"
-      ]
+      ],
+      "popularityRank": 29
     },
     "steins;gate 0": {
       "anilistId": 21127,
@@ -11612,7 +11946,8 @@
         "Philosophy",
         "Male Protagonist",
         "Denpa"
-      ]
+      ],
+      "popularityRank": 257
     },
     "steins;gate the movie – load region of déjà vu": {
       "anilistId": 11577,
@@ -11647,7 +11982,8 @@
         "Tsundere",
         "Primarily Adult Cast",
         "Urban"
-      ]
+      ],
+      "popularityRank": 483
     },
     "summer time rendering": {
       "anilistId": 129201,
@@ -11686,7 +12022,8 @@
         "Rural",
         "Coastal",
         "Ensemble Cast"
-      ]
+      ],
+      "popularityRank": 247
     },
     "suzume": {
       "anilistId": 142770,
@@ -11717,7 +12054,8 @@
         "Coming of Age",
         "Magic",
         "Orphan"
-      ]
+      ],
+      "popularityRank": 288
     },
     "sword art online": {
       "anilistId": 11757,
@@ -11753,7 +12091,8 @@
         "Swordplay",
         "Heterosexual",
         "Primarily Teen Cast"
-      ]
+      ],
+      "popularityRank": 13
     },
     "sword art online alternative: gun gale online": {
       "anilistId": 100183,
@@ -11789,7 +12128,8 @@
         "Female Protagonist",
         "Battle Royale",
         "Primarily Female Cast"
-      ]
+      ],
+      "popularityRank": 389
     },
     "sword art online the movie: ordinal scale": {
       "anilistId": 21403,
@@ -11824,7 +12164,8 @@
         "Video Games",
         "Swordplay",
         "Virtual World"
-      ]
+      ],
+      "popularityRank": 306
     },
     "sword art online: alicization": {
       "anilistId": 100182,
@@ -11852,7 +12193,8 @@
         "Artificial Intelligence",
         "Isekai",
         "Primarily Female Cast"
-      ]
+      ],
+      "popularityRank": 156
     },
     "sword art online: alicization - war of underworld": {
       "anilistId": 108759,
@@ -11884,7 +12226,8 @@
         "Video Games",
         "Primarily Female Cast",
         "Ensemble Cast"
-      ]
+      ],
+      "popularityRank": 259
     },
     "takopi's original sin": {
       "anilistId": 185407,
@@ -11913,7 +12256,8 @@
         "Aliens",
         "Female Protagonist",
         "Philosophy"
-      ]
+      ],
+      "popularityRank": 478
     },
     "takt op.destiny": {
       "anilistId": 131565,
@@ -11943,7 +12287,8 @@
         "Classical Music",
         "Foreign",
         "Post-Apocalyptic"
-      ]
+      ],
+      "popularityRank": 385
     },
     "teasing master takagi-san": {
       "anilistId": 99468,
@@ -11974,7 +12319,8 @@
         "Slapstick",
         "Ensemble Cast",
         "Episodic"
-      ]
+      ],
+      "popularityRank": 382
     },
     "tengoku daimakyo": {
       "anilistId": 155783,
@@ -12009,7 +12355,8 @@
         "Seinen",
         "Travel",
         "Conspiracy"
-      ]
+      ],
+      "popularityRank": 266
     },
     "terror in resonance": {
       "anilistId": 20661,
@@ -12042,7 +12389,8 @@
         "Crime",
         "Male Protagonist",
         "Orphan"
-      ]
+      ],
+      "popularityRank": 155
     },
     "that time i got reincarnated as a slime": {
       "anilistId": 101280,
@@ -12076,7 +12424,8 @@
         "Super Power",
         "Shapeshifting",
         "Clone"
-      ]
+      ],
+      "popularityRank": 61
     },
     "the 100 girlfriends who really, really, really, really, really love you": {
       "anilistId": 162694,
@@ -12147,7 +12496,8 @@
         "Mythology",
         "Monster Boy",
         "Found Family"
-      ]
+      ],
+      "popularityRank": 213
     },
     "the angel next door spoils me rotten": {
       "anilistId": 143338,
@@ -12182,7 +12532,8 @@
         "Female Protagonist",
         "Food",
         "Cohabitation"
-      ]
+      ],
+      "popularityRank": 375
     },
     "the apothecary diaries": {
       "anilistId": 161645,
@@ -12217,7 +12568,8 @@
         "Drugs",
         "Historical",
         "Detective"
-      ]
+      ],
+      "popularityRank": 126
     },
     "the asterisk war": {
       "anilistId": 21131,
@@ -12252,7 +12604,8 @@
         "Swordplay",
         "School",
         "Kuudere"
-      ]
+      ],
+      "popularityRank": 421
     },
     "the café terrace and its goddesses": {
       "anilistId": 154412,
@@ -12322,7 +12675,8 @@
         "Steampunk",
         "Primarily Adult Cast",
         "Anti-Hero"
-      ]
+      ],
+      "popularityRank": 269
     },
     "the daily life of the immortal king": {
       "anilistId": 114121,
@@ -12350,7 +12704,8 @@
         "Urban Fantasy",
         "Magic",
         "Parody"
-      ]
+      ],
+      "popularityRank": 475
     },
     "the dangers in my heart": {
       "anilistId": 153152,
@@ -12388,7 +12743,8 @@
         "School",
         "Male Protagonist",
         "Female Protagonist"
-      ]
+      ],
+      "popularityRank": 411
     },
     "the devil is a part-timer!": {
       "anilistId": 15809,
@@ -12422,7 +12778,8 @@
         "Male Protagonist",
         "Isekai",
         "Urban"
-      ]
+      ],
+      "popularityRank": 87
     },
     "the disappearance of haruhi suzumiya": {
       "anilistId": 7311,
@@ -12455,7 +12812,8 @@
         "Kuudere",
         "Male Protagonist",
         "Coming of Age"
-      ]
+      ],
+      "popularityRank": 450
     },
     "the disastrous life of saiki k.": {
       "anilistId": 21804,
@@ -12483,7 +12841,8 @@
         "Episodic",
         "Parody",
         "Meta"
-      ]
+      ],
+      "popularityRank": 107
     },
     "the eminence in shadow": {
       "anilistId": 130298,
@@ -12519,7 +12878,8 @@
         "Parody",
         "Anti-Hero",
         "Magic"
-      ]
+      ],
+      "popularityRank": 136
     },
     "the familiar of zero": {
       "anilistId": 1195,
@@ -12558,7 +12918,8 @@
         "Swordplay",
         "Heterosexual",
         "Female Harem"
-      ]
+      ],
+      "popularityRank": 423
     },
     "the fragrant flower blooms with dignity": {
       "anilistId": 181444,
@@ -12595,7 +12956,8 @@
         "Iyashikei",
         "School",
         "Female Protagonist"
-      ]
+      ],
+      "popularityRank": 270
     },
     "the fruit of grisaia": {
       "anilistId": 17729,
@@ -12627,7 +12989,8 @@
         "School",
         "Female Harem",
         "Nudity"
-      ]
+      ],
+      "popularityRank": 460
     },
     "the future diary": {
       "anilistId": 10620,
@@ -12670,7 +13033,8 @@
         "Yandere",
         "Gore",
         "Gods"
-      ]
+      ],
+      "popularityRank": 76
     },
     "the garden of words": {
       "anilistId": 16782,
@@ -12700,7 +13064,8 @@
         "Male Protagonist",
         "Urban",
         "Drawing"
-      ]
+      ],
+      "popularityRank": 209
     },
     "the girl who leapt through time": {
       "anilistId": 2236,
@@ -12735,7 +13100,8 @@
         "School",
         "Primarily Teen Cast",
         "Tomboy"
-      ]
+      ],
+      "popularityRank": 369
     },
     "the god of high school": {
       "anilistId": 116006,
@@ -12766,7 +13132,8 @@
         "Shounen",
         "Male Protagonist",
         "Rotoscoping"
-      ]
+      ],
+      "popularityRank": 149
     },
     "the irregular at magic high school": {
       "anilistId": 20458,
@@ -12800,7 +13167,8 @@
         "Military",
         "Incest",
         "Guns"
-      ]
+      ],
+      "popularityRank": 192
     },
     "the last: naruto the movie": {
       "anilistId": 16870,
@@ -12833,7 +13201,8 @@
         "Male Protagonist",
         "Martial Arts",
         "Female Protagonist"
-      ]
+      ],
+      "popularityRank": 471
     },
     "the melancholy of haruhi suzumiya": {
       "anilistId": 849,
@@ -12867,7 +13236,8 @@
         "School",
         "Primarily Teen Cast",
         "Aliens"
-      ]
+      ],
+      "popularityRank": 289
     },
     "the millionaire detective - balance: unlimited": {
       "anilistId": 114888,
@@ -12903,7 +13273,8 @@
         "Male Protagonist",
         "Primarily Adult Cast",
         "Primarily Male Cast"
-      ]
+      ],
+      "popularityRank": 405
     },
     "the misfit of demon king academy ⅱ: history's strongest demon king reincarnates and goes to school with his descendants": {
       "anilistId": 130588,
@@ -12943,7 +13314,8 @@
         "School",
         "Ensemble Cast",
         "Super Power"
-      ]
+      ],
+      "popularityRank": 498
     },
     "the misfit of demon king academy: history’s strongest demon king reincarnates and goes to school with his descendants": {
       "anilistId": 112301,
@@ -12986,7 +13358,8 @@
         "School",
         "Super Power",
         "Swordplay"
-      ]
+      ],
+      "popularityRank": 179
     },
     "the pet girl of sakurasou": {
       "anilistId": 13759,
@@ -13021,7 +13394,8 @@
         "Coming of Age",
         "Found Family",
         "Ensemble Cast"
-      ]
+      ],
+      "popularityRank": 170
     },
     "the promised neverland": {
       "anilistId": 101759,
@@ -13058,7 +13432,8 @@
         "Coming of Age",
         "Female Protagonist",
         "Ensemble Cast"
-      ]
+      ],
+      "popularityRank": 19
     },
     "the quintessential quintuplets": {
       "anilistId": 103572,
@@ -13087,7 +13462,8 @@
         "Primarily Teen Cast",
         "Male Protagonist",
         "Primarily Female Cast"
-      ]
+      ],
+      "popularityRank": 129
     },
     "the quintessential quintuplets 2": {
       "anilistId": 109261,
@@ -13126,7 +13502,8 @@
         "Primarily Female Cast",
         "Ensemble Cast",
         "Heterosexual"
-      ]
+      ],
+      "popularityRank": 237
     },
     "the rising of the shield hero": {
       "anilistId": 99263,
@@ -13166,6 +13543,7 @@
         "Revenge",
         "Magic"
       ],
+      "popularityRank": 63,
       "composer": "Kevin Penkin"
     },
     "the seven deadly sins": {
@@ -13205,7 +13583,8 @@
         "Demons",
         "Male Protagonist",
         "Spearplay"
-      ]
+      ],
+      "popularityRank": 44
     },
     "the seven deadly sins: dragon's judgement": {
       "anilistId": 116752,
@@ -13236,7 +13615,8 @@
         "Magic",
         "Gods",
         "Super Power"
-      ]
+      ],
+      "popularityRank": 490
     },
     "the seven deadly sins: imperial wrath of the gods": {
       "anilistId": 108928,
@@ -13270,7 +13650,8 @@
         "Magic",
         "Fairy",
         "Ensemble Cast"
-      ]
+      ],
+      "popularityRank": 283
     },
     "the seven deadly sins: revival of the commandments": {
       "anilistId": 99539,
@@ -13301,7 +13682,8 @@
         "Super Power",
         "Gods",
         "Fairy"
-      ]
+      ],
+      "popularityRank": 160
     },
     "the seven deadly sins: signs of a holy war": {
       "anilistId": 21385,
@@ -13332,7 +13714,8 @@
         "Ensemble Cast",
         "Demons",
         "Episodic"
-      ]
+      ],
+      "popularityRank": 379
     },
     "the shiunji family children": {
       "anilistId": 174802,
@@ -13404,7 +13787,8 @@
         "Cosmic Horror",
         "Urban Fantasy",
         "Body Horror"
-      ]
+      ],
+      "popularityRank": 476
     },
     "the tatami galaxy": {
       "anilistId": 7785,
@@ -13438,7 +13822,8 @@
         "Philosophy",
         "Male Protagonist",
         "Primarily Adult Cast"
-      ]
+      ],
+      "popularityRank": 447
     },
     "the testament of sister new devil": {
       "anilistId": 20678,
@@ -13470,7 +13855,8 @@
         "Primarily Female Cast",
         "Demons",
         "Male Protagonist"
-      ]
+      ],
+      "popularityRank": 410
     },
     "the way of the househusband": {
       "anilistId": 125426,
@@ -13500,7 +13886,8 @@
         "Episodic",
         "Family Life",
         "Gangs"
-      ]
+      ],
+      "popularityRank": 414
     },
     "the world's finest assassin gets reincarnated in another world as an aristocrat": {
       "anilistId": 129898,
@@ -13542,7 +13929,8 @@
         "Anti-Hero",
         "Male Protagonist",
         "Female Harem"
-      ]
+      ],
+      "popularityRank": 281
     },
     "to love ru": {
       "anilistId": 3455,
@@ -13574,7 +13962,8 @@
         "Nudity",
         "Aliens",
         "School"
-      ]
+      ],
+      "popularityRank": 479
     },
     "to your eternity": {
       "anilistId": 114535,
@@ -13608,7 +13997,8 @@
         "Philosophy",
         "Rural",
         "Ensemble Cast"
-      ]
+      ],
+      "popularityRank": 133
     },
     "toilet-bound hanako-kun": {
       "anilistId": 108463,
@@ -13642,7 +14032,8 @@
         "School",
         "Female Protagonist",
         "Primarily Teen Cast"
-      ]
+      ],
+      "popularityRank": 226
     },
     "tokyo ghoul": {
       "anilistId": 20605,
@@ -13678,7 +14069,8 @@
         "Body Horror",
         "Male Protagonist",
         "Henshin"
-      ]
+      ],
+      "popularityRank": 9
     },
     "tokyo ghoul √a": {
       "anilistId": 20850,
@@ -13714,7 +14106,8 @@
         "Gore",
         "Military",
         "Detective"
-      ]
+      ],
+      "popularityRank": 81
     },
     "tokyo ghoul:re": {
       "anilistId": 100240,
@@ -13748,7 +14141,8 @@
         "Urban Fantasy",
         "Police",
         "Body Horror"
-      ]
+      ],
+      "popularityRank": 142
     },
     "tokyo ghoul:re 2": {
       "anilistId": 102351,
@@ -13783,7 +14177,8 @@
         "Urban Fantasy",
         "Male Protagonist",
         "Gore"
-      ]
+      ],
+      "popularityRank": 230
     },
     "tokyo revengers": {
       "anilistId": 120120,
@@ -13817,7 +14212,8 @@
         "Male Protagonist",
         "Primarily Male Cast",
         "Urban"
-      ]
+      ],
+      "popularityRank": 69
     },
     "tomo-chan is a girl!": {
       "anilistId": 151806,
@@ -13850,7 +14246,8 @@
         "Primarily Teen Cast",
         "Unrequited Love",
         "School"
-      ]
+      ],
+      "popularityRank": 362
     },
     "tomodachi game": {
       "anilistId": 141014,
@@ -13885,7 +14282,8 @@
         "Shounen",
         "Death Game",
         "Ensemble Cast"
-      ]
+      ],
+      "popularityRank": 394
     },
     "tonikawa: over the moon for you": {
       "anilistId": 116267,
@@ -13920,7 +14318,8 @@
         "Iyashikei",
         "Coming of Age",
         "Shounen"
-      ]
+      ],
+      "popularityRank": 212
     },
     "toradora!": {
       "anilistId": 4224,
@@ -13958,7 +14357,8 @@
         "Male Protagonist",
         "School",
         "Heterosexual"
-      ]
+      ],
+      "popularityRank": 38
     },
     "tower of god": {
       "anilistId": 115230,
@@ -13992,7 +14392,8 @@
         "Magic",
         "Ensemble Cast",
         "Cultivation"
-      ]
+      ],
+      "popularityRank": 117
     },
     "trigun": {
       "anilistId": 6,
@@ -14027,7 +14428,8 @@
         "Philosophy",
         "Primarily Adult Cast",
         "Cowboys"
-      ]
+      ],
+      "popularityRank": 383
     },
     "trinity seven": {
       "anilistId": 20631,
@@ -14072,7 +14474,8 @@
         "Henshin",
         "Primarily Female Cast",
         "Nudity"
-      ]
+      ],
+      "popularityRank": 297
     },
     "tsukigakirei": {
       "anilistId": 98202,
@@ -14104,7 +14507,8 @@
         "Female Protagonist",
         "Male Protagonist",
         "Writing"
-      ]
+      ],
+      "popularityRank": 415
     },
     "tsukimichi -moonlit fantasy-": {
       "anilistId": 125206,
@@ -14145,7 +14549,8 @@
         "Shounen",
         "Medieval",
         "Monster Girl"
-      ]
+      ],
+      "popularityRank": 374
     },
     "tsuredure children": {
       "anilistId": 98291,
@@ -14178,7 +14583,8 @@
         "Episodic",
         "Primarily Teen Cast",
         "Coming of Age"
-      ]
+      ],
+      "popularityRank": 302
     },
     "tune in to the midnight heart": {
       "anilistId": 187942,
@@ -14248,7 +14654,8 @@
         "Heterosexual",
         "Female Protagonist",
         "Tomboy"
-      ]
+      ],
+      "popularityRank": 440
     },
     "vermeil in gold": {
       "anilistId": 146210,
@@ -14321,7 +14728,8 @@
         "War",
         "Male Protagonist",
         "Historical"
-      ]
+      ],
+      "popularityRank": 37
     },
     "violet evergarden": {
       "anilistId": 21827,
@@ -14356,7 +14764,8 @@
         "Female Protagonist",
         "Kuudere",
         "War"
-      ]
+      ],
+      "popularityRank": 36
     },
     "violet evergarden: eternity and the auto memory doll": {
       "anilistId": 109190,
@@ -14383,7 +14792,8 @@
         "Female Protagonist",
         "Work",
         "Orphan"
-      ]
+      ],
+      "popularityRank": 461
     },
     "violet evergarden: the movie": {
       "anilistId": 103047,
@@ -14417,7 +14827,8 @@
         "Work",
         "Foreign",
         "Travel"
-      ]
+      ],
+      "popularityRank": 290
     },
     "vivy -fluorite eye's song-": {
       "anilistId": 128546,
@@ -14448,7 +14859,8 @@
         "Female Protagonist",
         "Philosophy",
         "Guns"
-      ]
+      ],
+      "popularityRank": 350
     },
     "wandering witch: the journey of elaina": {
       "anilistId": 112609,
@@ -14484,7 +14896,8 @@
         "Travel",
         "Female Protagonist",
         "Medieval"
-      ]
+      ],
+      "popularityRank": 436
     },
     "watamote: no matter how i look at it, it's you guys' fault i'm not popular!": {
       "anilistId": 16742,
@@ -14515,7 +14928,8 @@
         "Otaku Culture",
         "Satire",
         "Parody"
-      ]
+      ],
+      "popularityRank": 431
     },
     "weathering with you": {
       "anilistId": 106286,
@@ -14552,7 +14966,8 @@
         "Female Protagonist",
         "Male Protagonist",
         "Found Family"
-      ]
+      ],
+      "popularityRank": 109
     },
     "welcome to demon school! iruma-kun": {
       "anilistId": 107693,
@@ -14583,7 +14998,8 @@
         "Magic",
         "Isekai",
         "Found Family"
-      ]
+      ],
+      "popularityRank": 387
     },
     "welcome to the n-h-k": {
       "anilistId": 1210,
@@ -14615,7 +15031,8 @@
         "Male Protagonist",
         "Denpa",
         "Conspiracy"
-      ]
+      ],
+      "popularityRank": 282
     },
     "when they cry": {
       "anilistId": 934,
@@ -14651,7 +15068,8 @@
         "Achronological Order",
         "Gore",
         "Time Loop"
-      ]
+      ],
+      "popularityRank": 357
     },
     "wind breaker": {
       "anilistId": 163270,
@@ -14684,7 +15102,8 @@
         "Male Protagonist",
         "Shounen",
         "School"
-      ]
+      ],
+      "popularityRank": 319
     },
     "wise man’s grandchild": {
       "anilistId": 100112,
@@ -14716,7 +15135,8 @@
         "Demons",
         "School",
         "Ensemble Cast"
-      ]
+      ],
+      "popularityRank": 338
     },
     "wistoria: wand and sword": {
       "anilistId": 174576,
@@ -14752,7 +15172,8 @@
         "Primarily Teen Cast",
         "Shounen",
         "School"
-      ]
+      ],
+      "popularityRank": 365
     },
     "witch hat atelier": {
       "anilistId": 147105,
@@ -14786,7 +15207,8 @@
         "Drawing",
         "Primarily Female Cast",
         "Coming of Age"
-      ]
+      ],
+      "popularityRank": 253
     },
     "wolf children": {
       "anilistId": 12355,
@@ -14822,7 +15244,8 @@
         "Coming of Age",
         "Shapeshifting",
         "Female Protagonist"
-      ]
+      ],
+      "popularityRank": 311
     },
     "wonder egg priority": {
       "anilistId": 124845,
@@ -14858,7 +15281,8 @@
         "Female Protagonist",
         "Bullying",
         "Coming of Age"
-      ]
+      ],
+      "popularityRank": 162
     },
     "wotakoi: love is hard for otaku": {
       "anilistId": 99578,
@@ -14894,7 +15318,8 @@
         "Office Lady",
         "Female Protagonist",
         "Video Games"
-      ]
+      ],
+      "popularityRank": 123
     },
     "yamada and the seven witches": {
       "anilistId": 20966,
@@ -14937,7 +15362,8 @@
         "Heterosexual",
         "Urban Fantasy",
         "Male Protagonist"
-      ]
+      ],
+      "popularityRank": 323
     },
     "yona of the dawn": {
       "anilistId": 20770,
@@ -14979,7 +15405,8 @@
         "Fugitive",
         "Royal Affairs",
         "Travel"
-      ]
+      ],
+      "popularityRank": 263
     },
     "your lie in april": {
       "anilistId": 20665,
@@ -15016,7 +15443,8 @@
         "Rehabilitation",
         "Female Protagonist",
         "Male Protagonist"
-      ]
+      ],
+      "popularityRank": 24
     },
     "your name.": {
       "anilistId": 21519,
@@ -15051,7 +15479,8 @@
         "Environmental",
         "Urban",
         "Rural"
-      ]
+      ],
+      "popularityRank": 15
     },
     "yu yu hakusho: ghostfiles": {
       "anilistId": 392,
@@ -15086,7 +15515,8 @@
         "Philosophy",
         "Super Power",
         "Delinquents"
-      ]
+      ],
+      "popularityRank": 416
     },
     "yuri!!! on ice": {
       "anilistId": 21709,
@@ -15117,7 +15547,8 @@
         "Foreign",
         "Boys' Love",
         "Bisexual"
-      ]
+      ],
+      "popularityRank": 239
     },
     "zom 100: bucket list of the dead": {
       "anilistId": 159831,
@@ -15150,7 +15581,8 @@
         "Survival",
         "Male Protagonist",
         "Urban Fantasy"
-      ]
+      ],
+      "popularityRank": 223
     },
     "zombie land saga": {
       "anilistId": 103871,
@@ -15183,7 +15615,8 @@
         "Primarily Female Cast",
         "Female Protagonist",
         "Surreal Comedy"
-      ]
+      ],
+      "popularityRank": 428
     }
   },
   "characters": {

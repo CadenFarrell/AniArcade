@@ -157,8 +157,12 @@ export async function popularIds(limit, { cache, log }) {
  * id — provenance only, never identity: the pack is keyed on the same fold a
  * saved profile keys on, so a hand-entered entry with no AniList id still finds
  * its row.
+ *
+ * `ranks` maps AniList id → 1-based popularity rank (see popularIds). Emitted as
+ * a row like any other fact, so first-write-wins hands a franchise the rank of
+ * its best-known season — which is the season its identity block already names.
  */
-export async function collect(anilistIds, { cache, log }) {
+export async function collect(anilistIds, { cache, log, ranks = new Map() }) {
   const rows = [];
   const meta = { shows: {}, characters: {} };
   let done = 0;
@@ -192,6 +196,7 @@ export async function collect(anilistIds, { cache, log }) {
 
     const before = rows.length;
     rows.push(...showRows(key, media));
+    if (ranks.has(media.id)) rows.push({ kind: 'show', key, field: 'popularityRank', value: ranks.get(media.id) });
     rows.push(...characterRows(media, key, meta));
     log(`  [${done}/${anilistIds.length}] ${title} → ${rows.length - before} rows`);
   }

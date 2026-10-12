@@ -34,6 +34,7 @@ const YOU_TONE = {
   pink: 'text-pop-pink',
   purple: 'text-pop-purple',
   teal: 'text-pop-teal',
+  red: 'text-pop-red',
 };
 
 /**

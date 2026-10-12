@@ -135,4 +135,15 @@ export const GAME_ICONS = {
     },
     { tag: 'circle', className: 'fill-white', cx: 24, cy: 34.5, r: 2.2 },
   ],
+
+  // The board: a grid of clue cells, one of them lit. The lit cell is not the
+  // top-left on purpose — that is where every board starts, and the icon is
+  // about choosing.
+  aniquiz: [
+    ...[5, 18.5, 32].flatMap((x) => [8, 20.5, 33].map((y) => (
+      x === 18.5 && y === 20.5
+        ? { tag: 'rect', className: 'fill-white stroke-ink', x, y, width: 11, height: 9.5, rx: 2, strokeWidth: 2.5 }
+        : { tag: 'rect', className: 'fill-ink', x, y, width: 11, height: 9.5, rx: 2 }
+    ))),
+  ],
 };

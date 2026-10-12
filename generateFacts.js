@@ -33,7 +33,9 @@ const REVIEW_DIR = path.join(__dirname, 'facts');
 const OVERRIDES = path.join(REVIEW_DIR, 'overrides.json');
 const REJECTED = path.join(REVIEW_DIR, 'rejected.json');
 
-const PACK_VERSION = 1;
+// v2 added popularityRank. A new file rather than a rewrite of v1, because the
+// pack file is the half that is cached hard — see factPack.js.
+const PACK_VERSION = 2;
 const PACK_FILE = `pack-v${PACK_VERSION}.json`;
 const DEFAULT_LIMIT = 500;
 
@@ -125,6 +127,9 @@ async function main() {
   console.log('🎌  AniArcade Fact Pack Generator (source: AniList)\n');
 
   let subjects;
+  // Popularity rank, by AniList id. Only the discovery path knows it; an --ids
+  // run is a diagnostic and simply ships unranked.
+  const ranks = new Map();
   if (explicitIds) {
     console.log(`Resolving subjects (--ids: ${explicitIds.length} given)…`);
     subjects = [...new Set(explicitIds)];
@@ -135,13 +140,14 @@ async function main() {
     // where they fall on that curve.
     console.log(`Resolving subjects (top ${limit} by popularity + ${Object.keys(ANIME_CATALOG).length} catalog shows)…`);
     const popular = await popularIds(limit, { cache, log });
+    popular.forEach((id, i) => { if (!ranks.has(id)) ranks.set(id, i + 1); });
     const catalog = Object.values(ANIME_CATALOG).map((c) => c.anilistId);
     subjects = [...new Set([...popular, ...catalog])];
   }
   console.log(`  ${subjects.length} unique subjects\n`);
 
   console.log('Fetching…');
-  const { rows, meta } = await collect(subjects, { cache, log });
+  const { rows, meta } = await collect(subjects, { cache, log, ranks });
 
   // Validation is not a formality — it is the only thing standing between a
   // source adapter's bad day and a clue read aloud to a table. Rejects are

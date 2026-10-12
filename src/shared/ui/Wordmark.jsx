@@ -14,6 +14,7 @@ const TONES = {
   amber: 'bg-pop-amber text-ink [--glow:var(--color-pop-amber)]',
   blue: 'bg-pop-blue text-ink [--glow:var(--color-pop-blue)]',
   teal: 'bg-pop-teal text-ink [--glow:var(--color-pop-teal)]',
+  red: 'bg-pop-red text-ink [--glow:var(--color-pop-red)]',
 };
 
 const SIZES = {

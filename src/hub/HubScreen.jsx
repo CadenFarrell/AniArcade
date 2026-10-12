@@ -26,6 +26,7 @@ const ACCENTS = {
   amber: { tile: 'bg-pop-amber', hover: 'hover:border-pop-amber', glow: '[--glow:var(--color-pop-amber)]' },
   blue: { tile: 'bg-pop-blue', hover: 'hover:border-pop-blue', glow: '[--glow:var(--color-pop-blue)]' },
   teal: { tile: 'bg-pop-teal', hover: 'hover:border-pop-teal', glow: '[--glow:var(--color-pop-teal)]' },
+  red: { tile: 'bg-pop-red', hover: 'hover:border-pop-red', glow: '[--glow:var(--color-pop-red)]' },
 };
 
 // One game on the menu — a cabinet, not a list row. Built on `btn-pop` directly

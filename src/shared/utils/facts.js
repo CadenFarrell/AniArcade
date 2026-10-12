@@ -80,6 +80,12 @@ export const FACT_FIELDS = {
   duration: { subject: 'show', label: 'Episode length', validate: posInt() },
   genres: { subject: 'show', label: 'Genres', validate: strList() },
   tags: { subject: 'show', label: 'Tags', validate: strList() },
+  // 1 = AniList's most popular anime, from the discovery list's own order. Not
+  // clue material — AniQuiz reads it to price a clue, because "who animated
+  // Death Note" and "who animated Kaiba" are not the same question. A catalog
+  // show that sits outside the top N has no rank at all, and a reader must
+  // treat that as "obscure", never as "unknown and therefore easy".
+  popularityRank: { subject: 'show', label: 'Popularity rank', validate: posInt() },
 
   // ── characters ─────────────────────────────────────────────────────────
   voiceActorJp: { subject: 'character', label: 'Japanese voice actor', validate: str() },
