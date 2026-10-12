@@ -1,4 +1,4 @@
-import AniTuneGame from './AniTuneGame';
+import { lazyGame } from '../../shared/utils/lazyGame';
 
 export default {
   id: 'anitune',
@@ -7,5 +7,6 @@ export default {
   icon: '🎵',
   accent: 'blue', // drives the hub card's colour — see src/shared/ui/Badge.jsx tones
   available: true,
-  Component: AniTuneGame,
+  // Loaded on demand — see shared/utils/lazyGame.js.
+  Component: lazyGame(() => import('./AniTuneGame')),
 };

@@ -60,3 +60,35 @@ a person, the exact glyph the profile pill in the opposite corner wears, so it n
 buttons beside it to read as a control panel — and squeezed into a 64px square a white ball
 plus two white dots collapse into a face instead. Width is free on this screen; height is
 not.
+
+## Games load on demand
+
+Every game's `Component` is `shared/utils/lazyGame.js`'s `lazyGame(() => import(...))`. The
+registry used to import all seven eagerly, so the menu could not paint until every game,
+Firebase and dnd-kit had arrived: one ~1 MB file (301 KB gzipped) before the first tile.
+Startup is now ~258 KB (83 KB gzipped); each game is its own chunk, and Firebase sits in a
+shared one that only a game pulls in.
+
+**The tap is not slower, because the hub preloads.** `preloadGames` runs once the menu is up
+and the browser is idle (`requestIdleCallback`, or a one-second timer on Safari, which has
+none), and `preload()` is memoized, so a tap racing the preload shares its request. It skips
+**Data Saver** users, who pay the on-tap load instead — someone who asked their phone to save
+data should not download six games they never open.
+
+**`GameLoading` covers a wait, and only a real one.** It renders nothing for its first 200ms:
+a load that finishes in a few frames would otherwise flash a whole screen for one paint, and
+past that a tap with no visible answer reads as a tap that did not register. It wears the
+game's accent, so it reads as the tile opening.
+
+**A download failure is not a crash, and `ErrorBoundary` must not treat it as one.**
+`lazyGame` tags it `gameLoad`, and the boundary shows "Couldn't load this game" with Reload
+and Back — never Reset, which would clear saved rooms, tier lists and settings to fix a
+dropped connection. The failure that will actually happen is a tab left open across a
+deploy: chunk filenames are content-hashed, so the old ones are gone, and hosting's
+catch-all rewrite answers them with `index.html`. A reload fetches the new names. The failed
+promise is forgotten rather than memoized, so Back and a second tap genuinely retry.
+
+`HubScreen.test.jsx` preloads every game in `beforeAll`. The first import of a game under
+vitest transforms its whole folder, which can outlast `findBy`'s one-second wait on a cold
+run; preloading makes each test time the hub rather than the compiler, and the tap still
+goes through Suspense.

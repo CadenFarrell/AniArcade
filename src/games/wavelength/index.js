@@ -1,4 +1,4 @@
-import WavelengthGame from './WavelengthGame';
+import { lazyGame } from '../../shared/utils/lazyGame';
 
 export default {
   id: 'aniwave',
@@ -13,5 +13,6 @@ export default {
   icon: '📡',
   accent: 'purple', // drives the hub card's colour — see src/shared/ui/Badge.jsx tones
   available: true,
-  Component: WavelengthGame,
+  // Loaded on demand — see shared/utils/lazyGame.js.
+  Component: lazyGame(() => import('./WavelengthGame')),
 };

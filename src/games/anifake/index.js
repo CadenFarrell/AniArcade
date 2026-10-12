@@ -1,4 +1,4 @@
-import AniFakeGame from './AniFakeGame';
+import { lazyGame } from '../../shared/utils/lazyGame';
 
 export default {
   id: 'anifake',
@@ -7,5 +7,6 @@ export default {
   icon: '🕵️',
   accent: 'teal', // drives the hub card's colour — see src/shared/ui/Badge.jsx tones
   available: true,
-  Component: AniFakeGame,
+  // Loaded on demand — see shared/utils/lazyGame.js.
+  Component: lazyGame(() => import('./AniFakeGame')),
 };

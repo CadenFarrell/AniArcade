@@ -84,6 +84,13 @@ whose `index.js` default-exports a descriptor (`{ id, title, blurb, icon, accent
 available, Component }`) plus one line added to that array. `Component` receives a single
 `onExit` prop and owns everything from there.
 
+**`Component` is always `lazyGame(() => import('./<Game>Game'))`, never a static import.**
+Everything else on the descriptor is the menu and stays eager; the game's code downloads on
+demand, so the hub paints after ~83 KB gzipped instead of the whole arcade's ~300 KB. A new
+game that imports its component statically pulls itself — and anything only it uses — back
+into the hub's startup bundle, and nothing fails to say so. The mechanics (idle preload,
+the loading screen, the reload-not-reset error) are in `src/hub/CLAUDE.md`.
+
 Each game's top component (`<Game>Game.jsx`) is just a local/online mode picker; the
 online button is disabled unless `firebaseEnabled`. It delegates to
 `LocalGame.jsx` or `OnlineGame.jsx`, each of which is a thin view-router holding a `view`

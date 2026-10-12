@@ -1,4 +1,4 @@
-import AniRankGame from './AniRankGame';
+import { lazyGame } from '../../shared/utils/lazyGame';
 
 export default {
   id: 'anirank',
@@ -10,5 +10,6 @@ export default {
   icon: '📊',
   accent: 'amber', // drives the hub card's colour — see src/shared/ui/Badge.jsx tones
   available: true,
-  Component: AniRankGame,
+  // Loaded on demand — see shared/utils/lazyGame.js.
+  Component: lazyGame(() => import('./AniRankGame')),
 };

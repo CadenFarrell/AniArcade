@@ -1,13 +1,15 @@
-import { useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { games } from './registry';
 import ArcadeMark from './ArcadeMark';
 import GameIcon from './GameIcon';
+import GameLoading from './GameLoading';
 import { GAME_ICONS } from './gameIcons';
 import ErrorBoundary from '../shared/components/ErrorBoundary';
 import ListManager from '../shared/components/ListManager';
 import ProfileButton from '../shared/components/ProfileButton';
 import ProfilePicker from '../shared/components/ProfilePicker';
 import { useProfileStore } from '../shared/context/profileContext';
+import { preloadGames } from '../shared/utils/lazyGame';
 import { Backdrop, Badge, GhostButton, HubButton, Screen, Wordmark } from '../shared/ui';
 
 // Tile fill, the border the card adopts on hover, and the halo `btn-pop` paints
@@ -133,6 +135,12 @@ export default function HubScreen() {
   const [editingListId, setEditingListId] = useState(null);
   const { profiles, activeProfile, saveProfile } = useProfileStore();
 
+  // Every game's code, fetched once the menu is up and the browser is idle, so a
+  // tap almost never waits on a download. See shared/utils/lazyGame.js. Once per
+  // visit: HubScreen stays mounted under every game, and each preload is
+  // memoized anyway.
+  useEffect(() => preloadGames(games), []);
+
   const active = games.find((g) => g.id === gameId);
   if (active) {
     const Game = active.Component;
@@ -146,7 +154,11 @@ export default function HubScreen() {
     // the key makes that true even if this branch is ever reused.
     return (
       <ErrorBoundary key={active.id} onBack={() => setGameId(null)}>
-        <Game onExit={() => setGameId(null)} />
+        {/* Inside the boundary, so a game whose code never arrives lands on the
+            boundary's reload screen rather than taking down the arcade. */}
+        <Suspense fallback={<GameLoading title={active.title} accent={active.accent} />}>
+          <Game onExit={() => setGameId(null)} />
+        </Suspense>
       </ErrorBoundary>
     );
   }

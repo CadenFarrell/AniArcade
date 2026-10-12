@@ -13,10 +13,15 @@ import Screen from '../ui/Screen';
 // instead — one game's render crash used to blank the whole arcade with no way
 // back, which turned any bug in the newest game into a bug in all of them.
 export default class ErrorBoundary extends Component {
-  state = { hasError: false };
+  state = { hasError: false, loadFailed: false };
 
-  static getDerivedStateFromError() {
-    return { hasError: true };
+  // `gameLoad` is lazyGame's tag for a game whose code never downloaded — a
+  // dropped connection, or a tab left open across a deploy, whose old chunk
+  // filenames no longer exist. That is not a crash, and the screen must not
+  // treat it as one: a reload fixes it, and Reset would throw away saved rooms,
+  // tier lists and settings for nothing.
+  static getDerivedStateFromError(error) {
+    return { hasError: true, loadFailed: Boolean(error?.gameLoad) };
   }
 
   componentDidCatch(error, info) {
@@ -32,6 +37,30 @@ export default class ErrorBoundary extends Component {
   };
 
   render() {
+    if (this.state.loadFailed) {
+      const { onBack } = this.props;
+      return (
+        <Screen center width="md" className="text-center">
+          <div className="text-6xl mb-4">📡</div>
+          <h2 className="font-display text-3xl font-extrabold text-white mb-3">
+            Couldn&apos;t load this game
+          </h2>
+          <p className="text-fg-body text-lg mb-8">
+            Check your connection and reload. If the arcade was just updated, reloading picks
+            up the new version.
+          </p>
+          <Button variant="primary" size="xl" fullWidth onClick={() => window.location.reload()} className="mb-4">
+            🔄 Reload
+          </Button>
+          {onBack && (
+            <Button variant="neutral" size="lg" fullWidth onClick={onBack}>
+              🏠 Back to the hub
+            </Button>
+          )}
+        </Screen>
+      );
+    }
+
     if (this.state.hasError) {
       const { onBack } = this.props;
       return (

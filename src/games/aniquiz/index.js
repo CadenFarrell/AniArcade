@@ -1,4 +1,4 @@
-import AniQuizGame from './AniQuizGame';
+import { lazyGame } from '../../shared/utils/lazyGame';
 
 export default {
   id: 'aniquiz',
@@ -10,5 +10,6 @@ export default {
   icon: '🧠',
   accent: 'red', // drives the hub card's colour — see src/shared/ui/Badge.jsx tones
   available: true,
-  Component: AniQuizGame,
+  // Loaded on demand — see shared/utils/lazyGame.js.
+  Component: lazyGame(() => import('./AniQuizGame')),
 };

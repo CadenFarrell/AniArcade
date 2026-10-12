@@ -6,7 +6,7 @@
 // play, and the way back out lands on the menu. A render crash anywhere on that
 // path is caught by the per-game ErrorBoundary, which a player sees as one game
 // being broken and which no rules test would ever notice.
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { readFile } from 'node:fs/promises';
@@ -25,6 +25,13 @@ vi.mock('../shared/services/firebase', () => ({
 }));
 
 const CRASH = /something went wrong/i;
+
+// Every game's code, compiled once before any test runs. Games load on demand
+// (shared/utils/lazyGame.js), and the FIRST import of one under vitest means
+// transforming its whole folder — well past findBy's one-second wait on a cold
+// run. Loading them here makes each test time the hub, not the compiler; the
+// tap still goes through Suspense exactly as it does in the app.
+beforeAll(() => Promise.all(games.map((g) => g.Component.preload())), 60_000);
 
 let errors;
 beforeEach(() => {
@@ -87,7 +94,9 @@ describe.each(games.map((g) => [g.title, g]))('%s', (_title, game) => {
       renderArcade(<HubScreen />);
 
       await user.click(tileFor(game));
-      const local = screen.getByRole('button', { name: /play on this device/i });
+      // find, not get: a game's code loads on demand (shared/utils/lazyGame.js),
+      // so it mounts a tick after the tap rather than in the same render.
+      const local = await screen.findByRole('button', { name: /play on this device/i });
       // Unconfigured build: the online path is offered but cannot be taken.
       expect(screen.getByRole('button', { name: /play online/i }).disabled).toBe(true);
 
@@ -107,11 +116,11 @@ describe.each(games.map((g) => [g.title, g]))('%s', (_title, game) => {
     renderArcade(<HubScreen />);
 
     await user.click(tileFor(game));
-    await user.click(screen.getByRole('button', { name: /🏠 hub/i }));
+    await user.click(await screen.findByRole('button', { name: /🏠 hub/i }));
     expect(tileFor(game)).toBeTruthy();
 
     await user.click(tileFor(game));
-    await user.click(screen.getByRole('button', { name: /play on this device/i }));
+    await user.click(await screen.findByRole('button', { name: /play on this device/i }));
     // Setup is not mid-session, so the Hub button must leave without a confirm.
     const confirm = vi.spyOn(window, 'confirm');
     await user.click(screen.getByRole('button', { name: /🏠 hub/i }));
