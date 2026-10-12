@@ -77,7 +77,7 @@ export default function OnlineLobby({ room }) {
         <AniTuneSettings
           players={active}
           values={settings}
-          onChange={(patch) => setSettings((s) => ({ ...s, ...patch }))}
+          onChange={(key, value) => setSettings((s) => ({ ...s, [key]: value }))}
         />
 
         <div className="mb-6">

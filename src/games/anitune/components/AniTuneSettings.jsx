@@ -21,7 +21,8 @@ import {
 // old arrangement made adding one option a four-place edit (a useState and an
 // applyDefaults line in each screen). At six settings that was tolerable; at
 // seventeen it is a guarantee the two will drift. The screens now hold a single
-// `settings` object and hand it here.
+// `settings` object and hand it here, and every change comes back as one
+// onChange(key, value), the convention CLAUDE.md sets for settings cards.
 //
 // prefs.js is still the schema — this component never invents a default, it only
 // renders what it is given.
@@ -46,7 +47,6 @@ function poolStages(players, values) {
 }
 
 export default function AniTuneSettings({ players, values, onChange, disabled = false }) {
-  const set = (patch) => onChange(patch);
   const { base, afterYear, final } = poolStages(players, values);
 
   const level = getPopularityLevel(values.popularity);
@@ -68,7 +68,7 @@ export default function AniTuneSettings({ players, values, onChange, disabled = 
           return (
             <button
               key={m.id}
-              onClick={() => set({ mode: m.id })}
+              onClick={() => onChange('mode', m.id)}
               disabled={disabled}
               aria-pressed={selected}
               className={`focus-pop rounded-pop border-2 p-4 text-left transition-colors disabled:opacity-40
@@ -94,7 +94,7 @@ export default function AniTuneSettings({ players, values, onChange, disabled = 
               max={50}
               value={values.roundSize}
               disabled={disabled}
-              onChange={(roundSize) => set({ roundSize })}
+              onChange={(roundSize) => onChange('roundSize', roundSize)}
             />
           </Field>
           <Field label="Clip length (s)" htmlFor="anitune-clip-seconds" className="flex-1">
@@ -105,7 +105,7 @@ export default function AniTuneSettings({ players, values, onChange, disabled = 
               max={30}
               value={values.clipSeconds}
               disabled={disabled}
-              onChange={(clipSeconds) => set({ clipSeconds })}
+              onChange={(clipSeconds) => onChange('clipSeconds', clipSeconds)}
             />
           </Field>
         </div>
@@ -114,7 +114,7 @@ export default function AniTuneSettings({ players, values, onChange, disabled = 
           label="Timed guesses"
           checked={values.timed}
           disabled={disabled}
-          onChange={(e) => set({ timed: e.target.checked })}
+          onChange={(e) => onChange('timed', e.target.checked)}
           className="mb-2"
         />
         {/* `indent` lines the note up with the label, clearing the 7-unit box
@@ -138,7 +138,7 @@ export default function AniTuneSettings({ players, values, onChange, disabled = 
                 max={60}
                 value={values.guessSeconds}
                 disabled={disabled}
-                onChange={(guessSeconds) => set({ guessSeconds })}
+                onChange={(guessSeconds) => onChange('guessSeconds', guessSeconds)}
               />
             </Field>
             {/* Only race has a second, shorter clock — the one that starts when
@@ -152,7 +152,7 @@ export default function AniTuneSettings({ players, values, onChange, disabled = 
                   max={30}
                   value={values.answerSeconds}
                   disabled={disabled}
-                  onChange={(answerSeconds) => set({ answerSeconds })}
+                  onChange={(answerSeconds) => onChange('answerSeconds', answerSeconds)}
                 />
               </Field>
             )}
@@ -168,7 +168,7 @@ export default function AniTuneSettings({ players, values, onChange, disabled = 
               max={9}
               value={values.startingLives}
               disabled={disabled}
-              onChange={(startingLives) => set({ startingLives })}
+              onChange={(startingLives) => onChange('startingLives', startingLives)}
             />
           </Field>
         )}
@@ -179,7 +179,7 @@ export default function AniTuneSettings({ players, values, onChange, disabled = 
               id="anitune-sample-point"
               value={values.samplePoint}
               disabled={disabled}
-              onChange={(e) => set({ samplePoint: e.target.value })}
+              onChange={(e) => onChange('samplePoint', e.target.value)}
             >
               {SAMPLE_POINTS.map((s) => (
                 <option key={s.id} value={s.id}>{s.label}</option>
@@ -191,7 +191,7 @@ export default function AniTuneSettings({ players, values, onChange, disabled = 
               id="anitune-playback-rate"
               value={String(values.playbackRate)}
               disabled={disabled}
-              onChange={(e) => set({ playbackRate: Number(e.target.value) })}
+              onChange={(e) => onChange('playbackRate', Number(e.target.value))}
             >
               {PLAYBACK_RATES.map((r) => (
                 <option key={r} value={r}>{r === 1 ? 'Normal' : `${r}×`}</option>
@@ -215,7 +215,7 @@ export default function AniTuneSettings({ players, values, onChange, disabled = 
           label="Shared songs only"
           checked={values.sharedSongsOnly}
           disabled={disabled}
-          onChange={(e) => set({ sharedSongsOnly: e.target.checked })}
+          onChange={(e) => onChange('sharedSongsOnly', e.target.checked)}
           className="mb-2"
         />
         <SettingHelp indent className="mb-5">
@@ -227,13 +227,13 @@ export default function AniTuneSettings({ players, values, onChange, disabled = 
             label="Openings"
             checked={values.includeOpenings}
             disabled={disabled}
-            onChange={(e) => set({ includeOpenings: e.target.checked })}
+            onChange={(e) => onChange('includeOpenings', e.target.checked)}
           />
           <Checkbox
             label="Endings"
             checked={values.includeEndings}
             disabled={disabled}
-            onChange={(e) => set({ includeEndings: e.target.checked })}
+            onChange={(e) => onChange('includeEndings', e.target.checked)}
           />
         </div>
 
@@ -242,7 +242,7 @@ export default function AniTuneSettings({ players, values, onChange, disabled = 
             id="anitune-popularity"
             value={values.popularity}
             disabled={disabled}
-            onChange={(e) => set({ popularity: e.target.value })}
+            onChange={(e) => onChange('popularity', e.target.value)}
           >
             {POPULARITY_LEVELS.map((p) => (
               <option key={p.id} value={p.id}>{p.label}</option>
@@ -278,7 +278,7 @@ export default function AniTuneSettings({ players, values, onChange, disabled = 
               max={YEAR_MAX}
               value={values.yearFrom}
               disabled={disabled}
-              onChange={(yearFrom) => set({ yearFrom })}
+              onChange={(yearFrom) => onChange('yearFrom', yearFrom)}
             />
           </Field>
           <Field label="To year" htmlFor="anitune-year-to" className="flex-1">
@@ -289,7 +289,7 @@ export default function AniTuneSettings({ players, values, onChange, disabled = 
               max={YEAR_MAX}
               value={values.yearTo}
               disabled={disabled}
-              onChange={(yearTo) => set({ yearTo })}
+              onChange={(yearTo) => onChange('yearTo', yearTo)}
             />
           </Field>
         </div>
@@ -308,7 +308,7 @@ export default function AniTuneSettings({ players, values, onChange, disabled = 
             max={5}
             value={values.maxPerAnime}
             disabled={disabled}
-            onChange={(maxPerAnime) => set({ maxPerAnime })}
+            onChange={(maxPerAnime) => onChange('maxPerAnime', maxPerAnime)}
           />
         </Field>
       </Card>

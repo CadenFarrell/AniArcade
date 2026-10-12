@@ -134,7 +134,7 @@ export default function AniTuneSetup({ onStart, preparing, progress, error, onBa
           players={players}
           values={settings}
           disabled={preparing}
-          onChange={(patch) => setSettings((s) => ({ ...s, ...patch }))}
+          onChange={(key, value) => setSettings((s) => ({ ...s, [key]: value }))}
         />
 
         <div className="mb-6">
