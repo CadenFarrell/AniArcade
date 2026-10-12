@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-/* eslint-env node */
 /**
  * Builds the fact pack — the answers a profile cannot derive.
  *

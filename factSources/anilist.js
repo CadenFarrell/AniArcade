@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-/* eslint-env node */
 // The one fact source implemented today.
 //
 // The Wikidata-vs-Jikan choice is deliberately still deferred — it is a
