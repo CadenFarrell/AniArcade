@@ -66,10 +66,14 @@ process.
 Firebase (online rooms only):
 
 ```bash
-firebase emulators:start --only database,auth --project demo-aniguess
-firebase deploy --only database    # database.rules.json
-firebase deploy --only hosting     # dist/
+npx firebase emulators:start --only database,auth --project demo-aniguess
+npx firebase deploy --only database    # database.rules.json
+npx firebase deploy --only hosting     # dist/ — run npm run build first
 ```
+
+The CLI is `firebase-tools` in devDependencies, not a global install, so a bare `firebase`
+in a shell is "command not found". npm scripts are the exception — they put
+`node_modules/.bin` on the PATH, which is why `test:smoke` can call it bare.
 
 `.env.local` (copied from `.env.local.example`) holds the `VITE_FIREBASE_*` config. When
 pointing at the emulator, `VITE_FIREBASE_DATABASE_URL` must use the `-default-rtdb`
