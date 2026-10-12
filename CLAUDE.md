@@ -1027,11 +1027,22 @@ question.** `generateFacts.js` (Node, `npm run generate:facts`) writes a pack, `
 serves it as a static file, `shared/services/factPack.js` loads it, and
 `shared/utils/facts.js` holds every pure part of it.
 
-**The pack that ships today is EMPTY, and visibly so on purpose** — `index.json` says
-PLACEHOLDER and names zero shows, zero characters, zero facts, because AniList's API was
-down while the pipeline was built. **Nothing in `src/` reads it yet.** A consumer must treat
-an empty pack as normal rather than as a failed load, and must not be written assuming a
-populated one has ever existed.
+**The pack is populated — 441 shows, 1412 characters, 11457 facts per `index.json` — and
+nothing in `src/` reads it yet.** A consumer must still treat a missing entry as normal
+rather than as a failed load: most of what a player imports will not be among 441 shows, and
+`factsFor` falls closed on an empty key list for exactly that case.
+
+It shipped empty at first, and the reason is worth knowing before the next 403. AniList
+answers any request carrying **no `Referer`** with a 403 claiming the API is "temporarily
+disabled due to severe stability issues" — it reads as an outage and is a bot filter. The
+fix is `REFERER` in `anilistClient.js`, a no-op in the browser, where `Referer` is a
+forbidden header name and `fetch()` sends the page's own.
+
+**A franchise folds to one key, so assembly is first-write-wins, per field.** All six Attack
+on Titan entries emit rows against `attack on titan`; last-write-wins left the identity block
+saying WIT 2013 while the facts said MAPPA 2022 — one subject wearing two seasons. Popularity
+order puts the canonical season first, and "per field" lets a later season still backfill what
+it had no value for.
 
 **A pack key is the SAME fold a saved profile keys on** — `franchiseTitleKey` for shows and
 `characterNameKey` for characters, exactly what `anirank/utils/deck.js` computes when it
@@ -1204,6 +1215,7 @@ lockfile:
 | `seedProfiles.js` | ~22K lines / ~950 KB | generated console seed script |
 | `.anilist-cache/` | ~130 files / ~1.7 MB | raw AniList API responses (gitignored) |
 | `.facts-cache/` | grows with the catalog | same, for `generateFacts.js` (gitignored) |
+| `public/facts/pack-v1.json` | ~29.5K lines / ~730 KB | generated fact pack |
 | `package-lock.json` | ~13K lines / ~460 KB | npm lockfile |
 
 None of them carries architectural information. `Grep` them for a specific key when you
@@ -1212,8 +1224,7 @@ genuinely need one, exclude them from repo-wide searches, and never `Read` them 
 Two root-level files near these are **not** generated and are meant to be edited by hand:
 `animeCatalog.js`, the show list both generators read (it was lifted out of
 `generateProfiles.js` so there would be one copy), and `facts/overrides.json`. Neither is
-large. `public/facts/pack-v1.json` *is* generated output, but it is currently an empty
-placeholder — see the fact pack section rather than reading it for content.
+large. For the pack's shape, read `shared/utils/facts.js` rather than the pack itself.
 
 ## Conventions
 
