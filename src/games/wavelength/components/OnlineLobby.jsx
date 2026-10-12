@@ -1,9 +1,8 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { useProfileStore } from '../../../shared/context/profileContext';
+import { useMemo, useState } from 'react';
 import SettingsFooter from '../../../shared/components/SettingsFooter';
 import SettingHelp, { DetailToggle } from '../../../shared/components/SettingHelp';
 import { useGamePrefs } from '../../../shared/hooks/useGamePrefs';
-import { profileFingerprint } from '../../../shared/utils/profileStats';
+import { useRepublishProfile } from '../../../shared/hooks/useRepublishProfile';
 import {
   Backdrop, Badge, Banner, Button, Card, CardRow, Checkbox, Field, NumberInput,
   Screen, Wordmark,
@@ -24,7 +23,6 @@ import { CARD_POOLS, MIN_CARD_POOL, eligibleCards, poolNoun } from '../utils/car
 // passed around a table. savePrefs merges rather than replaces, which is what
 // lets the two screens own different subsets without either wiping the other's.
 export default function OnlineLobby({ room }) {
-  const { activeProfile } = useProfileStore();
   const { prefs, savePrefs, resetPrefs } = useGamePrefs('aniwave', DEFAULT_PREFS);
 
   const [rounds, setRounds] = useState(prefs.rounds);
@@ -56,19 +54,8 @@ export default function OnlineLobby({ room }) {
   const statuses = room.playerStatuses ?? {};
   const needsCards = needsCardPool(clueMode);
 
-  // Republish the profile into the room whenever it changes locally. saveProfile
-  // only writes localStorage and the provider; updateMyProfile is the one channel
-  // from the store into Firebase. The same effect runs in every other lobby —
-  // and it matters more here than it used to, since the pool below is computed
-  // from the copies of everyone's lists sitting in the room.
-  const lastPushedRef = useRef(null);
-  useEffect(() => {
-    if (!me || !activeProfile || activeProfile.id !== room.myPlayerId) return;
-    const mine = profileFingerprint(activeProfile);
-    if (mine === profileFingerprint(me) || mine === lastPushedRef.current) return;
-    lastPushedRef.current = mine;
-    room.updateMyProfile(activeProfile);
-  }, [activeProfile, me, room]);
+  // Pushes a list imported after joining back up to the room; see the hook.
+  useRepublishProfile(room, me);
 
   // Against the ACTIVE roster, not everyone who ever joined: a ghost left by a
   // closed tab would otherwise count toward a shared pool nobody can draw from.

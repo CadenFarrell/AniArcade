@@ -1,9 +1,9 @@
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { useProfileStore } from '../../../shared/context/profileContext';
 import AniListImport from '../../../shared/components/AniListImport';
 import SettingsFooter from '../../../shared/components/SettingsFooter';
 import { useGamePrefs } from '../../../shared/hooks/useGamePrefs';
-import { profileFingerprint } from '../../../shared/utils/profileStats';
+import { useRepublishProfile } from '../../../shared/hooks/useRepublishProfile';
 import AniTuneSettings from './AniTuneSettings';
 import { eligibleCount } from '../utils/questionPool';
 import { DEFAULT_PREFS } from '../prefs';
@@ -40,18 +40,8 @@ export default function OnlineLobby({ room }) {
   const active = room.activePlayers ?? players;
   const statuses = room.playerStatuses ?? {};
 
-  // Republish the profile into the room whenever it changes locally. See the
-  // long note on the same effect in src/games/aniguess/components/OnlineLobby.jsx:
-  // saveProfile only writes localStorage, and updateMyProfile is the one channel
-  // from the store into Firebase.
-  const lastPushedRef = useRef(null);
-  useEffect(() => {
-    if (!me || !activeProfile || activeProfile.id !== room.myPlayerId) return;
-    const mine = profileFingerprint(activeProfile);
-    if (mine === profileFingerprint(me) || mine === lastPushedRef.current) return;
-    lastPushedRef.current = mine;
-    room.updateMyProfile(activeProfile);
-  }, [activeProfile, me, room]);
+  // Pushes a list imported after joining back up to the room; see the hook.
+  useRepublishProfile(room, me);
 
   const showCount = (p) => (p.animeList || []).length;
   const everyoneHasShows = active.every((p) => showCount(p) > 0);

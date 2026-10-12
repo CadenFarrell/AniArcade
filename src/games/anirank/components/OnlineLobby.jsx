@@ -1,10 +1,10 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useProfileStore } from '../../../shared/context/profileContext';
 import AniListImport from '../../../shared/components/AniListImport';
 import SettingsFooter from '../../../shared/components/SettingsFooter';
 import SettingHelp, { DetailToggle } from '../../../shared/components/SettingHelp';
 import { useGamePrefs } from '../../../shared/hooks/useGamePrefs';
-import { profileFingerprint } from '../../../shared/utils/profileStats';
+import { useRepublishProfile } from '../../../shared/hooks/useRepublishProfile';
 import AxisPicker from './AxisPicker';
 import FormatOption from './FormatOption';
 import { useCustomPrompts } from '../hooks/useCustomPrompts';
@@ -74,17 +74,8 @@ export default function OnlineLobby({ room }) {
   const active = room.activePlayers ?? players;
   const statuses = room.playerStatuses ?? {};
 
-  // Republish the profile into the room whenever it changes locally. saveProfile
-  // only writes localStorage and the provider; updateMyProfile is the one
-  // channel from the store into Firebase. See the same effect in AniTune's lobby.
-  const lastPushedRef = useRef(null);
-  useEffect(() => {
-    if (!me || !activeProfile || activeProfile.id !== room.myPlayerId) return;
-    const mine = profileFingerprint(activeProfile);
-    if (mine === profileFingerprint(me) || mine === lastPushedRef.current) return;
-    lastPushedRef.current = mine;
-    room.updateMyProfile(activeProfile);
-  }, [activeProfile, me, room]);
+  // Pushes a list imported after joining back up to the room; see the hook.
+  useRepublishProfile(room, me);
 
   const showCount = (p) => (p.animeList || []).length;
   const everyoneHasShows = active.every((p) => showCount(p) > 0);
