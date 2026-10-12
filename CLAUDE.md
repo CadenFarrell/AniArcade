@@ -37,11 +37,17 @@ npx vitest run src/games/aniguess/rules.test.js # one file
 npx vitest run -t "advances the turn"           # one test by name
 ```
 
-The vitest config lives in the `test` block of `vite.config.js`. Only files matching its
-`include` glob run at all — today that is `src/**/*.test.js` under `environment: 'node'`,
-so the suite covers pure `.js` modules and a `.test.jsx` file would silently never run.
-That is a property of the current config, not a rule: to add component tests, widen
-`include` and set an `environment` (jsdom) in the same block.
+The vitest config lives in the `test` block of `vite.config.js`. Its `include` is
+`src/**/*.test.{js,jsx}` under a default `environment: 'node'`: a `.test.js` is a pure
+module, and a `.test.jsx` is a component test that must open with a
+`// @vitest-environment jsdom` docblock (forget it and the file fails on `document is not
+defined`, rather than silently never running as `.test.jsx` files used to).
+`src/shared/testing/arcade.jsx` mounts the same providers `main.jsx` does and seeds
+profiles in the stored shape; `hub/HubScreen.test.jsx` drives every registered game from
+its hub tile into local setup and back. Two traps it already hit: vitest 3 runs on its
+own bundled Vite 7, so the `mode === 'test'` esbuild JSX line in `vite.config.js` is what
+makes JSX compile at all, and vitest loads `.env.local` (production Firebase), so a
+component test must `vi.mock('shared/services/firebase')` before anything mounts.
 
 Firebase (online rooms only):
 
