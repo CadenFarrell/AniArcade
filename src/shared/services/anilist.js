@@ -1,5 +1,29 @@
 import { anilistRequest } from './anilistClient';
-import { SEASON_RELATIONS } from '../utils/franchise';
+import { toListEntry } from '../utils/anilistFormat';
+
+// Every field a list entry is built from (see anilistFormat.js toListEntry).
+// One string for both queries below, so an AniList list and a list hydrated
+// from another site can never disagree about what a show carries.
+const MEDIA_FIELDS = `
+  id
+  format
+  episodes
+  duration
+  averageScore
+  popularity
+  source
+  season
+  seasonYear
+  startDate { year month day }
+  title { romaji english }
+  coverImage { large }
+  studios(isMain: true) { nodes { name } }
+  relations {
+    edges {
+      relationType(version: 2)
+      node { id type }
+    }
+  }`;
 
 const LIST_QUERY = `
 query ($userName: String, $type: MediaType, $statusIn: [MediaListStatus]) {
@@ -7,26 +31,7 @@ query ($userName: String, $type: MediaType, $statusIn: [MediaListStatus]) {
     lists {
       entries {
         status
-        media {
-          id
-          format
-          episodes
-          duration
-          averageScore
-          popularity
-          source
-          season
-          seasonYear
-          startDate { year month day }
-          title { romaji english }
-          coverImage { large }
-          studios(isMain: true) { nodes { name } }
-          relations {
-            edges {
-              relationType(version: 2)
-              node { id type }
-            }
-          }
+        media {${MEDIA_FIELDS}
         }
       }
     }
@@ -110,19 +115,6 @@ async function fetchCharacterPage(ids, page, { signal, batchSize, onBatch }) {
   return out;
 }
 
-// The ids of other ANIME this media is a season of / continues into. Ids that
-// aren't in the user's own list are kept deliberately: they bridge seasons the
-// user skipped (Attack on Titan S3 and S4 only connect through "S3 Part 2").
-function seasonRelatedIds(media) {
-  const ids = [];
-  for (const edge of media?.relations?.edges ?? []) {
-    if (edge?.node?.type === 'ANIME' && SEASON_RELATIONS.has(edge.relationType)) {
-      ids.push(edge.node.id);
-    }
-  }
-  return ids;
-}
-
 // Fetches a public AniList user's anime list. Throws a friendly error if the
 // username doesn't exist (AniList returns a GraphQL error, not a null result,
 // for an unknown user).
@@ -145,34 +137,7 @@ export async function fetchUserAnimeList(username, { statusIn = ['COMPLETED'] } 
     for (const entry of list.entries ?? []) {
       const media = entry.media;
       if (!media || seen.has(media.id)) continue;
-      seen.set(media.id, {
-        id: media.id,
-        title: media.title?.english || media.title?.romaji || `Untitled #${media.id}`,
-        coverImageUrl: media.coverImage?.large || '',
-        status: entry.status,
-        format: media.format ?? null,
-        startDate: media.startDate ?? null,
-        // The numeric axes AniRank ranks by. Nullable on purpose: an unaired or
-        // obscure show genuinely has no averageScore, and a null has to survive
-        // to the deck builder so it can drop the item rather than sort it as 0.
-        episodes: media.episodes ?? null,
-        averageScore: media.averageScore ?? null,
-        popularity: media.popularity ?? null,
-        // Facts about the show rather than numbers to rank it by. No game reads
-        // these yet: they are stored so a future quiz finds its answer key
-        // already on the device instead of fetching one mid-round. Same nullable
-        // contract as the axes above — a consumer must read a missing value as
-        // "this show cannot be asked about", never as a default.
-        duration: media.duration ?? null,
-        source: media.source ?? null,
-        season: media.season ?? null,
-        seasonYear: media.seasonYear ?? null,
-        // isMain filters the connection down to the animation studio, so
-        // nodes[0] is what "who made this" means. The unfiltered connection also
-        // carries producers and licensors, which no clue is ever asking for.
-        studio: media.studios?.nodes?.[0]?.name ?? null,
-        relatedIds: seasonRelatedIds(media),
-      });
+      seen.set(media.id, toListEntry(media, entry.status));
     }
   }
   return [...seen.values()];
@@ -252,4 +217,64 @@ export async function fetchManyAnimeCharacters(ids, {
   const result = new Map();
   for (const [id, s] of state) result.set(id, { genres: s.genres, edges: s.edges });
   return result;
+}
+
+// How many ids one hydrate request asks for. AniList's Page caps perPage at 50,
+// and MEDIA_FIELDS at 50 sits well inside the complexity cap (measured: one
+// request, no error) — the relations connection is the heavy part and it is
+// unpaged here.
+const HYDRATE_PER_PAGE = 50;
+
+const HYDRATE_QUERY = (idField) => `
+query ($ids: [Int], $page: Int) {
+  Page(page: $page, perPage: ${HYDRATE_PER_PAGE}) {
+    pageInfo { hasNextPage }
+    media(${idField}: $ids, type: ANIME) {
+      idMal${MEDIA_FIELDS}
+    }
+  }
+}`;
+
+async function hydrateChunk(idField, ids, { signal }) {
+  const media = [];
+  // Paged even though a chunk is never longer than a page: AniList returns
+  // fewer media than ids for unknown ids, but a MAL id that two AniList entries
+  // claim would push a full chunk onto a second page, and dropping it silently
+  // is the failure that reads as "the import just forgot one show".
+  for (let page = 1; ; page++) {
+    const data = await anilistRequest(HYDRATE_QUERY(idField), { ids, page }, { signal });
+    media.push(...(data?.Page?.media ?? []));
+    if (!data?.Page?.pageInfo?.hasNextPage) break;
+  }
+  return media;
+}
+
+/**
+ * Looks up shows another site named, so they arrive exactly as an AniList list
+ * entry would (see toListEntry for why that is the whole cross-site design).
+ *
+ * `anilistIds` are AniList's own ids (Kitsu maps most of its library straight
+ * to them); `malIds` are MyAnimeList ids, resolved through AniList's `idMal`.
+ * Returns { byAnilistId, byMalId }: Maps to list entries carrying `status`,
+ * where `statusOf(id)` says which list each id came from. An id AniList does
+ * not know is simply absent — the caller counts those as unmatched.
+ */
+export async function fetchMediaByIds({ anilistIds = [], malIds = [] } = {}, { signal, statusOf } = {}) {
+  const byAnilistId = new Map();
+  const byMalId = new Map();
+  const runs = [
+    ['id_in', [...new Set(anilistIds)], byAnilistId, (m) => m.id],
+    ['idMal_in', [...new Set(malIds)], byMalId, (m) => m.idMal],
+  ];
+  for (const [idField, ids, out, keyOf] of runs) {
+    for (let i = 0; i < ids.length; i += HYDRATE_PER_PAGE) {
+      const chunk = ids.slice(i, i + HYDRATE_PER_PAGE).map(Number);
+      for (const media of await hydrateChunk(idField, chunk, { signal })) {
+        const key = keyOf(media);
+        if (key == null || out.has(key)) continue;
+        out.set(key, toListEntry(media, statusOf?.(idField === 'id_in' ? 'anilist' : 'mal', key) ?? null));
+      }
+    }
+  }
+  return { byAnilistId, byMalId };
 }

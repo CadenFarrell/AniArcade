@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useProfileStore } from '../context/profileContext';
-import AniListImport from './AniListImport';
+import ListImport from './ListImport';
+import { canRefreshList } from '../services/listSources';
 import { Badge, Button, Card, CardRow } from '../ui';
 
 // The parts every online lobby draws identically: the code to share, the live
@@ -117,9 +118,9 @@ export function LobbyImport() {
           onClick={() => setImportMode('pick')}
           disabled={!activeProfile}
         >
-          🔗 Import my list from AniList
+          🔗 Import my list
         </Button>
-        {activeProfile?.anilistUsername && (
+        {canRefreshList(activeProfile) && (
           <Button
             variant="neutral"
             size="md"
@@ -132,7 +133,7 @@ export function LobbyImport() {
       </div>
 
       {importMode && activeProfile && (
-        <AniListImport
+        <ListImport
           profile={activeProfile}
           autoRefresh={importMode === 'refresh'}
           onClose={() => setImportMode(null)}

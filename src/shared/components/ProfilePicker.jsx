@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useProfileStore } from '../context/profileContext';
 import { summarizeProfiles } from '../utils/profileStats';
-import AniListImport from './AniListImport';
+import ListImport from './ListImport';
 import { Badge, Button, Input, Label, Modal } from '../ui';
 
 // Pick who you are, once, for the whole arcade.
@@ -15,7 +15,7 @@ import { Badge, Button, Input, Label, Modal } from '../ui';
 // not a dialog, so the hub routes to it instead and this just asks for it.
 //
 // *Importing* one is, and the distinction is the shape rather than the topic:
-// AniListImport is already a dialog, so it can replace this one in place. A
+// ListImport is already a dialog, so it can replace this one in place. A
 // brand-new profile is handed straight to it, because creating a profile used to
 // dead-end on the menu with an empty list and a warning pill — the import was
 // three navigations away (reopen the picker, ✏️, ListManager) and nothing on
@@ -154,10 +154,10 @@ export default function ProfilePicker({
   // two fixed backdrops and two Escape handlers over what reads as one panel.
   if (importFor) {
     return (
-      <AniListImport
+      <ListImport
         profile={importFor}
         // Skipping IS closing — the picker's job is done either way. Saved
-        // through the store, not useProfile: AniListImport only hands the merged
+        // through the store, not useProfile: ListImport only hands the merged
         // profile back, and a bare write would leave the hub's profile pill stale
         // and swallow the quota banner ProfileProvider raises.
         onClose={() => finishWith(importFor)}
@@ -191,7 +191,7 @@ export default function ProfilePicker({
 
       {rows.length === 0 && !creating && (
         <p className="mb-5 text-center text-fg-subtle">
-          No profiles yet. Create one and import your AniList once — every game uses it.
+          No profiles yet. Create one and import your list once — every game uses it.
         </p>
       )}
 

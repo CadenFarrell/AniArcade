@@ -259,3 +259,36 @@ describe('normalizeClue', () => {
     expect(normalizeClue(null)).toBeNull();
   });
 });
+
+describe('supporting cast', () => {
+  // Show 0's three leads, plus one supporting character who is main nowhere.
+  const pack = makePack({ shows: 20 });
+  pack.characters['side 0'] = {
+    name: 'Side Zero', voiceActorJp: 'Actor 0 0', favourites: 5000, supportingIn: ['show 0'],
+  };
+  pack.aliases = { 'show zero the movie': 'show 0' };
+  const idx = indexPack(pack);
+  const ctx = buildContext(idx, [...idx.shows.keys()]);
+  const all = TOPICS.flatMap((t) => candidatesFor(ctx, t));
+  const about = (key) => all.filter((c) => c.subject === key);
+
+  it('asks which show a supporting character is FROM, never which they are a main character in', () => {
+    const clue = about('side 0').find((c) => c.field === 'appearsIn');
+    expect(clue.prompt).toBe('Which show is Side Zero from?');
+    expect(clue.accept).toEqual(['show 0']);
+  });
+
+  it('never offers a supporting character as a lead', () => {
+    expect(about('side 0').some((c) => c.field === 'voiceActorReverse')).toBe(false);
+    const mainCast = all.find((c) => c.field === 'mainCast' && c.subject === 'show 0');
+    expect([mainCast.answer, ...mainCast.alsoAccepted]).not.toContain('Side Zero');
+  });
+
+  it('still asks who voices them', () => {
+    expect(about('side 0').some((c) => c.field === 'voiceActor')).toBe(true);
+  });
+
+  it('puts a show in play through its alias', () => {
+    expect(buildContext(idx, ['show zero the movie']).shows.map((s) => s.key)).toEqual(['show 0']);
+  });
+});

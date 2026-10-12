@@ -32,6 +32,17 @@ most popular show a 200-point clue. An absolute scale would put all of a small s
 the cheap rows, so a table's twelve shared shows still spread 200 to 1000. A board column is
 then a ladder: one clue drawn from each fifth of the column's difficulty range.
 
+**The pack holds two kinds of cast, and the clues keep them apart.** `appearsIn` is the shows
+a character is MAIN in; pack-v4's supporting characters (Levi, Kakashi — favourites ≥ 1000,
+four per show) arrive under `supportingIn` instead. Both cast clues *say* "main character", so
+`castByShow` (which feeds `mainCast` and `voiceActorReverse`'s accept list) reads `appearsIn`
+only, and `voiceActorReverse` refuses a subject whose home is not a show they lead. The
+`appearsIn` clue asks a lead "which show is X a main character in" and a character who is
+supporting everywhere "which show is X from", accepting every show they are in. A
+character's `home` is a show they lead when one is in play, otherwise one they support in.
+`buildContext` resolves the pool's keys through the pack's `aliases`, so a player whose
+profile names a later season still puts the franchise in play.
+
 **Options are built only for clues actually dealt.** Building them for every candidate (~10k
 over the whole pack) took a deal twenty seconds; the reverse-clue lookups are bucketed once per
 pack (`lookups`, memoized on the index object) for the same reason.

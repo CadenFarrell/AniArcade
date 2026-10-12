@@ -1,0 +1,15 @@
+# The MyAnimeList proxy — see src/index.js for why it exists at all.
+#
+# Deploy (one time, from this directory; both commands need a free Cloudflare
+# account — no card — and `npx wrangler login` first):
+#   npx wrangler secret put MAL_CLIENT_ID   # from myanimelist.net/apiconfig
+#   npx wrangler deploy
+# then put the URL it prints into .env.local as VITE_MAL_PROXY_URL and rebuild.
+name = "aniarcade-mal-proxy"
+main = "src/index.js"
+compatibility_date = "2026-10-01"
+
+[vars]
+# Pages allowed to read the proxy's answers. The hosting origins plus local dev
+# and preview (both serve on 5173 in this repo). A fork adds its own here.
+ALLOWED_ORIGINS = "https://aniguess-a08f7.web.app,https://aniguess-a08f7.firebaseapp.com,http://localhost:5173,http://127.0.0.1:5173"

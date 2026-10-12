@@ -55,6 +55,7 @@ const posInt = () => (v) => isInt(v) && v > 0;
 const nonNegInt = () => (v) => isInt(v) && v >= 0;
 const year = () => (v) => isInt(v) && v >= YEAR_MIN && v <= YEAR_MAX;
 const oneOf = (allowed) => (v) => typeof v === 'string' && allowed.includes(v);
+const percent = () => (v) => isInt(v) && v >= 1 && v <= 100;
 
 /**
  * The schema, and it is the schema the way DEFAULT_PREFS is one — not a
@@ -86,6 +87,20 @@ export const FACT_FIELDS = {
   // show that sits outside the top N has no rank at all, and a reader must
   // treat that as "obscure", never as "unknown and therefore easy".
   popularityRank: { subject: 'show', label: 'Popularity rank', validate: posInt() },
+  // The numbers a profile import also stores (see profileMerge.js STAT_KEYS),
+  // carried here so a profile saved before those stats existed can be repaired
+  // without a re-import — see packStats.js. Each is folded by the SAME rule
+  // summarizeGroupStats uses at import time (popularity, score and favourites
+  // from the canonical season; the year from the earliest), so a backfilled
+  // value and an imported one mean the same thing. `episodes` above is NOT one
+  // of them and is never backfilled: it is clue material for the canonical
+  // season, while a profile's is summed across every season.
+  popularity: { subject: 'show', label: 'AniList members', validate: nonNegInt() },
+  averageScore: { subject: 'show', label: 'AniList score', validate: percent() },
+  startYear: { subject: 'show', label: 'First aired', validate: year() },
+  // Not `favourites`: FACT_FIELDS is keyed by field name across both subjects,
+  // and that name already belongs to characters.
+  showFavourites: { subject: 'show', label: 'AniList favourites', validate: nonNegInt() },
 
   // ── characters ─────────────────────────────────────────────────────────
   voiceActorJp: { subject: 'character', label: 'Japanese voice actor', validate: str() },
@@ -93,8 +108,58 @@ export const FACT_FIELDS = {
   favourites: { subject: 'character', label: 'AniList favourites', validate: nonNegInt() },
   // Show subject keys, so a character row joins back to `shows` by the same
   // fold everything else uses.
-  appearsIn: { subject: 'character', label: 'Appears in', validate: strList() },
+  //
+  // `appearsIn` means MAIN in, and has since v1 — both cast clues ask "which
+  // show is X a main character in" and "name a main character from Y", so
+  // widening it would make each of them state something false. A supporting
+  // appearance is a separate field rather than a role flag on the character,
+  // because the same person is main in one show and supporting in another
+  // (a spin-off's lead is often a side character in the original).
+  appearsIn: { subject: 'character', label: 'Main character in', validate: strList() },
+  supportingIn: { subject: 'character', label: 'Supporting character in', validate: strList() },
 };
+
+// ── Staff credits ──────────────────────────────────────────────────────────
+//
+// AniList's staff `role` is free text, so a credit is found by matching, and
+// the patterns live here rather than in the source adapter because a pattern is
+// exactly the kind of logic that breaks silently: `/^director$/` shipped One
+// Piece, Naruto Shippuden and Dragon Ball Z with no director at all, because a
+// long-runner credits "Director (eps 1-199)".
+//
+// Each field is an ORDERED list, best first. pickCredit takes the first edge
+// matching the best pattern any edge matches — so a plain "Director" still
+// beats an earlier-listed "Director (eps 200-291)", and a qualified credit is
+// only used when nothing unqualified exists. Within one pattern the edge order
+// (AniList's RELEVANCE sort) decides, which is what "the director" means.
+//
+// Anchored on purpose. "Animation Director", "ADR Director", "Sound Director",
+// "Episode Director" and "Director of Photography" are all real credits on the
+// same list and none of them is the show's director.
+export const STAFF_CREDITS = {
+  director: [/^director$/i, /^director\s*\(.*\)$/i, /^chief\s+director$/i],
+  seriesComposition: [/series\s*composition/i],
+  originalCreator: [/original\s*(creator|story)/i],
+  composer: [/^music$/i, /^music\s*\(.*\)$/i],
+};
+
+// Trimmed, because some roles arrive with trailing whitespace — Chainsaw Man
+// credits its composer as "Music ", which an anchored pattern never matched.
+const roleOf = (edge) => (typeof edge?.role === 'string' ? edge.role.trim() : '');
+
+/**
+ * The staff edge holding `field`'s credit, or null. `edges` are AniList staff
+ * edges ({ role, node }) in the order they arrived.
+ */
+export function pickCredit(edges, field) {
+  const patterns = STAFF_CREDITS[field];
+  if (!patterns || !Array.isArray(edges)) return null;
+  for (const pattern of patterns) {
+    const hit = edges.find((e) => pattern.test(roleOf(e)));
+    if (hit) return hit;
+  }
+  return null;
+}
 
 // 'show' -> the pack section it lives in, so callers never hardcode either.
 export const SECTION_FOR = { show: 'shows', character: 'characters' };
@@ -150,7 +215,7 @@ function normalizeEntry(kind, key, raw) {
  * exceptional.
  */
 export function normalizePack(raw) {
-  const out = { version: Number(raw?.version) || 0, shows: {}, characters: {} };
+  const out = { version: Number(raw?.version) || 0, shows: {}, characters: {}, aliases: {} };
 
   for (const [section, kind] of [['shows', 'show'], ['characters', 'character']]) {
     const source = raw?.[section];
@@ -160,6 +225,20 @@ export function normalizePack(raw) {
       if (!key) continue;
       const entry = normalizeEntry(kind, key, rawEntry);
       if (entry) out[section][key] = entry;
+    }
+  }
+
+  // Aliases are validated LAST, against the shows that survived: an alias to a
+  // show normalizePack just dropped would resolve a lookup to nothing, which is
+  // worse than not resolving it — the caller would believe it had found the
+  // canonical key. A key that is itself a show never aliases away from it.
+  const aliases = raw?.aliases;
+  if (aliases && typeof aliases === 'object') {
+    for (const [rawFrom, to] of Object.entries(aliases)) {
+      const from = rawFrom.trim();
+      if (!from || typeof to !== 'string' || from === to) continue;
+      if (out.shows[from] || !out.shows[to]) continue;
+      out.aliases[from] = to;
     }
   }
   return out;
@@ -172,7 +251,25 @@ export function indexPack(pack) {
     version: normalized.version,
     shows: new Map(Object.entries(normalized.shows)),
     characters: new Map(Object.entries(normalized.characters)),
+    aliases: new Map(Object.entries(normalized.aliases)),
   };
+}
+
+/**
+ * The pack key a folded show title actually lives under.
+ *
+ * The pack groups a franchise by AniList relations, the way an import does, and
+ * keys it on its canonical season's title. A profile's title is usually that
+ * same fold — but not always: a hand-entered "Re:Zero Season 2", or a player who
+ * only owns the second season, folds to a member title instead. `aliases` maps
+ * every member title's fold to the canonical key, so this is one Map lookup, and
+ * a miss hands the key straight back (most of what a player imports is not in
+ * the pack at all, and that is not an error).
+ */
+export function resolveShowKey(index, key) {
+  if (typeof key !== 'string' || !key) return key;
+  if (index?.shows?.has(key)) return key;
+  return index?.aliases?.get(key) ?? key;
 }
 
 /**

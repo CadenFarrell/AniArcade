@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { loadFactPack } from '../../../shared/services/factPack';
+import { loadFactPack } from '../services/factPack';
 
 // The pack, with a status a setup screen can say out loud. loadFactPack
 // resolves null rather than throwing (see its header) precisely so that this —

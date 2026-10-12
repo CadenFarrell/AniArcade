@@ -21,7 +21,7 @@
 // generator happened to be thinking of another one is the game lying. The
 // intended show is still what the reveal leads with, and the rest are listed
 // under it (`alsoAccepted`) so the table can see why a different answer scored.
-import { subjectKeyForShow, subjectKeyForCharacter } from '../../shared/utils/facts';
+import { subjectKeyForShow, subjectKeyForCharacter, resolveShowKey } from '../../shared/utils/facts';
 import { shuffle } from '../../shared/utils/random';
 
 export const ROWS = 5;
@@ -165,8 +165,13 @@ export function buildContext(index, showKeys) {
   const packShows = index?.shows ?? new Map();
   const packChars = index?.characters ?? new Map();
 
+  // Through the aliases: a profile whose title is a later season's ("Re:Zero
+  // Season 2") still lands on the franchise the pack keys on.
   const inPlay = new Set();
-  for (const key of showKeys ?? []) if (packShows.has(key)) inPlay.add(key);
+  for (const raw of showKeys ?? []) {
+    const key = resolveShowKey(index, raw);
+    if (packShows.has(key)) inPlay.add(key);
+  }
   const shows = [...inPlay].map((key) => ({ key, ...packShows.get(key) }));
 
   // A character is in play when any show they appear in is. Shared-list mode
@@ -175,7 +180,10 @@ export function buildContext(index, showKeys) {
   const characters = [];
   for (const [key, entry] of packChars) {
     if (GENERIC_NAME.test(entry.name ?? '')) continue;
-    const home = (entry.appearsIn ?? []).find((s) => inPlay.has(s));
+    // A lead's home is a show they lead; a supporting character's, any show
+    // they are in. Leads first, so the voice clue names the show they front.
+    const home = (entry.appearsIn ?? []).find((s) => inPlay.has(s))
+      ?? (entry.supportingIn ?? []).find((s) => inPlay.has(s));
     if (home) characters.push({ key, home, ...entry });
   }
 
@@ -303,7 +311,8 @@ export function domainValues(index, domain) {
 //
 // One per clue shape. Each takes the context and one subject and returns a
 // clue or null — null whenever the subject lacks what the clue needs, which is
-// routine (a fifth of the pack has no composer) rather than an error.
+// routine (a film has no series composition, an unranked show no rank)
+// rather than an error.
 
 // A reverse clue whose answer is a show. `matches` is every pack show that fits
 // the description; the subject leads, the rest are "also accepted".
@@ -517,6 +526,9 @@ const CHARACTER_BUILDERS = {
   // that actor counts — one actor voicing two leads in one show happens.
   voiceActorReverse: (ctx, c) => {
     if (!c.voiceActorJp) return null;
+    // The prompt says "which main character", and castByShow holds only leads,
+    // so a supporting character can be neither the answer nor fairly asked.
+    if (!(c.appearsIn ?? []).includes(c.home)) return null;
     const show = ctx.packShows.get(c.home);
     const va = foldName(c.voiceActorJp);
     const matches = (ctx.castByShow.get(c.home) ?? []).filter((x) => x.va === va);
@@ -537,17 +549,27 @@ const CHARACTER_BUILDERS = {
     };
   },
 
+  // Asked two ways, because the pack holds two kinds of cast (see facts.js's
+  // `appearsIn`). A lead gets "a main character in", accepting only the shows
+  // they lead. Someone who is supporting everywhere gets the weaker "from",
+  // which accepts every show they are in at all — asking Levi which show he is
+  // "a main character in" would state something false, and the true version of
+  // the question is still a fair one.
   appearsIn: (ctx, c) => {
-    const homes = (c.appearsIn ?? []).filter((k) => ctx.packShows.has(k));
+    const known = (keys) => (keys ?? []).filter((k) => ctx.packShows.has(k));
+    const mainHomes = known(c.appearsIn);
+    const homes = mainHomes.length ? mainHomes : known(c.supportingIn);
     if (!homes.length) return null;
-    const lead = ctx.packShows.get(c.home) ? c.home : homes[0];
+    const lead = homes.includes(c.home) ? c.home : homes[0];
     const rest = homes.filter((k) => k !== lead);
     return {
       id: `appearsIn:${c.key}`,
       topic: 'cast',
       field: 'appearsIn',
       subject: c.key,
-      prompt: `Which show is ${c.name} a main character in?`,
+      prompt: mainHomes.length
+        ? `Which show is ${c.name} a main character in?`
+        : `Which show is ${c.name} from?`,
       answer: ctx.packShows.get(lead).title,
       kind: 'show',
       accept: [lead, ...rest],

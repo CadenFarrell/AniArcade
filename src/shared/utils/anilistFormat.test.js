@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { mergeCharacterEdges, filterAndMapCharacterEdges, summarizeGroupStats } from './anilistFormat';
+import { mergeCharacterEdges, filterAndMapCharacterEdges, summarizeGroupStats, toListEntry } from './anilistFormat';
 
 const edge = (id, role, favourites, name = `Char ${id}`) => ({
   role,
@@ -211,5 +211,40 @@ describe('summarizeGroupStats', () => {
   it('returns nothing for a group with no members', () => {
     expect(summarizeGroupStats({ key: 1, members: [] })).toEqual({});
     expect(summarizeGroupStats(undefined)).toEqual({});
+  });
+});
+
+describe('toListEntry', () => {
+  const media = {
+    id: 16498,
+    format: 'TV',
+    title: { romaji: 'Shingeki no Kyojin', english: 'Attack on Titan' },
+    coverImage: { large: 'https://img/aot.jpg' },
+    startDate: { year: 2013, month: 4, day: 7 },
+    episodes: 25,
+    averageScore: 85,
+    popularity: 1065199,
+    studios: { nodes: [{ name: 'WIT STUDIO' }] },
+    relations: { edges: [
+      { relationType: 'SEQUEL', node: { id: 20958, type: 'ANIME' } },
+      { relationType: 'SOURCE', node: { id: 53390, type: 'MANGA' } },
+      { relationType: 'SPIN_OFF', node: { id: 21000, type: 'ANIME' } },
+    ] },
+  };
+
+  it("names the show in English, falling back to romaji, the way every site's list will be named", () => {
+    expect(toListEntry(media).title).toBe('Attack on Titan');
+    expect(toListEntry({ ...media, title: { romaji: 'Shingeki no Kyojin' } }).title).toBe('Shingeki no Kyojin');
+    expect(toListEntry({ id: 9 }).title).toBe('Untitled #9');
+  });
+
+  it('keeps only season relations to other anime', () => {
+    expect(toListEntry(media).relatedIds).toEqual([20958]);
+  });
+
+  it('carries the status it was handed and nulls what the media lacks', () => {
+    const entry = toListEntry({ id: 1 }, 'CURRENT');
+    expect(entry.status).toBe('CURRENT');
+    expect(entry).toMatchObject({ averageScore: null, popularity: null, episodes: null, studio: null, coverImageUrl: '' });
   });
 });

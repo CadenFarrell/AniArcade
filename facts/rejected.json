@@ -1,6 +1,202 @@
 [
   {
     "kind": "character",
+    "key": "hange zoe",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "wolfram",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "nine",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "toneri ootsutsuki",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "narrator",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "puck",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "meili portroute",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "luka urushibara",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "morisuke yaku",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "gilbert bougainvillea",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "benedict blue",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "irma fellicha",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "isabella york",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "taylor bartlett",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "schwi dola",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "couronna dola",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "erlatte",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "solada",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "kaonashi",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "okuyasu nijimura",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "ein",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "vincent volaju",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "electra ovilo",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "daikenja",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "igris",
+    "field": "voiceActorJp",
+    "value": null,
+    "reason": "null value for \"voiceActorJp\""
+  },
+  {
+    "kind": "character",
+    "key": "beru",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "minene uryuu",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "lucy montgomery",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
     "key": "senketsu",
     "field": "gender",
     "value": null,
@@ -8,7 +204,35 @@
   },
   {
     "kind": "character",
+    "key": "nanachi",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
     "key": "liliruca arde",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "lefiya viridis",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "riveria ljos alf",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "mikoto yamato",
     "field": "gender",
     "value": null,
     "reason": "null value for \"gender\""
@@ -43,6 +267,27 @@
   },
   {
     "kind": "character",
+    "key": "calcifer",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "shinobu oshino",
+    "field": "voiceActorJp",
+    "value": null,
+    "reason": "null value for \"voiceActorJp\""
+  },
+  {
+    "kind": "character",
+    "key": "rouran",
+    "field": "voiceActorJp",
+    "value": null,
+    "reason": "null value for \"voiceActorJp\""
+  },
+  {
+    "kind": "character",
     "key": "yoichi saotome",
     "field": "gender",
     "value": null,
@@ -57,13 +302,6 @@
   },
   {
     "kind": "character",
-    "key": "kyuubey",
-    "field": "gender",
-    "value": null,
-    "reason": "null value for \"gender\""
-  },
-  {
-    "kind": "character",
     "key": "najimi osana",
     "field": "gender",
     "value": null,
@@ -71,7 +309,21 @@
   },
   {
     "kind": "character",
-    "key": "okuyasu nijimura",
+    "key": "momiji souma",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "hatori souma",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "akito souma",
     "field": "gender",
     "value": null,
     "reason": "null value for \"gender\""
@@ -79,13 +331,6 @@
   {
     "kind": "character",
     "key": "totoro",
-    "field": "gender",
-    "value": null,
-    "reason": "null value for \"gender\""
-  },
-  {
-    "kind": "character",
-    "key": "mugen",
     "field": "gender",
     "value": null,
     "reason": "null value for \"gender\""
@@ -113,7 +358,28 @@
   },
   {
     "kind": "character",
+    "key": "greed",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "giru",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
     "key": "kiyomasa senji",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "shizuku kurogane",
     "field": "gender",
     "value": null,
     "reason": "null value for \"gender\""
@@ -128,20 +394,6 @@
   {
     "kind": "character",
     "key": "cartaphilus",
-    "field": "gender",
-    "value": null,
-    "reason": "null value for \"gender\""
-  },
-  {
-    "kind": "character",
-    "key": "shizuku kurogane",
-    "field": "gender",
-    "value": null,
-    "reason": "null value for \"gender\""
-  },
-  {
-    "kind": "character",
-    "key": "mikoto yamato",
     "field": "gender",
     "value": null,
     "reason": "null value for \"gender\""
@@ -176,14 +428,28 @@
   },
   {
     "kind": "character",
-    "key": "schwi dola",
+    "key": "judar",
     "field": "gender",
     "value": null,
     "reason": "null value for \"gender\""
   },
   {
     "kind": "character",
-    "key": "couronna dola",
+    "key": "ja'far",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "hinahoho",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "drakon",
     "field": "gender",
     "value": null,
     "reason": "null value for \"gender\""
@@ -197,6 +463,13 @@
   },
   {
     "kind": "character",
+    "key": "kaori shirasaki",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
     "key": "kage",
     "field": "gender",
     "value": null,
@@ -204,7 +477,7 @@
   },
   {
     "kind": "character",
-    "key": "wolfram",
+    "key": "lumachina weselia",
     "field": "gender",
     "value": null,
     "reason": "null value for \"gender\""
@@ -219,6 +492,13 @@
   {
     "kind": "character",
     "key": "sekkekkyuu ae3803",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "ippan saibou",
     "field": "gender",
     "value": null,
     "reason": "null value for \"gender\""
@@ -309,6 +589,13 @@
   },
   {
     "kind": "character",
+    "key": "accelerator",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
     "key": "jacuzzi splot",
     "field": "gender",
     "value": null,
@@ -337,14 +624,14 @@
   },
   {
     "kind": "character",
-    "key": "august von earlshide",
+    "key": "jiji",
     "field": "gender",
     "value": null,
     "reason": "null value for \"gender\""
   },
   {
     "kind": "character",
-    "key": "mafuyu hoshikawa",
+    "key": "august von earlshide",
     "field": "gender",
     "value": null,
     "reason": "null value for \"gender\""
@@ -358,7 +645,7 @@
   },
   {
     "kind": "character",
-    "key": "mamoru itou",
+    "key": "mafuyu hoshikawa",
     "field": "gender",
     "value": null,
     "reason": "null value for \"gender\""
@@ -373,20 +660,6 @@
   {
     "kind": "character",
     "key": "huang",
-    "field": "gender",
-    "value": null,
-    "reason": "null value for \"gender\""
-  },
-  {
-    "kind": "character",
-    "key": "akito souma",
-    "field": "gender",
-    "value": null,
-    "reason": "null value for \"gender\""
-  },
-  {
-    "kind": "character",
-    "key": "togusa",
     "field": "gender",
     "value": null,
     "reason": "null value for \"gender\""
@@ -408,6 +681,13 @@
   {
     "kind": "character",
     "key": "miyabi aizawa",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "root",
     "field": "gender",
     "value": null,
     "reason": "null value for \"gender\""
@@ -470,6 +750,13 @@
   },
   {
     "kind": "character",
+    "key": "rika shiguma",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
     "key": "ryouta sakamoto",
     "field": "gender",
     "value": null,
@@ -477,7 +764,14 @@
   },
   {
     "kind": "character",
-    "key": "nanachi",
+    "key": "saki yumihara",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "zest",
     "field": "gender",
     "value": null,
     "reason": "null value for \"gender\""
@@ -505,14 +799,7 @@
   },
   {
     "kind": "character",
-    "key": "olivia",
-    "field": "gender",
-    "value": null,
-    "reason": "null value for \"gender\""
-  },
-  {
-    "kind": "character",
-    "key": "narrator",
+    "key": "hitomi mishima",
     "field": "gender",
     "value": null,
     "reason": "null value for \"gender\""
@@ -561,21 +848,7 @@
   },
   {
     "kind": "character",
-    "key": "isabella york",
-    "field": "gender",
-    "value": null,
-    "reason": "null value for \"gender\""
-  },
-  {
-    "kind": "character",
-    "key": "taylor bartlett",
-    "field": "gender",
-    "value": null,
-    "reason": "null value for \"gender\""
-  },
-  {
-    "kind": "character",
-    "key": "toneri ootsutsuki",
+    "key": "takopi",
     "field": "gender",
     "value": null,
     "reason": "null value for \"gender\""
@@ -593,13 +866,6 @@
     "field": "voiceActorJp",
     "value": null,
     "reason": "null value for \"voiceActorJp\""
-  },
-  {
-    "kind": "character",
-    "key": "takopi",
-    "field": "gender",
-    "value": null,
-    "reason": "null value for \"gender\""
   },
   {
     "kind": "character",
@@ -646,6 +912,979 @@
   {
     "kind": "character",
     "key": "sayu hisanuma",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "hans humpty",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "mora chester",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "chamo rosso",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "goldof auora",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "pazu",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "masuzu natsukawa",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "himeka akishino",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "eita kidou",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "sieg",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "dera mochimazzi",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "sentouin roku-gou",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "ponta",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "asuka kudou",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "akihisa yoshii",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "kouta tsuchiya",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "klein moretti",
+    "field": "voiceActorJp",
+    "value": null,
+    "reason": "null value for \"voiceActorJp\""
+  },
+  {
+    "kind": "character",
+    "key": "lenka utsugi",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "yoshino takigawa",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "mahiro fuwa",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "minamo kurosawa",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "melida angel",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "hitoha hongou",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "maou",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "yuusha",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "seiji amasawa",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "riri",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "asbel",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "nozomu nanashima",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "shima nishina",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "yuusuke igarashi",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "aries spring",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "minato hinageshi",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "chihiro hashima",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "sakie satou",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "kyouko machi",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "yuki kusakabe",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "taka kamitani",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "subaru konoe",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "kinjirou sakamachi",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "kon",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "kyouko kurahashi",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "tenma momoe",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "keith kazama flick",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "lily hoshina",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "myura",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "daikichi kawachi",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "natsume",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "lisesharte atismata",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "celistia ralgris",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "lux arcadia",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "shinako morinome",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "rikuo uozumi",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "rou hayakawa",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "takane enomoto",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "me wo samasu hebi",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "golem",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "kakeru kurahara",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "yukihiko iwakura",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "takashi sugiyama",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "akihiro hirata",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "musa kamala",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "tarou jou",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "jirou jou",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "youhei sakaguchi",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "al",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "hikari tsutsui",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "mukuro rokudo",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "chrome dokuro",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "yuuji sakai",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "kazumi yoshida",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "alka",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "kino",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "hermes",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "azusa azuki",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "tsukushi tsutsukakushi",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "youto yokodera",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "qt",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "ikaros",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "guri",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "mei kinosaki",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "amira",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "rita",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "kaisar lidfard",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "akatsuki ousawa",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "kuzuha doumoto",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "chikage izumi",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "xiu ye",
+    "field": "voiceActorJp",
+    "value": null,
+    "reason": "null value for \"voiceActorJp\""
+  },
+  {
+    "kind": "character",
+    "key": "xiu ye",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "rou tang",
+    "field": "voiceActorJp",
+    "value": null,
+    "reason": "null value for \"voiceActorJp\""
+  },
+  {
+    "kind": "character",
+    "key": "guo chen",
+    "field": "voiceActorJp",
+    "value": null,
+    "reason": "null value for \"voiceActorJp\""
+  },
+  {
+    "kind": "character",
+    "key": "guo chen",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "kiyoko",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "yahiko myojin",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "lehm brick",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "mio natsume",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "hazuki morikawa",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "haruto souma",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "holland novak",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "juugo",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "uno",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "hajime sugoroku",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "afro samurai",
+    "field": "voiceActorJp",
+    "value": null,
+    "reason": "null value for \"voiceActorJp\""
+  },
+  {
+    "kind": "character",
+    "key": "tatara fujita",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "kiyoharu hyoudou",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "shizuku hanaoka",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "quele sellier",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "iria fukumune",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "ryosuke kaga",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "mina okura",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "keigo oonishi",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "shinji",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "shinichi kanou",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "lorraine vivie",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "hildegard von mariendorf",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "honoka takamiya",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "ludmila lourie mila",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "kaoru tsunashi",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "takumi kijima",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "elise katarina von hohenheim",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "ina zuzane hillebrandt",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "louise jolande aurelia overweg",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "wilma etre von asgahan",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "siluca meletes",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "theo cornaro",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "tsukasa taira",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "amanojaku",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "eliaria jamil",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "morgana",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "chocolove mcdonell",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "aku",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "kamito kazehaya",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "shamille kitra katvarnmaninik",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "ikta solork",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "yatorishino igsem",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "haroma becker",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "torway remion",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "matthew tetdrich",
+    "field": "gender",
+    "value": null,
+    "reason": "null value for \"gender\""
+  },
+  {
+    "kind": "character",
+    "key": "shigeru",
+    "field": "voiceActorJp",
+    "value": null,
+    "reason": "null value for \"voiceActorJp\""
+  },
+  {
+    "kind": "character",
+    "key": "donald curtis",
     "field": "gender",
     "value": null,
     "reason": "null value for \"gender\""

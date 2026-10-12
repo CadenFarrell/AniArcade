@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   validateFact, normalizePack, indexPack, factsFor, allSubjectKeys, factCount,
-  subjectKeyForShow, subjectKeyForCharacter,
+  subjectKeyForShow, subjectKeyForCharacter, pickCredit, resolveShowKey,
 } from './facts';
 
 const showRow = (field, value, key = 'attack on titan') => ({ kind: 'show', key, field, value });
@@ -87,7 +87,7 @@ describe('normalizePack', () => {
   });
 
   it('survives missing sections and a garbage payload', () => {
-    expect(normalizePack(null)).toEqual({ version: 0, shows: {}, characters: {} });
+    expect(normalizePack(null)).toEqual({ version: 0, shows: {}, characters: {}, aliases: {} });
     expect(normalizePack({ shows: 'nope' }).shows).toEqual({});
   });
 });
@@ -151,5 +151,80 @@ describe('factCount', () => {
   it('counts facts, not identifying fields', () => {
     expect(factCount({ anilistId: 1, title: 'Cowboy Bebop', studio: 'Sunrise', seasonYear: 1998 })).toBe(2);
     expect(factCount(null)).toBe(0);
+  });
+});
+
+describe('pickCredit', () => {
+  const staff = (...roles) => roles.map((role, i) => ({ role, node: { name: { full: `Person ${i}` } } }));
+  const who = (edges, field) => pickCredit(edges, field)?.node.name.full ?? null;
+
+  it("finds a long-runner's qualified director when nobody is credited plainly", () => {
+    // Dragon Ball Z's actual shape: per-episode-range directors, no plain one.
+    expect(who(staff('Animation Director', 'Director (eps 1-199)', 'Director (eps 200-291)'), 'director'))
+      .toBe('Person 1');
+  });
+
+  it('prefers a plain credit over an earlier qualified one', () => {
+    expect(who(staff('Director (eps 1-12)', 'Director'), 'director')).toBe('Person 1');
+  });
+
+  it("never mistakes another department's director for the show's", () => {
+    for (const role of ['Animation Director', 'ADR Director', 'Sound Director', 'Episode Director',
+      'Director of Photography', 'Art Director', 'Assistant Director']) {
+      expect(pickCredit(staff(role), 'director')).toBeNull();
+    }
+    expect(who(staff('Chief Director'), 'director')).toBe('Person 0');
+  });
+
+  it('matches a composer credited with trailing whitespace or an episode range', () => {
+    expect(who(staff('Music '), 'composer')).toBe('Person 0');
+    expect(who(staff('Theme Song Performance', 'Music (eps 1-50)'), 'composer')).toBe('Person 1');
+    expect(pickCredit(staff('Music Producer', 'Sound Effects'), 'composer')).toBeNull();
+  });
+
+  it('is empty-handed rather than throwing on junk', () => {
+    expect(pickCredit(null, 'director')).toBeNull();
+    expect(pickCredit(staff('Director'), 'no such field')).toBeNull();
+  });
+});
+
+describe('aliases', () => {
+  const raw = {
+    ...PACK,
+    aliases: {
+      're:zero starting life in another world': 'attack on titan',
+      'attack on titan': 'cowboy bebop', // a key that is itself a show never aliases away
+      'gone show': 'not in the pack', // nothing to land on
+      '  ': 'cowboy bebop',
+    },
+  };
+
+  it('keeps only aliases that land on a surviving show', () => {
+    expect(normalizePack(raw).aliases).toEqual({ 're:zero starting life in another world': 'attack on titan' });
+  });
+
+  it('resolves a member title to the canonical key, and passes anything else through', () => {
+    const index = indexPack(raw);
+    expect(resolveShowKey(index, 're:zero starting life in another world')).toBe('attack on titan');
+    expect(resolveShowKey(index, 'attack on titan')).toBe('attack on titan');
+    expect(resolveShowKey(index, 'not a show')).toBe('not a show');
+    expect(resolveShowKey(null, 'x')).toBe('x');
+  });
+});
+
+describe('stat and cast fields', () => {
+  it('accepts the numbers an import stores, and rejects impossible ones', () => {
+    expect(validateFact(showRow('popularity', 1065199)).ok).toBe(true);
+    expect(validateFact(showRow('averageScore', 85)).ok).toBe(true);
+    expect(validateFact(showRow('averageScore', 0)).ok).toBe(false);
+    expect(validateFact(showRow('averageScore', 101)).ok).toBe(false);
+    expect(validateFact(showRow('startYear', 2013)).ok).toBe(true);
+    expect(validateFact(showRow('showFavourites', 80350)).ok).toBe(true);
+  });
+
+  it('keeps supporting appearances apart from main ones', () => {
+    const row = { kind: 'character', key: 'levi', field: 'supportingIn', value: ['attack on titan'] };
+    expect(validateFact(row).ok).toBe(true);
+    expect(validateFact({ ...row, kind: 'show' }).ok).toBe(false);
   });
 });

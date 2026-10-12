@@ -2,7 +2,7 @@ import { useState } from 'react';
 import QuizSetup from './components/QuizSetup';
 import LocalRound from './components/LocalRound';
 import { buildDeal } from './deal';
-import { useFactPack } from './hooks/useFactPack';
+import { useFactPack } from '../../shared/hooks/useFactPack';
 import { HubButton } from '../../shared/ui';
 
 // Single-device play: setup, then the round, whose own last screen is the

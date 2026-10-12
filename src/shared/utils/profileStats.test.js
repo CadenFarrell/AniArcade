@@ -78,6 +78,17 @@ describe('profileFingerprint', () => {
     expect(profileFingerprint(after)).not.toBe(profileFingerprint(before));
   });
 
+  it('changes when the fact pack fills in stats or favourites, which move no count', () => {
+    const before = profile('caden', 'Caden', [show('Naruto', 3)]);
+    const withStats = profile('caden', 'Caden', [{ ...show('Naruto', 3), popularity: 900000 }]);
+    const naruto = show('Naruto', 3);
+    const withFavourites = profile('caden', 'Caden', [
+      { ...naruto, characters: naruto.characters.map((c, i) => (i === 0 ? { ...c, favourites: 50 } : c)) },
+    ]);
+    expect(profileFingerprint(withStats)).not.toBe(profileFingerprint(before));
+    expect(profileFingerprint(withFavourites)).not.toBe(profileFingerprint(before));
+  });
+
   it('separates two different profiles that happen to hold the same list', () => {
     const mine = profile('caden', 'Caden', [show('Naruto', 3)]);
     const theirs = profile('alex', 'Alex', [show('Naruto', 3)]);

@@ -1,6 +1,65 @@
 // Pure, framework- and Node-free formatting/filtering logic for AniList character
 // data. Shared by generateProfiles.js (Node dev script) and src/shared/services/anilist.js
 // (browser import flow) so both paths produce identical character shapes.
+//
+// Explicit .js extensions on imports, for facts.js's reason: generateFacts.js
+// imports this module under plain Node, which has no extensionless resolution.
+import { SEASON_RELATIONS } from './franchise.js';
+
+// The ids of other ANIME this media is a season of / continues into. Ids that
+// aren't in the user's own list are kept deliberately: they bridge seasons the
+// user skipped (Attack on Titan S3 and S4 only connect through "S3 Part 2").
+export function seasonRelatedIds(media) {
+  const ids = [];
+  for (const edge of media?.relations?.edges ?? []) {
+    if (edge?.node?.type === 'ANIME' && SEASON_RELATIONS.has(edge.relationType)) {
+      ids.push(edge.node.id);
+    }
+  }
+  return ids;
+}
+
+/**
+ * One AniList Media, as a list entry: the shape groupIntoFranchises,
+ * summarizeGroupStats and the import checklist all read.
+ *
+ * ONE function for every path a show can arrive by, and that is what makes a
+ * player's tracking site invisible to every game. An AniList list, a Kitsu
+ * library, a MyAnimeList list and a MAL export file all end up as AniList ids
+ * hydrated through this — so the same show carries the same title, the same
+ * stats on the same scale and the same `anilist_anime_<id>` id whichever site
+ * its owner uses, and a mixed room matches shows by the same folds it always
+ * has. The fact generator runs its media through here too, so the pack groups
+ * and names a franchise exactly the way an import does.
+ */
+export function toListEntry(media, status = null) {
+  return {
+    id: media.id,
+    title: media.title?.english || media.title?.romaji || `Untitled #${media.id}`,
+    coverImageUrl: media.coverImage?.large || '',
+    status,
+    format: media.format ?? null,
+    startDate: media.startDate ?? null,
+    // The numeric axes AniRank ranks by. Nullable on purpose: an unaired or
+    // obscure show genuinely has no averageScore, and a null has to survive
+    // to the deck builder so it can drop the item rather than sort it as 0.
+    episodes: media.episodes ?? null,
+    averageScore: media.averageScore ?? null,
+    popularity: media.popularity ?? null,
+    // Facts about the show rather than numbers to rank it by. Same nullable
+    // contract as the axes above — a consumer must read a missing value as
+    // "this show cannot be asked about", never as a default.
+    duration: media.duration ?? null,
+    source: media.source ?? null,
+    season: media.season ?? null,
+    seasonYear: media.seasonYear ?? null,
+    // isMain filters the connection down to the animation studio, so
+    // nodes[0] is what "who made this" means. The unfiltered connection also
+    // carries producers and licensors, which no clue is ever asking for.
+    studio: media.studios?.nodes?.[0]?.name ?? null,
+    relatedIds: seasonRelatedIds(media),
+  };
+}
 
 export const trimDesc = (desc = '') => {
   const t = (desc || '')

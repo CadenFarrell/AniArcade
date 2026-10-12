@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useProfileStore } from '../context/profileContext';
-import AniListImport from './AniListImport';
+import ListImport from './ListImport';
 import OnlineIdentityCard from './OnlineIdentityCard';
 import ProfilePicker from './ProfilePicker';
 import {
@@ -151,7 +151,7 @@ export default function RoomSetup({ room, onBack, tone = 'purple', stat = () => 
         )}
 
         {showImport && profile && (
-          <AniListImport
+          <ListImport
             profile={profile}
             onClose={() => setShowImport(false)}
             onImported={(merged) => {

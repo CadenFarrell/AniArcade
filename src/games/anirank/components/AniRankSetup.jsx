@@ -1,8 +1,9 @@
 import { useMemo, useState } from 'react';
 import { useProfileStore } from '../../../shared/context/profileContext';
-import AniListImport from '../../../shared/components/AniListImport';
+import ListImport from '../../../shared/components/ListImport';
 import ProfilePicker from '../../../shared/components/ProfilePicker';
 import { useGamePrefs } from '../../../shared/hooks/useGamePrefs';
+import { usePackBackfill } from '../../../shared/hooks/usePackBackfill';
 import AniRankSettings from './AniRankSettings';
 import AxisPicker from './AxisPicker';
 import FormatOption from './FormatOption';
@@ -20,6 +21,9 @@ import {
 export default function AniRankSetup({ onStart, error, onBack }) {
   const { activeId, activeProfile, saveProfile } = useProfileStore();
   const [players, setPlayers] = useState(() => (activeProfile ? [activeProfile] : []));
+  // A list imported before the stats existed is repaired from the fact pack,
+  // and the seated copy follows it the way it follows an import.
+  usePackBackfill((p) => setPlayers((prev) => prev.map((x) => (x.id === p.id ? p : x))));
   const [showPicker, setShowPicker] = useState(false);
   const [importTarget, setImportTarget] = useState(null);
   // Prompts are read before the axis state, not after: only an id is saved, and
@@ -180,7 +184,7 @@ export default function AniRankSetup({ onStart, error, onBack }) {
                     variant="neutral"
                     size="sm"
                     className="flex-shrink-0"
-                    aria-label={`Import ${p.name}'s list from AniList`}
+                    aria-label={`Import ${p.name}'s list`}
                     onClick={() => setImportTarget(p)}
                   >
                     🔗
@@ -273,7 +277,7 @@ export default function AniRankSetup({ onStart, error, onBack }) {
         )}
 
         {importTarget && (
-          <AniListImport
+          <ListImport
             profile={importTarget}
             onClose={() => setImportTarget(null)}
             onImported={handleImported}

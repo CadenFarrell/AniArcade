@@ -50,7 +50,25 @@ export function profileFingerprint(profile) {
     countShows(profile),
     countCharacters(profile),
     (profile.anilistImportedIds ?? []).length,
+    // The fact-pack backfill (packStats.js) fills numbers in place and changes
+    // no count above, so without these a repaired profile would never reach a
+    // room it is already sitting in — and the lobby would keep gating AniRank's
+    // popularity mode on the unrepaired copy the room holds.
+    countWithStats(profile),
+    countWithFavourites(profile),
   ].join('|');
+}
+
+function countWithStats(profile) {
+  return (profile.animeList ?? []).filter((a) => a?.popularity != null).length;
+}
+
+function countWithFavourites(profile) {
+  let n = 0;
+  for (const anime of profile.animeList ?? []) {
+    for (const c of anime?.characters ?? []) if ((c?.favourites ?? 0) > 0) n++;
+  }
+  return n;
 }
 
 // One row per profile, ordered most-useful-first: whoever is active, then most

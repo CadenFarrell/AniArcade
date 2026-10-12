@@ -3,6 +3,7 @@ import { HostWaitCard, ListBadge, LobbyImport, PlayerRoster, RoomCode } from '..
 import SettingsFooter from '../../../shared/components/SettingsFooter';
 import { useGamePrefs } from '../../../shared/hooks/useGamePrefs';
 import { useRepublishProfile } from '../../../shared/hooks/useRepublishProfile';
+import { usePackBackfill } from '../../../shared/hooks/usePackBackfill';
 import AniRankSettings from './AniRankSettings';
 import AxisPicker from './AxisPicker';
 import FormatOption from './FormatOption';
@@ -79,6 +80,9 @@ export default function OnlineLobby({ room }) {
 
   // Pushes a list imported after joining back up to the room; see the hook.
   useRepublishProfile(room, me);
+  // Repairs an old list's missing stats from the fact pack; the republish
+  // above then carries the repair into the room.
+  usePackBackfill();
 
   const showCount = (p) => (p.animeList || []).length;
   const everyoneHasShows = active.every((p) => showCount(p) > 0);

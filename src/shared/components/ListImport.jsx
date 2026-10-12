@@ -1,7 +1,9 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
-import { fetchUserAnimeList, fetchManyAnimeCharacters } from '../services/anilist';
+import { fetchManyAnimeCharacters } from '../services/anilist';
+import { fetchListEntries, LIST_SITES, malProxyEnabled, siteLabel } from '../services/listSources';
 import { filterAndMapCharacterEdges, mergeCharacterEdges, summarizeGroupStats } from '../utils/anilistFormat';
 import { groupIntoFranchises } from '../utils/franchise';
+import { listSourceOf } from '../utils/listImport';
 import {
   mergeAnimeIntoProfile,
   classifyImportGroups,
@@ -11,13 +13,37 @@ import { Badge, Button, Card, Checkbox, Input, Label, Modal, NumberInput } from 
 
 const MAX_CHARACTERS_PER_SHOW = 60;
 
-export default function AniListImport({ profile, onClose, onImported, autoRefresh = false }) {
-  const [step, setStep] = useState('username'); // username | list | importing | done | error
-  // Prefilled from the profile so a re-import is one tap. Re-importing is the
-  // common case, not the rare one: the page cache in anilist.js is in-memory
-  // only, so every refresh means paying the full ~2.2s-per-request throttle
-  // again, and nobody wants to also retype their username to do it.
-  const [username, setUsername] = useState(profile?.anilistUsername ?? '');
+const MAL_EXPORT_URL = 'https://myanimelist.net/panel.php?go=export';
+
+// What the box under the site picker asks for, per site.
+const USERNAME_COPY = {
+  anilist: { label: 'AniList username', placeholder: 'e.g. YourAniListName' },
+  mal: { label: 'MyAnimeList username', placeholder: 'e.g. YourMALName' },
+  kitsu: { label: 'Kitsu username or profile link', placeholder: 'e.g. kitsu.app/users/yourname' },
+};
+
+// One import screen for every site. Whichever site a list comes from, it is
+// turned into AniList ids and looked up on AniList (see
+// shared/utils/listImport.js), so everything after the fetch — the franchise
+// grouping, the checklist, the character import, the merge — is the same code
+// the AniList-only screen always ran, and a profile built from MyAnimeList is
+// indistinguishable from one built from AniList.
+export default function ListImport({ profile, onClose, onImported, autoRefresh = false }) {
+  const [step, setStep] = useState('username'); // username | loading-list | list | importing | done | error
+  // Where this profile imported from last time. Prefilled so a re-import is one
+  // tap. Re-importing is the common case, not the rare one: the page cache in
+  // anilist.js is in-memory only, so every refresh means paying the full
+  // ~2.2s-per-request throttle again, and nobody wants to also retype their
+  // username to do it.
+  const source = listSourceOf(profile);
+  const [site, setSite] = useState(source.site);
+  const [username, setUsername] = useState(source.username);
+  const [file, setFile] = useState(null);
+  // MAL takes a username only through the proxy (MAL's own API sends no CORS
+  // headers). Without the proxy, or after it failed, MAL asks for its export
+  // file instead — the same file the 'file' site reads.
+  const [malByFile, setMalByFile] = useState(!malProxyEnabled());
+  const usesFile = site === 'file' || (site === 'mal' && malByFile);
   // Remembered from the last successful import, so a one-tap refresh applies the
   // same filters the existing list was built with rather than silently reverting
   // to the defaults and pulling in characters the user had filtered out.
@@ -35,6 +61,10 @@ export default function AniListImport({ profile, onClose, onImported, autoRefres
   const [selected, setSelected] = useState(new Set());
   const [search, setSearch] = useState('');
   const [hideImported, setHideImported] = useState(false);
+  // Shows on the other site's list that AniList has no entry for. Counted, and
+  // said out loud, because a list that silently comes back shorter than the one
+  // on the site reads as a broken import.
+  const [unmatched, setUnmatched] = useState(0);
 
   // What a re-import would actually buy: which groups are new, which gained a
   // season, and which are already paid for. Memoized because it is O(groups ×
@@ -54,29 +84,44 @@ export default function AniListImport({ profile, onClose, onImported, autoRefres
   // the one profile that most needs it explained.
   const isFirstImport = counts.known === 0 && counts.stale === 0;
 
-  // Only offer the skip-the-checklist button while the field still names the
-  // account this profile was built from — typing someone else's name is not a
-  // refresh, and should land on the checklist like any first import.
-  const canRefresh = Boolean(profile?.anilistUsername)
-    && username.trim().toLowerCase() === profile.anilistUsername.toLowerCase();
+  // Only offer the skip-the-checklist button while the picker and the field
+  // still name the account this profile was built from — typing someone else's
+  // name is not a refresh, and should land on the checklist like any first
+  // import. A file has no "same account" to compare, so it never refreshes.
+  const canRefresh = !usesFile
+    && site === source.site
+    && Boolean(source.username)
+    && username.trim().toLowerCase() === source.username.toLowerCase();
+
+  const ready = usesFile ? Boolean(file) : Boolean(username.trim());
 
   const [progress, setProgress] = useState({ index: 0, total: 0 });
   const [abortController, setAbortController] = useState(null);
   const [mergedProfile, setMergedProfile] = useState(null);
   const [stats, setStats] = useState(null);
   const [errorMessage, setErrorMessage] = useState('');
+  // Set when MAL's proxy could not be reached, so the error step can offer the
+  // file instead of only "Try Again" against a server that is down.
+  const [offerFile, setOfferFile] = useState(false);
 
   // `auto` is the one-tap refresh path: fetch the list and go straight into
   // importing whatever is new, without stopping at the checklist.
   const fetchList = async ({ auto = false } = {}) => {
-    const trimmed = username.trim();
-    if (!trimmed) return;
+    if (!ready) return;
     setStep('loading-list');
+    setOfferFile(false);
     try {
       const statusIn = includeCurrent ? ['COMPLETED', 'CURRENT'] : ['COMPLETED'];
-      const list = await fetchUserAnimeList(trimmed, { statusIn });
+      const { entries: list, unmatched: missing } = await fetchListEntries(
+        usesFile ? 'file' : site,
+        usesFile ? file : username.trim(),
+        { statusIn },
+      );
+      setUnmatched(missing);
       if (list.length === 0) {
-        setErrorMessage(`"${trimmed}" has no anime in the selected list status(es).`);
+        setErrorMessage(missing > 0
+          ? `None of the ${missing} shows on that list could be found on AniList.`
+          : 'That list has no anime in the selected list status(es).');
         setStep('error');
         return;
       }
@@ -101,20 +146,29 @@ export default function AniListImport({ profile, onClose, onImported, autoRefres
       setStep('list');
     } catch (err) {
       setErrorMessage(err.message);
+      setOfferFile(site === 'mal' && !usesFile && Boolean(err.network));
       setStep('error');
     }
   };
 
   // Fires once, only when a caller explicitly asked for the one-tap path and the
   // profile actually has a username to refresh from; otherwise the dialog opens
-  // on the normal username step.
+  // on the normal first step (a file-based profile always lands there, since
+  // nothing can re-read a file the player has not chosen again).
   const autoRunRef = useRef(false);
   useEffect(() => {
-    if (!autoRefresh || autoRunRef.current || !profile?.anilistUsername) return;
+    if (!autoRefresh || autoRunRef.current || !canRefresh) return;
     autoRunRef.current = true;
     fetchList({ auto: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [autoRefresh, profile?.anilistUsername]);
+  }, [autoRefresh, canRefresh]);
+
+  const pickSite = (id) => {
+    setSite(id);
+    // The saved username belongs to the saved site only — carrying an AniList
+    // name into the Kitsu box would fetch a stranger's list.
+    setUsername(id === source.site ? source.username : '');
+  };
 
   const toggleSelected = (id) => {
     setSelected((prev) => {
@@ -214,7 +268,17 @@ export default function AniListImport({ profile, onClose, onImported, autoRefres
     // never sticks, and a cancelled run never claims coverage it doesn't have.
     setMergedProfile({
       ...merged,
-      anilistUsername: username.trim(),
+      // Which site and account the list came from, so the next import opens on
+      // it. A file records its site and no username: there is nothing to
+      // refresh from. `anilistUsername` is still written for AniList, because
+      // every profile before listSource carries it and listSourceOf reads it.
+      listSource: usesFile
+        ? { site: site === 'mal' ? 'mal' : 'file' }
+        : { site, username: username.trim() },
+      ...(site === 'anilist' && !usesFile ? { anilistUsername: username.trim() } : {}),
+      // AniList ids whichever site the list came from — every site's list is
+      // resolved to AniList before it gets here.
+      //
       // Recorded rather than inferred: mergeAnimeIntoProfile collapses a
       // franchise's seasons into ONE entry, so the surviving entry id cannot say
       // which seasons were fetched — and that is exactly what the next import's
@@ -222,7 +286,7 @@ export default function AniListImport({ profile, onClose, onImported, autoRefres
       anilistImportedIds: mergeImportedAnilistIds(profile?.anilistImportedIds, memberIds),
       anilistImportSettings: { includeCurrent, mainOnly, minSupportingFavourites },
     });
-    setStats({ addedAnime, addedChars, updatedChars });
+    setStats({ addedAnime, addedChars, updatedChars, unmatched });
     setStep('done');
     setAbortController(null);
   }
@@ -242,7 +306,7 @@ export default function AniListImport({ profile, onClose, onImported, autoRefres
     // dialog would strand the in-progress fetch, so lock it during 'importing'.
     <Modal onClose={onClose} dismissible={step !== 'importing'}>
       <div className="mb-6 flex items-center justify-between">
-        <h2 className="font-display text-2xl font-extrabold text-white">🔗 Import from AniList</h2>
+        <h2 className="font-display text-2xl font-extrabold text-white">🔗 Import your list</h2>
         {step !== 'importing' && (
           <button
             onClick={onClose}
@@ -256,18 +320,88 @@ export default function AniListImport({ profile, onClose, onImported, autoRefres
 
       {(step === 'username' || step === 'loading-list') && (
         <div>
-          <Label htmlFor="anilist-username">AniList Username</Label>
-          <Input
-            id="anilist-username"
-            type="text"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && username.trim() && fetchList()}
-            placeholder="e.g. YourAniListName"
-            autoFocus
-            disabled={step === 'loading-list'}
-            className="mb-4"
-          />
+          {/* A <p>, not Field.jsx's Label: that renders a <label>, and a group of
+              buttons is not a control one can point at (AxisPicker's SectionLabel). */}
+          <p
+            id="list-site-label"
+            className="mb-1.5 font-display text-xs font-extrabold uppercase tracking-widest text-fg-helper"
+          >
+            Where is your list?
+          </p>
+          <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-4" role="group" aria-labelledby="list-site-label">
+            {LIST_SITES.map((s) => (
+              <button
+                key={s.id}
+                type="button"
+                aria-pressed={site === s.id}
+                disabled={step === 'loading-list'}
+                onClick={() => pickSite(s.id)}
+                className={`focus-pop rounded-pop-sm border-2 px-3 py-2.5 text-center font-display
+                  text-base font-extrabold transition-colors disabled:opacity-40
+                  ${site === s.id
+                    ? 'border-pop-purple bg-pop-purple/20 text-white'
+                    : 'border-line bg-surface-2/40 text-fg-helper hover:border-line-loud'}`}
+              >
+                {s.label}
+              </button>
+            ))}
+          </div>
+
+          {usesFile ? (
+            <div className="mb-4">
+              <Label htmlFor="list-file">
+                {site === 'mal' ? 'Your MyAnimeList export' : 'Your exported list'}
+              </Label>
+              <Input
+                id="list-file"
+                type="file"
+                accept=".xml,.gz,application/xml,text/xml,application/gzip"
+                onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+                disabled={step === 'loading-list'}
+                className="mb-2 file:mr-3 file:rounded-pop-sm file:border-0 file:bg-pop-purple
+                  file:px-3 file:py-1 file:font-display file:font-extrabold file:text-ink"
+              />
+              {/* Where the file comes from, because "upload your export" is
+                  useless to someone who has never seen the export page. */}
+              <p className="text-sm text-fg-helper">
+                On MyAnimeList, open{' '}
+                <a
+                  href={MAL_EXPORT_URL}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="focus-pop rounded-sm text-pop-purple underline hover:text-white"
+                >
+                  Export My List
+                </a>
+                , export your anime list and choose the downloaded file here (.xml.gz is fine).
+                {site === 'file' && ' Kitsu, Simkl and most other trackers can export the same MyAnimeList format.'}
+              </p>
+              {site === 'mal' && malProxyEnabled() && (
+                <button
+                  type="button"
+                  onClick={() => setMalByFile(false)}
+                  className="focus-pop mt-2 rounded-pop-sm text-sm text-fg-subtle hover:text-white"
+                >
+                  or use my username instead
+                </button>
+              )}
+            </div>
+          ) : (
+            <>
+              <Label htmlFor="list-username">{USERNAME_COPY[site]?.label}</Label>
+              <Input
+                id="list-username"
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && ready && fetchList({ auto: canRefresh })}
+                placeholder={USERNAME_COPY[site]?.placeholder}
+                autoFocus
+                disabled={step === 'loading-list'}
+                className="mb-4"
+              />
+            </>
+          )}
           <Checkbox
             label="Also include shows I'm currently watching"
             checked={includeCurrent}
@@ -312,11 +446,11 @@ export default function AniListImport({ profile, onClose, onImported, autoRefres
             size="lg"
             fullWidth
             onClick={() => fetchList({ auto: canRefresh })}
-            disabled={!username.trim() || step === 'loading-list'}
+            disabled={!ready || step === 'loading-list'}
           >
             {step === 'loading-list'
               ? 'Fetching your list…'
-              : canRefresh ? '🔄 Refresh my list' : 'Fetch My List'}
+              : canRefresh ? '🔄 Refresh my list' : usesFile ? 'Read My List' : 'Fetch My List'}
           </Button>
           {/* The checklist is still one tap away — needed to re-fetch a show
               whose cast has grown, or to import with different settings. */}
@@ -345,7 +479,7 @@ export default function AniListImport({ profile, onClose, onImported, autoRefres
             <Card padding="sm" className="mb-3 text-center">
               <p className="font-display font-extrabold text-white">✅ You&rsquo;re up to date</p>
               <p className="mt-1 text-sm text-fg-helper">
-                All {counts.known} shows on your AniList are already in your list, with nothing
+                All {counts.known} shows on your {siteLabel(site)} list are already in your profile, with nothing
                 left to fill in. Use <strong className="text-fg-strong">Select All</strong> to
                 re-fetch them anyway — handy if a show has gained characters, or you changed
                 the Advanced settings.
@@ -385,6 +519,13 @@ export default function AniListImport({ profile, onClose, onImported, autoRefres
               {counts.partial > 0 && ` · ${counts.partial} with a new season`}
               {counts.stale > 0 && ` · ${counts.stale} missing character details`}
               {` · ${counts.known} already imported`}
+            </p>
+          )}
+
+          {unmatched > 0 && (
+            <p className="mb-2 text-xs text-fg-subtle">
+              {unmatched} show{unmatched === 1 ? '' : 's'} on your list {unmatched === 1 ? 'isn’t' : 'aren’t'} on
+              AniList, where every game looks shows up, so {unmatched === 1 ? 'it was' : 'they were'} left out.
             </p>
           )}
 
@@ -470,6 +611,14 @@ export default function AniListImport({ profile, onClose, onImported, autoRefres
                 re-import of a list you already have adds nothing and can still
                 have done the thing you ran it for — without this line that run
                 reads as "+0 anime, +0 characters" and looks like a failure. */}
+            {stats?.unmatched > 0 && (
+              <>
+                <br />
+                <span className="text-fg-subtle">
+                  {stats.unmatched} show{stats.unmatched === 1 ? '' : 's'} not found on AniList, skipped
+                </span>
+              </>
+            )}
             {stats?.updatedChars > 0 && (
               <>
                 <br />
@@ -488,6 +637,19 @@ export default function AniListImport({ profile, onClose, onImported, autoRefres
         <div className="py-6 text-center">
           <div className="mb-4 text-5xl">⚠️</div>
           <p className="mb-6 font-display font-extrabold text-pop-red">{errorMessage}</p>
+          {/* MAL by username rides on a proxy; when that is unreachable the
+              export file still works, so offer it rather than a retry loop. */}
+          {offerFile && (
+            <Button
+              variant="secondary"
+              size="lg"
+              fullWidth
+              className="mb-3"
+              onClick={() => { setMalByFile(true); setStep('username'); }}
+            >
+              Upload my MyAnimeList file instead
+            </Button>
+          )}
           <Button variant="neutral" size="lg" fullWidth onClick={() => setStep('username')}>Try Again</Button>
         </div>
       )}

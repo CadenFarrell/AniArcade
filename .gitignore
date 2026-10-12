@@ -17,6 +17,11 @@ dist-ssr
 # Firebase CLI deploy cache
 .firebase/
 
+# Wrangler's local state for workers/mal-proxy (dev sessions, build output)
+.wrangler/
+# Local secrets for `wrangler dev` (MAL_CLIENT_ID) — never committed.
+.dev.vars
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

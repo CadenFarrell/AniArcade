@@ -28,7 +28,7 @@ import { Badge, Button, Card } from '../../../shared/ui';
 const OPINION_HINT =
   'One player is the subject. Everyone ranks as they would — their own board is the answer.';
 const FACT_HINT =
-  'One right answer, from AniList. Needs a profile imported since stats were added.';
+  'One right answer, from AniList’s numbers, whichever site your list came from.';
 
 const OPINION_AXES = AXES.filter((a) => a.kind === 'opinion');
 const FACT_AXES = AXES.filter((a) => a.kind === 'fact');
@@ -273,7 +273,7 @@ function SectionLabel({ children }) {
 // and counts what is behind the fold. Nothing ever renders a mode that reads as
 // chosen when it is not the one that will be played.
 //
-// Chevron and disclosure treatment from AniListImport's "Advanced".
+// Chevron and disclosure treatment from ListImport's "Advanced".
 function ModeBox({ title, selectedLabel, emptyText, children }) {
   const [open, setOpen] = useState(false);
 

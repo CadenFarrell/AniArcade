@@ -111,7 +111,7 @@ function hasStaleCast(entry) {
 }
 
 // Normalizes the two shapes that describe the same thing. A franchise group from
-// groupIntoFranchises carries `key`; an imported entry built by AniListImport
+// groupIntoFranchises carries `key`; an imported entry built by ListImport
 // carries `animeId`. Same integer, different name, so callers don't reshape.
 function groupIdentity(group) {
   const animeId = group.animeId ?? group.key;

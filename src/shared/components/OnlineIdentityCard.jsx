@@ -38,7 +38,7 @@ export default function OnlineIdentityCard({ profile, stat, tone = 'purple', onS
         </button>
       </div>
       <Button variant="neutral" size="sm" className="flex-shrink-0" onClick={onImport}>
-        🔗 Import from AniList
+        🔗 Import my list
       </Button>
     </Card>
   );

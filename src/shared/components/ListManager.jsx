@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useProfileStore } from '../context/profileContext';
 import { normalizeTitle } from '../utils/ranking';
-import AniListImport from './AniListImport';
+import ListImport from './ListImport';
+import { canRefreshList } from '../services/listSources';
 import { Button, Field, Input, Select } from '../ui';
 
 // `className` carries the top padding, because the two callers genuinely differ:
@@ -128,7 +129,7 @@ export default function ListManager({ profile, onProfileUpdated, className = '' 
         </Button>
         {/* Only once there is an account to refresh from. This is the screen
             dedicated to managing a list, so the one-tap path belongs here. */}
-        {profile.anilistUsername && (
+        {canRefreshList(profile) && (
           <Button variant="neutral" onClick={() => setImportMode('refresh')} className="whitespace-nowrap">
             🔄 Refresh
           </Button>
@@ -136,7 +137,7 @@ export default function ListManager({ profile, onProfileUpdated, className = '' 
       </div>
 
       {importMode && (
-        <AniListImport
+        <ListImport
           profile={profile}
           autoRefresh={importMode === 'refresh'}
           onClose={() => setImportMode(null)}

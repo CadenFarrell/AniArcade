@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { HostWaitCard, ListBadge, LobbyImport, PlayerRoster, RoomCode } from '../../../shared/components/Lobby';
 import { useGamePrefs } from '../../../shared/hooks/useGamePrefs';
 import { useRepublishProfile } from '../../../shared/hooks/useRepublishProfile';
+import { usePackBackfill } from '../../../shared/hooks/usePackBackfill';
 import ModePicker from './ModePicker';
 import AniFakeSettings from './AniFakeSettings';
 import { eligibleCharacters, fameReport } from '../utils/pool';
@@ -47,6 +48,9 @@ export default function OnlineLobby({ room }) {
 
   // Pushes a list imported after joining back up to the room; see the hook.
   useRepublishProfile(room, me);
+  // Repairs an old list's missing stats from the fact pack; the republish
+  // above then carries the repair into the room.
+  usePackBackfill();
 
   const showCount = (p) => (p.animeList || []).length;
   const everyoneHasShows = active.every((p) => showCount(p) > 0);

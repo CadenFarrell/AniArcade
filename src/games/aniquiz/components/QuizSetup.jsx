@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useProfileStore } from '../../../shared/context/profileContext';
-import AniListImport from '../../../shared/components/AniListImport';
+import ListImport from '../../../shared/components/ListImport';
 import ProfilePicker from '../../../shared/components/ProfilePicker';
 import SettingsFooter from '../../../shared/components/SettingsFooter';
 import { useGamePrefs } from '../../../shared/hooks/useGamePrefs';
@@ -82,7 +82,7 @@ export default function QuizSetup({ pack, onStart, error, onBack }) {
                     variant="neutral"
                     size="sm"
                     className="flex-shrink-0"
-                    aria-label={`Import ${p.name}'s list from AniList`}
+                    aria-label={`Import ${p.name}'s list`}
                     onClick={() => setImportTarget(p)}
                   >
                     🔗
@@ -116,7 +116,7 @@ export default function QuizSetup({ pack, onStart, error, onBack }) {
         </div>
 
         {importTarget && (
-          <AniListImport profile={importTarget} onClose={() => setImportTarget(null)} onImported={handleImported} />
+          <ListImport profile={importTarget} onClose={() => setImportTarget(null)} onImported={handleImported} />
         )}
 
         {error && <Banner tone="danger" className="mb-4">{error}</Banner>}

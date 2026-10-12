@@ -70,6 +70,18 @@ The CLI is `firebase-tools` in devDependencies, not a global install, so a bare 
 in a shell is "command not found". npm scripts are the exception — they put
 `node_modules/.bin` on the PATH, which is why `test:smoke` can call it bare.
 
+MyAnimeList proxy (MAL imports by username only — see "List sources" below):
+
+```bash
+cd workers/mal-proxy
+npx wrangler dev --port 8788            # local; needs MAL_CLIENT_ID in .dev.vars
+npx wrangler secret put MAL_CLIENT_ID   # one time, from myanimelist.net/apiconfig
+npx wrangler deploy                     # then set VITE_MAL_PROXY_URL and rebuild
+```
+
+`wrangler` is a devDependency for `firebase-tools`' reason. It runs on Cloudflare Workers'
+free tier, which takes no card — the project stays off anything billable.
+
 `.env.local` (copied from `.env.local.example`) holds the `VITE_FIREBASE_*` config. When
 pointing at the emulator, `VITE_FIREBASE_DATABASE_URL` must use the `-default-rtdb`
 suffixed namespace — the wrong namespace connects to a rules-less database instead of the
@@ -444,7 +456,7 @@ rather than merely being invisible.
 **What a profile actually stores is narrower than what the import fetches, and
 conflating the two ships a broken game.** `fetchUserAnimeList` returns far more per
 show than `mergeAnimeIntoProfile` persists; anything not in the list below is dropped
-at `AniListImport.runImport` and is simply not there at read time.
+at `ListImport.runImport` and is simply not there at read time.
 
 | entry | stored fields |
 | --- | --- |
@@ -556,6 +568,50 @@ Identity is deliberately not id-based, and the reasons are non-obvious:
 - Characters come in two shapes (`genres` array from AniList, singular `genre` string from
   ListManager); `normalizeCharacter` collapses them so consumers never branch.
 
+### List sources: any tracker, one profile shape
+
+A player imports from **AniList, MyAnimeList, Kitsu, or a MAL-format export file** (which
+Kitsu, Simkl and most other trackers can write), and every game works from any one of them —
+including a room where each player used a different site. `shared/components/ListImport.jsx`
+is the one screen; `shared/services/listSources.js` the network half; `shared/utils/listImport.js`
+the pure, tested half.
+
+**The invariant: another site only ever says WHICH shows you watched. Everything else comes
+from AniList.** Each source reduces to AniList or MAL ids; `fetchMediaByIds` (`anilist.js`)
+hydrates them through AniList's `id_in` / `idMal_in` in pages of 50; and every path — the
+AniList list query included — builds its entries with the same `toListEntry`
+(`anilistFormat.js`). From there it is the unchanged import: `groupIntoFranchises`, the
+checklist, the character fetch, `mergeAnimeIntoProfile`. So a MAL player's profile is the
+same shape as an AniList player's, down to the `anilist_anime_<id>` ids AniTune's exact
+AnimeThemes lookup needs, and **no game or room hook knows sources exist.** That is what makes
+a mixed room work, and it is worth knowing why the obvious alternative fails: every
+cross-player match in the arcade is by fold (`franchiseTitleKey`, `characterNameKey`), and
+MAL's own data does not fold to AniList's — different English titles, character names
+written "Last, First", scores out of 10. Built from MAL's data, a MAL player and an AniList
+player would share no shows at all, and nothing would look broken.
+
+Shows a site lists that AniList has no entry for are **counted, not dropped silently**
+(`unmatched`), and the screen says how many — a list that comes back shorter than the one on
+the site reads as a failed import otherwise. Kitsu prefers its `anilist/anime` mapping and
+falls back to `myanimelist/anime`; an entry with neither is unmatched.
+
+**MyAnimeList's API sends no CORS headers** (measured: no `Access-Control-Allow-Origin` on
+any response, a 405 on the preflight), so no page can call it. `workers/mal-proxy` is a
+one-route Cloudflare Worker that does, with the client id as a secret, and answers with MAL
+ids and statuses only. With `VITE_MAL_PROXY_URL` unset — a fork, or before the worker is
+deployed — the MAL tab asks for the export file instead, and a proxy that cannot be reached
+offers the file from the error screen. Kitsu sends `Access-Control-Allow-Origin: *` and needs
+nothing.
+
+**Where a list came from is `listSource: { site, username? }`**, read through
+`listSourceOf`. Profiles from before it carry only `anilistUsername`, and that key is still
+read (and still written for AniList) rather than migrated — the `aniguess_profiles` rule.
+`anilistImportedIds` and `anilistImportSettings` keep their names because they are still
+true whatever the source: the ids are AniList's after hydration, and the settings drive
+AniList's character fetch. Every Refresh button gates on `canRefreshList`, so a file-based
+profile (nothing can re-read a file the player has not chosen again) and a MAL profile with
+no proxy never offer a one-tap refresh that would only open an upload box.
+
 ### Fact packs: the answers a profile cannot derive
 
 Every game above computes its own answer key on the device — `valueFor` reads a stored
@@ -566,10 +622,11 @@ question.** `generateFacts.js` (Node, `npm run generate:facts`) writes a pack, `
 serves it as a static file, `shared/services/factPack.js` loads it, and
 `shared/utils/facts.js` holds every pure part of it.
 
-**The pack is populated — 441 shows, 1412 characters, 11995 facts per `index.json` — and
-AniQuiz is its one reader** (see `src/games/aniquiz/CLAUDE.md`). A consumer must still treat
+**The pack is populated — 680 shows, 2948 characters, 24205 facts per `index.json` (v4) — and
+AniQuiz is its main reader** (see `src/games/aniquiz/CLAUDE.md`); AniRank, AniTune and
+AniFake read its stats only through the profile backfill below. A consumer must still treat
 a missing entry as normal rather than as a failed load: most of what a player imports will not
-be among 441 shows, and `factsFor` falls closed on an empty key list for exactly that case.
+be among 680 shows, and `factsFor` falls closed on an empty key list for exactly that case.
 
 `pack-v2` added **`popularityRank`** (1 = AniList's most popular), stamped from the discovery
 list's own order — the `anilist-popular-p*.json` pages already in `.facts-cache/`, so adding it
@@ -590,6 +647,48 @@ credit and is deliberately not read as one. That measurement is also why the out
 deleted: the loader fetches `index.json` with `no-store`, so nothing asks for an old pack by
 name.
 
+`pack-v4` fixed accuracy before adding anything, because the measured problems were ours again:
+
+- **Franchises are grouped by AniList relations, exactly as an import groups them.**
+  `collect` runs every media through `toListEntry` and `groupIntoFranchises` and keys the
+  group on its canonical season's title. v3 folded titles, and titles do not fold reliably:
+  a trailing hyphen split Re:Zero, a curly apostrophe split Komi, and Food Wars was six
+  subjects — so a sequel could speak for a franchise and a quiz could offer the answer's own
+  sequel as a wrong option. A top-level **`aliases`** map sends each member title's fold to
+  the canonical key, and `resolveShowKey` (`facts.js`) is the lookup; AniQuiz's
+  `buildContext` and `packStats.js` both go through it.
+- **Credits match through `STAFF_CREDITS` / `pickCredit` in `facts.js`**, each an ordered
+  pattern list, so the matching has tests. `/^director$/` had shipped One Piece, Naruto
+  Shippuden and Dragon Ball Z with no director: long-runners credit "Director (eps 1-199)". A
+  qualified credit is used only when no plain one exists, and "Animation Director", "ADR
+  Director" and "Director of Photography" never match. Staff paging goes to 15 pages, since
+  those same long-runners spent all 5 of v3's on per-episode credits.
+- **It carries the numbers an import stores** — `popularity`, `averageScore`, `startYear`
+  (plus `showFavourites`), folded by `summarizeGroupStats`, so a pack value and an imported
+  one mean the same thing. That is what `shared/utils/packStats.js` repairs old profiles
+  from: `usePackBackfill` runs from the setup screens and lobbies of AniRank, AniTune and
+  AniFake (never the hub — players who never open them never fetch the pack), fills only
+  ABSENT show stats, and fills character `favourites` when the stored value is 0 too, because
+  the import writes `favourites ?? 0` and a stored 0 is ambiguous. `profileFingerprint`
+  counts both, or a repair would never reach a room the profile is already in. Episodes are
+  deliberately not backfilled: the pack's is the canonical season (clue material), a
+  profile's is summed across seasons.
+- **The best-known supporting characters** (favourites ≥ 1000, four per show) arrive under
+  **`supportingIn`**, beside `appearsIn`, which **still means MAIN in** — both cast clues say
+  "main character", and widening it would make them state something false. See
+  `src/games/aniquiz/CLAUDE.md`.
+- **The catalog is the top 1000 by popularity**, against v3's 500, and the cache files for the
+  changed query and the popularity pages carry a `-v4` suffix, so neither the old fields nor
+  the 2026-09-08 ranking could be silently reused.
+
+Measured on the v4 run: 1004 media grouped into 680 shows (Dragon Ball's Z, Super and GT, and
+Naruto's Shippuden and Boruto, each fold into their franchise — AniList links them as sequels,
+and an import folds them the same way); director 99.9% (was 98%), series composition 82%,
+composer 96.8% over a pack half again as large (the newer, less-famous shows are where it
+misses), and popularity, score and year 100%. 205 aliases; 239 characters are supporting-only.
+A first run over a cold cache takes hours rather than minutes, nearly all of it staff paging
+on films that never credit a series composition — a warm cache makes the next one quick.
+
 It shipped empty at first, and the reason is worth knowing before the next 403. AniList
 answers any request carrying **no `Referer`** with a 403 claiming the API is "temporarily
 disabled due to severe stability issues" — it reads as an outage and is a bot filter. The
@@ -598,9 +697,10 @@ forbidden header name and `fetch()` sends the page's own.
 
 **A franchise folds to one key, so assembly is first-write-wins, per field.** All six Attack
 on Titan entries emit rows against `attack on titan`; last-write-wins left the identity block
-saying WIT 2013 while the facts said MAPPA 2022 — one subject wearing two seasons. Popularity
-order puts the canonical season first, and "per field" lets a later season still backfill what
-it had no value for.
+saying WIT 2013 while the facts said MAPPA 2022 — one subject wearing two seasons. `collect`
+emits each group's canonical season first, then the rest by air date, and groups best-ranked
+first (so of two unrelated franchises folding to one title, the better-known holds the key);
+"per field" lets a later season still backfill what it had no value for.
 
 **A pack key is the SAME fold a saved profile keys on** — `franchiseTitleKey` for shows and
 `characterNameKey` for characters, exactly what `anirank/utils/deck.js` computes when it
@@ -615,7 +715,7 @@ it would miss every hand-entered entry.
 
 **The loader takes two fetches and the indirection is the point.** The manifest is small and
 always revalidated; the pack file it names is immutable and can be cached hard. A data fix
-is then "write `pack-v2.json`, change one line of `index.json`" — no app code change, no
+is then "write `pack-v5.json`, change one line of `index.json`" — no app code change, no
 rebuild, no redeploy of anything but those two files. A bundled `import()` of the JSON was
 rejected for that reason plus one more: it is parsed as JavaScript on every load by every
 player, including everyone who never opens the game.
@@ -641,6 +741,13 @@ is how a rate-limit fix ends up applied to two callers out of three.
   the API actually returns (~30/min, not the widely-cited 90) and backs off on 429.
   `shared/services/anilist.js` batches ~15 media per aliased query to stay under AniList's
   500 query-complexity cap; the characters connection is hard-capped at 25/page.
+- Kitsu (`kitsu.app/api/edge`, JSON:API) — public, no auth, `Access-Control-Allow-Origin: *`.
+  `filter[userId]` on `library-entries` with `include=anime.mappings`, followed by
+  `links.next`. Users are looked up by `filter[slug]`, then `filter[name]`: plenty of
+  accounts never set a slug.
+- MyAnimeList — only through `workers/mal-proxy` (no CORS on MAL's API; see "List sources").
+  The worker reads `/v2/users/{name}/animelist` with `X-MAL-CLIENT-ID`, one request per status
+  (MAL's filter takes one), and maps MAL's 403 (private list) and 404 to one "not found".
 - `games/anitune/services/animethemesClient.js` — public, no auth. Two verified quirks
   documented in the file: the API bot-filters on `User-Agent` (fine in a browser, fatal for
   Node scripts), and the audio CDN omits CORS headers on the actual GET, so `<audio src>`
@@ -776,7 +883,7 @@ lockfile:
 | `seedProfiles.js` | ~22K lines / ~950 KB | generated console seed script |
 | `.anilist-cache/` | ~130 files / ~1.7 MB | raw AniList API responses (gitignored) |
 | `.facts-cache/` | grows with the catalog | same, for `generateFacts.js` (gitignored) |
-| `public/facts/pack-v3.json` | ~30K lines / ~720 KB | generated fact pack |
+| `public/facts/pack-v4.json` | ~56K lines / ~1.3 MB | generated fact pack |
 | `package-lock.json` | ~13K lines / ~460 KB | npm lockfile |
 
 None of them carries architectural information. `Grep` them for a specific key when you

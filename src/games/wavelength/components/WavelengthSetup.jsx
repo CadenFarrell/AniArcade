@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useProfileStore } from '../../../shared/context/profileContext';
-import AniListImport from '../../../shared/components/AniListImport';
+import ListImport from '../../../shared/components/ListImport';
 import ProfilePicker from '../../../shared/components/ProfilePicker';
 import { useGamePrefs } from '../../../shared/hooks/useGamePrefs';
 import {
@@ -141,7 +141,7 @@ export default function WavelengthSetup({ onStart, onBack }) {
                         variant="neutral"
                         size="sm"
                         className="flex-shrink-0"
-                        aria-label={`Import ${p.name}'s list from AniList`}
+                        aria-label={`Import ${p.name}'s list`}
                         onClick={() => setImportTarget(p)}
                       >
                         🔗
@@ -189,7 +189,7 @@ export default function WavelengthSetup({ onStart, onBack }) {
         )}
 
         {importTarget && (
-          <AniListImport
+          <ListImport
             profile={importTarget}
             onClose={() => setImportTarget(null)}
             onImported={handleImported}

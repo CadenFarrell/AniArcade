@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { useProfileStore } from '../../../shared/context/profileContext';
-import AniListImport from '../../../shared/components/AniListImport';
+import ListImport from '../../../shared/components/ListImport';
 import ProfilePicker from '../../../shared/components/ProfilePicker';
 import SettingsFooter from '../../../shared/components/SettingsFooter';
 import { useGamePrefs } from '../../../shared/hooks/useGamePrefs';
+import { usePackBackfill } from '../../../shared/hooks/usePackBackfill';
 import AniTuneSettings from './AniTuneSettings';
 import { eligibleCount } from '../utils/questionPool';
 import { DEFAULT_PREFS } from '../prefs';
@@ -15,6 +16,9 @@ export default function AniTuneSetup({ onStart, preparing, progress, error, onBa
   const { activeId, activeProfile, saveProfile } = useProfileStore();
   // Your main profile is already seated; the picker adds the rest of the couch.
   const [players, setPlayers] = useState(() => activeProfile ? [activeProfile] : []);
+  // A list imported before the stats existed is repaired from the fact pack,
+  // and the seated copy follows it the way it follows an import.
+  usePackBackfill((p) => setPlayers((prev) => prev.map((x) => (x.id === p.id ? p : x))));
   const [showPicker, setShowPicker] = useState(false);
   // Which player's list we're importing into. Until now this screen had no
   // import path at all — it told you to go and do it in AniGuess, which is a
@@ -109,7 +113,7 @@ export default function AniTuneSetup({ onStart, preparing, progress, error, onBa
                     variant="neutral"
                     size="sm"
                     className="flex-shrink-0"
-                    aria-label={`Import ${p.name}'s list from AniList`}
+                    aria-label={`Import ${p.name}'s list`}
                     disabled={preparing}
                     onClick={() => setImportTarget(p)}
                   >
@@ -161,7 +165,7 @@ export default function AniTuneSetup({ onStart, preparing, progress, error, onBa
         )}
 
         {importTarget && (
-          <AniListImport
+          <ListImport
             profile={importTarget}
             onClose={() => setImportTarget(null)}
             onImported={handleImported}

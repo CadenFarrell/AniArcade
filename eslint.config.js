@@ -5,7 +5,7 @@ import reactRefresh from 'eslint-plugin-react-refresh'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
-  globalIgnores(['dist', 'seedProfiles.js']),
+  globalIgnores(['dist', 'seedProfiles.js', '**/.wrangler']),
   {
     files: ['generateProfiles.js', 'generateFacts.js', 'animeCatalog.js', 'factSources/*.js'],
     languageOptions: { globals: globals.node },
@@ -29,5 +29,11 @@ export default defineConfig([
     rules: {
       'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]' }],
     },
+  },
+  // The MAL proxy runs on Cloudflare Workers: fetch, Response and caches are
+  // service-worker globals there, not browser ones.
+  {
+    files: ['workers/**/*.js'],
+    languageOptions: { globals: globals.serviceworker },
   },
 ])

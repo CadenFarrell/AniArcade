@@ -2,7 +2,7 @@
 /**
  * Builds the fact pack — the answers a profile cannot derive.
  *
- * Regenerate with: npm run generate:facts  [-- --limit 500]
+ * Regenerate with: npm run generate:facts  [-- --limit 1000]
  *
  * Writes public/facts/pack-v<N>.json and public/facts/index.json. Both are checked
  * in: public/ is copied verbatim into dist/, so `firebase deploy --only hosting`
@@ -39,9 +39,20 @@ const REJECTED = path.join(REVIEW_DIR, 'rejected.json');
 // factPack.js. The file it replaces can simply be deleted: the loader fetches
 // index.json with `no-store`, so no browser ever asks for a superseded pack by
 // name.
-const PACK_VERSION = 3;
+//
+// v4 groups franchises by AniList relations the way an import does (plus an
+// `aliases` section for member titles), widens the director and composer
+// patterns, carries the numbers a profile import stores (popularity, score,
+// first-aired year, show favourites) so an old profile can be repaired from
+// here, adds the best-known supporting characters under `supportingIn`, and
+// roughly doubles the catalog.
+const PACK_VERSION = 4;
 const PACK_FILE = `pack-v${PACK_VERSION}.json`;
-const DEFAULT_LIMIT = 500;
+// Top 1000 by popularity, which after franchise grouping is a few hundred fewer
+// subjects. 500 left most of what a player actually imports outside the pack,
+// and a show outside the pack is a show AniQuiz cannot ask about and an old
+// profile entry the backfill cannot repair.
+const DEFAULT_LIMIT = 1000;
 
 const log = (msg) => console.log(msg);
 
@@ -157,15 +168,16 @@ async function main() {
   // source adapter's bad day and a clue read aloud to a table. Rejects are
   // WRITTEN, because a generator that silently drops a tenth of its rows looks
   // exactly like one that worked.
-  const pack = { version: PACK_VERSION, shows: {}, characters: {} };
+  const pack = { version: PACK_VERSION, shows: {}, characters: {}, aliases: {} };
   for (const [section, source] of [['shows', meta.shows], ['characters', meta.characters]]) {
     for (const [key, identity] of Object.entries(source)) pack[section][key] = { ...identity };
   }
 
   // FIRST write wins, per field. A franchise folds to one key, so every sequel
-  // emits rows against the season already collected — and popularity order puts
-  // the best-known season first, which is the one the identity block (anilistId,
-  // title) keeps. Last-wins paired that identity with the LAST season fetched:
+  // emits rows against the season already collected — and collect() emits each
+  // franchise's canonical season first (see its header), which is the one the
+  // identity block (anilistId, title) names. Last-wins paired that identity with
+  // the LAST season fetched:
   // `attack on titan` called itself the 2013 WIT season while reporting MAPPA,
   // 2022 and 12 episodes. 42 of 441 keys are built from more than one media, and
   // they are the largest franchises in the pack, so this is the common case for
@@ -196,6 +208,14 @@ async function main() {
     }
     pack[section] = sortedObject(pack[section]);
   }
+
+  // Aliases last, against the shows that survived — the same check
+  // normalizePack makes on the way in, done here too so the file never ships an
+  // alias the loader would only throw away.
+  for (const [from, to] of Object.entries(meta.aliases ?? {})) {
+    if (!pack.shows[from] && pack.shows[to]) pack.aliases[from] = to;
+  }
+  pack.aliases = sortedObject(pack.aliases);
 
   const showCount = Object.keys(pack.shows).length;
   const charCount = Object.keys(pack.characters).length;

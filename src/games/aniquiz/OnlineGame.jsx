@@ -1,5 +1,5 @@
 import { useQuizRoom } from './hooks/useQuizRoom';
-import { useFactPack } from './hooks/useFactPack';
+import { useFactPack } from '../../shared/hooks/useFactPack';
 import { currentClue, requiredIds, wagerLimit } from './rules';
 import RoomSetup from '../../shared/components/RoomSetup';
 import { countShows } from '../../shared/utils/profileStats';
