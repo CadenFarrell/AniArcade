@@ -43,7 +43,31 @@ const SPIKE = {
 afterEach(() => {
   cleanup();
   vi.clearAllMocks();
+  vi.unstubAllGlobals();
 });
+
+// Kitsu is called straight from the browser (it sends CORS headers), so its
+// half is a fetch stub: one user lookup, one library page mapping to AniList 1.
+function stubKitsu() {
+  const fetchMock = vi.fn(async (url) => {
+    const body = String(url).includes('/users?')
+      ? { data: [{ id: '7', type: 'users' }] }
+      : {
+          data: [{
+            id: '100', type: 'libraryEntries', attributes: { status: 'completed' },
+            relationships: { anime: { data: { type: 'anime', id: '1' } } },
+          }],
+          included: [
+            { id: '1', type: 'anime', relationships: { mappings: { data: [{ type: 'mappings', id: '9' }] } } },
+            { id: '9', type: 'mappings', attributes: { externalSite: 'anilist/anime', externalId: '1' } },
+          ],
+          links: {},
+        };
+    return { ok: true, status: 200, json: async () => body };
+  });
+  vi.stubGlobal('fetch', fetchMock);
+  return fetchMock;
+}
 
 describe('ListImport', () => {
   it('imports a MyAnimeList export file into an AniList-shaped profile, and says what it skipped', async () => {
@@ -96,6 +120,30 @@ describe('ListImport', () => {
     expect(screen.getByLabelText('Kitsu username or profile link').value).toBe('');
     await user.click(within(sites).getByRole('button', { name: 'AniList' }));
     expect(screen.getByLabelText('AniList username').value).toBe('CadeOnAniList');
+  });
+
+  it('saves a pasted Kitsu profile link as just the username', async () => {
+    const user = userEvent.setup();
+    const fetchMock = stubKitsu();
+    fetchMediaByIds.mockResolvedValue({ byAnilistId: new Map([[1, BEBOP]]), byMalId: new Map() });
+    fetchManyAnimeCharacters.mockResolvedValue(new Map([[1, { genres: ['Sci-Fi'], edges: [SPIKE] }]]));
+    const onImported = vi.fn();
+
+    render(<ListImport profile={{ id: 'cade', name: 'Cade', animeList: [] }} onClose={() => {}} onImported={onImported} />);
+
+    await user.click(screen.getByRole('button', { name: 'Kitsu' }));
+    await user.type(screen.getByLabelText('Kitsu username or profile link'), 'https://kitsu.app/users/vikhyat');
+    await user.click(screen.getByRole('button', { name: 'Fetch My List' }));
+
+    expect(await screen.findByText('Cowboy Bebop')).toBeTruthy();
+    expect(String(fetchMock.mock.calls[0][0])).toContain('filter[slug]=vikhyat');
+    expect(fetchMediaByIds.mock.calls[0][0]).toEqual({ anilistIds: [1], malIds: [] });
+
+    await user.click(screen.getByRole('button', { name: /Import Selected/ }));
+    await user.click(await screen.findByRole('button', { name: 'Done' }));
+
+    // The slug, not the URL — it is what the username box shows next time.
+    expect(onImported.mock.calls[0][0].listSource).toEqual({ site: 'kitsu', username: 'vikhyat' });
   });
 
   it('asks MAL players for their export file while no proxy is configured', async () => {
