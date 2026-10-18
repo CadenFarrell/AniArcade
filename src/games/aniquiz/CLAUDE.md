@@ -60,6 +60,23 @@ playing the song is AniTune. Three fairness rules, each with a test:
   anything. The magazine prompt says "where was it serialized", because Shōnen Jump+ and
   Pixiv are websites, and a source year later than the premiere is never asked.
 
+**A table can switch whole topics off** (QuizSettings' "Categories" card), never individual
+clue shapes — a topic is what a player sees as a column, and seventeen shape switches would be
+a wall nobody reads. Three decisions worth keeping:
+
+- **The pref is `topicsOff`, the list switched OFF**, read through `enabledTopics`. Stored the
+  other way round, a topic added in a later build would be missing from every saved table's
+  board until somebody opened the card. Unknown ids are ignored.
+- **It reaches the deal and nothing else.** `buildDeal` passes the enabled topics to
+  `dealBoard` / `dealQuiz` (the final draws from them too); room state never sees it, because
+  only the host deals and grading reads only the clue. Fewer enabled topics than `categories`
+  deals a narrower board, and the card says so before Start rather than surprising anyone.
+- **`poolSummary` counts each topic in distinct SUBJECTS, not candidates**, and reports every
+  topic marked `enabled`. A column takes one clue per subject, so candidates overstated what a
+  topic could fill — a show askable three ways counted three times toward the five-row floor.
+  The card shows the count beside switched-off topics too, which is what makes turning one
+  back on an informed choice, and flags a topic too thin for a column.
+
 **Options are built only for clues actually dealt.** Building them for every candidate (~10k
 over the whole pack) took a deal twenty seconds; the reverse-clue lookups are bucketed once per
 pack (`lookups`, memoized on the index object) for the same reason.

@@ -129,6 +129,40 @@ describe('AniQuiz, played locally', () => {
     expect(seen.filter((s) => s === 'typed')).toHaveLength(10);
   });
 
+  it('deals the board from only the categories left switched on, and remembers them', async () => {
+    seedProfiles([makeProfile('Caden')]);
+    seedPrefs({ format: 'board', pool: 'everything', categories: 6, timed: false, dailyDouble: false, finalRound: false });
+    const user = userEvent.setup();
+    const start = await openSetup(user);
+
+    // Everything but Theme Songs and Studio Credits.
+    const off = ['The Director’s Chair', 'Who Scored It?', 'Source Material', 'Air Dates', 'Voice Cast', 'Who’s Who'];
+    for (const title of off) {
+      const name = new RegExp(`^${title.replace(/[?]/g, '\\?')}`);
+      await user.click(screen.getByRole('checkbox', { name }));
+    }
+    expect(screen.getByText(/the board will have 2 categories instead of 6/i)).toBeTruthy();
+    await user.click(start);
+
+    expect(screen.getByText('Theme Songs')).toBeTruthy();
+    expect(screen.getByText('Studio Credits')).toBeTruthy();
+    expect(screen.queryByText('Voice Cast')).toBeNull();
+    const saved = JSON.parse(localStorage.getItem('aniarcade_game_prefs')).aniquiz;
+    expect(saved.topicsOff).toEqual(['staff', 'music', 'origins', 'calendar', 'voices', 'cast']);
+  });
+
+  it('will not start with every category switched off', async () => {
+    seedProfiles([makeProfile('Caden')]);
+    seedPrefs({ format: 'quiz', pool: 'everything', topicsOff: ['studios', 'staff', 'music', 'origins', 'themes', 'calendar', 'voices'] });
+    const user = userEvent.setup();
+    const start = await openSetup(user);
+    await user.click(screen.getByRole('checkbox', { name: /^Who’s Who/ }));
+    expect(screen.getByText(/every category is off/i)).toBeTruthy();
+    expect(start.disabled).toBe(true);
+    await user.click(screen.getByRole('button', { name: /switch all on/i }));
+    expect(start.disabled).toBe(false);
+  });
+
   it('says so, rather than starting, when nobody shares a show', async () => {
     seedProfiles([makeProfile('Caden'), { ...makeProfile('Ayu'), animeList: [] }]);
     seedPrefs({ format: 'board', pool: 'shared' });

@@ -326,17 +326,36 @@ function lookups(index) {
   return out;
 }
 
-/** What the setup screens report: how much of the table's pool the pack covers. */
-export function poolSummary(index, showKeys) {
+/**
+ * What the setup screens report: how much of the table's pool the pack covers.
+ *
+ * `topics` lists EVERY topic, each marked `enabled` per the table's switches,
+ * because the settings card shows a count beside the switched-off ones too — a
+ * player deciding whether to turn Theme Songs back on wants to know it has
+ * clues. The totals (`playableTopics`, `clues`) count only enabled ones, since
+ * they are what Start gates on.
+ *
+ * A topic's count is SUBJECTS, not candidates: a column takes one clue per
+ * show, so a show that could be asked about three ways is still one row.
+ */
+export function poolSummary(index, showKeys, topicsOff = []) {
   const ctx = buildContext(index, showKeys);
-  const topics = TOPICS.map((t) => ({ id: t.id, title: t.title, clues: candidatesFor(ctx, t).length }));
+  const on = new Set(enabledTopics(topicsOff).map((t) => t.id));
+  const topics = TOPICS.map((t) => ({
+    id: t.id,
+    title: t.title,
+    blurb: t.blurb,
+    enabled: on.has(t.id),
+    clues: new Set(candidatesFor(ctx, t).map((c) => c.subject)).size,
+  }));
+  const live = topics.filter((t) => t.enabled);
   return {
     requested: new Set(showKeys ?? []).size,
     shows: ctx.shows.length,
     characters: ctx.characters.length,
     topics,
-    playableTopics: topics.filter((t) => t.clues >= ROWS).length,
-    clues: topics.reduce((n, t) => n + t.clues, 0),
+    playableTopics: live.filter((t) => t.clues >= ROWS).length,
+    clues: live.reduce((n, t) => n + t.clues, 0),
   };
 }
 
@@ -852,23 +871,51 @@ function mainCast(ctx, s) {
 // "field" earns its half of the difficulty: inside one column the cheap rows
 // fill with the easy shape on famous shows and the expensive ones with the hard
 // shape on obscure ones.
+//
+// `blurb` is what the settings card's on/off list says a topic covers, since
+// a title like "The Director's Chair" is a board heading, not a description.
 export const TOPICS = [
-  { id: 'studios', title: 'Studio Credits', show: ['studio', 'studioYear'] },
-  { id: 'staff', title: 'The Director’s Chair', show: ['director', 'seriesComposition', 'directorReverse'] },
-  { id: 'music', title: 'Who Scored It?', show: ['composer', 'composerReverse'] },
+  { id: 'studios', title: 'Studio Credits', blurb: 'Which studio animated it', show: ['studio', 'studioYear'] },
+  {
+    id: 'staff',
+    title: 'The Director’s Chair',
+    blurb: 'Directors and series writers',
+    show: ['director', 'seriesComposition', 'directorReverse'],
+  },
+  { id: 'music', title: 'Who Scored It?', blurb: 'Soundtrack composers', show: ['composer', 'composerReverse'] },
   {
     id: 'origins',
     title: 'Source Material',
+    blurb: 'Original creators, magazines and publishers',
     show: ['source', 'originalCreator', 'creatorReverse', 'magazine', 'originalPublisher', 'originalYear', 'magazineReverse'],
   },
-  { id: 'themes', title: 'Theme Songs', show: ['themeShow', 'themeArtist', 'artistReverse'] },
-  { id: 'calendar', title: 'Air Dates', show: ['seasonYear', 'season', 'episodes'] },
-  { id: 'voices', title: 'Voice Cast', character: ['voiceActor', 'voiceActorReverse'] },
-  { id: 'cast', title: 'Who’s Who', show: ['mainCast'], character: ['appearsIn'] },
+  {
+    id: 'themes',
+    title: 'Theme Songs',
+    blurb: 'Openings, endings and who sings them',
+    show: ['themeShow', 'themeArtist', 'artistReverse'],
+  },
+  { id: 'calendar', title: 'Air Dates', blurb: 'Premiere years, seasons and episode counts', show: ['seasonYear', 'season', 'episodes'] },
+  { id: 'voices', title: 'Voice Cast', blurb: 'Japanese voice actors', character: ['voiceActor', 'voiceActorReverse'] },
+  { id: 'cast', title: 'Who’s Who', blurb: 'Main characters and their shows', show: ['mainCast'], character: ['appearsIn'] },
 ];
 
 const TOPIC_BY_ID = new Map(TOPICS.map((t) => [t.id, t]));
 export const topicTitle = (id) => TOPIC_BY_ID.get(id)?.title ?? 'Trivia';
+
+/**
+ * The topics a table has left switched on, from the ids it switched OFF.
+ *
+ * Stored as the off list (prefs' `topicsOff`) rather than the on list, so a
+ * topic added in a later build is on for everybody — including every player
+ * whose saved prefs predate it — instead of silently missing from every board
+ * until someone thinks to open the settings. An unknown id is ignored, so a
+ * topic later renamed or removed cannot wedge anything.
+ */
+export function enabledTopics(topicsOff) {
+  const off = new Set(Array.isArray(topicsOff) ? topicsOff : []);
+  return TOPICS.filter((t) => !off.has(t.id));
+}
 
 const SHOW_BUILDERS = { ...BUILDERS, mainCast };
 
@@ -1033,7 +1080,7 @@ const finisher = (ctx, choices, rng) => (clue) => (choices ? withChoices(ctx, cl
  * moment in the game into free money.
  */
 export function dealBoard(index, showKeys, {
-  categories = 5, choices = true, dailyDouble = true, finalRound = true, rng = Math.random,
+  categories = 5, choices = true, dailyDouble = true, finalRound = true, topics = TOPICS, rng = Math.random,
 } = {}) {
   const ctx = buildContext(index, showKeys);
   const finish = finisher(ctx, choices, rng);
@@ -1041,7 +1088,10 @@ export function dealBoard(index, showKeys, {
   const columns = [];
   const leftovers = [];
 
-  for (const topic of shuffle(TOPICS, rng)) {
+  // `topics` is the table's switched-on set (enabledTopics). Fewer of them than
+  // `categories` simply deals a narrower board; the final draws from them too,
+  // so a switched-off topic cannot sneak back in as the last question.
+  for (const topic of shuffle(topics, rng)) {
     const pool = dedupeBySubject(candidatesFor(ctx, topic), rng);
     if (columns.length >= categories || pool.length < ROWS) {
       leftovers.push(...pool);
@@ -1100,10 +1150,12 @@ export function quizValue(difficulty) {
  * pile is lopsided — the voice topic alone has a quarter of every candidate —
  * and a straight draw would be a voice-acting quiz.
  */
-export function dealQuiz(index, showKeys, { count = 10, choices = true, rng = Math.random } = {}) {
+export function dealQuiz(index, showKeys, {
+  count = 10, choices = true, topics = TOPICS, rng = Math.random,
+} = {}) {
   const ctx = buildContext(index, showKeys);
   const finish = finisher(ctx, choices, rng);
-  const queues = shuffle(TOPICS, rng)
+  const queues = shuffle(topics, rng)
     .map((t) => dedupeBySubject(candidatesFor(ctx, t), rng))
     .filter((q) => q.length);
   const usedSubjects = new Set();

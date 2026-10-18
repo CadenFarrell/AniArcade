@@ -1,6 +1,6 @@
 // Settings + players + pack → the deal rules.js plays. One function so local
 // play and the online host deal identically; everything it calls is pure.
-import { dealBoard, dealQuiz } from './clues';
+import { dealBoard, dealQuiz, enabledTopics } from './clues';
 import { BOARD, QUIZ, CHOICE, TYPED } from './rules';
 import { showKeysFor } from './utils/pool';
 
@@ -14,9 +14,11 @@ export function buildDeal(index, players, settings, rng = Math.random) {
   const keys = showKeysFor(players, settings.pool, index);
   const answerStyle = settings.answerStyle === TYPED ? TYPED : CHOICE;
   const choices = answerStyle === CHOICE;
+  const topics = enabledTopics(settings.topicsOff);
+  if (!topics.length) return { error: NO_TOPICS };
 
   if (settings.format === QUIZ) {
-    const res = dealQuiz(index, keys, { count: settings.quizLength, choices, rng });
+    const res = dealQuiz(index, keys, { count: settings.quizLength, choices, topics, rng });
     if (res.error) return { error: NOT_ENOUGH };
     return {
       deal: {
@@ -30,6 +32,7 @@ export function buildDeal(index, players, settings, rng = Math.random) {
     choices,
     dailyDouble: settings.dailyDouble,
     finalRound: settings.finalRound,
+    topics,
     rng,
   });
   if (res.error) return { error: NOT_ENOUGH };
@@ -46,4 +49,5 @@ export function buildDeal(index, players, settings, rng = Math.random) {
 }
 
 const NOT_ENOUGH = 'Not enough of these shows are in the fact pack to fill a game. '
-  + 'Widen the pool — “Shows anyone has” or “The whole fact pack”.';
+  + 'Widen the pool — “Shows anyone has” or “The whole fact pack” — or switch more categories on.';
+const NO_TOPICS = 'Every category is switched off. Switch at least one back on.';

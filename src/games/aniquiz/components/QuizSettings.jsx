@@ -3,8 +3,11 @@ import {
   ANSWER_SECONDS_RANGE, ANSWER_STYLES, CATEGORY_RANGE, FORMATS, QUIZ_RANGE,
 } from '../prefs';
 import { BOARD } from '../rules';
+import { ROWS, TOPICS } from '../clues';
 import SettingHelp, { DetailToggle } from '../../../shared/components/SettingHelp';
-import { Banner, Button, Card, Checkbox, Field, NumberInput, Select } from '../../../shared/ui';
+import {
+  Banner, Button, Card, Checkbox, Field, GhostButton, NumberInput, Select,
+} from '../../../shared/ui';
 
 // The format picker and both settings cards, rendered identically by QuizSetup
 // and the online lobby — AniTuneSettings' arrangement, for its reason: two
@@ -161,9 +164,96 @@ export default function QuizSettings({ values, onChange, report, packStatus, onR
             <Button variant="neutral" size="sm" onClick={onRetryPack}>Try again</Button>
           </Banner>
         )}
-        {report && <PoolLine report={report} pool={values.pool} players={players} />}
+        {report && <PoolLine report={report} pool={values.pool} players={players} topicsOff={values.topicsOff} />}
       </Card>
+
+      <TopicSwitches values={values} onChange={onChange} report={report} disabled={disabled} />
     </>
+  );
+}
+
+// One switch per topic (a board column), on by default. The value is the list
+// of ids switched OFF — see enabledTopics in clues.js for why that way round.
+//
+// Each switch carries what the pool gives that topic — distinct subjects, a
+// show or a character depending on the topic, so the card calls them
+// "questions" — because a player deciding whether Theme Songs is worth turning
+// back on wants to see it before pressing Start, and a topic that cannot fill a
+// board column should say so instead of quietly never appearing.
+function TopicSwitches({ values, onChange, report, disabled }) {
+  const board = values.format === BOARD;
+  const off = new Set(values.topicsOff ?? []);
+  const countFor = new Map((report?.topics ?? []).map((t) => [t.id, t.clues]));
+  const set = (id, on) => {
+    const next = new Set(off);
+    if (on) next.delete(id);
+    else next.add(id);
+    // Kept in TOPICS order so the stored value (and the reset link's
+    // comparison against the default) does not depend on click order.
+    onChange('topicsOff', TOPICS.filter((t) => next.has(t.id)).map((t) => t.id));
+  };
+  const enabled = TOPICS.length - off.size;
+
+  return (
+    <Card
+      title="🗂️ Categories"
+      action={off.size ? (
+        <GhostButton onClick={() => onChange('topicsOff', [])} disabled={disabled}>Switch all on</GhostButton>
+      ) : null}
+      padding="lg"
+      className="mb-6"
+    >
+      <SettingHelp className="mb-4">
+        {board
+          ? 'Switch off any you’d rather skip. The board picks its columns from the ones left on.'
+          : 'Switch off any you’d rather skip. Questions come from the ones left on.'}
+      </SettingHelp>
+
+      <div className="grid gap-3 sm:grid-cols-2">
+        {TOPICS.map((t) => {
+          const count = countFor.get(t.id);
+          const thin = board && count != null && count < ROWS;
+          return (
+            <Checkbox
+              key={t.id}
+              checked={!off.has(t.id)}
+              disabled={disabled}
+              onChange={(e) => set(t.id, e.target.checked)}
+              label={(
+                <span className="min-w-0">
+                  <span className="block font-bold text-white">{t.title}</span>
+                  <span className="block text-sm text-fg-subtle">
+                    {t.blurb}
+                    {count != null && (
+                      <>
+                        {' · '}
+                        <span className={thin ? 'text-pop-amber' : ''}>
+                          {thin
+                            ? `only ${count} question${count === 1 ? '' : 's'}, too few for a column`
+                            : `${count} questions`}
+                        </span>
+                      </>
+                    )}
+                  </span>
+                </span>
+              )}
+            />
+          );
+        })}
+      </div>
+
+      {enabled === 0 && (
+        <Banner tone="warning" className="mt-4">⚠️ Every category is off. Switch at least one back on.</Banner>
+      )}
+      {/* Only once there are enough for a board at all — below two, PoolLine's
+          "not enough to fill a game" already says it, louder. */}
+      {board && enabled > 0 && report && report.playableTopics >= 2 && report.playableTopics < values.categories && (
+        <p className="mt-4 text-sm text-fg-helper">
+          Only {report.playableTopics} of these can fill a column with this pool, so the board will have
+          {' '}{report.playableTopics} categories instead of {values.categories}.
+        </p>
+      )}
+    </Card>
   );
 }
 
@@ -171,7 +261,7 @@ export default function QuizSettings({ values, onChange, report, packStatus, onR
 // that matters: the pack covers a few hundred popular shows, so a table's
 // shared list can be long and still mostly absent, and without the first
 // number that looks like the game ignoring their lists.
-function PoolLine({ report, pool, players }) {
+function PoolLine({ report, pool, players, topicsOff }) {
   if (needsLists(pool) && !players?.length) return null;
   if (needsLists(pool) && report.requested === 0) {
     return (
@@ -192,7 +282,9 @@ function PoolLine({ report, pool, players }) {
       </p>
       {!report.playable && (
         <Banner tone="warning" className="mt-3">
-          ⚠️ That isn’t enough to fill a game. Widen the pool above.
+          {topicsOff?.length
+            ? '⚠️ That isn’t enough to fill a game. Widen the pool above, or switch more categories on below.'
+            : '⚠️ That isn’t enough to fill a game. Widen the pool above.'}
         </Banner>
       )}
     </>

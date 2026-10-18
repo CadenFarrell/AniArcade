@@ -14,6 +14,10 @@ import { DEFAULT_POOL } from './utils/pool';
 //   pool: shared      — clues about shows everybody at the table has seen.
 //   timed: true       — online, an untimed clue waits on the slowest player
 //                       forever, and the clock is what ends it.
+//   topicsOff: []     — every topic on. The list names what a table switched
+//                       OFF, so a topic added later is on for everyone; see
+//                       enabledTopics in clues.js. Only the deal reads it — it
+//                       never enters room state, because only the host deals.
 export const DEFAULT_PREFS = {
   format: BOARD,
   answerStyle: CHOICE,
@@ -24,6 +28,7 @@ export const DEFAULT_PREFS = {
   finalRound: true,
   timed: true,
   answerSeconds: 30,
+  topicsOff: [],
 };
 
 export const FORMATS = [

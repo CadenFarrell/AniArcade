@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { indexPack } from '../../shared/utils/facts';
 import {
-  BOARD_VALUES, CHOICES, ROWS, buildContext, candidatesFor, dealBoard, dealQuiz, domainValues,
+  BOARD_VALUES, CHOICES, ROWS, buildContext, candidatesFor, dealBoard, dealQuiz, domainValues, enabledTopics,
   foldAnswer, isCorrect, normalizeClue, parseCell, poolSummary, TOPICS, withChoices,
 } from './clues';
 
@@ -267,6 +267,48 @@ describe('normalizeClue', () => {
   it('keeps a typed clue optionless', () => {
     expect(normalizeClue({ prompt: 'x', accept: ['a'] }).options).toBeNull();
     expect(normalizeClue(null)).toBeNull();
+  });
+});
+
+describe('topic switches', () => {
+  it('reads the off list, ignoring ids it does not know', () => {
+    expect(enabledTopics([]).map((t) => t.id)).toEqual(TOPICS.map((t) => t.id));
+    expect(enabledTopics(undefined)).toHaveLength(TOPICS.length);
+    expect(enabledTopics(['voices', 'no-such-topic']).map((t) => t.id)).not.toContain('voices');
+    expect(enabledTopics(['voices', 'no-such-topic'])).toHaveLength(TOPICS.length - 1);
+  });
+
+  it('deals a board and its final only from the topics left on', () => {
+    const topics = enabledTopics(['voices', 'cast', 'calendar']);
+    for (let seed = 1; seed <= 10; seed++) {
+      const board = dealBoard(index, allKeys, { categories: 6, topics, rng: seeded(seed) });
+      const used = [...board.categories.map((c) => c.id), board.final.topic];
+      for (const id of used) expect(['voices', 'cast', 'calendar']).not.toContain(id);
+    }
+  });
+
+  it('deals a narrower board when fewer topics are on than columns asked for', () => {
+    const board = dealBoard(index, allKeys, { categories: 6, topics: enabledTopics(['voices', 'cast', 'calendar', 'music', 'staff']), rng: seeded(4) });
+    expect(board.categories.map((c) => c.id).sort()).toEqual(['origins', 'studios', 'themes']);
+  });
+
+  it('refuses a board with only one topic left on', () => {
+    const one = TOPICS.filter((t) => t.id !== 'studios').map((t) => t.id);
+    expect(dealBoard(index, allKeys, { topics: enabledTopics(one), rng: seeded(1) })).toEqual({ error: 'not-enough' });
+  });
+
+  it('keeps a quick quiz to the topics left on', () => {
+    const { questions } = dealQuiz(index, allKeys, { count: 12, topics: enabledTopics(['voices']), rng: seeded(6) });
+    expect(questions.some((q) => q.topic === 'voices')).toBe(false);
+  });
+
+  it('reports every topic with its show count, and totals only the ones on', () => {
+    const all = poolSummary(index, allKeys);
+    const some = poolSummary(index, allKeys, ['voices', 'studios']);
+    expect(some.topics).toHaveLength(TOPICS.length);
+    expect(some.topics.find((t) => t.id === 'voices')).toMatchObject({ enabled: false, clues: 60 });
+    expect(some.playableTopics).toBe(all.playableTopics - 2);
+    expect(some.clues).toBeLessThan(all.clues);
   });
 });
 
