@@ -3,7 +3,7 @@ import { fetchManyAnimeCharacters } from '../services/anilist';
 import { fetchListEntries, LIST_SITES, malProxyEnabled, siteLabel } from '../services/listSources';
 import { filterAndMapCharacterEdges, mergeCharacterEdges, summarizeGroupStats } from '../utils/anilistFormat';
 import { groupIntoFranchises } from '../utils/franchise';
-import { listSourceOf } from '../utils/listImport';
+import { kitsuSlugFrom, listSourceOf } from '../utils/listImport';
 import {
   mergeAnimeIntoProfile,
   classifyImportGroups,
@@ -272,9 +272,11 @@ export default function ListImport({ profile, onClose, onImported, autoRefresh =
       // it. A file records its site and no username: there is nothing to
       // refresh from. `anilistUsername` is still written for AniList, because
       // every profile before listSource carries it and listSourceOf reads it.
+      // A pasted Kitsu profile link is stored as its slug: the link works for a
+      // refresh either way, but the slug is what the box should show next time.
       listSource: usesFile
         ? { site: site === 'mal' ? 'mal' : 'file' }
-        : { site, username: username.trim() },
+        : { site, username: site === 'kitsu' ? kitsuSlugFrom(username) : username.trim() },
       ...(site === 'anilist' && !usesFile ? { anilistUsername: username.trim() } : {}),
       // AniList ids whichever site the list came from — every site's list is
       // resolved to AniList before it gets here.
@@ -525,7 +527,7 @@ export default function ListImport({ profile, onClose, onImported, autoRefresh =
           {unmatched > 0 && (
             <p className="mb-2 text-xs text-fg-subtle">
               {unmatched} show{unmatched === 1 ? '' : 's'} on your list {unmatched === 1 ? 'isn’t' : 'aren’t'} on
-              AniList, where every game looks shows up, so {unmatched === 1 ? 'it was' : 'they were'} left out.
+              AniList, which every game gets its shows from, so {unmatched === 1 ? 'it was' : 'they were'} left out.
             </p>
           )}
 
