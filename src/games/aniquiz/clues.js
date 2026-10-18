@@ -96,6 +96,49 @@ const formatNoun = (f) => FORMAT_NOUNS[f] ?? 'show';
 
 const quote = (title) => `“${title}”`;
 
+// ── Theme songs ────────────────────────────────────────────────────────────
+//
+// A show's `themes` (pack-v5, from AnimeThemes) run openings first, canonical
+// season first — see shared/utils/outsideFacts.js. Each clue shape picks ONE of
+// them, so a show is never asked about twice in one column.
+const themesOf = (s) => (Array.isArray(s.themes) ? s.themes : []);
+const themeKind = (t) => (t.type === 'OP' ? 'an opening' : 'an ending');
+
+// "LiSA", "FictionJunction & LiSA", "A, B & C" — the reveal's spelling. Grading
+// never reads it: the accept list holds every performer's fold as well.
+function artistList(artists) {
+  if (artists.length <= 1) return artists[0] ?? '';
+  return `${artists.slice(0, -1).join(', ')} & ${artists[artists.length - 1]}`;
+}
+
+// The theme a "name the show" clue quotes: the first opening, which is the
+// famous one far more often than not.
+const leadTheme = (s) => themesOf(s).find((t) => t.type === 'OP') ?? themesOf(s)[0] ?? null;
+
+// The theme a "who performs it" clue asks about. A single performer first: a
+// "FictionJunction & LiSA" option among three solo names is a tell in multiple
+// choice, whichever one the player knows.
+function soloTheme(s) {
+  const credited = themesOf(s).filter((t) => t.artists?.length);
+  return credited.find((t) => t.type === 'OP' && t.artists.length === 1)
+    ?? credited.find((t) => t.artists.length === 1)
+    ?? credited[0]
+    ?? null;
+}
+
+// The theme an "X performed a theme for this show" clue names. Openings first.
+const creditedTheme = (s) =>
+  themesOf(s).find((t) => t.type === 'OP' && t.artists?.length) ?? themesOf(s).find((t) => t.artists?.length) ?? null;
+
+// The source work's start year is only trusted when it is not AFTER the anime
+// premiered — a later date means Wikidata's publication date is some reprint or
+// translation, and a clue answered from it would be wrong.
+const sourceYearOf = (s) => {
+  if (!Number.isInteger(s.originalYear)) return null;
+  const aired = Number.isInteger(s.startYear) ? s.startYear : s.seasonYear;
+  return Number.isInteger(aired) && s.originalYear > aired ? null : s.originalYear;
+};
+
 // ── Difficulty ─────────────────────────────────────────────────────────────
 //
 // A clue's difficulty is two things blended: how obscure its subject is, and
@@ -116,14 +159,23 @@ const FIELD_WEIGHT = {
   mainCast: 0.2,
   studio: 0.25,
   seasonYear: 0.25,
+  // A franchise's own opening is the one piece of credits trivia most fans can
+  // hum, so naming the show from it sits with the cast clues, not the staff.
+  themeShow: 0.3,
   season: 0.45,
   originalCreator: 0.45,
   studioYear: 0.45,
   director: 0.55,
   creatorReverse: 0.55,
+  magazine: 0.55,
+  themeArtist: 0.55,
   episodes: 0.6,
+  artistReverse: 0.6,
+  magazineReverse: 0.6,
   directorReverse: 0.65,
+  originalPublisher: 0.65,
   composer: 0.7,
+  originalYear: 0.7,
   voiceActor: 0.7,
   voiceActorReverse: 0.75,
   composerReverse: 0.8,
@@ -228,6 +280,12 @@ function lookups(index) {
   const byDirectorStudio = new Map();
   const byComposerYear = new Map();
   const byCreator = new Map();
+  // Theme songs, by song (each row carrying the performers, which the clue
+  // filters on) and by `type|performer` (one row per show however many themes
+  // that performer sang for it).
+  const byThemeSong = new Map();
+  const byThemeArtist = new Map();
+  const byMagazineYear = new Map();
   let maxYear = 0;
   for (const [key, s] of shows) {
     const row = { key, title: s.title };
@@ -237,6 +295,20 @@ function lookups(index) {
     if (s.composer && Number.isInteger(s.seasonYear)) bucket(byComposerYear, `${foldName(s.composer)}|${s.seasonYear}`, row);
     if (s.originalCreator) bucket(byCreator, foldName(s.originalCreator), row);
     if (Number.isInteger(s.seasonYear)) maxYear = Math.max(maxYear, s.seasonYear);
+
+    const sungFor = new Set();
+    for (const t of themesOf(s)) {
+      const artists = new Set((t.artists ?? []).map(foldName));
+      bucket(byThemeSong, foldName(t.song), { ...row, type: t.type, artists });
+      for (const a of artists) {
+        const k = `${t.type}|${a}`;
+        if (!sungFor.has(k)) { sungFor.add(k); bucket(byThemeArtist, k, row); }
+      }
+    }
+    const sourceYear = sourceYearOf(s);
+    if (s.source === 'MANGA' && s.serializedIn && sourceYear) {
+      bucket(byMagazineYear, `${foldName(s.serializedIn)}|${sourceYear}`, row);
+    }
   }
 
   const castByShow = new Map();
@@ -246,7 +318,10 @@ function lookups(index) {
     for (const showKey of c.appearsIn ?? []) bucket(castByShow, showKey, row);
   }
 
-  const out = { byStudioYear, byDirectorStudio, byComposerYear, byCreator, castByShow, maxYear };
+  const out = {
+    byStudioYear, byDirectorStudio, byComposerYear, byCreator, byThemeSong, byThemeArtist, byMagazineYear,
+    castByShow, maxYear,
+  };
   if (index) LOOKUPS.set(index, out);
   return out;
 }
@@ -296,6 +371,22 @@ export function domainValues(index, domain) {
       break;
     case 'character':
       for (const c of chars.values()) add(c.name);
+      break;
+    case 'artist':
+      for (const s of shows.values()) for (const t of themesOf(s)) for (const a of t.artists ?? []) add(a);
+      break;
+    case 'magazine':
+      for (const s of shows.values()) add(s.serializedIn);
+      break;
+    // Two domains over one field, split by what the source IS: a manga's
+    // publisher is a company (Shueisha) and a light novel's is an imprint
+    // (Dengeki Bunko), and one mixed list would let a player rule out every
+    // option of the wrong kind without knowing the answer.
+    case 'publisher':
+      for (const s of shows.values()) if (s.source === 'MANGA') add(s.originalPublisher);
+      break;
+    case 'imprint':
+      for (const s of shows.values()) if (s.source === 'LIGHT_NOVEL') add(s.originalPublisher);
       break;
     case 'source':
       return Object.values(SOURCE_LABELS);
@@ -501,6 +592,157 @@ const BUILDERS = {
       difficulty: blend(ctx.showObscurity.get(s.key) ?? 1, 'creatorReverse'),
     };
   },
+
+  // ── the source work (pack-v5, from Wikidata) ──
+  // Every one of these is gated on AniList's `source` as well as the field: the
+  // generator only attaches a work of the kind AniList names, and the prompt
+  // says that kind out loud.
+  magazine: (ctx, s) => {
+    if (s.source !== 'MANGA' || !s.serializedIn) return null;
+    return {
+      id: `magazine:${s.key}`,
+      topic: 'origins',
+      field: 'magazine',
+      subject: s.key,
+      // "Where", not "which magazine": a fair share of the answers are web
+      // serializations — Shōnen Jump+, Magazine Pocket, Pixiv — and calling a
+      // website a magazine makes the right answer look like a trick option.
+      prompt: `Where was the manga behind ${quote(s.title)} serialized?`,
+      answer: s.serializedIn,
+      kind: 'name',
+      accept: [foldName(s.serializedIn)],
+      domain: 'magazine',
+      difficulty: blend(ctx.showObscurity.get(s.key) ?? 1, 'magazine'),
+    };
+  },
+
+  originalPublisher: (ctx, s) => {
+    if (!s.originalPublisher || (s.source !== 'MANGA' && s.source !== 'LIGHT_NOVEL')) return null;
+    const manga = s.source === 'MANGA';
+    return {
+      id: `originalPublisher:${s.key}`,
+      topic: 'origins',
+      field: 'originalPublisher',
+      subject: s.key,
+      // "Imprint" for a light novel, because that is what the answer is —
+      // Dengeki Bunko is a label of Kadokawa's, and calling it the publisher
+      // would invite a player to type Kadokawa and be marked wrong.
+      prompt: manga
+        ? `Which publisher released the manga behind ${quote(s.title)}?`
+        : `Which imprint published the light novel behind ${quote(s.title)}?`,
+      answer: s.originalPublisher,
+      kind: 'name',
+      accept: [foldName(s.originalPublisher)],
+      domain: manga ? 'publisher' : 'imprint',
+      difficulty: blend(ctx.showObscurity.get(s.key) ?? 1, 'originalPublisher'),
+    };
+  },
+
+  originalYear: (ctx, s) => {
+    const label = SOURCE_LABELS[s.source];
+    const year = sourceYearOf(s);
+    if (!year || (s.source !== 'MANGA' && s.source !== 'LIGHT_NOVEL')) return null;
+    return {
+      id: `originalYear:${s.key}`,
+      topic: 'origins',
+      field: 'originalYear',
+      subject: s.key,
+      prompt: `What year did the ${label.toLowerCase()} behind ${quote(s.title)} start?`,
+      answer: String(year),
+      kind: 'number',
+      accept: [String(year)],
+      domain: null,
+      difficulty: blend(ctx.showObscurity.get(s.key) ?? 1, 'originalYear'),
+    };
+  },
+
+  magazineReverse: (ctx, s) => {
+    const year = sourceYearOf(s);
+    if (s.source !== 'MANGA' || !s.serializedIn || !year) return null;
+    const matches = ctx.byMagazineYear.get(`${foldName(s.serializedIn)}|${year}`) ?? [];
+    const answer = showAnswer(ctx, s, matches);
+    if (!answer) return null;
+    return {
+      id: `magazineReverse:${s.key}`,
+      topic: 'origins',
+      field: 'magazineReverse',
+      subject: s.key,
+      prompt: `This ${formatNoun(s.format)} adapts a manga first serialized in ${s.serializedIn} in ${year}. Name it.`,
+      ...answer,
+      difficulty: blend(ctx.showObscurity.get(s.key) ?? 1, 'magazineReverse'),
+    };
+  },
+
+  // ── theme songs (pack-v5, from AnimeThemes) ──
+  // Text only, deliberately: playing the song is AniTune's whole game.
+  //
+  // The answer is a show, and every pack show whose theme of the SAME kind has
+  // this title counts — filtered to the same performer when the clue names one,
+  // because "Believe" is more than one song. A matching theme with no performer
+  // on record is accepted rather than ruled out: it may well be the same song,
+  // and marking a right answer wrong is the one thing a reverse clue must not do.
+  themeShow: (ctx, s) => {
+    const t = leadTheme(s);
+    if (!t) return null;
+    const named = new Set((t.artists ?? []).map(foldName));
+    const seen = new Set();
+    const matches = (ctx.byThemeSong.get(foldName(t.song)) ?? []).filter((m) => {
+      if (m.type !== t.type || seen.has(m.key)) return false;
+      if (named.size && m.artists.size && ![...m.artists].some((a) => named.has(a))) return false;
+      seen.add(m.key);
+      return true;
+    });
+    const answer = showAnswer(ctx, s, matches);
+    if (!answer) return null;
+    const by = t.artists?.length ? ` by ${artistList(t.artists)}` : '';
+    return {
+      id: `themeShow:${s.key}`,
+      topic: 'themes',
+      field: 'themeShow',
+      subject: s.key,
+      prompt: `${quote(t.song)}${by} is ${themeKind(t)} theme of which show?`,
+      ...answer,
+      difficulty: blend(ctx.showObscurity.get(s.key) ?? 1, 'themeShow'),
+    };
+  },
+
+  // Any one of a song's performers is a right answer, and so is the full
+  // credit as the reveal spells it.
+  themeArtist: (ctx, s) => {
+    const t = soloTheme(s);
+    if (!t) return null;
+    const answer = artistList(t.artists);
+    return {
+      id: `themeArtist:${s.key}`,
+      topic: 'themes',
+      field: 'themeArtist',
+      subject: s.key,
+      prompt: `Who performs ${quote(t.song)}, ${themeKind(t)} theme of ${quote(s.title)}?`,
+      answer,
+      kind: 'name',
+      accept: [...new Set([foldName(answer), ...t.artists.map(foldName)])],
+      domain: 'artist',
+      difficulty: blend(ctx.showObscurity.get(s.key) ?? 1, 'themeArtist'),
+    };
+  },
+
+  artistReverse: (ctx, s) => {
+    const t = creditedTheme(s);
+    if (!t) return null;
+    const artist = t.artists[0];
+    const matches = ctx.byThemeArtist.get(`${t.type}|${foldName(artist)}`) ?? [];
+    const answer = showAnswer(ctx, s, matches);
+    if (!answer) return null;
+    return {
+      id: `artistReverse:${s.key}`,
+      topic: 'themes',
+      field: 'artistReverse',
+      subject: s.key,
+      prompt: `${artist} performed ${themeKind(t)} theme for this ${formatNoun(s.format)}. Name it.`,
+      ...answer,
+      difficulty: blend(ctx.showObscurity.get(s.key) ?? 1, 'artistReverse'),
+    };
+  },
 };
 
 // ── character clues ──
@@ -614,7 +856,12 @@ export const TOPICS = [
   { id: 'studios', title: 'Studio Credits', show: ['studio', 'studioYear'] },
   { id: 'staff', title: 'The Director’s Chair', show: ['director', 'seriesComposition', 'directorReverse'] },
   { id: 'music', title: 'Who Scored It?', show: ['composer', 'composerReverse'] },
-  { id: 'origins', title: 'Source Material', show: ['source', 'originalCreator', 'creatorReverse'] },
+  {
+    id: 'origins',
+    title: 'Source Material',
+    show: ['source', 'originalCreator', 'creatorReverse', 'magazine', 'originalPublisher', 'originalYear', 'magazineReverse'],
+  },
+  { id: 'themes', title: 'Theme Songs', show: ['themeShow', 'themeArtist', 'artistReverse'] },
   { id: 'calendar', title: 'Air Dates', show: ['seasonYear', 'season', 'episodes'] },
   { id: 'voices', title: 'Voice Cast', character: ['voiceActor', 'voiceActorReverse'] },
   { id: 'cast', title: 'Who’s Who', show: ['mainCast'], character: ['appearsIn'] },
@@ -652,7 +899,7 @@ function numberDistractors(ctx, clue, rng) {
   const near = clue.field === 'episodes'
     ? [n - 12, n - 2, n - 1, n + 1, n + 2, n + 12, 12, 13, 24, 25, 26, 50]
     : [n - 4, n - 3, n - 2, n - 1, n + 1, n + 2, n + 3, n + 4];
-  const ceiling = clue.field === 'seasonYear' && ctx.maxYear ? ctx.maxYear : Infinity;
+  const ceiling = (clue.field === 'seasonYear' || clue.field === 'originalYear') && ctx.maxYear ? ctx.maxYear : Infinity;
   const pool = [...new Set(near)]
     .filter((x) => Number.isInteger(x) && x > 1 && x !== n && x <= ceiling)
     .sort((a, b) => Math.abs(a - n) - Math.abs(b - n))
@@ -702,6 +949,10 @@ function domainDistractors(ctx, clue, rng) {
   if (clue.domain === 'studio') local.push(...ctx.shows.map((s) => s.studio));
   if (clue.domain === 'staff') for (const s of ctx.shows) for (const f of STAFF_FIELDS) local.push(s[f]);
   if (clue.domain === 'voiceActor') local.push(...ctx.characters.map((c) => c.voiceActorJp));
+  if (clue.domain === 'artist') for (const s of ctx.shows) for (const t of themesOf(s)) local.push(...(t.artists ?? []));
+  if (clue.domain === 'magazine') local.push(...ctx.shows.map((s) => s.serializedIn));
+  if (clue.domain === 'publisher') local.push(...ctx.shows.filter((s) => s.source === 'MANGA').map((s) => s.originalPublisher));
+  if (clue.domain === 'imprint') local.push(...ctx.shows.filter((s) => s.source === 'LIGHT_NOVEL').map((s) => s.originalPublisher));
 
   const picked = sample(local, CHOICES - 1, seen, fold, rng);
   picked.push(...sample(domainFor(ctx, clue.domain), CHOICES - 1 - picked.length, seen, fold, rng));

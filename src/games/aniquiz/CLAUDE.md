@@ -7,7 +7,8 @@ presence, settings, profiles, styling).
 ## AniQuiz: the fact pack's game
 
 `games/aniquiz/` (id `aniquiz`) is trivia built from the credits: studios, directors,
-composers, source material, air dates, voice actors and casts, all out of the fact pack. It
+composers, source material, theme songs, air dates, voice actors and casts, all out of the
+fact pack. It
 has two formats over one clue generator — a **board** (category columns, a Daily Double, a
 wagered final) and a **quick quiz** (a straight run, easiest first) — and two answer styles,
 multiple choice and typed.
@@ -42,6 +43,22 @@ supporting everywhere "which show is X from", accepting every show they are in. 
 character's `home` is a show they lead when one is in play, otherwise one they support in.
 `buildContext` resolves the pool's keys through the pack's `aliases`, so a player whose
 profile names a later season still puts the franchise in play.
+
+**pack-v5's outside facts feed two topics.** A **Theme Songs** column (`themeShow` — name
+the show from its first opening; `themeArtist` — who performs a named song; `artistReverse` —
+name a show this performer sang a theme for) and four more shapes in **Source Material**
+(`magazine`, `originalPublisher`, `originalYear`, `magazineReverse`). Text only on purpose:
+playing the song is AniTune. Three fairness rules, each with a test:
+
+- `themeShow` accepts every pack show whose theme of the same kind has the same title,
+  narrowed to the same performer when the prompt names one ("Believe" is several songs) — but
+  a matching theme with **no** performer on record is accepted, not ruled out.
+- `themeArtist` asks about a solo performer when the show has one (a "FictionJunction & LiSA"
+  option among three solo names is a tell), and accepts any one performer or the full credit.
+- A manga's publisher and a light novel's imprint are **separate domains** (`publisher`,
+  `imprint`): mixed, a player could discard every option of the wrong kind without knowing
+  anything. The magazine prompt says "where was it serialized", because Shōnen Jump+ and
+  Pixiv are websites, and a source year later than the premiere is never asked.
 
 **Options are built only for clues actually dealt.** Building them for every candidate (~10k
 over the whole pack) took a deal twenty seconds; the reverse-clue lookups are bucketed once per

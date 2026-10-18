@@ -622,7 +622,7 @@ question.** `generateFacts.js` (Node, `npm run generate:facts`) writes a pack, `
 serves it as a static file, `shared/services/factPack.js` loads it, and
 `shared/utils/facts.js` holds every pure part of it.
 
-**The pack is populated — 680 shows, 2948 characters, 24205 facts per `index.json` (v4) — and
+**The pack is populated — 680 shows, 2948 characters, 26019 facts per `index.json` (v5) — and
 AniQuiz is its main reader** (see `src/games/aniquiz/CLAUDE.md`); AniRank, AniTune and
 AniFake read its stats only through the profile backfill below. A consumer must still treat
 a missing entry as normal rather than as a failed load: most of what a player imports will not
@@ -642,8 +642,8 @@ missing, at the **same 20 per page** (page 2 at 25 would start at entry 26 and s
 roles are matched trimmed, because some arrive as `"Music "`. Composer went from 79% to 98%
 of shows and director from 93% to 98%, with no v2 value changed. Series composition stayed at
 79%: the rest are films, or shows that credit their writer as "Script", which is a different
-credit and is deliberately not read as one. That measurement is also why the outside source
-(Wikidata vs Jikan) is still undecided — the gaps it was meant to fill were ours. v2 was
+credit and is deliberately not read as one. That measurement is also why no outside source
+was added then — the gaps it was meant to fill were ours (v5 added one for new fields). v2 was
 deleted: the loader fetches `index.json` with `no-store`, so nothing asks for an old pack by
 name.
 
@@ -688,6 +688,43 @@ composer 96.8% over a pack half again as large (the newer, less-famous shows are
 misses), and popularity, score and year 100%. 205 aliases; 239 characters are supporting-only.
 A first run over a cold cache takes hours rather than minutes, nearly all of it staff paging
 on films that never credit a series composition — a warm cache makes the next one quick.
+
+`pack-v5` is the first with facts from **outside AniList**, and only for things AniList has no
+field for at all — every AniList value is byte-identical to v4's. Each outside source is a file
+in `factSources/` handed `collect()`'s franchise groups (`meta.groups`: key, member AniList ids
+canonical-first, source), looks them up **by AniList id** — never by title — and returns rows;
+`generateFacts.js` appends them after AniList's, so first-write-wins means an outside value
+only ever fills a gap and can never create a subject. What a response *means* lives in
+`shared/utils/outsideFacts.js`, with tests; the adapters are just network and cache.
+
+- **`themes`** — openings and endings from **AnimeThemes** (`factSources/animethemes.js`), the
+  API AniTune already plays from, matched through the AniList id it stores as a "resource".
+  `{ type: 'OP'|'ED', song, artists? }`, at most 4 openings and 2 endings per franchise,
+  canonical season first; `artists` is absent when AnimeThemes has no performer linked (397
+  of 2022 themes), which rules a song out of the who-sings-it clues but not the which-show
+  one. An unnumbered extra (One Piece's "One Piece Theme") sorts after the numbered ones.
+- **`serializedIn` and `originalPublisher`** — the source work's magazine, and that magazine's
+  publisher (Weekly Shōnen Jump → Shueisha), or a light novel's imprint (Dengeki Bunko), from
+  **Wikidata** (CC0; Jikan was turned down as an unlicensed MAL scrape). Two measured traps,
+  both in the query: a season item ("Attack on Titan, season 1") carries the AniList id but
+  not "based on", so the query climbs part-of-the-series first; and a manga's own publisher
+  list is every licensee in every country, so the magazine's publisher is read instead (light
+  novels have no magazine, so their publishers are limited to Japanese ones, which yields the
+  imprint). A work only attaches when its type matches AniList's `source`, and a value the
+  source disagrees with itself about (Fullmetal Alchemist: Enix *and* Square Enix) is dropped.
+- **`originalYear`** — when the source began, from the **source work's own AniList entry** (the
+  anime's SOURCE relation, already in the cached response; one batched query). Wikidata has
+  the date too and was measured worse: it disagreed by over a year on 14 of 434 shows and
+  was the wrong one in every case checked (Mob Psycho 100's manga "began" in 2018, after its
+  own anime). It survives only as a fallback, and AniQuiz additionally refuses a source year
+  later than the premiere.
+
+Measured on the v5 run: themes on 96% of shows, a magazine for 75% of manga, a publisher or
+imprint for 71% of manga and light novels, a source year for all of them. The generator prints
+those four every run, because these sources are not ours and a quiet drop looks like success.
+The new caches are per AniList id (`animethemes-v1-<id>.json`, `wikidata-origin-v1-<id>.json`,
+`anilist-source-<id>.json`), and a full pass over cold ones is a few minutes, not hours. Both services filter on **User-Agent**, which Node's `fetch` does
+not send — the adapters set one, which is why they do not share AniTune's browser client.
 
 It shipped empty at first, and the reason is worth knowing before the next 403. AniList
 answers any request carrying **no `Referer`** with a 403 claiming the API is "temporarily
@@ -752,6 +789,10 @@ is how a rate-limit fix ends up applied to two callers out of three.
   documented in the file: the API bot-filters on `User-Agent` (fine in a browser, fatal for
   Node scripts), and the audio CDN omits CORS headers on the actual GET, so `<audio src>`
   playback and Range seeking work but `fetch`/`decodeAudioData` never will.
+  `factSources/animethemes.js` is the generator's own Node copy (it must send a UA).
+- Wikidata (`query.wikidata.org/sparql`) — generator only, never the app. CC0. Requires an
+  identifying `User-Agent`, kills queries past 60s (hence 40 ids a batch: the season → series
+  property path is the expensive part), and is POSTed to because the query outgrows a URL.
 
 With no `.env.local`, `firebaseEnabled` is false, `ensureInitialized()` is never called, and
 local play touches no **third-party** network at all. Keep that property intact. The one
@@ -883,7 +924,7 @@ lockfile:
 | `seedProfiles.js` | ~22K lines / ~950 KB | generated console seed script |
 | `.anilist-cache/` | ~130 files / ~1.7 MB | raw AniList API responses (gitignored) |
 | `.facts-cache/` | grows with the catalog | same, for `generateFacts.js` (gitignored) |
-| `public/facts/pack-v4.json` | ~56K lines / ~1.3 MB | generated fact pack |
+| `public/facts/pack-v5.json` | ~72K lines / ~1.7 MB | generated fact pack |
 | `package-lock.json` | ~13K lines / ~460 KB | npm lockfile |
 
 None of them carries architectural information. `Grep` them for a specific key when you

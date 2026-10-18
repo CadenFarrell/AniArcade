@@ -1,15 +1,16 @@
 #!/usr/bin/env node
-// The one fact source implemented today.
+// The primary fact source: it decides what the subjects ARE (the franchise
+// grouping, the keys, the identity block) and supplies every credit. The two
+// outside sources beside it (animethemes.js, wikidata.js) only add fields to
+// the groups this file returns — see their headers.
 //
-// The Wikidata-vs-Jikan choice is still deferred, and now for a measured
-// reason. Once AniQuiz gave the pack real clues to aim at, the worst gaps
-// (composer and series composition, each missing on about one show in five)
-// turned out to be THIS adapter reading only the first page of staff, not
-// AniList lacking the credit — see STAFF_QUERY. Wikidata, measured against the
-// same 441 shows, had a composer for under half of them. So the outside source
-// waits until the gaps left after paging are known. A second source is a second
-// file in this directory exporting the same `collect`, and nothing in
-// generateFacts.js changes.
+// Wikidata was first measured as a filler for THESE credits and lost: once
+// AniQuiz gave the pack real clues to aim at, the worst gaps (composer and
+// series composition, each missing on about one show in five) turned out to be
+// this adapter reading only the first page of staff, not AniList lacking the
+// credit — see STAFF_QUERY — and Wikidata had a composer for under half of the
+// shows then missing one. It came in later for what AniList has no field for
+// at all: the source work's magazine and publisher.
 //
 // Why AniList is the first source rather than an odd one out: the import
 // deliberately shipped only a "cheap tier" of per-show fields, because every
@@ -278,6 +279,72 @@ async function fetchMedia(anilistIds, { cache, log }) {
   return out;
 }
 
+// The source work's own AniList entry, for its start year (pack-v5's
+// `originalYear`). Every anime's SOURCE relation is already in its cached
+// MEDIA_QUERY response, so this is one batched lookup of the works themselves,
+// fifty to a request.
+//
+// AniList and not Wikidata, which also has the date, because Wikidata's was
+// measured wrong in ways no check can catch: Mob Psycho 100's manga "started" in
+// 2018, six years late and two after its own anime. Wikidata's year is kept only
+// as a fallback (first-write-wins puts this one first).
+const SOURCE_QUERY = `
+query ($ids: [Int]) {
+  Page(perPage: 50) {
+    media(id_in: $ids, type: MANGA) { id format startDate { year } }
+  }
+}`;
+const SOURCE_CACHE = (id) => `anilist-source-${id}.json`;
+// Which AniList formats count as the source AniList names. Light novels are
+// type MANGA, format NOVEL, on AniList.
+const SOURCE_FORMATS = { MANGA: ['MANGA', 'ONE_SHOT'], LIGHT_NOVEL: ['NOVEL'] };
+
+async function sourceYearRows(groups, byId, { cache, log }) {
+  // Each franchise's source work: the first member, canonical first, with a
+  // SOURCE relation to a manga-type entry.
+  const workFor = new Map();
+  for (const g of groups) {
+    if (!SOURCE_FORMATS[g.source]) continue;
+    for (const id of g.memberIds) {
+      const edge = byId.get(id)?.relations?.edges?.find((e) => e.relationType === 'SOURCE' && e.node?.type === 'MANGA');
+      if (edge) { workFor.set(g, edge.node.id); break; }
+    }
+  }
+
+  const works = new Map();
+  const missing = [];
+  for (const id of new Set(workFor.values())) {
+    const hit = cache.read(SOURCE_CACHE(id));
+    if (hit) works.set(id, hit);
+    else missing.push(id);
+  }
+  for (let i = 0; i < missing.length; i += 50) {
+    const batch = missing.slice(i, i + 50);
+    try {
+      const data = await anilistRequest(SOURCE_QUERY, { ids: batch });
+      const found = new Map((data?.Page?.media ?? []).map((m) => [m.id, m]));
+      for (const id of batch) {
+        // A miss is cached as {} so a deleted entry is not re-asked every run.
+        const work = found.get(id) ?? {};
+        cache.write(SOURCE_CACHE(id), work);
+        works.set(id, work);
+      }
+    } catch (err) {
+      log(`  source works batch at ${i} SKIPPED: ${err.message}`);
+    }
+  }
+  log(`  source works: ${workFor.size} linked, ${missing.length} fetched`);
+
+  const rows = [];
+  for (const [g, id] of workFor) {
+    const work = works.get(id);
+    if (!SOURCE_FORMATS[g.source].includes(work?.format)) continue;
+    const year = work?.startDate?.year;
+    if (Number.isInteger(year)) rows.push({ kind: 'show', key: g.key, field: 'originalYear', value: year });
+  }
+  return rows;
+}
+
 // Sortable number for an AniList FuzzyDate; missing parts sort last.
 const airDateKey = (d) => (d?.year ?? 9999) * 10000 + (d?.month ?? 99) * 100 + (d?.day ?? 99);
 
@@ -311,7 +378,11 @@ const airDateKey = (d) => (d?.year ?? 9999) * 10000 + (d?.month ?? 99) * 100 + (
  */
 export async function collect(anilistIds, { cache, log, ranks = new Map() }) {
   const rows = [];
-  const meta = { shows: {}, characters: {}, aliases: {} };
+  // `groups` is for the outside sources (factSources/animethemes.js,
+  // wikidata.js): each franchise's pack key and its members' AniList ids in
+  // emit order, so a source looked up by AniList id lands on the same key and
+  // fills from the canonical season first.
+  const meta = { shows: {}, characters: {}, aliases: {}, groups: [] };
 
   const media = await fetchMedia(anilistIds, { cache, log });
   const byId = new Map(media.map((m) => [m.id, m]));
@@ -344,6 +415,9 @@ export async function collect(anilistIds, { cache, log, ranks = new Map() }) {
     // fold — see facts.js on why the two must mean the same thing.
     const stats = summarizeGroupStats(group);
     const canonical = byId.get(group.key);
+    // `source` is the canonical season's, the same value first-write-wins puts
+    // in the pack's `source` field — Wikidata only attaches a work of that kind.
+    meta.groups.push({ key, memberIds: ordered.map((m) => m.id), source: canonical?.source ?? null });
     const add = (field, value) => { if (value != null) rows.push({ kind: 'show', key, field, value }); };
     add('popularity', stats.popularity);
     add('averageScore', stats.averageScore);
@@ -365,6 +439,8 @@ export async function collect(anilistIds, { cache, log, ranks = new Map() }) {
     credited.set(key, have);
     log(`  [${done}/${groups.length}] ${group.title} (${group.members.length} media) → ${rows.length - before} rows`);
   }
+
+  rows.push(...await sourceYearRows(meta.groups, byId, { cache, log }));
 
   // appearsIn / supportingIn are assembled across shows, so they can only be
   // emitted once every subject has been seen. A show a character is main in

@@ -41,6 +41,16 @@ function makePack({ shows = 20 } = {}) {
       episodes: 12 + (i % 3),
       genres: ['Action'],
       popularityRank: i + 1,
+      // pack-v5's outside fields. Every manga gets its own magazine and every
+      // source its own publisher, so each domain has honest distractors.
+      themes: [
+        { type: 'OP', song: `Opening ${i}`, artists: [`Singer ${i}`] },
+        { type: 'ED', song: `Ending ${i}`, artists: [`Singer ${(i + 1) % shows}`] },
+      ],
+      ...(SOURCES[i % SOURCES.length] === 'MANGA' ? { serializedIn: `Magazine ${i}` } : {}),
+      ...(['MANGA', 'LIGHT_NOVEL'].includes(SOURCES[i % SOURCES.length])
+        ? { originalPublisher: `Publisher ${i}`, originalYear: 1990 + i }
+        : {}),
     };
     for (let c = 0; c < 3; c++) {
       pack.characters[`hero ${i} ${c}`] = {
@@ -257,6 +267,107 @@ describe('normalizeClue', () => {
   it('keeps a typed clue optionless', () => {
     expect(normalizeClue({ prompt: 'x', accept: ['a'] }).options).toBeNull();
     expect(normalizeClue(null)).toBeNull();
+  });
+});
+
+describe('theme songs', () => {
+  const clueFor = (pack, field, subject) => {
+    const ix = indexPack(pack);
+    const c = buildContext(ix, [subject]);
+    return TOPICS.flatMap((t) => candidatesFor(c, t)).find((x) => x.field === field && x.subject === subject);
+  };
+
+  it('names the show from its first opening, and accepts every show that used the same song', () => {
+    const raw = makePack();
+    raw.shows['show 0'].themes = [
+      { type: 'ED', song: 'Ending 0', artists: ['Singer 0'] },
+      { type: 'OP', song: 'Gurenge', artists: ['LiSA'] },
+    ];
+    raw.shows['same song'] = { title: 'Same Song', format: 'TV', themes: [{ type: 'OP', song: 'gurenge', artists: ['LiSA'] }] };
+    raw.shows['unknown singer'] = { title: 'Unknown Singer', format: 'TV', themes: [{ type: 'OP', song: 'Gurenge' }] };
+    raw.shows['other gurenge'] = { title: 'Other Gurenge', format: 'TV', themes: [{ type: 'OP', song: 'Gurenge', artists: ['Somebody Else'] }] };
+    raw.shows['as an ending'] = { title: 'As An Ending', format: 'TV', themes: [{ type: 'ED', song: 'Gurenge', artists: ['LiSA'] }] };
+    const clue = clueFor(raw, 'themeShow', 'show 0');
+    expect(clue.prompt).toBe('“Gurenge” by LiSA is an opening theme of which show?');
+    expect(isCorrect(clue, 'Show 0')).toBe(true);
+    expect(isCorrect(clue, 'Same Song')).toBe(true);
+    // No performer on record: possibly the same song, so not ruled out.
+    expect(isCorrect(clue, 'Unknown Singer')).toBe(true);
+    // A different song with the same title, and the same song as an ending.
+    expect(isCorrect(clue, 'Other Gurenge')).toBe(false);
+    expect(isCorrect(clue, 'As An Ending')).toBe(false);
+  });
+
+  it('accepts any performer of a song, and the full credit, but asks about a solo one when it can', () => {
+    const raw = makePack();
+    raw.shows['show 0'].themes = [
+      { type: 'OP', song: 'Duet', artists: ['FictionJunction', 'LiSA'] },
+      { type: 'ED', song: 'Solo', artists: ['Aimer'] },
+    ];
+    expect(clueFor(raw, 'themeArtist', 'show 0').answer).toBe('Aimer');
+
+    raw.shows['show 0'].themes = [{ type: 'OP', song: 'Duet', artists: ['FictionJunction', 'LiSA'] }];
+    const duet = clueFor(raw, 'themeArtist', 'show 0');
+    expect(duet.answer).toBe('FictionJunction & LiSA');
+    expect(isCorrect(duet, 'LiSA')).toBe(true);
+    expect(isCorrect(duet, 'fictionjunction')).toBe(true);
+    expect(isCorrect(duet, 'FictionJunction & LiSA')).toBe(true);
+    expect(isCorrect(duet, 'Aimer')).toBe(false);
+  });
+
+  it('asks nothing about who sings a song with no performer on record', () => {
+    const raw = makePack();
+    raw.shows['show 0'].themes = [{ type: 'OP', song: 'R★O★C★K★S' }];
+    expect(clueFor(raw, 'themeArtist', 'show 0')).toBeUndefined();
+    expect(clueFor(raw, 'artistReverse', 'show 0')).toBeUndefined();
+    expect(clueFor(raw, 'themeShow', 'show 0').prompt).toBe('“R★O★C★K★S” is an opening theme of which show?');
+  });
+
+  it('accepts every show a performer sang the same kind of theme for', () => {
+    const raw = makePack();
+    raw.shows['also lisa'] = { title: 'Also LiSA', format: 'TV', themes: [{ type: 'OP', song: 'crossing field', artists: ['LiSA'] }] };
+    raw.shows['lisa ending'] = { title: 'LiSA Ending', format: 'TV', themes: [{ type: 'ED', song: 'x', artists: ['LiSA'] }] };
+    raw.shows['show 0'].themes = [{ type: 'OP', song: 'Gurenge', artists: ['LiSA'] }];
+    const clue = clueFor(raw, 'artistReverse', 'show 0');
+    expect(clue.prompt).toBe('LiSA performed an opening theme for this TV series. Name it.');
+    expect(clue.alsoAccepted).toEqual(['Also LiSA']);
+    expect(isCorrect(clue, 'LiSA Ending')).toBe(false);
+  });
+});
+
+describe('source works', () => {
+  const clueFor = (pack, field, subject) => {
+    const c = buildContext(indexPack(pack), [subject]);
+    return TOPICS.flatMap((t) => candidatesFor(c, t)).find((x) => x.field === field && x.subject === subject);
+  };
+
+  it("asks a manga's magazine, and a light novel's imprint — never one in the other's list", () => {
+    // show 0 is a manga and show 1 a light novel (SOURCES order).
+    const manga = clueFor(makePack(), 'originalPublisher', 'show 0');
+    const novel = clueFor(makePack(), 'originalPublisher', 'show 1');
+    expect(manga.domain).toBe('publisher');
+    expect(novel.domain).toBe('imprint');
+    expect(novel.prompt).toMatch(/imprint/);
+    expect(domainValues(index, 'publisher')).not.toContain('Publisher 1');
+    expect(domainValues(index, 'imprint')).toEqual(expect.arrayContaining(['Publisher 1', 'Publisher 5']));
+    expect(clueFor(makePack(), 'magazine', 'show 0').answer).toBe('Magazine 0');
+    expect(clueFor(makePack(), 'magazine', 'show 1')).toBeUndefined();
+  });
+
+  it('distrusts a source year later than the premiere', () => {
+    const raw = makePack();
+    raw.shows['show 0'].originalYear = 2030; // show 0 premiered in 2000
+    expect(clueFor(raw, 'originalYear', 'show 0')).toBeUndefined();
+    expect(clueFor(raw, 'magazineReverse', 'show 0')).toBeUndefined();
+    expect(clueFor(makePack(), 'originalYear', 'show 0').answer).toBe('1990');
+  });
+
+  it('accepts every manga that began in the same magazine the same year', () => {
+    const raw = makePack();
+    raw.shows['jump twin'] = { title: 'Jump Twin', source: 'MANGA', serializedIn: 'Magazine 0', originalYear: 1990, format: 'TV' };
+    const clue = clueFor(raw, 'magazineReverse', 'show 0');
+    expect(clue.prompt).toBe('This TV series adapts a manga first serialized in Magazine 0 in 1990. Name it.');
+    expect(clue.alsoAccepted).toEqual(['Jump Twin']);
   });
 });
 

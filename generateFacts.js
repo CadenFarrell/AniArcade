@@ -21,6 +21,8 @@ import { fileURLToPath } from 'url';
 import { validateFact, META_FIELDS, SECTION_FOR } from './src/shared/utils/facts.js';
 import { ANIME_CATALOG } from './animeCatalog.js';
 import { collect, popularIds } from './factSources/anilist.js';
+import { collectThemes } from './factSources/animethemes.js';
+import { collectOrigins } from './factSources/wikidata.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -46,7 +48,12 @@ const REJECTED = path.join(REVIEW_DIR, 'rejected.json');
 // first-aired year, show favourites) so an old profile can be repaired from
 // here, adds the best-known supporting characters under `supportingIn`, and
 // roughly doubles the catalog.
-const PACK_VERSION = 4;
+//
+// v5 is the first pack with facts from outside AniList: theme songs from
+// AnimeThemes (`themes`) and the source work's magazine, publisher and start
+// year from Wikidata (`serializedIn`, `originalPublisher`, `originalYear`).
+// Nothing AniList supplied changed.
+const PACK_VERSION = 5;
 const PACK_FILE = `pack-v${PACK_VERSION}.json`;
 // Top 1000 by popularity, which after franchise grouping is a few hundred fewer
 // subjects. 500 left most of what a player actually imports outside the pack,
@@ -139,7 +146,7 @@ function applyOverrides(pack, overrides) {
 async function main() {
   const limit = argLimit();
   const explicitIds = argIds();
-  console.log('🎌  AniArcade Fact Pack Generator (source: AniList)\n');
+  console.log('🎌  AniArcade Fact Pack Generator (sources: AniList, AnimeThemes, Wikidata)\n');
 
   let subjects;
   // Popularity rank, by AniList id. Only the discovery path knows it; an --ids
@@ -163,6 +170,16 @@ async function main() {
 
   console.log('Fetching…');
   const { rows, meta } = await collect(subjects, { cache, log, ranks });
+
+  // The outside sources come AFTER AniList's rows on purpose: first-write-wins
+  // below means that where they overlap (a Wikidata author against AniList's
+  // Original Creator credit) AniList's value is the one that ships, and the
+  // outside one only fills a gap. Each is handed collect()'s franchise groups,
+  // so it adds to the subjects AniList defined and can never create one.
+  console.log('\nTheme songs (AnimeThemes)…');
+  rows.push(...await collectThemes(meta.groups, { cache, log }));
+  console.log('Source works (Wikidata)…');
+  rows.push(...await collectOrigins(meta.groups, { cache, log }));
 
   // Validation is not a formality — it is the only thing standing between a
   // source adapter's bad day and a clue read aloud to a table. Rejects are
@@ -237,6 +254,17 @@ async function main() {
   fs.writeFileSync(REJECTED, `${JSON.stringify(rejected, null, 2)}\n`, 'utf8');
 
   console.log(`\n✅  ${showCount} shows · ${charCount} characters · ${manifest.facts} facts`);
+  // The outside fields' coverage, printed every run: these come from sources
+  // this repo does not control, and a field that quietly drops to a tenth of
+  // its usual coverage looks exactly like a working run otherwise.
+  const shows = Object.values(pack.shows);
+  const pct = (n, of) => `${n}/${of} (${of ? Math.round((100 * n) / of) : 0}%)`;
+  const adapted = shows.filter((s) => s.source === 'MANGA' || s.source === 'LIGHT_NOVEL');
+  const manga = shows.filter((s) => s.source === 'MANGA');
+  console.log(`   themes ${pct(shows.filter((s) => s.themes).length, showCount)}`
+    + ` · magazine ${pct(manga.filter((s) => s.serializedIn).length, manga.length)} of manga`
+    + ` · publisher ${pct(adapted.filter((s) => s.originalPublisher).length, adapted.length)}`
+    + ` · source year ${pct(adapted.filter((s) => s.originalYear).length, adapted.length)} of manga + light novels`);
   if (applied || suppressed) console.log(`   overrides: ${applied} set, ${suppressed} suppressed`);
   // Reported rather than merely dropped: a sequel's rows losing to the season
   // already collected is the intended outcome, but a number that suddenly

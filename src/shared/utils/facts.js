@@ -57,6 +57,17 @@ const year = () => (v) => isInt(v) && v >= YEAR_MIN && v <= YEAR_MAX;
 const oneOf = (allowed) => (v) => typeof v === 'string' && allowed.includes(v);
 const percent = () => (v) => isInt(v) && v >= 1 && v <= 100;
 
+export const THEME_TYPES = ['OP', 'ED'];
+// A theme song is the one structured value in the pack: { type, song, artists? }.
+// `artists` is optional because AnimeThemes has songs with no performer linked
+// yet — such a song can still say which show it belongs to, it just cannot be
+// asked about by who sings it.
+const isTheme = (t) => Boolean(t) && typeof t === 'object'
+  && THEME_TYPES.includes(t.type)
+  && isFilledString(t.song)
+  && (t.artists === undefined || strList()(t.artists));
+const themeList = () => (v) => Array.isArray(v) && v.length > 0 && v.every(isTheme);
+
 /**
  * The schema, and it is the schema the way DEFAULT_PREFS is one — not a
  * fallback. normalizePack drops any field that is not in here, so a source
@@ -101,6 +112,22 @@ export const FACT_FIELDS = {
   // Not `favourites`: FACT_FIELDS is keyed by field name across both subjects,
   // and that name already belongs to characters.
   showFavourites: { subject: 'show', label: 'AniList favourites', validate: nonNegInt() },
+
+  // ── shows, from outside AniList (pack-v5) ──────────────────────────────
+  // Openings and endings from AnimeThemes, across the franchise's seasons —
+  // see outsideFacts.js for which ones and how many.
+  themes: { subject: 'show', label: 'Theme songs', validate: themeList() },
+  // The source work's facts, only ever for a work of the same KIND AniList calls
+  // the source (a manga for MANGA, a light novel for LIGHT_NOVEL), so a clue
+  // never says "the manga" about a novel. `serializedIn` is a manga's magazine
+  // and `originalPublisher` that magazine's publisher, or a light novel's
+  // imprint (Dengeki Bunko) — both from Wikidata, since AniList has neither.
+  // `originalYear` is when the source began, from the source work's own AniList
+  // entry (Wikidata's year is only a fallback; see factSources/wikidata.js). It
+  // is often years before the anime, and a different question from `startYear`.
+  serializedIn: { subject: 'show', label: 'Serialized in', validate: str() },
+  originalPublisher: { subject: 'show', label: 'Original publisher', validate: str() },
+  originalYear: { subject: 'show', label: 'Source began', validate: year() },
 
   // ── characters ─────────────────────────────────────────────────────────
   voiceActorJp: { subject: 'character', label: 'Japanese voice actor', validate: str() },

@@ -1,0 +1,101 @@
+import { describe, it, expect } from 'vitest';
+import {
+  MAX_ENDINGS, MAX_OPENINGS, originFromWikidata, themesFromAnimeThemes,
+} from './outsideFacts';
+import { validateFact } from './facts';
+
+// The shape AnimeThemes returns with include=animethemes.song.artists.
+const theme = (type, sequence, title, ...artists) => ({
+  type, sequence, song: title == null ? null : { title, artists: artists.map((name) => ({ name })) },
+});
+
+describe('themesFromAnimeThemes', () => {
+  it('lists openings then endings in sequence order, canonical season first', () => {
+    const s1 = { animethemes: [theme('ED', 1, 'Alumina', 'Nightmare'), theme('OP', 2, "What's up people?", 'Maximum the Hormone'), theme('OP', 1, 'THE WORLD', 'Nightmare')] };
+    const s2 = { animethemes: [theme('OP', 1, 'Second Season Song', 'Someone')] };
+    expect(themesFromAnimeThemes([[s1], [s2]])).toEqual([
+      { type: 'OP', song: 'THE WORLD', artists: ['Nightmare'] },
+      { type: 'OP', song: "What's up people?", artists: ['Maximum the Hormone'] },
+      { type: 'ED', song: 'Alumina', artists: ['Nightmare'] },
+      { type: 'OP', song: 'Second Season Song', artists: ['Someone'] },
+    ]);
+  });
+
+  it('caps each kind per franchise, so a long-runner does not fill the pack', () => {
+    const many = { animethemes: Array.from({ length: 30 }, (_, i) => theme(i % 2 ? 'ED' : 'OP', i, `Song ${i}`, 'X')) };
+    const out = themesFromAnimeThemes([[many]]);
+    expect(out.filter((t) => t.type === 'OP')).toHaveLength(MAX_OPENINGS);
+    expect(out.filter((t) => t.type === 'ED')).toHaveLength(MAX_ENDINGS);
+  });
+
+  it('puts an unnumbered extra after the numbered themes', () => {
+    const s = { animethemes: [theme('OP', 1, 'We Are!', 'Hiroshi Kitadani'), theme('OP', null, 'One Piece Theme'), theme('OP', 2, 'Believe', 'Folder5')] };
+    expect(themesFromAnimeThemes([[s]]).map((t) => t.song)).toEqual(['We Are!', 'Believe', 'One Piece Theme']);
+  });
+
+  it('treats a lone null sequence as first, keeps a reused song once, and skips insert songs', () => {
+    const s1 = { animethemes: [theme('OP', null, 'Gurenge', 'LiSA'), theme('IN', 1, 'Insert', 'Y')] };
+    const s2 = { animethemes: [theme('OP', 1, 'gurenge ', 'LiSA')] };
+    expect(themesFromAnimeThemes([[s1], [s2]])).toEqual([{ type: 'OP', song: 'Gurenge', artists: ['LiSA'] }]);
+  });
+
+  it('keeps a song with no linked performer, without an artists list', () => {
+    const out = themesFromAnimeThemes([[{ animethemes: [theme('OP', 1, 'R★O★C★K★S')] }]]);
+    expect(out).toEqual([{ type: 'OP', song: 'R★O★C★K★S' }]);
+    expect(validateFact({ kind: 'show', key: 'naruto', field: 'themes', value: out }).ok).toBe(true);
+  });
+
+  it('returns null when a franchise has nothing usable', () => {
+    expect(themesFromAnimeThemes([[], [{ animethemes: [theme('OP', 1, null)] }]])).toBeNull();
+    expect(themesFromAnimeThemes(undefined)).toBeNull();
+  });
+});
+
+describe('the themes field', () => {
+  const ok = (value) => validateFact({ kind: 'show', key: 'k', field: 'themes', value }).ok;
+  it('rejects malformed entries', () => {
+    expect(ok([{ type: 'OP', song: 'A', artists: ['B'] }])).toBe(true);
+    expect(ok([{ type: 'IN', song: 'A' }])).toBe(false);
+    expect(ok([{ type: 'OP', song: '' }])).toBe(false);
+    expect(ok([{ type: 'OP', song: 'A', artists: [] }])).toBe(false);
+    expect(ok([])).toBe(false);
+  });
+});
+
+// One row per work, the shape factSources/wikidata.js builds from its query.
+const work = (over) => ({
+  types: ['manga series'], magazines: [], magazinePublishers: [], publishers: [], authors: [], start: '', ...over,
+});
+
+describe('originFromWikidata', () => {
+  it("reads a manga's magazine, the magazine's publisher, and the year it began", () => {
+    const rows = [work({
+      magazines: ['Weekly Shōnen Jump', 'Weekly Shonen Jump'], magazinePublishers: ['Shueisha'],
+      publishers: ['Jump Comics'], authors: ['Koyoharu Gotōge'], start: '2016-02-15T00:00:00Z',
+    })];
+    expect(originFromWikidata(rows, 'MANGA')).toEqual({
+      serializedIn: 'Weekly Shōnen Jump', originalPublisher: 'Shueisha', originalYear: 2016, author: 'Koyoharu Gotōge',
+    });
+  });
+
+  it("reads a light novel's Japanese imprint as its publisher", () => {
+    const rows = [work({ types: ['light novel series'], publishers: ['Dengeki Bunko'], start: '2009-04-10T00:00:00Z' })];
+    expect(originFromWikidata(rows, 'LIGHT_NOVEL')).toEqual({ originalPublisher: 'Dengeki Bunko', originalYear: 2009 });
+  });
+
+  it('never attaches a work of a different kind than AniList names', () => {
+    const novel = [work({ types: ['light novel series'], publishers: ['Dengeki Bunko'], start: '2009-01-01' })];
+    expect(originFromWikidata(novel, 'MANGA')).toEqual({});
+    expect(originFromWikidata([work({ magazines: ['Jump'] })], 'ORIGINAL')).toEqual({});
+  });
+
+  it('drops a value the source disagrees with itself about', () => {
+    const rows = [work({ magazines: ['Shōnen Gangan'], magazinePublishers: ['Square Enix', 'Enix'], authors: ['A', 'B'] })];
+    expect(originFromWikidata(rows, 'MANGA')).toEqual({ serializedIn: 'Shōnen Gangan' });
+  });
+
+  it('gives no publisher to a manga with no settled magazine', () => {
+    const rows = [work({ magazines: ['Jump', 'Magazine'], magazinePublishers: ['Shueisha'] })];
+    expect(originFromWikidata(rows, 'MANGA')).toEqual({});
+  });
+});
