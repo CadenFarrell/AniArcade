@@ -702,7 +702,11 @@ only ever fills a gap and can never create a subject. What a response *means* li
   `{ type: 'OP'|'ED', song, artists? }`, at most 4 openings and 2 endings per franchise,
   canonical season first; `artists` is absent when AnimeThemes has no performer linked (397
   of 2022 themes), which rules a song out of the who-sings-it clues but not the which-show
-  one. An unnumbered extra (One Piece's "One Piece Theme") sorts after the numbered ones.
+  one. AnimeThemes files alternate versions as a theme `group`, numbered from 1 again: a
+  **dub** ("English Version - 4Kids", "Korean Version") is left out — read as the show's own,
+  it put the 4Kids "One Piece Theme" among One Piece's openings — while a Japanese broadcast
+  variant ("BD Version", "Repeat Show", "Yorinuki Gintama-san") is kept but ranked after the
+  main sequence. Found by checking every theme against MyAnimeList's own lists.
 - **`serializedIn` and `originalPublisher`** — the source work's magazine, and that magazine's
   publisher (Weekly Shōnen Jump → Shueisha), or a light novel's imprint (Dengeki Bunko), from
   **Wikidata** (CC0; Jikan was turned down as an unlicensed MAL scrape). Two measured traps,

@@ -38,18 +38,35 @@ const fold = (s) => String(s ?? '')
   .trim();
 
 // AnimeThemes numbers themes with `sequence`, and leaves it null when a show has
-// only one of that kind (Demon Slayer's lone "OP1") — but also on the odd extra
-// entry beside numbered ones (One Piece lists an unnumbered "One Piece Theme"
-// among its openings). Null sorts LAST: a lone theme is still first, and an
-// extra never displaces OP1–OP4.
+// only one of that kind (Demon Slayer's lone "OP1"). Null sorts LAST, so a lone
+// theme is still first and an unnumbered stray beside numbered ones can never
+// displace OP1–OP4.
 const seqOf = (t) => (Number.isInteger(t?.sequence) ? t.sequence : Infinity);
+
+// AnimeThemes files alternate versions of a show's themes as a theme `group`,
+// numbered from 1 again, and the groups are two different things (measured over
+// every group in the catalog):
+//
+//  - a DUB — "English Version", "English Version - 4Kids", "Korean Version".
+//    Not the show's themes in any sense a table means: read as ordinary ones,
+//    they put the 4Kids "One Piece Theme" among One Piece's openings and
+//    "Gotta Catch 'em All" among Pokémon's. Dropped.
+//  - a Japanese broadcast variant — "BD Version", "TV Version", "Repeat Show",
+//    "NoitaminA Broadcast", "Yorinuki Gintama-san". Real songs of that show
+//    (Soul Eater's rerun opening, Gintama's compilation-broadcast ones), so they
+//    are kept — but ranked after the group-less themes, so they only fill the
+//    cap when the main sequence runs short.
+const DUB_GROUP = /\b(english|korean|chinese|mandarin|cantonese|spanish|french|german|italian|portuguese|dub)\b/i;
+const groupRank = (t) => (t?.group ? 1 : 0);
+const isDub = (t) => DUB_GROUP.test(t?.group ?? '');
 
 /**
  * A franchise's theme songs, from the AnimeThemes anime records of its seasons.
  *
  * `perMember` is one array of AnimeThemes `anime` records per franchise member,
  * in collect()'s order (canonical season first, then by air date) — each record
- * as returned with `include=animethemes.song.artists`. Returns the pack's
+ * as returned with `include=animethemes.group,animethemes.song.artists`, with a
+ * theme's `group` reduced to its name (null for the show's own). Returns the pack's
  * `themes` value, or null when nothing usable was found.
  *
  * Within a season, openings and endings each run in sequence order; across
@@ -63,9 +80,11 @@ export function themesFromAnimeThemes(perMember) {
   const seen = new Set();
   for (const records of perMember ?? []) {
     for (const anime of records ?? []) {
-      const themes = [...(anime?.animethemes ?? [])]
-        .filter((t) => THEME_TYPES.includes(t?.type))
-        .sort((a, b) => THEME_TYPES.indexOf(a.type) - THEME_TYPES.indexOf(b.type) || seqOf(a) - seqOf(b));
+      const themes = (anime?.animethemes ?? [])
+        .filter((t) => THEME_TYPES.includes(t?.type) && !isDub(t))
+        .sort((a, b) => THEME_TYPES.indexOf(a.type) - THEME_TYPES.indexOf(b.type)
+          || groupRank(a) - groupRank(b)
+          || seqOf(a) - seqOf(b));
       for (const t of themes) {
         if (count[t.type] >= CAP[t.type]) continue;
         const song = filled(t.song?.title);

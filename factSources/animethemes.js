@@ -25,8 +25,10 @@ const MIN_INTERVAL_MS = 700;
 
 // One file per AniList id, holding the AnimeThemes records attached to it
 // (usually one, sometimes none). Per id rather than per batch so a re-run with a
-// different catalog reuses everything it already has.
-const CACHE = (id) => `animethemes-v1-${id}.json`;
+// different catalog reuses everything it already has. v2 added each theme's
+// `group`: without it a dub's themes ("English Version - 4Kids") read as the
+// show's own, which put the 4Kids "One Piece Theme" among One Piece's openings.
+const CACHE = (id) => `animethemes-v2-${id}.json`;
 
 let lastAt = 0;
 async function getJson(url, log) {
@@ -58,6 +60,7 @@ const slim = (anime) => ({
   animethemes: (anime?.animethemes ?? []).map((t) => ({
     type: t?.type ?? null,
     sequence: t?.sequence ?? null,
+    group: t?.group?.name ?? null,
     song: t?.song ? { title: t.song.title ?? null, artists: (t.song.artists ?? []).map((a) => ({ name: a?.name ?? null })) } : null,
   })),
 });
@@ -68,7 +71,7 @@ async function fetchBatch(ids, log) {
   url.searchParams.set('filter[has]', 'resources');
   url.searchParams.set('filter[site]', 'AniList');
   url.searchParams.set('filter[external_id]', ids.join(','));
-  url.searchParams.set('include', 'resources,animethemes.song.artists');
+  url.searchParams.set('include', 'resources,animethemes.group,animethemes.song.artists');
   url.searchParams.set('page[size]', '100');
   let next = url.toString();
   while (next) {

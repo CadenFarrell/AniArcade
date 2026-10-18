@@ -28,9 +28,29 @@ describe('themesFromAnimeThemes', () => {
     expect(out.filter((t) => t.type === 'ED')).toHaveLength(MAX_ENDINGS);
   });
 
-  it('puts an unnumbered extra after the numbered themes', () => {
-    const s = { animethemes: [theme('OP', 1, 'We Are!', 'Hiroshi Kitadani'), theme('OP', null, 'One Piece Theme'), theme('OP', 2, 'Believe', 'Folder5')] };
-    expect(themesFromAnimeThemes([[s]]).map((t) => t.song)).toEqual(['We Are!', 'Believe', 'One Piece Theme']);
+  it("leaves out a dub's themes, which AnimeThemes numbers from 1 again", () => {
+    const s = { animethemes: [
+      theme('OP', 1, 'We Are!', 'Hiroshi Kitadani'),
+      { ...theme('OP', 1, 'One Piece Theme'), group: 'English Version - 4Kids' },
+      theme('OP', 2, 'Believe', 'Folder5'),
+    ] };
+    expect(themesFromAnimeThemes([[s]]).map((t) => t.song)).toEqual(['We Are!', 'Believe']);
+  });
+
+  it("keeps a Japanese broadcast variant's themes, after the main ones, but never a dub's", () => {
+    const s = { animethemes: [
+      { ...theme('OP', 1, 'Rerun Opening', 'X'), group: 'Repeat Show' },
+      { ...theme('OP', 1, 'Dub Opening'), group: 'English Version' },
+      { ...theme('OP', 1, 'Korean Opening'), group: 'Korean Version' },
+      theme('OP', 2, 'Second Opening', 'Y'),
+      theme('OP', 1, 'First Opening', 'Z'),
+    ] };
+    expect(themesFromAnimeThemes([[s]]).map((t) => t.song)).toEqual(['First Opening', 'Second Opening', 'Rerun Opening']);
+  });
+
+  it('puts an unnumbered stray after the numbered themes', () => {
+    const s = { animethemes: [theme('OP', 1, 'First', 'A'), theme('OP', null, 'Stray'), theme('OP', 2, 'Second', 'B')] };
+    expect(themesFromAnimeThemes([[s]]).map((t) => t.song)).toEqual(['First', 'Second', 'Stray']);
   });
 
   it('treats a lone null sequence as first, keeps a reused song once, and skips insert songs', () => {

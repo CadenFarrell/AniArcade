@@ -10920,17 +10920,17 @@
         },
         {
           "type": "ED",
-          "song": "FAKEit",
+          "song": "Senzaiteki na Ai",
           "artists": [
-            "SawanoHiroyuki[nZk]",
-            "Laco"
+            "13.3g"
           ]
         },
         {
           "type": "ED",
-          "song": "Senzaiteki na Ai",
+          "song": "FAKEit",
           "artists": [
-            "13.3g"
+            "SawanoHiroyuki[nZk]",
+            "Laco"
           ]
         }
       ],
@@ -12400,10 +12400,6 @@
         },
         {
           "type": "OP",
-          "song": "Bakuchi Dancer"
-        },
-        {
-          "type": "OP",
           "song": "Tooi Nioi",
           "artists": [
             "YO-KING"
@@ -12411,7 +12407,17 @@
         },
         {
           "type": "OP",
-          "song": "Kaze no Gotoku"
+          "song": "Giniro no Sora",
+          "artists": [
+            "redballoon"
+          ]
+        },
+        {
+          "type": "OP",
+          "song": "Kasanaru Kage",
+          "artists": [
+            "Hearts Grow"
+          ]
         },
         {
           "type": "ED",
@@ -12419,7 +12425,7 @@
         },
         {
           "type": "ED",
-          "song": "Bokutachi no Kisetsu"
+          "song": "MR.RAINDROP"
         }
       ]
     },
@@ -18868,11 +18874,11 @@
         },
         {
           "type": "OP",
-          "song": "Kimochi Signal"
+          "song": "Kimi Rhythm"
         },
         {
           "type": "OP",
-          "song": "Kimi Rhythm"
+          "song": "Kimochi Signal"
         },
         {
           "type": "ED",
@@ -24565,10 +24571,6 @@
         },
         {
           "type": "OP",
-          "song": "One Piece Theme"
-        },
-        {
-          "type": "OP",
           "song": "Believe",
           "artists": [
             "Folder5"
@@ -24577,6 +24579,10 @@
         {
           "type": "OP",
           "song": "Hikari E"
+        },
+        {
+          "type": "OP",
+          "song": "Bon Voyage!"
         },
         {
           "type": "ED",
@@ -26364,10 +26370,6 @@
         },
         {
           "type": "OP",
-          "song": "Pokémon Theme (Gotta Catch'em All)"
-        },
-        {
-          "type": "OP",
           "song": "Rival!",
           "artists": [
             "Rika Matsumoto"
@@ -26378,6 +26380,13 @@
           "song": "OK!",
           "artists": [
             "Rika Matsumoto"
+          ]
+        },
+        {
+          "type": "OP",
+          "song": "Ready Go!",
+          "artists": [
+            "Naomi Tamura"
           ]
         },
         {
@@ -26578,10 +26587,6 @@
         {
           "type": "ED",
           "song": "Mononoke Hime"
-        },
-        {
-          "type": "ED",
-          "song": "Princess Mononoke Theme Song (Mononoke Hime)"
         }
       ]
     },
@@ -28799,10 +28804,6 @@
           "song": "Moonlight Densetsu"
         },
         {
-          "type": "OP",
-          "song": "Sailor Moon Theme"
-        },
-        {
           "type": "ED",
           "song": "Heart Moving"
         },
@@ -30778,28 +30779,28 @@
       "themes": [
         {
           "type": "OP",
-          "song": "Kuzuri Nen",
-          "artists": [
-            "Zutto Mayonaka de Ii no ni."
-          ]
-        },
-        {
-          "type": "OP",
           "song": "Ichijiku Kemuri",
           "artists": [
             "Zutto Mayonaka de Ii no ni."
           ]
         },
         {
+          "type": "OP",
+          "song": "Kuzuri Nen",
+          "artists": [
+            "Zutto Mayonaka de Ii no ni."
+          ]
+        },
+        {
           "type": "ED",
-          "song": "NIGHT DANCER",
+          "song": "Fiction",
           "artists": [
             "imase"
           ]
         },
         {
           "type": "ED",
-          "song": "Fiction",
+          "song": "NIGHT DANCER",
           "artists": [
             "imase"
           ]
@@ -31230,14 +31231,14 @@
         },
         {
           "type": "OP",
-          "song": "Counter Identity"
-        },
-        {
-          "type": "OP",
           "song": "PAPERMOON",
           "artists": [
             "Tommy heavenly⁶"
           ]
+        },
+        {
+          "type": "OP",
+          "song": "Counter Identity"
         },
         {
           "type": "OP",
@@ -31249,7 +31250,7 @@
         },
         {
           "type": "ED",
-          "song": "Ao no Kaori"
+          "song": "Style"
         }
       ],
       "serializedIn": "Shōnen Gangan"
@@ -38686,13 +38687,6 @@
           ]
         },
         {
-          "type": "OP",
-          "song": "TOP",
-          "artists": [
-            "Stray Kids"
-          ]
-        },
-        {
           "type": "ED",
           "song": "SLUMP -Japanese ver.-",
           "artists": [
@@ -38700,15 +38694,15 @@
           ]
         },
         {
-          "type": "ED",
-          "song": "SLUMP",
+          "type": "OP",
+          "song": "RISE UP",
           "artists": [
-            "Stray Kids"
+            "NiziU"
           ]
         },
         {
-          "type": "OP",
-          "song": "RISE UP",
+          "type": "ED",
+          "song": "BELIEVE",
           "artists": [
             "NiziU"
           ]
