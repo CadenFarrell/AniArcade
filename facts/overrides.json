@@ -1,5 +1,45 @@
 {
   "_readme": "Hand-maintained corrections, applied AFTER generation so a regeneration can never clobber one. Shape: { shows|characters: { <subjectKey>: { <field>: value } } }. A null value SUPPRESSES a fact the source is wrong about. Subject keys are the folded form - franchiseTitleKey for shows, characterNameKey for characters.",
-  "shows": {},
+  "_why": "Each entry below came out of checking the pack's outside facts against MyAnimeList (2026-10-18). Corrections where the right answer is clear; suppressions where the series moved between web platforms and no single answer is right.",
+  "shows": {
+    "watamote: no matter how i look at it, it's you guys' fault i'm not popular!": {
+      "serializedIn": "Gangan Online",
+      "originalPublisher": "Square Enix"
+    },
+    "toilet-bound hanako-kun": {
+      "serializedIn": "Monthly GFantasy"
+    },
+    "mieruko-chan": {
+      "serializedIn": null
+    },
+    "uncle from another world": {
+      "serializedIn": null
+    },
+    "tomo-chan is a girl!": {
+      "serializedIn": null
+    },
+    "love tyrant": {
+      "themes": [
+        {
+          "type": "OP",
+          "song": "Koi? de Ai? de Boukun desu!",
+          "artists": [
+            "Wake Up, Girls!"
+          ]
+        },
+        {
+          "type": "ED",
+          "song": "'Suki' wo Oshiete",
+          "artists": [
+            "smileY Inc."
+          ]
+        },
+        {
+          "type": "ED",
+          "song": "'Suki' wo Oshiete Kudasai"
+        }
+      ]
+    }
+  },
   "characters": {}
 }

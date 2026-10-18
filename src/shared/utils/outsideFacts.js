@@ -37,11 +37,46 @@ const fold = (s) => String(s ?? '')
   .replace(/[^\p{L}\p{N}]+/gu, ' ')
   .trim();
 
-// AnimeThemes numbers themes with `sequence`, and leaves it null when a show has
-// only one of that kind (Demon Slayer's lone "OP1"). Null sorts LAST, so a lone
-// theme is still first and an unnumbered stray beside numbered ones can never
-// displace OP1–OP4.
-const seqOf = (t) => (Number.isInteger(t?.sequence) ? t.sequence : Infinity);
+// The song a title names, with a trailing version label taken off — "Fukashigi
+// no Karte movie ver.", "Refrain Boy -English ver.-", "Fluorite Eye's Song
+// -Piano Version-". Used only to tell whether two themes are the same song, so
+// a franchise keeps the first version it lists and never offers a song beside
+// its own remix. The label is matched on the word "ver"/"version", which no
+// real title word starts with ("Never" and "Silver" do not match \bver).
+// Two shapes: set off by a dash, slash, tilde or bracket ("-English ver.-",
+// "~… Super MAX ver.~", "-TEKINA remix-", "-4 Beat Version (Off-Vocal)-"), cut
+// at the FIRST such mark that a version word follows — a label can carry its
+// own hyphens and brackets, so the cut cannot be found from the end — or one
+// bare word before "ver." ("movie ver."). Remix, instrumental and off-vocal
+// count only in the set-off shape, where they only ever label a variant.
+const LABEL_MARKS = new Set(['-', '~', '/', '(', '（', '[', '～']);
+const VERSION_WORD = /\b(?:ver(?:sion|\.)?|remix|instrumental|off[- ]?vocal)(?![a-z])/i;
+const BARE_VERSION = /\s+\S+\s+ver(?:sion|\.)?\s*$/i;
+// Failing a version word, a SUBTITLE — a space, then a dash, tilde or bracket —
+// still marks the same song: Evangelion's "Fly Me to the Moon -B22 (A-Type)-" is
+// one of the per-episode arrangements, with no "ver." anywhere. The leading
+// space keeps "1/2" and "Re:Re:" whole. Two genuinely different songs sharing a
+// main title within one franchise's openings (or endings) would merge, which
+// costs one theme; offering a song beside its own arrangement costs a question.
+const SUBTITLE = /\s[-~～(（[]/;
+function stripVersion(title) {
+  for (let i = 1; i < title.length; i++) {
+    if (LABEL_MARKS.has(title[i]) && VERSION_WORD.test(title.slice(i))) return title.slice(0, i);
+  }
+  const bare = title.replace(BARE_VERSION, '');
+  if (bare !== title) return bare;
+  const sub = title.search(SUBTITLE);
+  return sub > 0 ? title.slice(0, sub) : title;
+}
+export const songKey = (title) => fold(stripVersion(String(title ?? ''))) || fold(title);
+const isVariant = (title) => songKey(title) !== fold(title);
+
+// AnimeThemes numbers themes with `sequence` and leaves it null on the first —
+// always when a show has only one of that kind (Demon Slayer's lone "OP1"), and
+// sometimes even when it has more: K-ON!'s "Cagayake! GIRLS" is unnumbered
+// beside an OP2. So null reads as 1. (Sorting it last instead was tried, and
+// handed K-ON!'s opening slot to its own "Go Nin Ver." variant.)
+const seqOf = (t) => (Number.isInteger(t?.sequence) ? t.sequence : 1);
 
 // AnimeThemes files alternate versions of a show's themes as a theme `group`,
 // numbered from 1 again, and the groups are two different things (measured over
@@ -77,7 +112,7 @@ const isDub = (t) => DUB_GROUP.test(t?.group ?? '');
 export function themesFromAnimeThemes(perMember) {
   const out = [];
   const count = { OP: 0, ED: 0 };
-  const seen = new Set();
+  const seen = new Map(); // song id → its index in out
   for (const records of perMember ?? []) {
     for (const anime of records ?? []) {
       const themes = (anime?.animethemes ?? [])
@@ -86,18 +121,26 @@ export function themesFromAnimeThemes(perMember) {
           || groupRank(a) - groupRank(b)
           || seqOf(a) - seqOf(b));
       for (const t of themes) {
-        if (count[t.type] >= CAP[t.type]) continue;
         const song = filled(t.song?.title);
         if (!song) continue;
-        const id = `${t.type}|${fold(song)}`;
-        if (seen.has(id)) continue;
-        seen.add(id);
+        const id = `${t.type}|${songKey(song)}`;
         const artists = [];
         for (const a of t.song?.artists ?? []) {
           const name = filled(a?.name);
           if (name && !artists.some((x) => fold(x) === fold(name))) artists.push(name);
         }
-        out.push(artists.length ? { type: t.type, song, artists } : { type: t.type, song });
+        const entry = artists.length ? { type: t.type, song, artists } : { type: t.type, song };
+        if (seen.has(id)) {
+          // A song already kept under a variant title ("Marutsuke -Piano
+          // ver.-" listed as ED1, plain "Marutsuke" as ED2) takes the plain one,
+          // in the variant's slot — the song people know is the original.
+          const at = seen.get(id);
+          if (isVariant(out[at].song) && !isVariant(song)) out[at] = entry;
+          continue;
+        }
+        if (count[t.type] >= CAP[t.type]) continue;
+        seen.set(id, out.length);
+        out.push(entry);
         count[t.type]++;
       }
     }

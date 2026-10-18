@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
-  MAX_ENDINGS, MAX_OPENINGS, originFromWikidata, themesFromAnimeThemes,
+  MAX_ENDINGS, MAX_OPENINGS, originFromWikidata, songKey, themesFromAnimeThemes,
 } from './outsideFacts';
 import { validateFact } from './facts';
 
@@ -48,9 +48,31 @@ describe('themesFromAnimeThemes', () => {
     expect(themesFromAnimeThemes([[s]]).map((t) => t.song)).toEqual(['First Opening', 'Second Opening', 'Rerun Opening']);
   });
 
-  it('puts an unnumbered stray after the numbered themes', () => {
-    const s = { animethemes: [theme('OP', 1, 'First', 'A'), theme('OP', null, 'Stray'), theme('OP', 2, 'Second', 'B')] };
-    expect(themesFromAnimeThemes([[s]]).map((t) => t.song)).toEqual(['First', 'Second', 'Stray']);
+  it('keeps one version of a song, ignoring a trailing version label', () => {
+    expect(songKey('Fukashigi no Karte movie ver.')).toBe(songKey('Fukashigi no Karte'));
+    expect(songKey('Refrain Boy -English ver.-')).toBe(songKey('Refrain Boy'));
+    expect(songKey("Fluorite Eye's Song -Piano Version-")).toBe(songKey("Fluorite Eye's Song"));
+    expect(songKey('Konpeki no Alpine ~Nikenme ni Karaoke ni Haitta Oretachi no Tension Super MAX ver.~')).toBe(songKey('Konpeki no Alpine'));
+    // Real words that merely contain "ver" are left alone.
+    expect(songKey('Never Give Up')).toBe('never give up');
+    expect(songKey('Silver Sky')).toBe('silver sky');
+    const s1 = { animethemes: [theme('ED', 1, 'Fukashigi no Karte', 'A')] };
+    const movie = { animethemes: [theme('ED', 1, 'Fukashigi no Karte movie ver.', 'A')] };
+    expect(themesFromAnimeThemes([[s1], [movie]]).map((t) => t.song)).toEqual(['Fukashigi no Karte']);
+  });
+
+  it("reads an unnumbered theme as the first, and keeps a song's plain title over its variant", () => {
+    // K-ON!: the real OP1 is unnumbered beside a numbered variant of itself.
+    const kon = { animethemes: [theme('OP', null, 'Cagayake! GIRLS', 'HTT'), theme('OP', 2, 'Cagayake! Girls (Go Nin Ver.)', 'HTT')] };
+    expect(themesFromAnimeThemes([[kon]]).map((t) => t.song)).toEqual(['Cagayake! GIRLS']);
+    // given: the variant is ED1 and the plain song ED2 — the plain title wins the slot.
+    const given = { animethemes: [theme('ED', 1, 'Marutsuke -Piano ver.-', 'X'), theme('ED', 2, 'Marutsuke', 'X'), theme('ED', 3, 'Other', 'Y')] };
+    expect(themesFromAnimeThemes([[given]]).map((t) => t.song)).toEqual(['Marutsuke', 'Other']);
+    expect(songKey('Refrain Boy -TEKINA remix-')).toBe(songKey('Refrain Boy'));
+    expect(songKey('Fly Me to the Moon -4 Beat Version (Off-Vocal)-')).toBe(songKey('Fly Me to the Moon'));
+    expect(songKey('Fly Me to the Moon -B22 (A-Type)-')).toBe(songKey('Fly Me to the Moon'));
+    // No space before the mark: part of the title, not a subtitle.
+    expect(songKey('1/2')).not.toBe(songKey('1'));
   });
 
   it('treats a lone null sequence as first, keeps a reused song once, and skips insert songs', () => {

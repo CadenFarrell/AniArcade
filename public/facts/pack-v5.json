@@ -2017,9 +2017,9 @@
         },
         {
           "type": "ED",
-          "song": "Ichiban no Takaramono ~Yui final ver.~",
+          "song": "Ichiban no Takaramono",
           "artists": [
-            "LiSA"
+            "Karuta"
           ]
         }
       ]
@@ -5479,13 +5479,6 @@
           "artists": [
             "DIALOGUE+"
           ]
-        },
-        {
-          "type": "ED",
-          "song": "Ayafuwa Asterisk (for Yuzu Izumi)",
-          "artists": [
-            "Nene Hieda"
-          ]
         }
       ],
       "originalPublisher": "Gagaga Bunko"
@@ -8185,13 +8178,6 @@
           ]
         },
         {
-          "type": "OP",
-          "song": "KISS OF DEATH (Produced by HYDE) Remix ver.",
-          "artists": [
-            "Mika Nakashima"
-          ]
-        },
-        {
           "type": "ED",
           "song": "Torikago",
           "artists": [
@@ -9373,14 +9359,20 @@
           ]
         },
         {
-          "type": "ED",
-          "song": "Colorful Canvas (instrumental version)"
-        },
-        {
           "type": "OP",
           "song": "LOVE CRAZY",
           "artists": [
             "Sumire Uesaka"
+          ]
+        },
+        {
+          "type": "ED",
+          "song": "MY SADISTIC ADOLESCENCE♡",
+          "artists": [
+            "Aina Suzuki",
+            "Sumire Uesaka",
+            "Mikako Komatsu",
+            "Shiori Izawa"
           ]
         }
       ],
@@ -9894,10 +9886,6 @@
         {
           "type": "ED",
           "song": "Calendrier"
-        },
-        {
-          "type": "ED",
-          "song": "Calendrier -Yuuko-"
         }
       ],
       "serializedIn": "Gangan Joker",
@@ -12652,14 +12640,14 @@
         },
         {
           "type": "ED",
-          "song": "Marutsuke -Piano ver.-"
-        },
-        {
-          "type": "ED",
           "song": "Marutsuke",
           "artists": [
             "Given"
           ]
+        },
+        {
+          "type": "ED",
+          "song": "Bokura dake no Shudaika"
         }
       ]
     },
@@ -13195,13 +13183,6 @@
             "Yuuma Uchida",
             "Katsuyuki Konishi",
             "Hiroki Yasumoto"
-          ]
-        },
-        {
-          "type": "ED",
-          "song": "Konpeki no Alpine ~Kaya Mizuki ver.~",
-          "artists": [
-            "Nana Mizuki"
           ]
         }
       ],
@@ -14145,13 +14126,6 @@
         {
           "type": "OP",
           "song": "Ring My Bell (Main Vocal Hitomi)",
-          "artists": [
-            "Saori Hayami"
-          ]
-        },
-        {
-          "type": "OP",
-          "song": "Ring My Bell (Main Vocal Saori)",
           "artists": [
             "Saori Hayami"
           ]
@@ -17567,13 +17541,6 @@
       "themes": [
         {
           "type": "OP",
-          "song": "Cagayake! Girls (Go Nin Ver.)",
-          "artists": [
-            "Houkago Tea Time"
-          ]
-        },
-        {
-          "type": "OP",
           "song": "Cagayake! GIRLS",
           "artists": [
             "Aki Toyosaki",
@@ -17609,6 +17576,13 @@
         {
           "type": "ED",
           "song": "Listen!!",
+          "artists": [
+            "Houkago Tea Time"
+          ]
+        },
+        {
+          "type": "OP",
+          "song": "Ichiban Ippai",
           "artists": [
             "Houkago Tea Time"
           ]
@@ -19968,14 +19942,6 @@
           ]
         },
         {
-          "type": "OP",
-          "song": "Koi wa Explosion (feat. Culverin Bear [CV:Hiroki Yasumoto])",
-          "artists": [
-            "Masayoshi Ooishi",
-            "Hiroki Yasumoto"
-          ]
-        },
-        {
           "type": "ED",
           "song": "Koi wa Sekai Teiri to Tomoni",
           "artists": [
@@ -20153,7 +20119,7 @@
         },
         {
           "type": "ED",
-          "song": "'Suku' wo Oshiete",
+          "song": "'Suki' wo Oshiete",
           "artists": [
             "smileY Inc."
           ]
@@ -21412,8 +21378,7 @@
             "Sora Amamiya"
           ]
         }
-      ],
-      "serializedIn": "KadoComi"
+      ]
     },
     "miss kobayashi's dragon maid": {
       "anilistId": 21776,
@@ -21539,15 +21504,18 @@
           "song": "Refrain Boy"
         },
         {
-          "type": "ED",
-          "song": "Refrain Boy -English ver.-"
-        },
-        {
           "type": "OP",
           "song": "99.9",
           "artists": [
             "sajou no hana",
             "MOB CHOIR"
+          ]
+        },
+        {
+          "type": "ED",
+          "song": "Gray",
+          "artists": [
+            "sajou no hana"
           ]
         },
         {
@@ -23119,17 +23087,18 @@
           ]
         },
         {
-          "type": "ED",
-          "song": "Hello Alone -Yui Ballade-",
-          "artists": [
-            "Nao Touyama"
-          ]
-        },
-        {
           "type": "OP",
           "song": "Harumodoki",
           "artists": [
             "Nagi Yanagi"
+          ]
+        },
+        {
+          "type": "ED",
+          "song": "Everyday World",
+          "artists": [
+            "Nao Touyama",
+            "Saori Hayami"
           ]
         },
         {
@@ -23610,10 +23579,7 @@
         },
         {
           "type": "ED",
-          "song": "Fly Me to the Moon (Rei #5 Version)",
-          "artists": [
-            "Megumi Hayashibara"
-          ]
+          "song": "Thanatos -If I Can't Be Yours-"
         }
       ]
     },
@@ -27290,22 +27256,17 @@
           ]
         },
         {
-          "type": "ED",
-          "song": "Fukashigi no Karte movie ver.",
-          "artists": [
-            "Inori Minase",
-            "Maaya Uchida",
-            "Nao Touyama",
-            "Yurika Kubo",
-            "Asami Seto",
-            "Atsumi Tanezaki"
-          ]
-        },
-        {
           "type": "OP",
           "song": "Snowdrop",
           "artists": [
             "Conton Candy"
+          ]
+        },
+        {
+          "type": "ED",
+          "song": "Suiheisen wa Boku no Furukizu",
+          "artists": [
+            "Sora Amamiya"
           ]
         }
       ],
@@ -32833,13 +32794,6 @@
           "artists": [
             "ASOBI Doumei"
           ]
-        },
-        {
-          "type": "ED",
-          "song": "Dare mo Kare mo Doko mo Nani mo Shiranai (#08 Special Arrange)",
-          "artists": [
-            "ASOBI Doumei"
-          ]
         }
       ],
       "serializedIn": "Afternoon",
@@ -38034,7 +37988,7 @@
           ]
         }
       ],
-      "serializedIn": "Manga Up!",
+      "serializedIn": "Monthly GFantasy",
       "originalPublisher": "Square Enix"
     },
     "tokyo ghoul": {
@@ -38366,8 +38320,7 @@
             "Kouhei Amasaki"
           ]
         }
-      ],
-      "serializedIn": "Sai-zen-sen"
+      ]
     },
     "tomodachi game": {
       "anilistId": 141014,
@@ -39440,8 +39393,7 @@
             "Yuka Iguchi"
           ]
         }
-      ],
-      "serializedIn": "KadoComi"
+      ]
     },
     "undead unluck": {
       "anilistId": 154116,
@@ -40317,7 +40269,8 @@
           "song": "Musou Renka"
         }
       ],
-      "serializedIn": "Shōnen Gangan"
+      "serializedIn": "Gangan Online",
+      "originalPublisher": "Square Enix"
     },
     "we never learn: bokuben": {
       "anilistId": 103900,
@@ -40624,13 +40577,6 @@
         {
           "type": "OP",
           "song": "Puzzle",
-          "artists": [
-            "ROUND TABLE feat. Nino"
-          ]
-        },
-        {
-          "type": "OP",
-          "song": "Puzzle -extra hot mix-",
           "artists": [
             "ROUND TABLE feat. Nino"
           ]

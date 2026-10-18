@@ -706,7 +706,10 @@ only ever fills a gap and can never create a subject. What a response *means* li
   **dub** ("English Version - 4Kids", "Korean Version") is left out — read as the show's own,
   it put the 4Kids "One Piece Theme" among One Piece's openings — while a Japanese broadcast
   variant ("BD Version", "Repeat Show", "Yorinuki Gintama-san") is kept but ranked after the
-  main sequence. Found by checking every theme against MyAnimeList's own lists.
+  main sequence. Versions of one song ("movie ver.", "-Piano ver.-", "-TEKINA remix-",
+  Evangelion's per-episode "Fly Me to the Moon -B22 (A-Type)-") count as ONE song (`songKey`)
+  and keep the plain title, or a "which show" clue would offer a song beside its own remix. A
+  null `sequence` reads as 1: K-ON!'s real OP1 is unnumbered beside a numbered variant.
 - **`serializedIn` and `originalPublisher`** — the source work's magazine, and that magazine's
   publisher (Weekly Shōnen Jump → Shueisha), or a light novel's imprint (Dengeki Bunko), from
   **Wikidata** (CC0; Jikan was turned down as an unlicensed MAL scrape). Two measured traps,
@@ -723,10 +726,24 @@ only ever fills a gap and can never create a subject. What a response *means* li
   own anime). It survives only as a fallback, and AniQuiz additionally refuses a source year
   later than the premiere.
 
-Measured on the v5 run: themes on 96% of shows, a magazine for 75% of manga, a publisher or
-imprint for 71% of manga and light novels, a source year for all of them. The generator prints
-those four every run, because these sources are not ours and a quiet drop looks like success.
-The new caches are per AniList id (`animethemes-v1-<id>.json`, `wikidata-origin-v1-<id>.json`,
+Measured on the v5 run: themes on 96% of shows, a magazine for 74% of manga, a publisher or
+imprint for 71% of manga and light novels, a source year for all of them.
+
+**Checked against MyAnimeList** (official API, comparison only — nothing from it ships) on
+2026-10-18, which is where the dub, variant and K-ON! rules above came from. After them: of
+2011 themes, 1949 titles appear in MAL's lists for the franchise and the other 62 are
+romanization variants ("Tenchi Geshi" / "Tenchi Gaeshi") or film themes; of those with a
+performer, the 247 that "differ" are MAL crediting "Alya (CV: Sumire Uesaka)" where AnimeThemes
+credits the actor. Magazines: 239 of 256 agree and the rest are the same magazine renamed or
+abbreviated (Jump SQ. / Jump Square, Gessan / Monthly Shōnen Sunday) or a series that later
+moved. Source years: 506 exact, 14 a year apart, 4 where the pack is the right one. Two
+magazines Wikidata had wrong (WataMote, Toilet-bound Hanako-kun), three with no single right
+answer (web serials that moved) and one AnimeThemes typo (Love Tyrant) are in
+`facts/overrides.json`.
+
+The generator prints the four coverage figures every run, because these sources are not ours
+and a quiet drop looks like success. The new caches are per AniList id
+(`animethemes-v2-<id>.json`, `wikidata-origin-v1-<id>.json`,
 `anilist-source-<id>.json`), and a full pass over cold ones is a few minutes, not hours. Both services filter on **User-Agent**, which Node's `fetch` does
 not send — the adapters set one, which is why they do not share AniTune's browser client.
 
