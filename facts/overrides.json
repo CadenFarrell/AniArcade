@@ -39,6 +39,197 @@
           "song": "'Suki' wo Oshiete Kudasai"
         }
       ]
+    },
+    "made in abyss": {
+      "themes": [
+        {
+          "type": "OP",
+          "song": "Deep in Abyss",
+          "artists": [
+            "Mariya Ise",
+            "Miyu Tomita"
+          ]
+        },
+        {
+          "type": "ED",
+          "song": "Tabi no Hidarite, Saihate no Migite",
+          "artists": [
+            "Mariya Ise",
+            "Miyu Tomita"
+          ]
+        },
+        {
+          "type": "ED",
+          "song": "FOREVER LOST",
+          "artists": [
+            "MYTH & ROID"
+          ]
+        },
+        {
+          "type": "OP",
+          "song": "GRAVITY",
+          "artists": [
+            "Arnór Dan"
+          ]
+        },
+        {
+          "type": "OP",
+          "song": "Katachi",
+          "artists": [
+            "Riko Azuna"
+          ]
+        }
+      ]
+    },
+    "zombie land saga": {
+      "themes": [
+        {
+          "type": "OP",
+          "song": "Adabana Necromancy",
+          "artists": [
+            "Kaede Hondo",
+            "Risa Taneda",
+            "Minami Tanaka",
+            "Rika Kinugawa",
+            "Asami Tano",
+            "Maki Kawase"
+          ]
+        },
+        {
+          "type": "ED",
+          "song": "Hikari e",
+          "artists": [
+            "Kaede Hondo",
+            "Risa Taneda",
+            "Minami Tanaka",
+            "Rika Kinugawa",
+            "Asami Tano",
+            "Maki Kawase"
+          ]
+        },
+        {
+          "type": "ED",
+          "song": "Mezame RETURNER",
+          "artists": [
+            "Franchouchou"
+          ]
+        }
+      ]
+    },
+    "haikyu!!": {
+      "themes": [
+        {
+          "type": "OP",
+          "song": "Imagination",
+          "artists": [
+            "SPYAIR"
+          ]
+        },
+        {
+          "type": "OP",
+          "song": "Ah Yeah!!",
+          "artists": [
+            "Sukima Switch"
+          ]
+        },
+        {
+          "type": "ED",
+          "song": "Tenchi Gaeshi",
+          "artists": [
+            "NICO Touches the Walls"
+          ]
+        },
+        {
+          "type": "ED",
+          "song": "LEO",
+          "artists": [
+            "tacica"
+          ]
+        },
+        {
+          "type": "OP",
+          "song": "I'm A Believer",
+          "artists": [
+            "SPYAIR"
+          ]
+        },
+        {
+          "type": "OP",
+          "song": "Fly High!!",
+          "artists": [
+            "BURNOUT SYNDROMES"
+          ]
+        }
+      ]
+    },
+    "beastars": {
+      "themes": [
+        {
+          "type": "OP",
+          "song": "Wild Side",
+          "artists": [
+            "ALI"
+          ]
+        },
+        {
+          "type": "ED",
+          "song": "Le zoo",
+          "artists": [
+            "YURiKA"
+          ]
+        },
+        {
+          "type": "ED",
+          "song": "Nemureru Honnou",
+          "artists": [
+            "YURiKA"
+          ]
+        },
+        {
+          "type": "OP",
+          "song": "Kaibutsu",
+          "artists": [
+            "YOASOBI"
+          ]
+        }
+      ]
+    },
+    "tanaka-kun is always listless": {
+      "themes": [
+        {
+          "type": "OP",
+          "song": "Utatane Sunshine"
+        },
+        {
+          "type": "ED",
+          "song": "BON-BON",
+          "artists": [
+            "CooRie"
+          ]
+        },
+        {
+          "type": "ED",
+          "song": "Utatane Sunshine"
+        }
+      ]
+    },
+    "grand blue dreaming": {
+      "themes": [
+        {
+          "type": "OP",
+          "song": "Grand Blue"
+        },
+        {
+          "type": "ED",
+          "song": "Konpeki no Alfine ~Nikenme ni Karaoke ni Haitta Oretachi no Tension Super MAX ver.~",
+          "artists": [
+            "Ryouhei Kimura",
+            "Yuuma Uchida",
+            "Katsuyuki Konishi",
+            "Hiroki Yasumoto"
+          ]
+        }
+      ]
     }
   },
   "characters": {}

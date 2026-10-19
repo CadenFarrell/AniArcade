@@ -111,9 +111,25 @@ function artistList(artists) {
   return `${artists.slice(0, -1).join(', ')} & ${artists[artists.length - 1]}`;
 }
 
+// A song named after its own show answers the "name the show" clue in the
+// asking: "“Date A Live” by sweet ARMS", "Mezase Pokémon Master", "takt" for
+// takt op.Destiny. 36 themes in pack-v5 do it, 20 of them the one quoted.
+// Whole words in order either way round, so "Blue" names Blue Spring Ride but
+// "Believe" does not name a show that merely contains "be".
+const words = (s) => ` ${String(s ?? '').normalize('NFD').replace(/\p{Diacritic}/gu, '')
+  .toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim()} `;
+function namesShow(t, s) {
+  const song = words(t.song);
+  const title = words(s.title);
+  return song.trim() !== '' && (song.includes(title) || title.includes(song));
+}
+
 // The theme a "name the show" clue quotes: the first opening, which is the
-// famous one far more often than not.
-const leadTheme = (s) => themesOf(s).find((t) => t.type === 'OP') ?? themesOf(s)[0] ?? null;
+// famous one far more often than not — passing over one that names the show.
+function leadTheme(s) {
+  const usable = themesOf(s).filter((t) => !namesShow(t, s));
+  return usable.find((t) => t.type === 'OP') ?? usable[0] ?? null;
+}
 
 // The theme a "who performs it" clue asks about. A single performer first: a
 // "FictionJunction & LiSA" option among three solo names is a tell in multiple

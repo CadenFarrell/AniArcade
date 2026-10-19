@@ -52,7 +52,10 @@ playing the song is AniTune. Three fairness rules, each with a test:
 
 - `themeShow` accepts every pack show whose theme of the same kind has the same title,
   narrowed to the same performer when the prompt names one ("Believe" is several songs) — but
-  a matching theme with **no** performer on record is accepted, not ruled out.
+  a matching theme with **no** performer on record is accepted, not ruled out. It never quotes
+  a song named after its own show ("Date A Live", "Mezase Pokémon Master" — 36 themes in v5,
+  20 of them the one it would have quoted); `leadTheme` passes over those, matching whole
+  words either way round.
 - `themeArtist` asks about a solo performer when the show has one (a "FictionJunction & LiSA"
   option among three solo names is a tell), and accepts any one performer or the full credit.
 - A manga's publisher and a light novel's imprint are **separate domains** (`publisher`,

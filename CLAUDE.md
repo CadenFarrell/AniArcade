@@ -622,7 +622,7 @@ question.** `generateFacts.js` (Node, `npm run generate:facts`) writes a pack, `
 serves it as a static file, `shared/services/factPack.js` loads it, and
 `shared/utils/facts.js` holds every pure part of it.
 
-**The pack is populated — 680 shows, 2948 characters, 26019 facts per `index.json` (v5) — and
+**The pack is populated — 680 shows, 2948 characters, 26017 facts per `index.json` (v5) — and
 AniQuiz is its main reader** (see `src/games/aniquiz/CLAUDE.md`); AniRank, AniTune and
 AniFake read its stats only through the profile backfill below. A consumer must still treat
 a missing entry as normal rather than as a failed load: most of what a player imports will not
@@ -738,8 +738,17 @@ credits the actor. Magazines: 239 of 256 agree and the rest are the same magazin
 abbreviated (Jump SQ. / Jump Square, Gessan / Monthly Shōnen Sunday) or a series that later
 moved. Source years: 506 exact, 14 a year apart, 4 where the pack is the right one. Two
 magazines Wikidata had wrong (WataMote, Toilet-bound Hanako-kun), three with no single right
-answer (web serials that moved) and one AnimeThemes typo (Love Tyrant) are in
-`facts/overrides.json`.
+answer (web serials that moved) are in `facts/overrides.json`, and so are AnimeThemes' own
+slips: five misspelt titles where MAL and the Japanese agree against it (Love Tyrant, 天地ガエシ
+"Tenchi Geshi", 眠れる本能 "Nemureru Honoo", "Utatane Shunshine", "Konpeki no Alpine"), and two
+soundtrack pieces it files as a first episode's "OP1" with no performer (Made in Abyss's
+"Underground River", Zombie Land Saga's "Temptation from the Hell"), which put an instrumental
+ahead of the real opening. That second kind can't be a rule: of the 24 shows whose first
+opening has no credited performer, nearly all are the famous one ("R★O★C★K★S",
+"Makafushigi Adventure") and simply lack the link. Override arrays are built by running
+`themesFromAnimeThemes` over the cached records minus the bad entries, so caps and order match
+what the generator would have made. An override replaces a counted fact, so the manifest's
+`facts` moves only when one fills an empty field or a suppression finds something.
 
 The generator prints the four coverage figures every run, because these sources are not ours
 and a quiet drop looks like success. The new caches are per AniList id

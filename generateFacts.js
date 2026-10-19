@@ -125,14 +125,20 @@ function sortedObject(obj) {
 function applyOverrides(pack, overrides) {
   let applied = 0;
   let suppressed = 0;
+  // What the manifest's fact count should move by: a correction replaces a fact
+  // that was already counted, so only an override that fills an empty field adds
+  // one, and only a suppression that found something removes one.
+  let net = 0;
   for (const section of ['shows', 'characters']) {
     for (const [key, fields] of Object.entries(overrides?.[section] ?? {})) {
       if (!fields || typeof fields !== 'object') continue;
       const entry = pack[section][key] ?? (pack[section][key] = {});
       for (const [field, value] of Object.entries(fields)) {
-        if (value === null) { delete entry[field]; suppressed++; continue; }
+        const had = field in entry;
+        if (value === null) { delete entry[field]; suppressed++; if (had) net--; continue; }
         entry[field] = value;
         applied++;
+        if (!had) net++;
       }
       // An override that only ever suppressed leaves an entry with nothing but
       // its own name, which is not a subject anything can ask about.
@@ -140,7 +146,7 @@ function applyOverrides(pack, overrides) {
       if (facts.length === 0) delete pack[section][key];
     }
   }
-  return { applied, suppressed };
+  return { applied, suppressed, net };
 }
 
 async function main() {
@@ -216,7 +222,7 @@ async function main() {
   }
 
   const overrides = readJson(OVERRIDES, {});
-  const { applied, suppressed } = applyOverrides(pack, overrides);
+  const { applied, suppressed, net } = applyOverrides(pack, overrides);
 
   // Drop subjects left holding nothing but their own name.
   for (const section of ['shows', 'characters']) {
@@ -248,7 +254,7 @@ async function main() {
     generatedAt: new Date().toISOString().slice(0, 10),
     shows: showCount,
     characters: charCount,
-    facts: accepted + applied - suppressed,
+    facts: accepted + net,
   };
   fs.writeFileSync(path.join(OUT_DIR, 'index.json'), `${JSON.stringify(manifest, null, 2)}\n`, 'utf8');
   fs.writeFileSync(REJECTED, `${JSON.stringify(rejected, null, 2)}\n`, 'utf8');

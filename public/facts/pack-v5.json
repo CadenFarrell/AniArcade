@@ -3625,7 +3625,7 @@
         },
         {
           "type": "ED",
-          "song": "Nemureru Honoo",
+          "song": "Nemureru Honnou",
           "artists": [
             "YURiKA"
           ]
@@ -13177,7 +13177,7 @@
         },
         {
           "type": "ED",
-          "song": "Konpeki no Alpine ~Nikenme ni Karaoke ni Haitta Oretachi no Tension Super MAX ver.~",
+          "song": "Konpeki no Alfine ~Nikenme ni Karaoke ni Haitta Oretachi no Tension Super MAX ver.~",
           "artists": [
             "Ryouhei Kimura",
             "Yuuma Uchida",
@@ -13795,7 +13795,7 @@
         },
         {
           "type": "ED",
-          "song": "Tenchi Geshi",
+          "song": "Tenchi Gaeshi",
           "artists": [
             "NICO Touches the Walls"
           ]
@@ -20452,10 +20452,6 @@
       "themes": [
         {
           "type": "OP",
-          "song": "Underground River"
-        },
-        {
-          "type": "OP",
           "song": "Deep in Abyss",
           "artists": [
             "Mariya Ise",
@@ -20472,17 +20468,23 @@
         },
         {
           "type": "ED",
-          "song": "Tomorrow"
-        },
-        {
-          "type": "OP",
-          "song": "The Return of Made in Abyss"
+          "song": "FOREVER LOST",
+          "artists": [
+            "MYTH & ROID"
+          ]
         },
         {
           "type": "OP",
           "song": "GRAVITY",
           "artists": [
             "Arnór Dan"
+          ]
+        },
+        {
+          "type": "OP",
+          "song": "Katachi",
+          "artists": [
+            "Riko Azuna"
           ]
         }
       ]
@@ -32664,7 +32666,7 @@
         },
         {
           "type": "ED",
-          "song": "Utatane Shunshine"
+          "song": "Utatane Sunshine"
         }
       ],
       "serializedIn": "Gangan Online"
@@ -42456,10 +42458,6 @@
         "Surreal Comedy"
       ],
       "themes": [
-        {
-          "type": "OP",
-          "song": "Temptation from the Hell"
-        },
         {
           "type": "OP",
           "song": "Adabana Necromancy",

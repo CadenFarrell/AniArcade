@@ -357,6 +357,24 @@ describe('theme songs', () => {
     expect(isCorrect(duet, 'Aimer')).toBe(false);
   });
 
+  it('never quotes a song named after its own show', () => {
+    const raw = makePack();
+    raw.shows['show 0'].title = 'Date A Live';
+    raw.shows['show 0'].themes = [
+      { type: 'OP', song: 'Date A Live', artists: ['sweet ARMS'] },
+      { type: 'OP', song: 'Trust in you', artists: ['sweet ARMS'] },
+    ];
+    expect(clueFor(raw, 'themeShow', 'show 0').prompt).toBe('“Trust in you” by sweet ARMS is an opening theme of which show?');
+    // The other way round: the show's title inside the song's.
+    raw.shows['show 0'].title = 'Pokémon';
+    raw.shows['show 0'].themes = [{ type: 'OP', song: 'Mezase Pokemon Master', artists: ['Rica Matsumoto'] }];
+    expect(clueFor(raw, 'themeShow', 'show 0')).toBeUndefined();
+    // Whole words only: "Be" is not in "Believe".
+    raw.shows['show 0'].title = 'Be';
+    raw.shows['show 0'].themes = [{ type: 'OP', song: 'Believe', artists: ['Folder5'] }];
+    expect(clueFor(raw, 'themeShow', 'show 0')).toBeDefined();
+  });
+
   it('asks nothing about who sings a song with no performer on record', () => {
     const raw = makePack();
     raw.shows['show 0'].themes = [{ type: 'OP', song: 'R★O★C★K★S' }];
