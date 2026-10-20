@@ -1,6 +1,7 @@
 // Two character shapes coexist in stored data: AniList-sourced characters
-// have `genres` as an array; ListManager-created characters have a singular
-// `genre` string. Normalize to always have `genres` as an array so
+// have `genres` as an array; characters hand-made in ListManager's old form
+// (it no longer makes them, but saved profiles still carry them) have a
+// singular `genre` string. Normalize to always have `genres` as an array so
 // consumers never need to branch on which shape they got.
 export function normalizeCharacter(char) {
   if (!char) return char;
@@ -11,7 +12,7 @@ export function normalizeCharacter(char) {
 }
 
 // Identity for a character ACROSS shows. Not `id`: AniList characters and the
-// ones ListManager creates (Date.now()) don't share an id space, so an id can
+// hand-made ones ListManager used to create (Date.now()) don't share an id space, so an id can
 // collide across sources. Not `series::name` either — the whole point is that
 // the same person listed under "Attack on Titan" and "Attack on Titan: Final
 // Season" is one character.

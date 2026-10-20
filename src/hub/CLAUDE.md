@@ -72,7 +72,7 @@ adjust-state-while-rendering check rather than an effect, so a new profile paint
 own board in the same frame. Deriving it in render would reshuffle every face on a hover.
 
 **Eligibility and identity are the draw's whole job, and both are tested.** Only characters
-with an `imageUrl` count — hand-entered ListManager characters have none — and one person
+with an `imageUrl` count — characters hand-entered in ListManager's old form have none — and one person
 stands on one tile at most, distinct by `characterNameKey` because the same character is
 listed under several seasons with different ids. A list too small to fill the board fills
 what it can in board order; **every other tile, and every tile with no profile, is a bare

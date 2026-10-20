@@ -9,7 +9,7 @@ import { characterNameKey } from '../shared/utils/character';
 // inside HubScreen.jsx can only be reached by mounting the hub in jsdom.
 //
 // Only characters that carry a portrait are eligible. Hand-entered ones from
-// ListManager have no `imageUrl`, and neither does anything imported before
+// ListManager's old character form have no `imageUrl`, and neither does anything imported before
 // portraits were fetched — a tile with a name and no face would just be an
 // empty panel with a caption. One character never stands on two tiles: the
 // same person often appears under several seasons of one franchise, so

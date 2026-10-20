@@ -8,8 +8,10 @@ import { Button, Screen } from '../../../shared/ui';
 // the moment everybody has to recognise them later) beside a profile column of
 // labelled facts.
 export default function CharacterReveal({ character, guesserName, onStartQuestioning, isLastPlayer, online = false }) {
-  // Normalize defensively — a character just edited via ListManager mid-session
-  // may still have the raw (unnormalized) shape until the profile is reloaded.
+  // Normalize defensively — a character hand-made in ListManager's old form
+  // still carries the raw singular-`genre` shape, and so may a profile that
+  // reached here without passing through normalizeProfile. Hair colour and
+  // ability exist only on those; the filter below drops them for everyone else.
   const c = normalizeCharacter(character);
   const [broken, setBroken] = useState(false);
 

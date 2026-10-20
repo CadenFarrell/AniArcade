@@ -54,8 +54,8 @@ function collapseFranchises(animeList, axis) {
 
 // One entry per character, keyed by folded name so the same person listed under
 // three season titles is one card — the same identity rule AniGuess uses, and
-// the reason ids are not used (AniList ids and ListManager's Date.now() ids
-// share no id space, and the same person appears under several season titles).
+// the reason ids are not used (AniList ids and the Date.now() ids on older
+// hand-made entries share no id space, and the same person appears under several season titles).
 function collapseCharacters(animeList, axis) {
   const byName = new Map();
   for (const anime of animeList || []) {

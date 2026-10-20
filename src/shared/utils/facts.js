@@ -34,8 +34,9 @@ export const subjectKeyForCharacter = characterNameKey;
 // Fields that identify a subject rather than assert something about it. Never
 // clue material, never validated as a fact, and `anilistId` in particular is
 // PROVENANCE ONLY — identity in this repo is deliberately not id-based (the ids
-// ListManager mints and AniList's own share no id space), so a lookup that went
-// through it would miss every hand-entered entry.
+// ListManager used to mint for hand-entered entries and AniList's own share no
+// id space, and saved profiles still carry them), so a lookup that went through
+// it would miss every one of those entries.
 export const META_FIELDS = new Set(['anilistId', 'title', 'name']);
 
 // Widest plausible bounds for an anime air year. Deliberately constants rather

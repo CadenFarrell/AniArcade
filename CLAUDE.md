@@ -665,15 +665,32 @@ the picker exists.
 Identity is deliberately not id-based, and the reasons are non-obvious:
 
 - `characterNameKey` (`shared/utils/character.js`) identifies a character by name with
-  diacritics folded — AniList ids and the `Date.now()` ids ListManager creates share no id
-  space, and the same person appears under several season titles.
+  diacritics folded — AniList ids and the `Date.now()` ids on ListManager's old hand-made
+  entries share no id space, and the same person appears under several season titles.
 - Shows are grouped by `shared/utils/franchise.js` (AniList relation data during an import,
   title heuristic offline) and merged by `shared/utils/profileMerge.js`, which falls back to
   a shared-cast heuristic because neither ids nor titles line up across sources
   (`anilist_anime_<id>` + AniList's long titles vs. `<player>_anime_<n>` + hand-shortened
   ones).
 - Characters come in two shapes (`genres` array from AniList, singular `genre` string from
-  ListManager); `normalizeCharacter` collapses them so consumers never branch.
+  ListManager's old hand-made form); `normalizeCharacter` collapses them so consumers never
+  branch.
+
+**Nothing on a list is typed in by hand any more.** ListManager used to take a free-text
+show title and a character form (name, hair colour, ability, one genre). A made-up character
+had no portrait, no `favourites` and no AniList id, so the hub tiles skipped it, AniFake's
+fame setting ranked it unknown, the fact pack could not cover it, and nobody else at the
+table could recognise it; a typed show had no cast or stats at all. Both were replaced by
+`shared/components/AnimeSearch.jsx`, which searches AniList (`searchAnime`) and adds the real
+show through `shared/services/importGroups.js`'s `buildImportedAnime` — the same cast fetch and
+filter `ListImport` runs, so a searched show and an imported one cannot differ. A cast is not
+editable either — the tracker is where a list changes, then Refresh — and the one edit left
+is **deleting a whole show**, which stays because a refresh only ever adds
+(`mergeAnimeIntoProfile` never removes): without it a show dropped on the tracker, a searched
+show added by mistake or an old hand-made entry could never leave a profile. Hand-made
+entries already saved are left in place (the `aniguess_profiles` rule) and every reader of
+their shape stays, `CharacterReveal`'s hair and ability rows included; don't add a hand-entry
+or cast-editing path back.
 
 ### List sources: any tracker, one profile shape
 
@@ -884,8 +901,8 @@ so which game asks what is not decided in the data and nothing has to be regener
 change the answer. The keys are re-exported through `facts.js` rather than imported
 directly by the generator, so the two sides cannot drift on what a key is. `anilistId` is
 carried as **provenance only** — identity in this repo is deliberately not id-based, since
-the ids ListManager mints and AniList's own share no id space, so a lookup routed through
-it would miss every hand-entered entry.
+the ids ListManager minted for hand-entered entries and AniList's own share no id space, so
+a lookup routed through it would miss every one of those still saved.
 
 **The loader takes two fetches and the indirection is the point.** The manifest is small and
 always revalidated; the pack file it names is immutable and can be cached hard. A data fix

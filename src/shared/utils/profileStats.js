@@ -38,10 +38,12 @@ export function countCharacters(profile) {
 // animeList runs to hundreds of KB.
 //
 // Every AniList import moves at least one of these numbers, which is the case
-// that matters. The gap: a ListManager edit that renames a character without
-// changing any count reads as unchanged and won't republish. That is exactly the
-// staleness online play already had, so it costs nothing new — but it is the
-// reason this is a fingerprint and not an equality check.
+// that matters, and so does every edit ListManager can still make (a search
+// add, a deleted show). The gap was its old character form, whose
+// rename changed no count and so never republished; the form is gone, but an
+// edit that keeps every count (a re-import that only repairs fields) still
+// reads as unchanged — the reason this is a fingerprint and not an equality
+// check.
 export function profileFingerprint(profile) {
   if (!profile) return '';
   return [

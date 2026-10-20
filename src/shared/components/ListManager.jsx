@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { useProfileStore } from '../context/profileContext';
-import { normalizeTitle } from '../utils/ranking';
+import AnimeSearch from './AnimeSearch';
 import ListImport from './ListImport';
 import { canRefreshList } from '../services/listSources';
-import { Button, Field, Icon, Input, Select } from '../ui';
+import { Button, Icon } from '../ui';
 
 // `className` carries the top padding, because the two callers genuinely differ:
 // AniGuess renders its own back/player-switcher header above this and needs only
@@ -17,79 +17,28 @@ export default function ListManager({ profile, onProfileUpdated, className = '' 
   // localStorage write does not do.
   const { saveProfile } = useProfileStore();
   const hasProfile = Boolean(profile);
-  const [newAnimeTitle, setNewAnimeTitle] = useState('');
   const [expandedAnime, setExpandedAnime] = useState(null);
-  const [addingCharacterTo, setAddingCharacterTo] = useState(null);
-  const [editingCharacter, setEditingCharacter] = useState(null);
-  const [characterForm, setCharacterForm] = useState(emptyCharacterForm());
   // 'pick' opens the checklist; 'refresh' skips straight to importing whatever
   // is new. null means closed.
   const [importMode, setImportMode] = useState(null);
 
-  function emptyCharacterForm() {
-    return { name: '', imageUrl: '', gender: 'Male', role: 'Protagonist', hairColor: '', ability: '', genre: 'Action' };
-  }
-
+  // A show's contents are AniList's, not the player's: there is no way to type
+  // a show or a character in by hand (see AnimeSearch for why), and none to
+  // trim a cast either — the place to change a list is the tracker, then
+  // Refresh. What stays is deleting a whole show, because a refresh only ever
+  // ADDS: a show dropped on the tracker, a searched show added by mistake, or a
+  // hand-made entry from before all this would otherwise be there for good.
+  // Hand-made entries saved before the change are still listed; nothing
+  // migrates them.
   const saveUpdatedProfile = (updatedProfile) => {
     saveProfile(updatedProfile);
     onProfileUpdated(updatedProfile);
-  };
-
-  const addAnime = () => {
-    const title = newAnimeTitle.trim();
-    if (!title) return;
-    if (profile.animeList.some((a) => normalizeTitle(a.title) === normalizeTitle(title))) {
-      alert('You already have that anime in your list!');
-      return;
-    }
-    saveUpdatedProfile({
-      ...profile,
-      animeList: [...profile.animeList, { id: Date.now().toString(), title, characters: [] }],
-    });
-    setNewAnimeTitle('');
   };
 
   const deleteAnime = (animeId) => {
     if (!window.confirm('Delete this anime and all its characters?')) return;
     saveUpdatedProfile({ ...profile, animeList: profile.animeList.filter((a) => a.id !== animeId) });
   };
-
-  const deleteCharacter = (animeId, charId) => {
-    saveUpdatedProfile({ ...profile, animeList: profile.animeList.map((a) => a.id !== animeId ? a : { ...a, characters: a.characters.filter((c) => c.id !== charId) }) });
-  };
-
-  const openAddCharacter = (animeId) => {
-    setAddingCharacterTo(animeId);
-    setEditingCharacter(null);
-    setCharacterForm(emptyCharacterForm());
-  };
-
-  const openEditCharacter = (animeId, character) => {
-    setAddingCharacterTo(animeId);
-    setEditingCharacter(character.id);
-    setCharacterForm({ ...emptyCharacterForm(), ...character });
-  };
-
-  const saveCharacter = (animeId) => {
-    const anime = profile.animeList.find((a) => a.id === animeId);
-    if (anime.characters.some((c) => c.name.toLowerCase() === characterForm.name.toLowerCase() && c.id !== editingCharacter)) {
-      alert('A character with that name already exists in this anime!');
-      return;
-    }
-    const updatedAnimeList = profile.animeList.map((a) => {
-      if (a.id !== animeId) return a;
-      if (editingCharacter) {
-        return { ...a, characters: a.characters.map((c) => c.id === editingCharacter ? { ...characterForm, id: editingCharacter, series: a.title } : c) };
-      }
-      return { ...a, characters: [...a.characters, { ...characterForm, id: Date.now().toString(), series: a.title }] };
-    });
-    saveUpdatedProfile({ ...profile, animeList: updatedAnimeList });
-    setAddingCharacterTo(null);
-    setEditingCharacter(null);
-    setCharacterForm(emptyCharacterForm());
-  };
-
-  const isFormValid = () => characterForm.name.trim() && characterForm.hairColor.trim() && characterForm.ability.trim();
 
   // Reachable if a caller navigates here without picking a player first —
   // render an empty state rather than crashing on profile.animeList.
@@ -110,22 +59,10 @@ export default function ListManager({ profile, onProfileUpdated, className = '' 
         {profile.animeList.length} anime · {profile.animeList.reduce((n, a) => n + a.characters.length, 0)} characters
       </p>
 
-      {/* Add Anime */}
-      <div className="mb-8 flex gap-3">
-        <Input
-          type="text"
-          value={newAnimeTitle}
-          onChange={(e) => setNewAnimeTitle(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && newAnimeTitle.trim() && addAnime()}
-          placeholder="Add an anime title..."
-          aria-label="Anime title"
-          className="flex-1"
-        />
-        <Button variant="secondary" onClick={addAnime} disabled={!newAnimeTitle.trim()} className="whitespace-nowrap">
-          + Add
-        </Button>
+      {/* Whole list from a tracker */}
+      <div className="mb-4 flex gap-3">
         <Button variant="neutral" onClick={() => setImportMode('pick')} className="whitespace-nowrap">
-          Import
+          Import list
         </Button>
         {/* Only once there is an account to refresh from. This is the screen
             dedicated to managing a list, so the one-tap path belongs here. */}
@@ -135,6 +72,9 @@ export default function ListManager({ profile, onProfileUpdated, className = '' 
           </Button>
         )}
       </div>
+
+      {/* One show at a time */}
+      <AnimeSearch profile={profile} onAdded={saveUpdatedProfile} />
 
       {importMode && (
         <ListImport
@@ -151,7 +91,7 @@ export default function ListManager({ profile, onProfileUpdated, className = '' 
       {/* Anime List */}
       {profile.animeList.length === 0 ? (
         <div className="py-16 text-center text-fg-subtle">
-          <p className="text-lg">No anime yet — add one above!</p>
+          <p className="text-lg">No anime yet — search or import above.</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -169,122 +109,30 @@ export default function ListManager({ profile, onProfileUpdated, className = '' 
                   </span>
                   <span className="ml-2 text-fg-subtle">{expandedAnime === anime.id ? '▲' : '▼'}</span>
                 </button>
-                <div className="ml-4 flex gap-2">
-                  <Button
-                    variant="info"
-                    size="sm"
-                    onClick={() => { openAddCharacter(anime.id); setExpandedAnime(anime.id); }}
-                  >
-                    + Character
-                  </Button>
-                  <button
-                    onClick={() => deleteAnime(anime.id)}
-                    aria-label={`Delete ${anime.title}`}
-                    className="focus-pop grid h-11 w-11 place-items-center rounded-pop-sm text-fg-icon hover:text-pop-red"
-                  >
-                    <Icon name="trash" />
-                  </button>
-                </div>
+                <button
+                  onClick={() => deleteAnime(anime.id)}
+                  aria-label={`Delete ${anime.title}`}
+                  className="focus-pop ml-4 grid h-11 w-11 place-items-center rounded-pop-sm text-fg-icon hover:text-pop-red"
+                >
+                  <Icon name="trash" />
+                </button>
               </div>
 
-              {/* Expanded: Characters + Form */}
+              {/* Expanded: Characters */}
               {expandedAnime === anime.id && (
                 <div className="space-y-2 border-t border-line px-5 py-4">
-                  {anime.characters.length === 0 && !addingCharacterTo && (
+                  {anime.characters.length === 0 && (
                     <p className="py-2 text-center text-sm text-fg-subtle">No characters yet</p>
                   )}
 
-                  {anime.characters.map((char) => (
-                    <div key={char.id} className="flex items-center justify-between border-b border-line-soft py-2 last:border-0">
-                      <span className="text-fg-strong">{char.name}</span>
-                      <div className="flex gap-1">
-                        <button
-                          onClick={() => openEditCharacter(anime.id, char)}
-                          aria-label={`Edit ${char.name}`}
-                          className="focus-pop grid h-11 w-11 place-items-center rounded-pop-sm text-fg-body hover:text-fg-strong"
-                        ><Icon name="pencil" /></button>
-                        <button
-                          onClick={() => deleteCharacter(anime.id, char.id)}
-                          aria-label={`Delete ${char.name}`}
-                          className="focus-pop grid h-11 w-11 place-items-center rounded-pop-sm text-fg-icon hover:text-pop-red"
-                        ><Icon name="trash" /></button>
-                      </div>
-                    </div>
-                  ))}
-
-                  {/* Add / Edit Character Form */}
-                  {addingCharacterTo === anime.id && (
-                    <div className="mt-4 space-y-4 rounded-pop border-2 border-line bg-surface-2 p-5">
-                      <h4 className="font-display text-lg font-extrabold text-fg-strong">
-                        {editingCharacter ? 'Edit Character' : 'Add Character'}
-                      </h4>
-
-                      {/* Each Field names its control by id: Field draws a <label> but ties
-                          it only when told which control, and an untied one is read out
-                          as a bare "edit text" / "combo box". One form is open at a time,
-                          so the ids are unique on the page. */}
-                      <Field label="Name *" htmlFor="character-name">
-                        <Input id="character-name" value={characterForm.name} onChange={(e) => setCharacterForm({ ...characterForm, name: e.target.value })} placeholder="Character name" />
-                      </Field>
-
-                      <Field label="Image URL (optional)" htmlFor="character-image">
-                        <Input id="character-image" value={characterForm.imageUrl} onChange={(e) => setCharacterForm({ ...characterForm, imageUrl: e.target.value })} placeholder="https://..." />
-                      </Field>
-
-                      <div className="grid grid-cols-2 gap-4">
-                        <Field label="Gender *" htmlFor="character-gender">
-                          <Select id="character-gender" value={characterForm.gender} onChange={(e) => setCharacterForm({ ...characterForm, gender: e.target.value })}>
-                            <option>Male</option>
-                            <option>Female</option>
-                            <option>Other</option>
-                          </Select>
-                        </Field>
-                        <Field label="Role *" htmlFor="character-role">
-                          <Select id="character-role" value={characterForm.role} onChange={(e) => setCharacterForm({ ...characterForm, role: e.target.value })}>
-                            <option>Protagonist</option>
-                            <option>Antagonist</option>
-                            <option>Supporting</option>
-                          </Select>
-                        </Field>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-4">
-                        <Field label="Hair Color *" htmlFor="character-hair">
-                          <Input id="character-hair" value={characterForm.hairColor} onChange={(e) => setCharacterForm({ ...characterForm, hairColor: e.target.value })} placeholder="e.g. Black" />
-                        </Field>
-                        <Field label="Genre *" htmlFor="character-genre">
-                          <Select id="character-genre" value={characterForm.genre} onChange={(e) => setCharacterForm({ ...characterForm, genre: e.target.value })}>
-                            <option>Action</option>
-                            <option>Romance</option>
-                            <option>Comedy</option>
-                            <option>Isekai</option>
-                            <option>Horror</option>
-                            <option>Sci-Fi</option>
-                            <option>Sports</option>
-                            <option>Other</option>
-                          </Select>
-                        </Field>
-                      </div>
-
-                      <Field label="Power / Ability *" htmlFor="character-ability">
-                        <Input id="character-ability" value={characterForm.ability} onChange={(e) => setCharacterForm({ ...characterForm, ability: e.target.value })} placeholder="e.g. Stretches body like rubber" />
-                      </Field>
-
-                      <div className="flex gap-3 pt-1">
-                        <Button
-                          variant="neutral"
-                          onClick={() => { setAddingCharacterTo(null); setEditingCharacter(null); }}
-                        >Cancel</Button>
-                        <Button
-                          variant="secondary"
-                          className="flex-1"
-                          onClick={() => saveCharacter(anime.id)}
-                          disabled={!isFormValid()}
-                        >
-                          {editingCharacter ? 'Save Changes' : 'Add Character'}
-                        </Button>
-                      </div>
-                    </div>
+                  {anime.characters.length > 0 && (
+                    <ul>
+                      {anime.characters.map((char) => (
+                        <li key={char.id} className="border-b border-line-soft py-2 text-fg-strong last:border-0">
+                          {char.name}
+                        </li>
+                      ))}
+                    </ul>
                   )}
                 </div>
               )}

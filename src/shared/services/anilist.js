@@ -143,6 +143,24 @@ export async function fetchUserAnimeList(username, { statusIn = ['COMPLETED'] } 
   return [...seen.values()];
 }
 
+const SEARCH_QUERY = `
+query ($search: String) {
+  Page(perPage: 10) {
+    media(search: $search, type: ANIME, sort: SEARCH_MATCH) {${MEDIA_FIELDS}
+    }
+  }
+}`;
+
+// Shows matching a typed title, best match first, as list entries — the same
+// shape a listed or hydrated show takes, so a show added from a search goes
+// through the import's grouping, cast fetch and merge unchanged. This is what
+// replaced ListManager's free-text "add an anime" box: a show typed in by hand
+// had no id, no stats and no cast anyone else could recognise.
+export async function searchAnime(query, { signal } = {}) {
+  const data = await anilistRequest(SEARCH_QUERY, { search: query }, { signal });
+  return (data?.Page?.media ?? []).map((media) => toListEntry(media, null));
+}
+
 // Fetches characters for many anime at once. Rather than one throttled request
 // per show (the AniList API allows only ~30 req/min, so a serial loop is slow),
 // this fetches page 1 of every show in a few aliased batch requests, then

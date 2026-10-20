@@ -8,7 +8,7 @@ import { characterNameKey } from './character';
 //
 // Most-favourited because it is the best-known character on the list, so the
 // one the rest of the table is likeliest to recognise. Ties keep list order.
-// Characters with no portrait (hand-entered in ListManager) never qualify; a
+// Characters with no portrait (hand-entered in ListManager's old form) never qualify; a
 // profile with none gets null and the slot draws its bare panel.
 export function portraitFor(profile) {
   let best = null;

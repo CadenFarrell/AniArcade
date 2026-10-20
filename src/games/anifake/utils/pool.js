@@ -28,8 +28,8 @@ import { DEFAULT_FAME_ID, getFame } from '../fame';
 // favourites alone there would let a portrait-less copy win.
 //
 // Genres rank above favourites for the same reason they are on the entry at
-// all: the two shapes stored data comes in (an AniList `genres` array, a
-// ListManager singular `genre`) mean one player's copy of a character can carry
+// all: the two shapes stored data comes in (an AniList `genres` array, the
+// singular `genre` of an older hand-made character) mean one player's copy of a character can carry
 // genres while another's carries none, and the copy with none deals the fake a
 // blank.
 function preferred(existing, candidate) {
@@ -44,7 +44,7 @@ function preferred(existing, candidate) {
 // One entry per character, keyed by folded name so the same person listed under
 // three season titles is one card — the same identity rule AniGuess and AniRank
 // use, and the reason ids are not used (AniList ids and the Date.now() ids
-// ListManager creates share no id space).
+// ListManager's old hand-made entries carry share no id space).
 //
 // That folded name is also what `id` holds, which is what makes it the key
 // rules.deriveTruth groups published cards by. There is no board to index into
@@ -53,7 +53,7 @@ function collapseCharacters(animeList) {
   const byName = new Map();
   for (const anime of animeList || []) {
     for (const raw of anime.characters || []) {
-      // normalizeCharacter first, so the ListManager singular `genre` string is
+      // normalizeCharacter first, so a hand-made singular `genre` string is
       // already an array by the time anything here reads it.
       const char = normalizeCharacter(raw);
       const key = characterNameKey(char?.name);

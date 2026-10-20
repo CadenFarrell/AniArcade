@@ -1,7 +1,6 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
-import { fetchManyAnimeCharacters } from '../services/anilist';
+import { buildImportedAnime } from '../services/importGroups';
 import { fetchListEntries, LIST_SITES, malProxyEnabled, siteLabel } from '../services/listSources';
-import { filterAndMapCharacterEdges, mergeCharacterEdges, summarizeGroupStats } from '../utils/anilistFormat';
 import { groupIntoFranchises } from '../utils/franchise';
 import { kitsuSlugFrom, listSourceOf } from '../utils/listImport';
 import {
@@ -10,8 +9,6 @@ import {
   mergeImportedAnilistIds,
 } from '../utils/profileMerge';
 import { Badge, Button, Card, Checkbox, Icon, Input, Label, Modal, NumberInput } from '../ui';
-
-const MAX_CHARACTERS_PER_SHOW = 60;
 
 const MAL_EXPORT_URL = 'https://myanimelist.net/panel.php?go=export';
 
@@ -202,28 +199,24 @@ export default function ListImport({ profile, onClose, onImported, autoRefresh =
   async function runImport(selectedGroups) {
     if (selectedGroups.length === 0) return;
 
-    // Characters are still fetched per AniList media id — the progress bar
-    // counts those fetches, so its total is the flattened member count.
-    //
-    // Every member of a selected group is fetched, including ones already
-    // covered: filterAndMapCharacterEdges applies the favourites filter and the
-    // per-show cap across the WHOLE franchise cast below, so a group that only
-    // gained a season still needs its earlier seasons' edges to filter against.
-    const memberIds = selectedGroups.flatMap((g) => g.memberIds);
+    // The progress bar counts per-media fetches (see buildImportedAnime), so its
+    // total is the flattened member count.
+    const total = selectedGroups.reduce((n, g) => n + g.memberIds.length, 0);
 
     const controller = new AbortController();
     setAbortController(controller);
     setStep('importing');
-    setProgress({ index: 0, total: memberIds.length });
+    setProgress({ index: 0, total });
 
-    let charactersById;
+    let importedAnimeList;
+    let memberIds;
     try {
-      charactersById = await fetchManyAnimeCharacters(memberIds, {
+      ({ importedAnimeList, memberIds } = await buildImportedAnime(selectedGroups, {
         signal: controller.signal,
         minSupportingFavourites,
         mainOnly,
-        onProgress: (resolved) => setProgress({ index: resolved, total: memberIds.length }),
-      });
+        onProgress: (resolved) => setProgress({ index: resolved, total }),
+      }));
     } catch (err) {
       if (err.name === 'AbortError') {
         // Cancelled — discard partial results, return to the checklist.
@@ -236,30 +229,6 @@ export default function ListImport({ profile, onClose, onImported, autoRefresh =
       setAbortController(null);
       return;
     }
-
-    const importedAnimeList = selectedGroups.map((group) => {
-      const memberResults = group.memberIds.map((id) => charactersById.get(id) ?? { genres: [], edges: [] });
-      // Merge every season's cast, then apply the favourites/main filters and
-      // the per-show cap once across the whole franchise.
-      const edges = mergeCharacterEdges(memberResults.map((r) => r.edges));
-      const genres = [...new Set(memberResults.flatMap((r) => r.genres))];
-      const characters = filterAndMapCharacterEdges(edges, {
-        minSupportingFavourites,
-        mainOnly,
-        maxCharacters: MAX_CHARACTERS_PER_SHOW,
-        genres,
-      });
-      // The per-show facts ride along with the cast. Without them a saved entry
-      // is only { id, title, characters }, which is why every ranking axis but
-      // "opinion" had no data to sort by.
-      return {
-        animeId: group.key,
-        memberIds: group.memberIds,
-        title: group.title,
-        ...summarizeGroupStats(group),
-        characters,
-      };
-    });
 
     const {
       profile: merged, addedAnime, addedChars, updatedChars,
