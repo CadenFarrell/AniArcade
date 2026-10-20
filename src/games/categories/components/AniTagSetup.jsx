@@ -80,6 +80,7 @@ export default function AniTagSetup({ onStart, onBack }) {
               badgeFor={null}
               onAdd={() => setShowPicker(true)}
               onRemove={(id) => setPlayers((prev) => prev.filter((x) => x.id !== id))}
+              onUpdate={(p) => setPlayers((prev) => prev.map((x) => (x.id === p.id ? p : x)))}
             />
             {players.length > 0 && !enoughPlayers && (
               <Banner tone="warning" className="mb-6">

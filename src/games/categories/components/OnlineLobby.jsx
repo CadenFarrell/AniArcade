@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useGamePrefs } from '../../../shared/hooks/useGamePrefs';
+import { useRepublishProfile } from '../../../shared/hooks/useRepublishProfile';
 import { HostWaitCard, PlayerRoster, RoomCode } from '../../../shared/components/Lobby';
 import SetupLayout, { StartBar } from '../../../shared/components/SetupLayout';
 import { Banner, Button } from '../../../shared/ui';
@@ -21,12 +22,11 @@ import descriptor from '../index';
 // to be made twice, and a missed one is invisible until somebody plays the other
 // half of the game.
 //
-// NO PROFILE-REPUBLISHING EFFECT, and its absence is deliberate rather than
-// forgotten. Every other lobby in the arcade runs one, because their pools are
-// computed from the copies of everyone's anime lists sitting in the room, so a
-// list imported after joining has to be pushed back up. AniTag reads nobody's
-// list, so the room copy of a profile is only ever a name — and a name cannot
-// go stale in the way profileFingerprint exists to catch.
+// THE PROFILE-REPUBLISHING EFFECT runs here too, though AniTag reads nobody's
+// list for its rounds. It went without one until players could choose their
+// character: the face every phone draws for you comes from your profile's copy
+// in the room, so a character picked in this lobby has to be pushed up like any
+// other lobby's import, or only your own phone would ever see it.
 //
 // THE CATEGORY EDITOR IS SHOWN TO EVERYONE, not just the host, and both modes
 // give the same reason. What a player writes stays on their own device: in
@@ -54,6 +54,8 @@ export default function OnlineLobby({ room }) {
   const change = (key, value) => setSettings((s) => ({ ...s, [key]: value }));
 
   const players = room.players ?? [];
+  const me = players.find((p) => p.id === room.myPlayerId) ?? null;
+  useRepublishProfile(room, me);
   const active = room.activePlayers ?? players;
   const statuses = room.playerStatuses ?? {};
   const pool = POOL_LABELS[settings.categoryPool] ?? POOL_LABELS.characters;

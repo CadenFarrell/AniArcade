@@ -95,6 +95,7 @@ export default function AniFakeSetup({ onStart, error, onBack }) {
               onAdd={() => setShowPicker(true)}
               onImport={setImportTarget}
               onRemove={(id) => setPlayers((prev) => prev.filter((x) => x.id !== id))}
+              onUpdate={(p) => setPlayers((prev) => prev.map((x) => (x.id === p.id ? p : x)))}
             />
 
             {players.length > 0 && players.length < MIN_PLAYERS && (

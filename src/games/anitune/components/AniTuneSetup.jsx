@@ -74,6 +74,7 @@ export default function AniTuneSetup({ onStart, preparing, progress, error, onBa
         onAdd={() => setShowPicker(true)}
         onImport={setImportTarget}
         onRemove={(id) => setPlayers((prev) => prev.filter((x) => x.id !== id))}
+        onUpdate={(p) => setPlayers((prev) => prev.map((x) => (x.id === p.id ? p : x)))}
       />
 
       {players.length > 1 && settings.sharedSongsOnly && eligible === 0 && (

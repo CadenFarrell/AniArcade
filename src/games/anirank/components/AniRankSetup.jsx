@@ -150,6 +150,7 @@ export default function AniRankSetup({ onStart, error, onBack }) {
               onAdd={() => setShowPicker(true)}
               onImport={setImportTarget}
               onRemove={(id) => setPlayers((prev) => prev.filter((x) => x.id !== id))}
+              onUpdate={(p) => setPlayers((prev) => prev.map((x) => (x.id === p.id ? p : x)))}
             />
 
             {/* With a small shared list — or a fact axis on a profile imported

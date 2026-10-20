@@ -1,7 +1,10 @@
 import { useState } from 'react';
 import { useProfileStore } from '../context/profileContext';
+import { portraitFor } from '../utils/portrait';
 import { summarizeProfiles } from '../utils/profileStats';
 import ListImport from './ListImport';
+import Portrait from './Portrait';
+import PortraitPicker from './PortraitPicker';
 import { Badge, Button, Icon, Input, Label, Modal } from '../ui';
 
 // Pick who you are, once, for the whole arcade.
@@ -32,7 +35,10 @@ import { Badge, Button, Icon, Input, Label, Modal } from '../ui';
 //            createProfile; 'add' must never displace your main profile.
 //
 // 'add' also hides delete: it is device-level housekeeping, and offering it
-// mid-roster is how you lose a list by accident.
+// mid-roster is how you lose a list by accident. And the character picker
+// (each row's face, in 'main' mode): which character a profile wears is the
+// profile's own setting, so it lives with the profile here as well as on the
+// setup slots, where it is chosen for a game about to start.
 export default function ProfilePicker({
   mode = 'main',
   excludeIds = [],
@@ -47,6 +53,9 @@ export default function ProfilePicker({
   const [creating, setCreating] = useState(false);
   // The profile just created, waiting on its import. Null the rest of the time.
   const [importFor, setImportFor] = useState(null);
+  // The profile whose character is being chosen. Its picker replaces this
+  // dialog the way the import does, and closing it comes back here.
+  const [faceFor, setFaceFor] = useState(null);
 
   const adding = mode === 'add';
   const rows = summarizeProfiles(profiles, activeId);
@@ -107,6 +116,17 @@ export default function ProfilePicker({
             ? 'border-pop-purple bg-pop-purple/15'
             : 'border-line-strong bg-surface'}`}
       >
+        {!adding && (
+          <button
+            type="button"
+            onClick={() => setFaceFor(profiles[row.id])}
+            aria-label={`Choose ${row.name}'s character`}
+            title="Choose character"
+            className="focus-pop relative isolate h-12 w-12 flex-shrink-0 overflow-hidden border-2 border-ink bg-surface-2"
+          >
+            <Portrait portrait={portraitFor(profiles[row.id])} name={row.name} initialClass="text-xl" />
+          </button>
+        )}
         <button
           onClick={() => handleRow(row)}
           disabled={seated}
@@ -152,6 +172,16 @@ export default function ProfilePicker({
       </div>
     );
   };
+
+  if (faceFor) {
+    return (
+      <PortraitPicker
+        profile={faceFor}
+        onClose={() => setFaceFor(null)}
+        onSave={saveProfile}
+      />
+    );
+  }
 
   // Replaces this dialog rather than stacking on top of it: two <Modal>s means
   // two fixed backdrops and two Escape handlers over what reads as one panel.

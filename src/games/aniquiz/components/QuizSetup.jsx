@@ -62,6 +62,7 @@ export default function QuizSetup({ pack, onStart, error, onBack }) {
               onAdd={() => setShowPicker(true)}
               onImport={setImportTarget}
               onRemove={(id) => setPlayers((prev) => prev.filter((x) => x.id !== id))}
+              onUpdate={(p) => setPlayers((prev) => prev.map((x) => (x.id === p.id ? p : x)))}
             />
             {error && <Banner tone="danger" className="mb-4">{error}</Banner>}
           </>

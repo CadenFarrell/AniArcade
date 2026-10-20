@@ -3,6 +3,7 @@ import { useProfileStore } from '../context/profileContext';
 import ListImport from './ListImport';
 import { canRefreshList } from '../services/listSources';
 import { PlayerSlot, PlayerSlots } from './PlayerSlots';
+import PortraitPicker from './PortraitPicker';
 import { Badge, Button, Card, Icon } from '../ui';
 
 // The parts every online lobby draws identically: the code to share, the live
@@ -62,45 +63,60 @@ const YOU_BADGE = {
  * The count and the waiting note use the ACTIVE roster, for the reason every
  * Start gate does: a ghost left by a closed tab must not make the room look
  * ready.
+ *
+ * Your own slot's face opens the character picker; nobody else's does, since a
+ * phone can only save its own profile. The choice is saved into the PROFILE,
+ * for LobbyImport's reason below, and useRepublishProfile carries it up.
+ * Gated on the seat being the active profile's, the same check the republish
+ * makes — a choice saved to some other profile would never reach this room.
  */
 export function PlayerRoster({ room, players, active, statuses, tone, badgeFor, minPlayers = 2 }) {
+  const { activeProfile, saveProfile } = useProfileStore();
+  const [choosing, setChoosing] = useState(false);
+  const canChoose = !!activeProfile && activeProfile.id === room.myPlayerId;
   return (
-    <PlayerSlots
-      count={active.length}
-      players={players}
-      footer={active.length < minPlayers && (
-        <p className="mt-3 text-sm text-fg-subtle">
-          Waiting for more players to join
-          {minPlayers > 2 ? ` — this game needs ${minPlayers}.` : '…'}
-        </p>
+    <>
+      <PlayerSlots
+        count={active.length}
+        players={players}
+        footer={active.length < minPlayers && (
+          <p className="mt-3 text-sm text-fg-subtle">
+            Waiting for more players to join
+            {minPlayers > 2 ? ` — this game needs ${minPlayers}.` : '…'}
+          </p>
+        )}
+      >
+        {players.map((p) => {
+          const status = statuses[p.id] ?? 'active';
+          const here = status === 'active' || status === 'dropping';
+          return (
+            <PlayerSlot
+              key={p.id}
+              player={p}
+              dim={!here}
+              onChooseFace={p.id === room.myPlayerId && canChoose ? () => setChoosing(true) : undefined}
+              corner={p.id === room.hostId && (
+                <span className="grid h-9 w-9 place-items-center border-2 border-ink bg-surface text-lg text-pop-amber">
+                  <Icon name="crown" label="Host" />
+                </span>
+              )}
+              badges={(
+                <>
+                  {p.id === room.myPlayerId && <Badge tone={YOU_BADGE[tone] ?? 'purple'}>You</Badge>}
+                  {status === 'dropping' && <Badge tone="amber">Reconnecting…</Badge>}
+                  {/* Neutral, not red: red means wrong, and leaving a lobby is not. */}
+                  {!here && <Badge tone="neutral">Left</Badge>}
+                  {status === 'active' && badgeFor?.(p)}
+                </>
+              )}
+            />
+          );
+        })}
+      </PlayerSlots>
+      {choosing && canChoose && (
+        <PortraitPicker profile={activeProfile} onClose={() => setChoosing(false)} onSave={saveProfile} />
       )}
-    >
-      {players.map((p) => {
-        const status = statuses[p.id] ?? 'active';
-        const here = status === 'active' || status === 'dropping';
-        return (
-          <PlayerSlot
-            key={p.id}
-            player={p}
-            dim={!here}
-            corner={p.id === room.hostId && (
-              <span className="grid h-9 w-9 place-items-center border-2 border-ink bg-surface text-lg text-pop-amber">
-                <Icon name="crown" label="Host" />
-              </span>
-            )}
-            badges={(
-              <>
-                {p.id === room.myPlayerId && <Badge tone={YOU_BADGE[tone] ?? 'purple'}>You</Badge>}
-                {status === 'dropping' && <Badge tone="amber">Reconnecting…</Badge>}
-                {/* Neutral, not red: red means wrong, and leaving a lobby is not. */}
-                {!here && <Badge tone="neutral">Left</Badge>}
-                {status === 'active' && badgeFor?.(p)}
-              </>
-            )}
-          />
-        );
-      })}
-    </PlayerSlots>
+    </>
   );
 }
 

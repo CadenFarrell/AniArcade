@@ -64,6 +64,12 @@ describe('profileFingerprint', () => {
     expect(profileFingerprint(after)).not.toBe(profileFingerprint(before));
   });
 
+  it('changes when the player chooses a different character to wear', () => {
+    // A face chosen in a lobby moves no count, and has to reach the other phones.
+    const before = profile('a', 'A');
+    expect(profileFingerprint({ ...before, portraitKey: 'power' })).not.toBe(profileFingerprint(before));
+  });
+
   it('changes when a re-import only adds characters to an existing show', () => {
     const before = profile('caden', 'Caden', [show('Naruto', 3)]);
     const after = profile('caden', 'Caden', [show('Naruto', 8)]);

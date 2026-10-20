@@ -4,6 +4,7 @@ import { useWins } from '../../../shared/hooks/useWins';
 import { useGamePrefs } from '../../../shared/hooks/useGamePrefs';
 import { normalizeTitle } from '../../../shared/utils/ranking';
 import { AddPlayerSlot, PlayerSlot, PlayerSlots, SlotAction } from '../../../shared/components/PlayerSlots';
+import PortraitPicker from '../../../shared/components/PortraitPicker';
 import ProfilePicker from '../../../shared/components/ProfilePicker';
 import SetupLayout, { StartBar } from '../../../shared/components/SetupLayout';
 import AniGuessSettings from './AniGuessSettings';
@@ -29,7 +30,7 @@ import { CSS } from '@dnd-kit/utilities';
 // slots keep the drag-to-reorder the old list had. rectSortingStrategy because
 // the seats are a grid now, not a column. The grip is the only drag handle, so
 // the slot's own buttons stay ordinary buttons.
-function SortableSlot({ player, isYou, onRemove, onGoToList }) {
+function SortableSlot({ player, isYou, onRemove, onGoToList, onChooseFace }) {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: player.id });
   const totalCharacters = player.animeList.reduce((sum, anime) => sum + anime.characters.length, 0);
 
@@ -38,6 +39,7 @@ function SortableSlot({ player, isYou, onRemove, onGoToList }) {
       ref={setNodeRef}
       style={{ transform: CSS.Transform.toString(transform), transition }}
       player={player}
+      onChooseFace={onChooseFace}
       corner={(
         <span
           {...attributes}
@@ -72,9 +74,11 @@ function SortableSlot({ player, isYou, onRemove, onGoToList }) {
 }
 
 export default function PlayerSetup({ onStartGame, onGoToList, players, onPlayersChange, onBack }) {
-  const { activeId } = useProfileStore();
+  const { activeId, saveProfile } = useProfileStore();
   const { getWins, resetWins } = useWins();
   const [showPicker, setShowPicker] = useState(false);
+  // Whose character is being chosen — any seat, as on every other setup screen.
+  const [choosing, setChoosing] = useState(null);
   const [showWins, setShowWins] = useState(false);
   // Seeded from whatever this device last started a game with, not from the
   // literal defaults — see shared/hooks/useGamePrefs.js.
@@ -155,6 +159,7 @@ export default function PlayerSetup({ onStartGame, onGoToList, players, onPlayer
                       isYou={p.id === activeId}
                       onRemove={removePlayer}
                       onGoToList={onGoToList}
+                      onChooseFace={() => setChoosing(p)}
                     />
                   ))}
                   <AddPlayerSlot onClick={() => setShowPicker(true)} />
@@ -187,6 +192,18 @@ export default function PlayerSetup({ onStartGame, onGoToList, players, onPlayer
           </StartBar>
         )}
       />
+
+      {choosing && (
+        <PortraitPicker
+          profile={choosing}
+          onClose={() => setChoosing(null)}
+          // The seated copies are what Start hands the game (see LocalRoster).
+          onSave={(next) => {
+            saveProfile(next);
+            onPlayersChange(players.map((x) => (x.id === next.id ? next : x)));
+          }}
+        />
+      )}
 
       {showPicker && (
         <ProfilePicker

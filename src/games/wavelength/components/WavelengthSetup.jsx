@@ -112,6 +112,7 @@ export default function WavelengthSetup({ onStart, onBack }) {
               onImport={needsCards ? setImportTarget : undefined}
               badgeFor={needsCards ? undefined : null}
               onRemove={(id) => setPlayers((prev) => prev.filter((x) => x.id !== id))}
+              onUpdate={(p) => setPlayers((prev) => prev.map((x) => (x.id === p.id ? p : x)))}
             />
 
             {players.length > 0 && !enoughPlayers && (

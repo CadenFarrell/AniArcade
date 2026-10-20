@@ -216,7 +216,16 @@ Players are character-select slots (`shared/components/PlayerSlots.jsx`): `Local
 local setup, `PlayerRoster` for a lobby, each wearing a portrait from that player's own list.
 **`portraitsFor` shares portraits out across the table** — each player gets their
 best-known character nobody seated before them is already wearing — because friends' lists
-overlap and two slots in one face read as one person seated twice. The slots keep the old
+overlap and two slots in one face read as one person seated twice. **A player can choose the
+face instead** (`PortraitPicker.jsx`, from the slot's portrait — any seat locally, only your
+own in a lobby — or a row of the hub's profile list): one `portraitKey` (a `characterNameKey`)
+on the PROFILE, so it is the same in every game and travels into a room with the profile
+(`profileFingerprint` counts it, which is why AniTag's lobby now republishes too). A choice
+beats an automatic face; two players choosing one character leaves it with whoever sat first,
+and the other's slot says "Taken by <name>". A local setup screen must swap the updated
+profile into its seated copies (`LocalRoster`'s `onUpdate`), because those copies are what
+Start hands the game. Clearing it back to Automatic deletes the key — RTDB rejects a write
+carrying `undefined`. The slots keep the old
 controls' accessible names ("Add player", "Remove <name>", "Import <name>'s list"), which the
 playtest bots and the tests find them by; keep them when touching the slots.
 

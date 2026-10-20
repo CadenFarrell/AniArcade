@@ -58,6 +58,9 @@ export function profileFingerprint(profile) {
     // popularity mode on the unrepaired copy the room holds.
     countWithStats(profile),
     countWithFavourites(profile),
+    // The character a player chose to wear (portrait.js). Moves no count
+    // either, and a face picked in the lobby must reach the other phones.
+    profile.portraitKey ?? '',
   ].join('|');
 }
 

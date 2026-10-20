@@ -22,9 +22,10 @@ import { profileFingerprint } from '../utils/profileStats';
 // without it the effect would re-fire and re-write for the whole round trip
 // between the transaction and the snapshot coming back.
 //
-// AniTag's lobby deliberately does not call this: it reads nobody's list, so
-// its room copy of a profile is only ever a name, and a name cannot go stale in
-// the way a fingerprint exists to catch.
+// Every lobby calls it, AniTag's included: AniTag reads nobody's list, but the
+// face each phone draws for you is read from your copy in the room, so a
+// character chosen in the lobby (portraitKey, which the fingerprint counts)
+// has to travel the same way an import does.
 export function useRepublishProfile(room, me) {
   const { activeProfile } = useProfileStore();
   const lastPushedRef = useRef(null);

@@ -46,7 +46,13 @@ export default function Modal({
       // backdrop-blur as well as the scrim: an ink scrim over a busy page
       // leaves the page's own ink lines showing through as noise behind the
       // panel. Blurring them is what makes the dialog read as IN FRONT.
-      className="fixed inset-0 z-50 flex items-center justify-center bg-scrim backdrop-blur-sm px-4 py-8 overflow-y-auto"
+      //
+      // Centred by the panel's `m-auto`, NOT by items-center/justify-center:
+      // a flex-centred child taller than its scrolling parent overflows above
+      // the top too, where no scroll can reach — a tall dialog on a phone
+      // opened mid-way down with its heading cut off. An auto margin centres
+      // when there is room and collapses to 0 when there is not.
+      className="fixed inset-0 z-50 flex bg-scrim backdrop-blur-sm px-4 py-8 overflow-y-auto"
       onClick={canDismiss && closeOnBackdrop ? onClose : undefined}
       role="dialog"
       aria-modal="true"
@@ -56,7 +62,7 @@ export default function Modal({
         onClick={(e) => e.stopPropagation()}
         // A heavier rule and a deeper shadow than a plain card-pop: a dialog is
         // the one panel that has to look like it is lifted off the page.
-        className={`w-full ${WIDTHS[width]}
+        className={`m-auto w-full ${WIDTHS[width]}
           ${bare ? '' : 'card-pop border-[3px] p-6 shadow-[0_8px_0_0_var(--color-ink)] sm:p-8'} ${className}`}
       >
         {children}
