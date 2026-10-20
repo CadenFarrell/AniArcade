@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Button, Card, Combobox } from '../../../shared/ui';
+import { Button, Card, Combobox, Icon } from '../../../shared/ui';
 import { MAX_LABEL_LEN, normalizeCustomCategory } from '../categories';
 
 // How many clauses the cold start puts on screen. A search box with nothing
@@ -94,8 +94,8 @@ export default function CategoryPicker({
           onSubmit={commit}
           optionKey={(c) => c.id}
           renderOption={(c) => (
-            <span className="min-w-0 flex-1 truncate text-base text-white">
-              {c.custom && <span className="mr-2 text-pop-purple">✍️</span>}
+            <span className="min-w-0 flex-1 truncate text-base text-fg-strong">
+              {c.custom && <Icon name="pencil" label="Your own" className="mr-2 text-pop-purple" />}
               {c.label}
             </span>
           )}
@@ -114,9 +114,9 @@ export default function CategoryPicker({
                 type="button"
                 onClick={() => setDraft(c.label)}
                 className="focus-pop rounded-pop-sm border-2 border-line bg-wash-soft px-3 py-2
-                  text-left text-base text-fg-strong transition-colors hover:text-white"
+                  text-left text-base text-fg-strong transition-colors hover:text-fg-strong"
               >
-                {c.custom && <span className="mr-1.5 text-pop-purple">✍️</span>}
+                {c.custom && <Icon name="pencil" label="Your own" className="mr-1.5 text-pop-purple" />}
                 {c.label}
               </button>
             ))}
@@ -133,7 +133,7 @@ export default function CategoryPicker({
           the game will not play. Same discipline CategoryEditor keeps — and it
           replaces a third card that did nothing but echo the same string. */}
       <Button variant="success" size="lg" fullWidth disabled={!spec || busy} onClick={commit}>
-        {busy ? 'Saving…' : (spec ? `🔒 Lock in “${spec.label}”` : '🔒 Lock it in')}
+        {busy ? 'Saving…' : (spec ? `Lock in “${spec.label}”` : 'Lock it in')}
       </Button>
     </>
   );

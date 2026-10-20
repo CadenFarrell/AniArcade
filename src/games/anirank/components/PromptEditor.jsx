@@ -2,7 +2,7 @@ import { useState } from 'react';
 import {
   MAX_END_LABEL_LEN, MAX_PROMPT_LEN, customAxis, normalizeCustomPrompt, promptFor,
 } from '../axes';
-import { Button, Field, Input, Modal } from '../../../shared/ui';
+import { Button, Field, Icon, Input, Modal } from '../../../shared/ui';
 
 // Writes or edits one custom prompt. Used from AxisPicker, so both the local
 // setup screen and the online lobby get it without either owning it.
@@ -43,8 +43,8 @@ export default function PromptEditor({ prompt, onSave, onDelete, onClose }) {
 
   return (
     <Modal onClose={onClose} width="md">
-      <h2 className="mb-6 font-display text-2xl font-black text-white">
-        {editing ? '✏️ Edit prompt' : '✏️ New prompt'}
+      <h2 className="mb-6 font-display text-2xl font-black text-fg-strong">
+        {editing ? 'Edit prompt' : 'New prompt'}
       </h2>
 
       <Field label="Prompt" htmlFor="prompt-text" className="mb-2">
@@ -119,7 +119,7 @@ export default function PromptEditor({ prompt, onSave, onDelete, onClose }) {
             aria-label={`Delete ${prompt.text}`}
             onClick={handleDelete}
           >
-            🗑️
+            <Icon name="trash" />
           </Button>
         )}
         <Button variant="neutral" size="lg" fullWidth onClick={onClose}>

@@ -10,6 +10,12 @@ import { ROWS, cellKey } from '../clues';
 //
 // The column count comes in at run time, so the template is an inline style:
 // Tailwind only emits `grid-cols-N` for an N it can find spelled out in source.
+//
+// Drawn in INK, never in AniQuiz's crimson: red is the game's colour on the hub
+// only, and in a round red means wrong (see aniquiz/CLAUDE.md) — a board ruled
+// in it read as a board of mistakes. Headers are ink blocks, live cells are
+// paper panels that press like buttons (btn-pop), spent cells keep their place
+// as hatched, empty slots.
 export default function Board({ deal, game, canPick, onPick }) {
   const columns = deal?.categories ?? [];
   const template = { gridTemplateColumns: `repeat(${columns.length}, minmax(0, 1fr))` };
@@ -19,9 +25,9 @@ export default function Board({ deal, game, canPick, onPick }) {
       {columns.map((col) => (
         <div
           key={`h-${col.id}`}
-          className="flex min-h-14 items-center justify-center rounded-pop-sm border-2 border-line-strong
-            bg-surface-2 px-1 py-2 text-center font-display text-[0.65rem] font-extrabold uppercase
-            leading-tight tracking-wide text-fg-strong sm:text-xs"
+          className="flex min-h-14 items-center justify-center rounded-pop-sm border-2 border-ink bg-ink px-1 py-2
+            text-center font-display text-[0.65rem] font-bold uppercase leading-tight tracking-wide text-paper
+            sm:text-xs"
         >
           {col.title}
         </div>
@@ -31,7 +37,13 @@ export default function Board({ deal, game, canPick, onPick }) {
         const spent = Boolean(game?.used?.[key]);
         const value = col.clues[row]?.value;
         if (spent) {
-          return <div key={key} aria-hidden="true" className="min-h-14 rounded-pop-sm border-2 border-line bg-canvas sm:min-h-16" />;
+          return (
+            <div
+              key={key}
+              aria-hidden="true"
+              className="hatch min-h-14 rounded-pop-sm border-2 border-dashed border-line-strong [--hatch:var(--color-line)] sm:min-h-16"
+            />
+          );
         }
         return (
           <button
@@ -40,9 +52,9 @@ export default function Board({ deal, game, canPick, onPick }) {
             disabled={!canPick}
             onClick={() => onPick(key)}
             aria-label={`${col.title} for ${value}`}
-            className="focus-pop min-h-14 rounded-pop-sm border-2 border-pop-red/70 bg-surface font-display
-              text-base font-extrabold text-pop-amber transition-colors enabled:hover:border-pop-red
-              enabled:hover:bg-pop-red/15 disabled:cursor-default sm:min-h-16 sm:text-2xl"
+            className="btn-pop focus-pop min-h-14 rounded-pop-sm! border-ink bg-surface text-base text-pop-amber
+              tabular-nums enabled:hover:bg-surface-2 disabled:cursor-default disabled:shadow-none sm:min-h-16
+              sm:text-2xl"
           >
             {value}
           </button>

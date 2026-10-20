@@ -1,40 +1,31 @@
-import { getPositionEmoji } from '../../../shared/utils/ranking';
+import PlayerRow from '../../../shared/components/PlayerRow';
+import { Icon, PlaceMark } from '../../../shared/ui';
 
+// Whose turn it is, as the arcade's row of faces (PlayerRow): the guesser framed
+// under NOW, everyone who has solved it carrying their place, everyone still
+// going an hourglass. The place is what a solved player's chip used to say; the
+// row is in seat order, so it is also the order the turns go round.
 export default function TurnTracker({ players, currentPlayerId, lockedPositions }) {
+  const lockFor = (id) => lockedPositions.find((lp) => lp.playerId === id);
   return (
-    <div className="card-pop mb-6 p-4">
-      <div className="flex flex-wrap gap-3">
-        {players.map((player) => {
-          const locked = lockedPositions.find((lp) => lp.playerId === player.id);
-          const isCurrent = player.id === currentPlayerId;
-          const isTied = locked && lockedPositions.filter(
-            (lp) => lp.turnsUsed === locked.turnsUsed
-          ).length > 1;
-
-          // Whose turn it is is the one thing this strip has to communicate at
-          // a glance, so only that chip gets a saturated fill.
-          const tone = isCurrent
-            ? 'bg-pop-purple text-ink border-ink'
-            : locked
-              ? 'bg-surface-2 text-fg-body border-line-strong'
-              : 'bg-surface text-fg-subtle border-line';
-
+    <PlayerRow
+      players={players}
+      activeId={currentPlayerId}
+      label="Turn order"
+      status={(player) => {
+        const locked = lockFor(player.id);
+        if (locked) {
+          const tied = lockedPositions.filter((lp) => lp.turnsUsed === locked.turnsUsed).length > 1;
           return (
-            <div
-              key={player.id}
-              className={`flex items-center gap-2 rounded-pop-sm border-2 px-4 py-2
-                font-display text-base font-extrabold ${tone}`}
-            >
-              <span>{player.name}</span>
-              <span>
-                {locked
-                  ? `${getPositionEmoji(locked.position)}${isTied ? '🤝' : ''}`
-                  : isCurrent ? '🎮' : '⏳'}
-              </span>
-            </div>
+            <span className="inline-flex items-center gap-1 text-sm">
+              <PlaceMark place={locked.position} />
+              {tied && <span className="font-display text-[10px] font-bold uppercase tracking-wider text-pop-amber">Tie</span>}
+            </span>
           );
-        })}
-      </div>
-    </div>
+        }
+        if (player.id === currentPlayerId) return null;
+        return <span className="text-sm text-fg-helper"><Icon name="hourglass" label="Waiting" /></span>;
+      }}
+    />
   );
 }

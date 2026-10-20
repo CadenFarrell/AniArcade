@@ -1,7 +1,15 @@
 import { useMemo } from 'react';
-import { computeRankedPlayers, getPositionEmoji } from '../../../shared/utils/ranking';
-import { Button, Card, CardRow, Screen, Wordmark } from '../../../shared/ui';
+import ResultsLayout, { Splash, Standings } from '../../../shared/components/Results';
+import { StartBar } from '../../../shared/components/SetupLayout';
+import { Button } from '../../../shared/ui';
+import { KANA } from '../../../shared/ui/kanaText';
+import { computeRankedPlayers } from '../../../shared/utils/ranking';
+import descriptor from '../index';
 
+// The stop between rounds, on the same frame as the final leaderboard: the
+// splash goes to this round's best — fewest turns to solve, everyone tied for it —
+// not to the overall leader — the total is the second list, and the leader
+// there is often somebody else.
 export default function RoundEnd({
   players, lockedPositions, roundNumber, totalScores, departedIds = [],
   // Local pass-and-play has one device and one set of controls, so it has no
@@ -16,76 +24,73 @@ export default function RoundEnd({
   );
 
   // Don't mutate the prop — .sort() is in-place, and lockedPositions comes
-  // straight from game state.
-  const byPosition = useMemo(
-    () => [...lockedPositions].sort((a, b) => a.position - b.position),
+  // straight from game state. Shaped as standings rows (id/position/total) so
+  // the round reads in the same list as the totals below it.
+  const thisRound = useMemo(
+    () => [...lockedPositions]
+      .sort((a, b) => a.position - b.position)
+      .map((lp) => ({ ...lp, id: lp.playerId, total: lp.points })),
     [lockedPositions]
   );
+  const firsts = thisRound.filter((lp) => lp.position === 1);
+  const leaders = firsts.map((lp) => players.find((p) => p.id === lp.id) ?? { id: lp.id, name: lp.name });
+  const isTied = (lp) => thisRound.filter((o) => o.turnsUsed === lp.turnsUsed).length > 1;
+  const turns = (n) => `${n} turn${n === 1 ? '' : 's'}`;
 
   return (
-    <Screen center width="md">
-      <Wordmark tone="pink" size="md" level={2} className="mb-8">
-        🏁 Round {roundNumber} Done!
-      </Wordmark>
-
-      <Card title="This Round" padding="lg" className="mb-5">
-        {byPosition.map((lp) => {
-          const isTied = lockedPositions.filter((o) => o.turnsUsed === lp.turnsUsed).length > 1;
-          return (
-            <CardRow key={lp.playerId}>
-              <span className="text-lg text-white">
-                {getPositionEmoji(lp.position)} {lp.name}
-                {isTied && <span className="ml-2 text-sm text-pop-amber">🤝 Tied</span>}
-              </span>
-              <span className="text-right">
-                <span className="font-display text-lg font-extrabold text-pop-lime">
-                  +{lp.points} pts
-                </span>
-                <span className="ml-3 text-sm text-fg-subtle">({lp.turnsUsed} turns)</span>
-              </span>
-            </CardRow>
-          );
-        })}
-      </Card>
-
-      <Card title="Total Scores" padding="lg" className="mb-8">
-        {ranked.map((p) => {
-          const isLeading = p.total > 0 && p.total === ranked[0].total;
-          const left = departedIds.includes(p.id);
-          return (
-            <CardRow key={p.id} className={left ? 'opacity-50' : ''}>
-              <span className="text-lg text-white">
-                {isLeading ? '👑 ' : ''}{p.name}
-                {left && <span className="ml-2 text-sm text-fg-helper">left</span>}
-              </span>
-              <span className="font-display text-xl font-extrabold text-pop-purple">
-                {p.total} pts
-              </span>
-            </CardRow>
-          );
-        })}
-      </Card>
-
-      {isHost ? (
-        <div className="flex flex-col gap-4">
-          <Button variant="success" size="xl" fullWidth onClick={onNewRound}>
-            🔄 New Round
-          </Button>
-          <Button variant="primary" size="xl" fullWidth onClick={onEndSession}>
-            🏆 End &amp; See Leaderboard
-          </Button>
-        </div>
-      ) : (
-        // Two crowns on one screen: the 👑 in Total Scores above marks whoever
-        // is leading, this one marks the host. They're usually different people,
-        // so the sentence has to carry the meaning — never the glyph alone.
-        // aria-live because for a non-host this line is the only thing that
-        // changes when the host moves the room on, and it stands in for a
-        // control that would otherwise have taken focus.
-        <p className="text-center text-lg text-fg-helper" aria-live="polite">
-          👑 Waiting for {hostName || 'the host'} to start the next round…
-        </p>
+    <ResultsLayout
+      game={descriptor}
+      title={`Round ${roundNumber} Done!`}
+      players={players}
+      splash={firsts.length > 0 && (
+        <Splash
+          players={leaders}
+          stamp={firsts.length > 1 ? 'Tied' : 'Round winner'}
+          kana={KANA.round}
+          score={`+${firsts[0].points} pts`}
+        >
+          in {turns(firsts[0].turnsUsed)}
+        </Splash>
       )}
-    </Screen>
+      bar={(
+        // aria-live (in StartBar) because for a non-host this line is the only
+        // thing that changes when the host moves the room on, and it stands in
+        // for a control that would otherwise have taken focus.
+        <StartBar
+          width="md"
+          status={isHost
+            ? `${roundNumber} round${roundNumber === 1 ? '' : 's'} played`
+            : `Waiting for ${hostName || 'the host'} to start the next round…`}
+          ready={isHost}
+        >
+          {isHost && (
+            <>
+              <Button variant="neutral" size="lg" onClick={onEndSession}>End &amp; See Leaderboard</Button>
+              <Button variant="primary" size="lg" onClick={onNewRound}>New Round</Button>
+            </>
+          )}
+        </StartBar>
+      )}
+    >
+      <Standings
+        title="This Round"
+        ranked={thisRound}
+        score={(lp) => `+${lp.points} pts`}
+        scoreClass="text-pop-lime"
+        extra={(lp) => (
+          <span className="shrink-0 text-right text-sm text-fg-subtle">
+            {isTied(lp) && <span className="mr-2 font-display font-bold uppercase text-pop-amber">Tied</span>}
+            {turns(lp.turnsUsed)}
+          </span>
+        )}
+      />
+      <Standings
+        title="Total Scores"
+        ranked={ranked}
+        departedIds={departedIds}
+        score={(p) => `${p.total} pts`}
+        scoreClass="text-pop-purple"
+      />
+    </ResultsLayout>
   );
 }

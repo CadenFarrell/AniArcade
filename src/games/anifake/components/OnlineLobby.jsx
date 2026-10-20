@@ -9,7 +9,9 @@ import { eligibleCharacters, fameReport } from '../utils/pool';
 import { getFame } from '../fame';
 import { DEFAULT_PREFS } from '../prefs';
 import { minPool, MIN_PLAYERS } from '../rules';
-import { Backdrop, Banner, Button, Screen, Wordmark } from '../../../shared/ui';
+import SetupLayout, { StartBar } from '../../../shared/components/SetupLayout';
+import descriptor from '../index';
+import { Banner, Button } from '../../../shared/ui';
 
 // The online lobby. The room code, roster, list import and guest wait card are
 // shared/components/Lobby.jsx; what lives here is AniFake's own host-only
@@ -69,82 +71,79 @@ export default function OnlineLobby({ room }) {
   const enough = eligible >= needed;
   const canStart = active.length >= MIN_PLAYERS && everyoneHasShows && enough;
 
+  const status = !room.isHost ? `Waiting for ${room.hostName || 'the host'} to start.`
+    : active.length < MIN_PLAYERS ? `Waiting for players — this game needs ${MIN_PLAYERS}.`
+      : !everyoneHasShows ? 'Every player needs an anime list.'
+        : !enough ? `Not enough characters to deal — found ${eligible}.`
+          // The host picks the level for the whole room, so the host is who
+          // needs to see what it costs.
+          : `${active.length} players · ${eligible} shared character${eligible === 1 ? '' : 's'}${
+            famous > 0 ? ` · “${getFame(fame).label}” narrows it to ${famous}` : ''}`;
+
   return (
-    <>
-      <Backdrop />
-      <Screen width="md">
-        <Wordmark tone="teal" size="sm" level={2} className="mb-6">
-          🌐 AniFake Lobby
-        </Wordmark>
-
-        <RoomCode code={room.roomCode} />
-
-        <PlayerRoster
-          room={room}
-          players={players}
-          active={active}
-          statuses={statuses}
-          tone="teal"
-          badgeFor={(p) => <ListBadge count={showCount(p)} />}
-          minPlayers={MIN_PLAYERS}
-        />
-
-        <LobbyImport />
-
-        {!room.isHost && <HostWaitCard hostName={room.hostName} needsList />}
-
-        {room.isHost && (
-          <>
-            <ModePicker value={mode} onChange={(m) => change('mode', m)} />
-
-            <AniFakeSettings
-              values={settings}
-              onChange={change}
-              poolEntries={poolEntries}
-              local={false}
-              onReset={applyDefaults}
-            />
-
-            {/* The host picks the level for the whole room, so the host is who
-                needs to see what it costs. Only when the term is live — there is
-                no count worth reading when it is not narrowing anything. */}
-            {famous > 0 && (
-              <p className="mb-4 text-center text-base text-fg-helper">
-                {eligible} shared character{eligible === 1 ? '' : 's'} · “{getFame(fame).label}”
-                narrows this to {famous}
-              </p>
-            )}
-
-            {active.length >= MIN_PLAYERS && !everyoneHasShows && (
-              <Banner tone="warning" className="mb-4">
-                ⚠️ Every player needs an anime list before you can start.
-              </Banner>
-            )}
-            {active.length >= MIN_PLAYERS && everyoneHasShows && !enough && (
-              <Banner tone="warning" className="mb-4">
-                ⚠️ {needed === 1
-                  ? 'Nobody has a character in common — found none.'
-                  : `Decoy mode needs ${needed} characters, so the fake can be handed a
-                     different one — found ${eligible}.`}
-                {sharedOnly ? ' Turn off “Shared characters only”, or import matching titles.' : ''}
-              </Banner>
-            )}
-
+    <SetupLayout
+      game={descriptor}
+      tagline="Everyone knows the character. One of you is faking it."
+      aside={<RoomCode code={room.roomCode} />}
+      left={(
+        <>
+          <PlayerRoster
+            room={room}
+            players={players}
+            active={active}
+            statuses={statuses}
+            tone="teal"
+            badgeFor={(p) => <ListBadge count={showCount(p)} />}
+            minPlayers={MIN_PLAYERS}
+          />
+          <LobbyImport />
+          {room.isHost && active.length >= MIN_PLAYERS && !everyoneHasShows && (
+            <Banner tone="warning" className="mb-4">
+              Every player needs an anime list before you can start.
+            </Banner>
+          )}
+          {room.isHost && active.length >= MIN_PLAYERS && everyoneHasShows && !enough && (
+            <Banner tone="warning" className="mb-4">
+              {needed === 1
+                ? 'Nobody has a character in common — found none.'
+                : `Decoy mode needs ${needed} characters, so the fake can be handed a
+                   different one — found ${eligible}.`}
+              {sharedOnly ? ' Turn off “Shared characters only”, or import matching titles.' : ''}
+            </Banner>
+          )}
+        </>
+      )}
+      right={room.isHost ? (
+        <>
+          <ModePicker value={mode} onChange={(m) => change('mode', m)} />
+          <AniFakeSettings
+            values={settings}
+            onChange={change}
+            poolEntries={poolEntries}
+            local={false}
+            onReset={applyDefaults}
+          />
+        </>
+      ) : (
+        <HostWaitCard hostName={room.hostName} needsList />
+      )}
+      start={(
+        <StartBar status={status} ready={room.isHost && canStart}>
+          {room.isHost && (
             <Button
               variant="primary"
-              size="xl"
-              fullWidth
+              size="lg"
               onClick={() => {
                 savePrefs(settings);
                 room.startGame(settings);
               }}
               disabled={!canStart}
             >
-              🎮 Start Game
+              Start Game
             </Button>
-          </>
-        )}
-      </Screen>
-    </>
+          )}
+        </StartBar>
+      )}
+    />
   );
 }

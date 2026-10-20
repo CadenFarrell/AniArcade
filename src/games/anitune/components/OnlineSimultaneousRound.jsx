@@ -1,5 +1,6 @@
 import GuessInput from './GuessInput';
-import { Badge, Button, GhostButton } from '../../../shared/ui';
+import { Badge, Button, GhostButton, Icon } from '../../../shared/ui';
+import Lives from './Lives';
 
 // Everyone-guesses mode, one player per device. No device to pass round — each
 // player types their own answer at the same time, and the room hook holds the
@@ -31,10 +32,14 @@ export default function OnlineSimultaneousRound({
             tone={out ? 'red' : locked ? 'lime' : 'neutral'}
             className={out ? 'opacity-60' : ''}
           >
-            {out ? '💀' : locked ? '🔒' : '✍️'} {p.name}
+            <Icon
+              name={out ? 'skull' : locked ? 'lock' : 'pencil'}
+              label={out ? 'Out' : locked ? 'Locked in' : 'Answering'}
+            />{' '}
+            {p.name}
             {p.id === myPlayerId ? ' (you)' : ''}
             {lives && !out && (
-              <span className="ml-1">{'♥'.repeat(Math.max(0, lives[p.id] ?? 0))}</span>
+              <Lives count={lives[p.id]} className="ml-1" />
             )}
           </Badge>
         );
@@ -48,8 +53,8 @@ export default function OnlineSimultaneousRound({
   if (iAmOut) {
     return (
       <div className="mt-6 text-center">
-        <div className="mb-3 text-5xl">💀</div>
-        <p className="font-display text-xl font-extrabold text-white">You&apos;re out</p>
+        <div className="mb-3 text-5xl text-pop-red"><Icon name="skull" /></div>
+        <p className="font-display text-xl font-extrabold text-fg-strong">You&apos;re out</p>
         <p className="mt-1 text-fg-helper">
           Stick around — {waitingOn.length
             ? `${waitingOn.map((p) => p.name).join(', ')} still to answer.`
@@ -63,8 +68,8 @@ export default function OnlineSimultaneousRound({
   if (iHaveAnswered) {
     return (
       <div className="mt-6 text-center">
-        <div className="mb-3 text-5xl">🔒</div>
-        <p className="font-display text-xl font-extrabold text-white">Locked in</p>
+        <div className="mb-3 text-5xl text-fg-strong"><Icon name="lock" /></div>
+        <p className="font-display text-xl font-extrabold text-fg-strong">Locked in</p>
         <p className="mt-1 text-fg-helper">
           {waitingOn.length
             ? `Waiting on ${waitingOn.map((p) => p.name).join(', ')}…`
@@ -86,7 +91,7 @@ export default function OnlineSimultaneousRound({
 
   return (
     <div className="mt-6">
-      <p className="mb-1 text-center font-display text-xl font-extrabold text-white">
+      <p className="mb-1 text-center font-display text-xl font-extrabold text-fg-strong">
         Which anime is this?
       </p>
       <p className="mb-4 text-center text-sm text-fg-subtle">
@@ -96,7 +101,7 @@ export default function OnlineSimultaneousRound({
         key={question.id}
         questions={questions}
         placeholder="Type your answer…"
-        submitLabel="Lock in 🔒"
+        submitLabel="Lock in"
         skipLabel="Pass"
         onSubmit={(text) => onSubmit(text)}
         onSkip={() => onSubmit('')}

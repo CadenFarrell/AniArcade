@@ -1,9 +1,11 @@
 import { useState } from 'react';
-import { Badge, Button, Card, GhostButton, Input } from '../../../shared/ui';
+import { Badge, Button, Card, GhostButton, Icon, Input, Mark } from '../../../shared/ui';
 import { MAX_PROPOSAL_LEN, WRONG_DECLARATION_COST, verdictsOf } from '../rules';
 import TrailBoard from './TrailBoard';
 import SeatStrip from './SeatStrip';
 import CategoryPeek from './CategoryPeek';
+import RoundHeader from '../../../shared/components/RoundHeader';
+import SpeechBubble from '../../../shared/components/SpeechBubble';
 
 /**
  * One go, on whatever device is looking at it.
@@ -124,25 +126,19 @@ export default function TurnScreen({
 
   return (
     <>
-      <div className="mb-4 flex items-center justify-between gap-3">
-        <div className="min-w-0">
-          <p className="font-display text-xs font-extrabold uppercase tracking-widest text-fg-helper">
-            Round {roundNumber} of {totalRounds}
-          </p>
-          <h2 className="truncate font-display text-2xl font-extrabold text-white">
-            {iAmSeat ? 'Your go' : `${seatName}'s go`}
-          </h2>
-        </div>
-        <Badge tone={left > 0 ? 'lime' : 'red'} className="flex-shrink-0 text-base">
-          {left} left
-        </Badge>
-      </div>
-
-      {/* What this device is FOR, said once and as a sentence rather than as a
-          panel. Without it a judge's screen and a spectator's are identical
+      {/* The hint line is what this device is FOR, said once and as a
+          sentence. Without it a judge's screen and a spectator's are identical
           apart from two buttons, and the person who has to answer does not know
           it is them. */}
-      <p className="mb-5 text-base text-fg-body">{instruction()}</p>
+      <RoundHeader
+        title={iAmSeat ? 'Your go' : `${seatName}'s go`}
+        tag={`Round ${roundNumber}/${totalRounds}`}
+        hint={instruction()}
+      >
+        <Badge tone={left > 0 ? 'lime' : 'red'} className="text-sm">
+          {left} name{left === 1 ? '' : 's'} left
+        </Badge>
+      </RoundHeader>
 
       <SeatStrip order={order} myPlayerId={myPlayerId} className="mb-5" />
 
@@ -165,7 +161,7 @@ export default function TurnScreen({
             <p className="font-display text-xs font-extrabold uppercase tracking-widest text-fg-helper">
               {seatName}&apos;s category
             </p>
-            <p className="mt-0.5 font-display text-xl font-extrabold text-white">
+            <p className="mt-0.5 font-display text-xl font-extrabold text-fg-strong">
               {category.label}
             </p>
           </div>
@@ -191,7 +187,9 @@ export default function TurnScreen({
           <p className="font-display text-sm font-extrabold uppercase tracking-widest text-fg-helper">
             {pending.kind === 'declaration' ? 'Their guess at the category' : `Is this ${noun} in it?`}
           </p>
-          <p className="my-3 font-display text-2xl font-extrabold text-white">{pending.text}</p>
+          <SpeechBubble who={seatName} verb={pending.kind === 'declaration' ? 'guesses' : 'names'} className="my-3">
+            {pending.text}
+          </SpeechBubble>
 
           {ruler && (
             <>
@@ -216,11 +214,11 @@ export default function TurnScreen({
                 />
               )}
               <div className="flex gap-3">
-                <Button variant="success" size="lg" fullWidth onClick={() => onRule(ruler.id, true)}>
-                  ✓ Yes
+                <Button variant="success" size="lg" sound="yes" fullWidth onClick={() => onRule(ruler.id, true)}>
+                  <Icon name="check" /> Yes
                 </Button>
-                <Button variant="danger" size="lg" fullWidth onClick={() => onRule(ruler.id, false)}>
-                  ✕ No
+                <Button variant="danger" size="lg" sound="no" fullWidth onClick={() => onRule(ruler.id, false)}>
+                  <Icon name="cross" /> No
                 </Button>
               </div>
             </>
@@ -257,8 +255,8 @@ export default function TurnScreen({
                     onClick={() => setTarget(p.id)}
                     className={`focus-pop rounded-pop-sm border-2 px-3 py-2 font-display text-base
                       font-bold transition-colors ${aimedAt?.id === p.id
-                        ? 'border-pop-purple bg-pop-purple/25 text-white'
-                        : 'border-line bg-wash-soft text-fg-body hover:text-white'}`}
+                        ? 'border-pop-purple bg-pop-purple/25 text-fg-strong'
+                        : 'border-line bg-wash-soft text-fg-body hover:text-fg-strong'}`}
                   >
                     {p.name}
                   </button>
@@ -297,10 +295,10 @@ export default function TurnScreen({
                     button is disabled at that point, and a disabled button that
                     does not explain itself reads as broken. */}
                 {!declaring && 'Ask — then pass'}
-                {declaring && !chosen && '🎯 That is my category'}
+                {declaring && !chosen && 'That is my category'}
                 {declaring && chosen && (aimedAt
-                  ? `🎯 That is ${aimedAt.name}'s category`
-                  : '🎯 Pick whose category first')}
+                  ? `That is ${aimedAt.name}'s category`
+                  : 'Pick whose category first')}
               </Button>
             </>
           )}
@@ -320,7 +318,7 @@ export default function TurnScreen({
           >
             {declaring
               ? `← Back to naming ${noun}s`
-              : (chosen ? '💡 I know someone’s category' : '💡 I know the category')}
+              : (chosen ? 'I know someone’s category' : 'I know the category')}
           </Button>
 
           {!declaring && (
@@ -357,9 +355,11 @@ export default function TurnScreen({
           {/* The wedge presence cannot see: a hot seat who is connected and
               simply not naming anything. It lives here rather than under the
               screen so it inherits the width instead of re-declaring it, and so
-              it reads as what it is — an escape hatch, beside the other one. */}
+              it reads as what it is — an escape hatch, beside the other one.
+              Solid crimson, not faded: at /70 it blended to 4.17:1 on paper,
+              under the 4.5:1 body text needs (the playtest's axe pass). */}
           {onAbandon && (
-            <GhostButton className="text-pop-red/70 hover:text-pop-red" onClick={onAbandon}>
+            <GhostButton className="text-pop-red hover:text-pop-red" onClick={onAbandon}>
               End {seatName}&apos;s round
             </GhostButton>
           )}
@@ -389,7 +389,7 @@ function LastPlayed({ entry, nameFor, myPlayerId }) {
       <span className="text-base text-fg-body">
         {who} {missed ? 'guessed' : 'named'}
       </span>
-      <span className="min-w-0 font-display text-base font-extrabold text-white">
+      <span className="min-w-0 font-display text-base font-extrabold text-fg-strong">
         {entry.text}
       </span>
       {missed && entry.targetId && (
@@ -397,14 +397,15 @@ function LastPlayed({ entry, nameFor, myPlayerId }) {
       )}
       <span className="flex flex-wrap gap-1.5">
         {verdicts.map(({ judgeId, verdict }) => (
-          <Badge key={judgeId ?? 'only'} tone={verdict ? 'lime' : 'red'}>
-            {verdicts.length > 1 ? `${nameFor?.(judgeId) ?? '?'} ` : ''}
-            {verdict ? 'YES' : 'NO'}
-          </Badge>
+          <Mark
+            key={judgeId ?? 'only'}
+            yes={verdict}
+            label={`${verdicts.length > 1 ? `${nameFor?.(judgeId) ?? '?'} ` : ''}${verdict ? 'yes' : 'no'}`}
+          />
         ))}
       </span>
       {missed && (
-        <span className="text-sm text-pop-red/80">
+        <span className="text-sm text-pop-red">
           −{WRONG_DECLARATION_COST} names
         </span>
       )}

@@ -8,9 +8,16 @@ import {
   POPULARITY_LEVELS, getPopularityLevel, hasPopularitySignal, hasAnyPopularityData,
   MIN_POPULARITY_POOL,
 } from '../utils/popularity';
+import MoreSettings from '../../../shared/components/MoreSettings';
 import SettingHelp, { DetailToggle } from '../../../shared/components/SettingHelp';
 import {
-  Banner, Card, Checkbox, Field, NumberInput, Select,
+  Banner,
+  Card,
+  Checkbox,
+  Field,
+  Icon,
+  NumberInput,
+  Select,
 } from '../../../shared/ui';
 
 // The mode picker and both settings cards, rendered identically by the local
@@ -76,39 +83,26 @@ export default function AniTuneSettings({ players, values, onChange, disabled = 
                   ? 'border-pop-blue bg-pop-blue/15'
                   : 'border-line-strong bg-surface hover:border-line-loud'}`}
             >
-              <span className="text-2xl">{m.icon}</span>
-              <p className="mt-1 font-display text-lg font-extrabold text-white">{m.label}</p>
+              <span className="text-2xl text-pop-blue"><Icon name={m.icon} /></span>
+              <p className="mt-1 font-display text-lg font-extrabold text-fg-strong">{m.label}</p>
               <p className="mt-1 text-sm text-fg-helper">{m.blurb}</p>
             </button>
           );
         })}
       </div>
 
-      <Card title="⚙️ The round" action={<DetailToggle />} padding="lg" className="mb-6">
-        <div className="mb-5 flex flex-col gap-4 sm:flex-row">
-          <Field label="Questions" htmlFor="anitune-round-size" className="flex-1">
-            <NumberInput
-              id="anitune-round-size"
-              ariaLabel="Questions"
-              min={1}
-              max={50}
-              value={values.roundSize}
-              disabled={disabled}
-              onChange={(roundSize) => onChange('roundSize', roundSize)}
-            />
-          </Field>
-          <Field label="Clip length (s)" htmlFor="anitune-clip-seconds" className="flex-1">
-            <NumberInput
-              id="anitune-clip-seconds"
-              ariaLabel="Clip length in seconds"
-              min={3}
-              max={30}
-              value={values.clipSeconds}
-              disabled={disabled}
-              onChange={(clipSeconds) => onChange('clipSeconds', clipSeconds)}
-            />
-          </Field>
-        </div>
+      <Card title="The round" action={<DetailToggle />} padding="lg" className="mb-6">
+        <Field label="Questions" htmlFor="anitune-round-size" className="mb-5">
+          <NumberInput
+            id="anitune-round-size"
+            ariaLabel="Questions"
+            min={1}
+            max={50}
+            value={values.roundSize}
+            disabled={disabled}
+            onChange={(roundSize) => onChange('roundSize', roundSize)}
+          />
+        </Field>
 
         <Checkbox
           label="Timed guesses"
@@ -173,44 +167,58 @@ export default function AniTuneSettings({ players, values, onChange, disabled = 
           </Field>
         )}
 
-        <div className="flex flex-col gap-4 sm:flex-row">
-          <Field label="Clip starts" htmlFor="anitune-sample-point" className="flex-1">
-            <Select
-              id="anitune-sample-point"
-              value={values.samplePoint}
+        {/* How the clip itself plays — set once and left alone at most tables. */}
+        <MoreSettings about="the clip">
+          <Field label="Clip length (s)" htmlFor="anitune-clip-seconds" className="mb-5">
+            <NumberInput
+              id="anitune-clip-seconds"
+              ariaLabel="Clip length in seconds"
+              min={3}
+              max={30}
+              value={values.clipSeconds}
               disabled={disabled}
-              onChange={(e) => onChange('samplePoint', e.target.value)}
-            >
-              {SAMPLE_POINTS.map((s) => (
-                <option key={s.id} value={s.id}>{s.label}</option>
-              ))}
-            </Select>
+              onChange={(clipSeconds) => onChange('clipSeconds', clipSeconds)}
+            />
           </Field>
-          <Field label="Speed" htmlFor="anitune-playback-rate" className="flex-1">
-            <Select
-              id="anitune-playback-rate"
-              value={String(values.playbackRate)}
-              disabled={disabled}
-              onChange={(e) => onChange('playbackRate', Number(e.target.value))}
-            >
-              {PLAYBACK_RATES.map((r) => (
-                <option key={r} value={r}>{r === 1 ? 'Normal' : `${r}×`}</option>
-              ))}
-            </Select>
-          </Field>
-        </div>
-        {/* Already a single line, but routed through SettingHelp so every note on
-            the card carries one weight — the drift between three of them is half
-            of what made these cards read as a wall. */}
-        <SettingHelp className="mt-2">
-          {SAMPLE_POINTS.find((s) => s.id === values.samplePoint)?.blurb}
-        </SettingHelp>
+          <div className="flex flex-col gap-4 sm:flex-row">
+            <Field label="Clip starts" htmlFor="anitune-sample-point" className="flex-1">
+              <Select
+                id="anitune-sample-point"
+                value={values.samplePoint}
+                disabled={disabled}
+                onChange={(e) => onChange('samplePoint', e.target.value)}
+              >
+                {SAMPLE_POINTS.map((s) => (
+                  <option key={s.id} value={s.id}>{s.label}</option>
+                ))}
+              </Select>
+            </Field>
+            <Field label="Speed" htmlFor="anitune-playback-rate" className="flex-1">
+              <Select
+                id="anitune-playback-rate"
+                value={String(values.playbackRate)}
+                disabled={disabled}
+                onChange={(e) => onChange('playbackRate', Number(e.target.value))}
+              >
+                {PLAYBACK_RATES.map((r) => (
+                  <option key={r} value={r}>{r === 1 ? 'Normal' : `${r}×`}</option>
+                ))}
+              </Select>
+            </Field>
+          </div>
+          {/* Already a single line, but routed through SettingHelp so every note on
+              the card carries one weight — the drift between three of them is half
+              of what made these cards read as a wall. */}
+          <SettingHelp className="mt-2">
+            {SAMPLE_POINTS.find((s) => s.id === values.samplePoint)?.blurb}
+          </SettingHelp>
+        </MoreSettings>
       </Card>
 
       {/* No switch on this card: every note in it is already one line and has no
           second tier to reveal, so the control would be inert. The rule is that a
           card carries the switch when it has something to show. */}
-      <Card title="🎵 The song pool" padding="lg" className="mb-6">
+      <Card title="The song pool" padding="lg" className="mb-6">
         <Checkbox
           label="Shared songs only"
           checked={values.sharedSongsOnly}
@@ -218,99 +226,104 @@ export default function AniTuneSettings({ players, values, onChange, disabled = 
           onChange={(e) => onChange('sharedSongsOnly', e.target.checked)}
           className="mb-2"
         />
-        <SettingHelp indent className="mb-5">
+        <SettingHelp indent>
           Only use shows every player has on their list, so nobody is guessing blind.
         </SettingHelp>
 
-        <div className="mb-5 flex flex-wrap gap-x-8 gap-y-3">
-          <Checkbox
-            label="Openings"
-            checked={values.includeOpenings}
-            disabled={disabled}
-            onChange={(e) => onChange('includeOpenings', e.target.checked)}
-          />
-          <Checkbox
-            label="Endings"
-            checked={values.includeEndings}
-            disabled={disabled}
-            onChange={(e) => onChange('includeEndings', e.target.checked)}
-          />
-        </div>
+        {/* What the songs are drawn from, beyond whose lists: kinds, fame,
+            years, and how many per show. */}
+        <MoreSettings about="the songs">
+          <div className="mb-5 flex flex-wrap gap-x-8 gap-y-3">
+            <Checkbox
+              label="Openings"
+              checked={values.includeOpenings}
+              disabled={disabled}
+              onChange={(e) => onChange('includeOpenings', e.target.checked)}
+            />
+            <Checkbox
+              label="Endings"
+              checked={values.includeEndings}
+              disabled={disabled}
+              onChange={(e) => onChange('includeEndings', e.target.checked)}
+            />
+          </div>
 
-        <Field label="How well known" htmlFor="anitune-popularity" className="mb-2">
-          <Select
-            id="anitune-popularity"
-            value={values.popularity}
-            disabled={disabled}
-            onChange={(e) => onChange('popularity', e.target.value)}
-          >
-            {POPULARITY_LEVELS.map((p) => (
-              <option key={p.id} value={p.id}>{p.label}</option>
-            ))}
-          </Select>
-        </Field>
-        <SettingHelp className="mb-3">{level.blurb}</SettingHelp>
+          <Field label="How well known" htmlFor="anitune-popularity" className="mb-2">
+            <Select
+              id="anitune-popularity"
+              value={values.popularity}
+              disabled={disabled}
+              onChange={(e) => onChange('popularity', e.target.value)}
+            >
+              {POPULARITY_LEVELS.map((p) => (
+                <option key={p.id} value={p.id}>{p.label}</option>
+              ))}
+            </Select>
+          </Field>
+          <SettingHelp className="mb-3">{level.blurb}</SettingHelp>
+          <div className="mb-2 flex flex-col gap-4 sm:flex-row">
+            <Field label="From year" htmlFor="anitune-year-from" className="flex-1">
+              <NumberInput
+                id="anitune-year-from"
+                ariaLabel="Earliest release year"
+                min={YEAR_MIN}
+                max={YEAR_MAX}
+                value={values.yearFrom}
+                disabled={disabled}
+                onChange={(yearFrom) => onChange('yearFrom', yearFrom)}
+              />
+            </Field>
+            <Field label="To year" htmlFor="anitune-year-to" className="flex-1">
+              <NumberInput
+                id="anitune-year-to"
+                ariaLabel="Latest release year"
+                min={YEAR_MIN}
+                max={YEAR_MAX}
+                value={values.yearTo}
+                disabled={disabled}
+                onChange={(yearTo) => onChange('yearTo', yearTo)}
+              />
+            </Field>
+          </div>
+          <SettingHelp className="mb-5">
+            {yearNarrowed
+              ? `Shows with no release date on file are left out while this is narrowed${
+                afterYear.length < base.length ? ` — ${base.length - afterYear.length} dropped.` : '.'}`
+              : 'Leave at the full range to include everything, dated or not.'}
+          </SettingHelp>
 
+          <Field label="Max songs per show" htmlFor="anitune-max-per-anime">
+            <NumberInput
+              id="anitune-max-per-anime"
+              ariaLabel="Maximum songs from any one show"
+              min={1}
+              max={5}
+              value={values.maxPerAnime}
+              disabled={disabled}
+              onChange={(maxPerAnime) => onChange('maxPerAnime', maxPerAnime)}
+            />
+          </Field>
+        </MoreSettings>
+
+        {/* After the fold, never inside it: a warning about a folded-away
+            setting would be a problem with no visible cause. */}
         {/* Warn, never gate. A small pool is a valid answer to what was asked,
             and silently overriding a setting someone just picked is what makes
             one feel broken. The two dead ends are separated because only one of
             them is worth importing for. */}
         {dialIsOn && !canMeasure && (
-          <Banner tone="warning" className="mb-4">
+          <Banner tone="warning" className="mt-4">
             {anyData
-              ? '⚠️ Too few of these shows have popularity data to rank them — re-import your lists to fill it in. Using every show for now.'
-              : '⚠️ None of these shows have popularity data — it arrived after your lists did. Re-import to enable this. Using every show for now.'}
+              ? 'Too few of these shows have popularity data to rank them — re-import your lists to fill it in. Using every show for now.'
+              : 'None of these shows have popularity data — it arrived after your lists did. Re-import to enable this. Using every show for now.'}
           </Banner>
         )}
         {dialIsOn && canMeasure && final.length > 0 && final.length < MIN_POPULARITY_POOL && (
-          <Banner tone="warning" className="mb-4">
-            ⚠️ That leaves only {final.length} show{final.length === 1 ? '' : 's'} — expect
+          <Banner tone="warning" className="mt-4">
+            That leaves only {final.length} show{final.length === 1 ? '' : 's'} — expect
             repeats. Loosen it or import more lists.
           </Banner>
         )}
-
-        <div className="mb-2 flex flex-col gap-4 sm:flex-row">
-          <Field label="From year" htmlFor="anitune-year-from" className="flex-1">
-            <NumberInput
-              id="anitune-year-from"
-              ariaLabel="Earliest release year"
-              min={YEAR_MIN}
-              max={YEAR_MAX}
-              value={values.yearFrom}
-              disabled={disabled}
-              onChange={(yearFrom) => onChange('yearFrom', yearFrom)}
-            />
-          </Field>
-          <Field label="To year" htmlFor="anitune-year-to" className="flex-1">
-            <NumberInput
-              id="anitune-year-to"
-              ariaLabel="Latest release year"
-              min={YEAR_MIN}
-              max={YEAR_MAX}
-              value={values.yearTo}
-              disabled={disabled}
-              onChange={(yearTo) => onChange('yearTo', yearTo)}
-            />
-          </Field>
-        </div>
-        <SettingHelp className="mb-5">
-          {yearNarrowed
-            ? `Shows with no release date on file are left out while this is narrowed${
-              afterYear.length < base.length ? ` — ${base.length - afterYear.length} dropped.` : '.'}`
-            : 'Leave at the full range to include everything, dated or not.'}
-        </SettingHelp>
-
-        <Field label="Max songs per show" htmlFor="anitune-max-per-anime">
-          <NumberInput
-            id="anitune-max-per-anime"
-            ariaLabel="Maximum songs from any one show"
-            min={1}
-            max={5}
-            value={values.maxPerAnime}
-            disabled={disabled}
-            onChange={(maxPerAnime) => onChange('maxPerAnime', maxPerAnime)}
-          />
-        </Field>
       </Card>
     </>
   );

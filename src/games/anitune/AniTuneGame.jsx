@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import LocalGame from './LocalGame';
 import OnlineGame from './OnlineGame';
-import { firebaseEnabled } from '../../shared/services/firebase';
-import { Backdrop, Button, HubButton, Screen, Wordmark } from '../../shared/ui';
+import descriptor from './index';
+import ModePicker from '../../shared/components/ModePicker';
 
 export default function AniTuneGame({ onExit }) {
   const [mode, setMode] = useState(null); // null | 'local' | 'online'
@@ -13,31 +13,12 @@ export default function AniTuneGame({ onExit }) {
   if (mode === 'online') return <OnlineGame onBack={() => setMode(null)} onExit={onExit} />;
 
   return (
-    <>
-      <Backdrop />
-      {/* The menu is an in-game screen too, so the way home stays in the same
-          corner here as it does everywhere past it. */}
-      <HubButton onClick={onExit} />
-      <Screen center>
-        <Wordmark tone="blue" subtitle="Name the anime from its opening or ending" className="mb-10">
-          AniTune
-        </Wordmark>
-        <div className="flex flex-col gap-4">
-          <Button variant="primary" size="xl" fullWidth onClick={() => setMode('local')}>
-            📱 Play on this device
-          </Button>
-          <Button
-            variant="secondary"
-            size="xl"
-            fullWidth
-            onClick={() => setMode('online')}
-            disabled={!firebaseEnabled}
-            title={!firebaseEnabled ? 'Online play requires Firebase configuration (see .env.local.example)' : ''}
-          >
-            🌐 Play Online {!firebaseEnabled && '(not configured)'}
-          </Button>
-        </div>
-      </Screen>
-    </>
+    <ModePicker
+      game={descriptor}
+      tagline="Name the anime from its opening or ending"
+      onLocal={() => setMode('local')}
+      onOnline={() => setMode('online')}
+      onExit={onExit}
+    />
   );
 }

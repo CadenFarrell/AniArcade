@@ -34,3 +34,8 @@ dist-ssr
 *.sw?
 
 .facts-cache/
+
+# Playtest bot output (npm run playtest)
+playtest-report/
+dist-playtest/
+dist-playtest-emu/

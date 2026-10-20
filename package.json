@@ -11,7 +11,10 @@
     "test": "vitest run",
     "test:smoke": "firebase emulators:exec --only database,auth --project demo-aniguess \"vitest run --config smoke/vitest.config.js\"",
     "generate": "node generateProfiles.js",
-    "generate:facts": "node generateFacts.js"
+    "generate:facts": "node generateFacts.js",
+    "playtest": "node playtest/run.js",
+    "playtest:online": "node playtest/run.js --layer online",
+    "playtest:all": "node playtest/run.js --layer all"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
@@ -22,7 +25,9 @@
     "react-dom": "^19.2.4"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.14.0",
     "@eslint/js": "^9.39.4",
+    "@playwright/test": "^1.64.1",
     "@tailwindcss/vite": "^4.2.2",
     "@testing-library/react": "^16.3.3",
     "@testing-library/user-event": "^14.6.7",

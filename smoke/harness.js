@@ -38,8 +38,10 @@ export const GRACE_WAIT = 26_000; // GRACE_MS is 20s; leave slack for the 1s tic
 
 let seq = 0;
 
-function memStorage() {
-  const m = new Map();
+// `seed` pre-fills the map ({ key: value }), as a returning device's storage
+// would be — the playtest bots seat each device with a profile already saved.
+export function memStorage(seed = {}) {
+  const m = new Map(Object.entries(seed).map(([k, v]) => [k, JSON.stringify(v)]));
   return {
     getItem: (k) => (m.has(k) ? JSON.parse(m.get(k)) : null),
     setItem: (k, v) => { m.set(k, JSON.stringify(v)); return true; },
@@ -83,14 +85,15 @@ export function profile(name, shows = 14, offset = 0) {
  * `crash()` is the tab being closed: the socket drops (so the server runs the
  * onDisconnect write) and the React tree goes away without running its exits.
  */
-export function device(label, hookFile, hookName, { extraMocks = {} } = {}) {
+// One simulated device's Firebase: its own named app, so its own anonymous
+// uid, against the emulator. Shared with playtest/online.playtest.test.jsx,
+// which mounts real screens over it rather than a bare hook.
+export function firebaseDevice(label) {
   const app = initializeApp(config, `${label}-${++seq}`);
   const auth = initializeAuth(app, { persistence: inMemoryPersistence });
   connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarnings: true });
   const db = getDatabase(app);
   connectDatabaseEmulator(db, '127.0.0.1', 9000);
-  const storage = memStorage();
-
   const ensureSignedIn = () => new Promise((resolve, reject) => {
     const unsub = onAuthStateChanged(auth, (user) => {
       unsub();
@@ -98,6 +101,15 @@ export function device(label, hookFile, hookName, { extraMocks = {} } = {}) {
       else signInAnonymously(auth).then((c) => resolve(c.user.uid)).catch(reject);
     }, reject);
   });
+  return { app, auth, db, ensureSignedIn };
+}
+
+export const FIREBASE_MODULE = FIREBASE;
+export const STORAGE_MODULE = STORAGE;
+
+export function device(label, hookFile, hookName, { extraMocks = {} } = {}) {
+  const { auth, db, ensureSignedIn } = firebaseDevice(label);
+  const storage = memStorage();
 
   const dev = {
     label, db, storage, view: null, errors: [],

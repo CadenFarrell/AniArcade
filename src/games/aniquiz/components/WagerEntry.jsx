@@ -31,7 +31,7 @@ export default function WagerEntry({ limit, onWager, disabled = false }) {
         </Button>
       </div>
       <Button variant="primary" size="lg" fullWidth disabled={disabled} onClick={() => onWager(amount)}>
-        Lock wager 🔒
+        Lock wager
       </Button>
     </div>
   );

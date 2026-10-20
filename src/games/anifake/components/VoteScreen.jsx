@@ -1,8 +1,19 @@
 import { useState } from 'react';
 import ClueLog from './ClueLog';
 import {
-  Backdrop, Badge, Banner, Button, Card, CardRow, Screen, Wordmark,
+  Backdrop,
+  Badge,
+  Banner,
+  Button,
+  Card,
+  CardRow,
+  Icon,
+  Screen,
+  Wordmark,
 } from '../../../shared/ui';
+import Handoff from '../../../shared/components/Handoff';
+import Portrait from '../../../shared/components/Portrait';
+import { usePlayerPortrait } from '../../../shared/context/tablePortraitsContext';
 
 // The vote. Everyone picks one other player; a tie opens one sudden-death
 // runoff between the tied names, and a second tie lets the fake walk.
@@ -52,16 +63,12 @@ export default function VoteScreen({
       <>
         <Backdrop />
         <Screen center>
-          <Wordmark tone="teal" size="md" level={2} className="mb-8">
-            {isRunoff ? '⚖️ Pass the device' : '🗳️ Pass the device'}
-          </Wordmark>
-          <p className="mb-2 text-center text-xl text-fg-body">Hand it to</p>
-          <p className="mb-10 text-center font-display text-4xl font-extrabold text-white">
-            {voter?.name}
-          </p>
-          <Button variant="primary" size="xl" fullWidth onClick={() => setHandedOver(true)}>
-            🗳️ I&apos;m {voter?.name} — let me vote
-          </Button>
+          <Handoff
+            player={voter}
+            note="Votes are secret — everyone else, look away."
+            cta={`I'm ${voter?.name} — let me vote`}
+            onReady={() => setHandedOver(true)}
+          />
         </Screen>
       </>
     );
@@ -77,14 +84,14 @@ export default function VoteScreen({
       <Backdrop />
       <Screen width="md">
         <Wordmark tone="teal" size="sm" level={2} className="mb-6">
-          {isRunoff ? '⚖️ Runoff' : '🗳️ Who is the fake?'}
+          {isRunoff ? 'Runoff' : 'Who is the fake?'}
         </Wordmark>
 
         {/* The terminator has to be said out loud, or a runoff that ends with
             nobody accused reads as a bug rather than as the rule. */}
         {isRunoff && (
           <Banner tone="warning" className="mb-6">
-            ⚖️ It tied between{' '}
+            It tied between{' '}
             <span className="font-extrabold">{runoffCandidates.map(nameOf).join(' and ')}</span>.
             Everyone votes again on just those names — and if it ties a second time,
             nobody is accused and the fake walks.
@@ -105,74 +112,43 @@ export default function VoteScreen({
 
         {myVote ? (
           <Card padding="lg" className="mb-6 text-center">
-            <div className="text-4xl">🗳️</div>
-            <p className="mt-2 font-display text-lg font-extrabold text-white">
+            <div className="text-4xl text-pop-lime"><Icon name="check" /></div>
+            <p className="mt-2 font-display text-lg font-extrabold text-fg-strong">
               You voted for {nameOf(myVote)}
             </p>
             <p className="mt-1 text-fg-helper">Waiting for everyone else…</p>
           </Card>
         ) : (
           <Card title={`${voter?.name ?? 'You'} — pick one`} padding="lg" className="mb-6">
-            {players.map((p) => {
-              const isMe = p.id === voter?.id;
-              // Someone who left is still on the ballot — walking out is
-              // exactly what a rumbled fake would do, so the table should be
-              // able to accuse them. They just have to be told, or the row
-              // reads as a player who is merely slow to vote.
-              const gone = departedIds.includes(p.id);
-              const dimmed = gone || !accusable(p.id);
-              return (
-                <CardRow key={p.id} className={dimmed ? 'opacity-40' : ''}>
-                  {/* Fixed width, so the rows read as a table and a seat sits in
-                      the same place on every screen of the round. */}
-                  <span className="w-6 flex-shrink-0 text-center font-display text-sm
-                    font-extrabold text-fg-subtle">
-                    {p.seat ?? '–'}
-                  </span>
-                  {/* Their own ballot, not a vote against them. The slot is
-                      always rendered and only sometimes filled — dropping the
-                      element when they haven't voted would shift every name
-                      sideways as votes come in, which is the reflow the seat
-                      column and the full-roster ballot both exist to stop.
-                      Weighted like the seat number rather than tinted: a colour
-                      here would be read as a verdict, which is how this started. */}
-                  <span className="w-4 flex-shrink-0 text-center text-sm text-fg-subtle">
-                    {voted.includes(p.id) && (
-                      <>
-                        <span aria-hidden="true">✓</span>
-                        <span className="sr-only">has voted</span>
-                      </>
-                    )}
-                  </span>
-                  <span className="min-w-0 flex-1 truncate font-display text-lg font-extrabold text-white">
-                    {p.name}
-                  </span>
-                  {/* Amber, not red: this flags a state, and red next to the red
-                      Accuse button made the two blur into one control. They stay
-                      accusable — walking out is what a rumbled fake would do. */}
-                  {gone && <Badge tone="amber">Left</Badge>}
-                  {/* Every row keeps its slot whether or not it has a button —
-                      that is what stops the list reflowing between voters. */}
-                  {isMe ? (
-                    <Badge tone="purple">You</Badge>
-                  ) : accusable(p.id) ? (
-                    <Button variant="danger" size="sm" onClick={() => cast(p.id)}>
-                      Accuse
-                    </Button>
-                  ) : (
-                    <span className="font-display text-xs uppercase tracking-wider text-fg-subtle">
-                      Safe
-                    </span>
-                  )}
-                </CardRow>
-              );
-            })}
+            {/* The ballot as a line-up: a card per suspect wearing their face,
+                in seat order, so the table reads it the way a manga sets out a
+                row of suspects rather than as a form. Every card keeps the same
+                frame whether it carries a button or not — that is what stops
+                the grid reflowing between voters, which the row ballot's fixed
+                columns were for. */}
+            <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+              {players.map((p) => (
+                <Suspect
+                  key={p.id}
+                  player={p}
+                  isMe={p.id === voter?.id}
+                  // Someone who left is still on the ballot — walking out is
+                  // exactly what a rumbled fake would do, so the table should
+                  // be able to accuse them. They just have to be told, or the
+                  // card reads as a player who is merely slow to vote.
+                  gone={departedIds.includes(p.id)}
+                  accusable={accusable(p.id)}
+                  hasVoted={voted.includes(p.id)}
+                  onAccuse={() => cast(p.id)}
+                />
+              ))}
+            </ul>
             {/* A tick with no key is just a new small mystery, and the wording
                 has to name whose ballot it is — "voted" alone is the ambiguity
                 that moving the marker was meant to end. Only once one exists. */}
             {voted.length > 0 && (
               <p className="mt-3 text-sm text-fg-subtle">
-                <span aria-hidden="true">✓</span> their own ballot is already in — not a vote against them
+                <Icon name="check" /> their own ballot is already in — not a vote against them
               </p>
             )}
           </Card>
@@ -188,5 +164,67 @@ export default function VoteScreen({
         )}
       </Screen>
     </>
+  );
+}
+
+// One card in the line-up. The face dims for someone out of the vote (a
+// runoff's non-candidates) or gone — the FACE, never the name, which is read
+// and an opacity over it fell to about 2:1.
+function Suspect({ player, isMe, gone, accusable, hasVoted, onAccuse }) {
+  const portrait = usePlayerPortrait(player);
+  const dimmed = gone || !accusable;
+  return (
+    <li className="flex flex-col border-2 border-ink bg-surface shadow-pop-sm">
+      <div className="relative">
+        <span
+          aria-hidden="true"
+          className={`relative isolate block aspect-square overflow-hidden border-b-2 border-ink bg-surface-2
+            ${dimmed && !isMe ? 'opacity-40' : ''}`}
+        >
+          <Portrait portrait={portrait} name={player.name} />
+        </span>
+        {/* The seat number on an ink tab: the same seat on every screen of
+            the round, which is how the table refers to people. */}
+        <span
+          className="absolute top-0 left-0 border-r-2 border-b-2 border-ink bg-ink px-1.5 font-display text-sm
+            font-bold text-paper"
+        >
+          {player.seat ?? '–'}
+        </span>
+        {/* Their own ballot, not a vote against them — weighted like the seat
+            number rather than tinted, since a colour here would be read as a
+            verdict. */}
+        {hasVoted && (
+          <span className="absolute top-1 right-1 grid h-6 w-6 place-items-center border-2 border-ink bg-surface text-xs text-fg-strong">
+            <Icon name="check" />
+            <span className="sr-only">has voted</span>
+          </span>
+        )}
+      </div>
+      <div className="flex flex-1 flex-col gap-1.5 p-2">
+        <span
+          className={`truncate font-display text-lg font-bold uppercase leading-none tracking-wide
+            ${dimmed ? 'text-fg-subtle' : 'text-fg-strong'}`}
+        >
+          {player.name}
+        </span>
+        {/* Amber, not red: this flags a state, and red next to the red Accuse
+            button made the two blur into one control. */}
+        {gone && <Badge tone="amber">Left</Badge>}
+        {isMe ? (
+          <Badge tone="purple">You</Badge>
+        ) : accusable ? (
+          // Named for whom it accuses: a screen reader walking the ballot
+          // otherwise hears "Accuse" once per card and nothing to tell them
+          // apart. The visible word still leads the name; the playtest bots
+          // find these by "Accuse <name>".
+          <Button variant="danger" size="sm" fullWidth onClick={onAccuse}>
+            Accuse<span className="sr-only"> {player.name}</span>
+          </Button>
+        ) : (
+          <span className="font-display text-xs uppercase tracking-wider text-fg-subtle">Safe</span>
+        )}
+      </div>
+    </li>
   );
 }

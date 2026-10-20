@@ -7,6 +7,8 @@ import WhoIsWhoPanel from './WhoIsWhoPanel';
 import { normalizeTitle } from '../../../shared/utils/ranking';
 import { rankSuggestions } from '../../../shared/utils/guessSuggest';
 import { Avatar, Button, Combobox, GhostButton, Input, Screen } from '../../../shared/ui';
+import RoundHeader from '../../../shared/components/RoundHeader';
+import TurnChoice from './TurnChoice';
 
 // The active guesser's device. Deliberately never receives the assigned
 // character — only raw question/guess text ever leaves this device, sent via
@@ -70,32 +72,22 @@ export default function OnlineGameScreen({
 
       <LastOutcomeBanner outcome={lastOutcome} />
 
-      <div className="mb-6 text-center">
-        <h2 className="font-display text-3xl font-extrabold text-white">🎮 Your Turn</h2>
-        <p className="mt-1 text-base text-fg-helper">
-          Turn {turnCount + 1} · Ask a question or submit a guess
-        </p>
+      <RoundHeader title="Your Turn" tag={`Turn ${turnCount + 1}`} hint="Ask a question or submit a guess" />
+
+      {/* The turn's two tools, side by side: neither is the turn itself. */}
+      <div className="mb-5 grid grid-cols-2 gap-3">
+        <PeekPanel peekList={peekList} hasPeeked={hasPeeked} onPeek={onPeek} className="h-full" />
+        <WhoIsWhoPanel entries={whoIsWho} className="h-full" />
       </div>
-
-      <PeekPanel peekList={peekList} hasPeeked={hasPeeked} onPeek={onPeek} />
-
-      <WhoIsWhoPanel entries={whoIsWho} />
 
       {waiting && (
         <p className="mb-5 text-center text-fg-helper">
-          ⏳ Waiting for another player to answer…
+          Waiting for another player to answer…
         </p>
       )}
 
       {mode === 'choose' && !waiting && (
-        <div className="mb-5 flex gap-4">
-          <Button variant="info" size="lg" className="flex-1" onClick={() => setMode('question')}>
-            ❓ Ask a Question
-          </Button>
-          <Button variant="primary" size="lg" className="flex-1" onClick={() => setMode('guess')}>
-            🎯 Submit Guess
-          </Button>
-        </div>
+        <TurnChoice onAsk={() => setMode('question')} onGuess={() => setMode('guess')} />
       )}
 
       {mode === 'question' && !waiting && (
@@ -121,7 +113,7 @@ export default function OnlineGameScreen({
               onClick={submitQuestion}
               disabled={!question.trim()}
             >
-              Ask ❓
+              Ask
             </Button>
           </div>
         </div>
@@ -140,7 +132,7 @@ export default function OnlineGameScreen({
               <>
                 <Avatar src={s.imageUrl} size="sm" />
                 <div>
-                  <p className="text-sm font-semibold text-white">{s.name}</p>
+                  <p className="text-sm font-semibold text-fg-strong">{s.name}</p>
                   <p className="text-xs text-fg-subtle">{s.series}</p>
                 </div>
               </>
@@ -161,7 +153,7 @@ export default function OnlineGameScreen({
               onClick={submitGuess}
               disabled={!guess.trim()}
             >
-              Guess 🎯
+              Guess
             </Button>
           </div>
         </div>

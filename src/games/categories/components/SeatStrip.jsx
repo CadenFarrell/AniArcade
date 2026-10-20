@@ -1,16 +1,18 @@
+import PlayerRow from '../../../shared/components/PlayerRow';
+
 /**
- * The rotation, drawn as one row of chips.
+ * The rotation, drawn as the arcade's row of faces (PlayerRow).
  *
  * THE SEAT MOVES AFTER EVERY SINGLE NAME, and without this the only evidence of
  * that is a heading that changes — which reads as the game having jumped rather
  * than as a turn having passed. So the whole order is on screen at once, always
  * in roster order, because roster order IS seat order (see rules.turnOrder): the
  * seat walks forward through this list and wraps, so the next player is always
- * the next chip that is still in.
+ * the next face that is still in.
  *
- * A CHIP SAYS ONE OF THREE THINGS, and they are three states rather than two:
+ * A SEAT SAYS ONE OF THREE THINGS, and they are three states rather than two:
  *
- *   up        purple, the arcade's whose-turn colour everywhere else
+ *   up        framed under the purple NOW tab, the arcade's whose-turn ink
  *   still in  their names left, so the table can see who is running low
  *   finished  what they finished WITH — a solve and a give-up are both "done"
  *             and drawing them alike would throw away the only news of the round
@@ -21,45 +23,31 @@
 export default function SeatStrip({ order = [], myPlayerId = null, className = '' }) {
   if (order.length < 2) return null;
 
+  const status = (row) => {
+    if (row.isSeat) return null;
+    if (row.away) return { text: 'away', tone: 'text-pop-amber' };
+    if (row.done) return row.solved ? { text: 'solved', tone: 'text-pop-lime' } : { text: 'out', tone: 'text-fg-subtle' };
+    return { text: `${row.left} left`, tone: 'text-fg-helper' };
+  };
+  const byId = Object.fromEntries(order.map((row) => [row.playerId, row]));
+
   return (
-    <ol className={`flex flex-wrap items-stretch gap-2 ${className}`} aria-label="Turn order">
-      {order.map((row) => {
-        const isMe = !!myPlayerId && row.playerId === myPlayerId;
-        // Ordered loudest first: whose turn it is beats every other fact on the
-        // strip, because it is the only one that asks somebody to do something.
-        const tone = row.isSeat
-          ? 'border-pop-purple bg-pop-purple/20 text-white'
-          : row.done
-            ? 'border-line bg-wash-soft text-fg-subtle'
-            : row.away
-              ? 'border-pop-amber/40 bg-pop-amber/10 text-fg-helper'
-              : 'border-line bg-wash-soft text-fg-strong';
-
-        const status = () => {
-          if (row.away) return 'away';
-          if (row.done) return row.solved ? '✓ solved' : 'out';
-          if (row.isSeat) return 'naming now';
-          return `${row.left} left`;
-        };
-
-        return (
-          <li
-            key={row.playerId}
-            aria-current={row.isSeat ? 'true' : undefined}
-            className={`min-w-0 flex-1 basis-24 rounded-pop-sm border-2 px-2.5 py-1.5 ${tone}`}
-          >
-            <p className="truncate font-display text-sm font-extrabold">
-              {isMe ? 'You' : row.name}
-            </p>
-            <p
-              className={`truncate font-display text-xs font-bold uppercase tracking-wider
-                ${row.solved && row.done ? 'text-pop-lime' : 'opacity-60'}`}
-            >
-              {status()}
-            </p>
-          </li>
+    <PlayerRow
+      className={className}
+      label="Turn order"
+      players={order.map((row) => ({ id: row.playerId, name: row.name }))}
+      activeId={order.find((row) => row.isSeat)?.playerId ?? null}
+      youId={myPlayerId}
+      // A finished player's face dims (a give-up or a spent cap — a solve keeps
+      // its face, it is the round's good news), and so does one who is away.
+      dimIds={order.filter((row) => row.away || (row.done && !row.solved)).map((row) => row.playerId)}
+      status={(p) => {
+        const s = status(byId[p.id]);
+        // A text ROLE, never an opacity: a dimmed status fell under 4.5:1 (axe).
+        return s && (
+          <span className={`font-display text-[10px] font-bold uppercase tracking-wider ${s.tone}`}>{s.text}</span>
         );
-      })}
-    </ol>
+      }}
+    />
   );
 }

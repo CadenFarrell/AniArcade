@@ -6,8 +6,10 @@ import PsychicView from './components/PsychicView';
 import GuessView from './components/GuessView';
 import RevealScreen from './components/RevealScreen';
 import WavelengthResults from './components/WavelengthResults';
-import WaitingScreen from '../aniguess/components/WaitingScreen';
-import { Banner, Button, HubButton, Screen } from '../../shared/ui';
+import WaitingScreen from '../../shared/components/WaitingScreen';
+import RoomShell from '../../shared/components/RoomShell';
+import { useSoundCue } from '../../shared/hooks/useSoundCue';
+import { Button, HubButton, Screen } from '../../shared/ui';
 
 // The online view-router. Same shape as src/games/anifake/OnlineGame.jsx: a
 // shell() wraps every in-room screen with the room code, a way out and the
@@ -53,6 +55,14 @@ export default function OnlineGame({ onBack, onExit }) {
     placeDial(draft);
   }, [dialsExpired, draft, iHaveDialled, iAmPsychic, placeDial]);
 
+  // The psychic's go is the one turn in this game: their phone pings as their
+  // clue phase opens, once per round. Everyone else dials at once, so there is
+  // no "your turn" for them to be told about.
+  useSoundCue(
+    'turn',
+    room.view === 'round' && iAmPsychic && room.game?.phase === 'clue' ? roundIndex : null,
+  );
+
   if (!room.roomCode) {
     return (
       <>
@@ -67,55 +77,21 @@ export default function OnlineGame({ onBack, onExit }) {
     );
   }
 
-  const handleLeave = () => {
-    if (!window.confirm('Leave this room? You can rejoin with the same name and room code.')) return;
-    room.leaveRoom();
-  };
 
+
+  // Leaving from inside a round's own screens leaves the room too, exactly as
+  // the bar's Hub does (RoomShell owns that one).
   const handleExitToHub = () => {
     room.leaveRoom();
     onExit();
   };
 
-  const shell = (children) => (
-    <div className="relative">
-      <HubButton
-        onClick={handleExitToHub}
-        confirm="Leave this room and return to the hub? You can rejoin with the same name and room code."
-      />
-      <div className="fixed top-3 right-3 z-40 flex items-center gap-2">
-        <span className="hidden font-display text-xs tracking-widest text-fg-subtle sm:inline">
-          {room.roomCode}
-        </span>
-        <button
-          onClick={handleLeave}
-          className="focus-pop rounded-pop-sm bg-scrim px-3 py-1.5 font-display text-sm font-bold
-            text-fg-body backdrop-blur-sm transition-colors hover:bg-scrim-strong hover:text-white"
-        >
-          Leave
-        </button>
-      </div>
-      <div className="fixed top-3 left-1/2 z-40 flex w-[calc(100%-1.5rem)] max-w-md
-        -translate-x-1/2 flex-col gap-2">
-        {room.syncError && (
-          <Banner tone="danger" onDismiss={room.dismissSyncError} className="bg-canvas/95 backdrop-blur-sm">
-            ⚠️ {room.syncError}
-          </Banner>
-        )}
-        {/* Says out loud why the round has paused, and for how much longer, so a
-            dropped player doesn't just look like a frozen game. */}
-        {room.dropping.map(({ player, remainingMs }) => (
-          <Banner key={player.id} tone="warning" className="bg-canvas/95 backdrop-blur-sm">
-            🔌 {player.name} disconnected — waiting {Math.ceil(remainingMs / 1000)}s…
-          </Banner>
-        ))}
-      </div>
-      {children}
-    </div>
-  );
+  // Every in-room screen goes through RoomShell: the way out, the room code and
+  // Leave in the top bar, and the connection banners.
+  const shell = (children, opts) => <RoomShell room={room} onExit={onExit} {...opts}>{children}</RoomShell>;
 
-  if (!room.view) return shell(<WaitingScreen emoji="🌐" title="Loading room…" />);
-  if (room.view === 'lobby') return shell(<OnlineLobby room={room} />);
+  if (!room.view) return shell(<WaitingScreen title="Loading room…" />);
+  if (room.view === 'lobby') return shell(<OnlineLobby room={room} />, { codeInPage: true });
 
   const nameOf = (id) => room.players.find((p) => p.id === id)?.name ?? 'Someone';
   const waitingOn = room.pending.map((id) => nameOf(id)).join(', ');
@@ -179,7 +155,6 @@ export default function OnlineGame({ onBack, onExit }) {
       if (!room.iAmPsychic) {
         return shell(
           <WaitingScreen
-            emoji="🔮"
             title={`${nameOf(game.psychicId)} is the psychic`}
             subtitle={game.mode === 'readroom'
               ? "They're deciding where their card belongs…"
@@ -196,7 +171,7 @@ export default function OnlineGame({ onBack, onExit }) {
       // there is nothing to deal at all: the pool is searched, not dealt, so
       // only the target holds this up.
       if (!room.myDealReady) {
-        return shell(<WaitingScreen emoji="🎯" title="Dealing you in…" />);
+        return shell(<WaitingScreen title="Dealing you in…" />);
       }
       return shell(
         <PsychicView
@@ -217,7 +192,6 @@ export default function OnlineGame({ onBack, onExit }) {
       if (room.iAmPsychic) {
         return shell(
           <WaitingScreen
-            emoji="⏳"
             title="Your clue is out"
             subtitle={waitingOn ? `Still dialling: ${waitingOn}` : 'Everyone has dialled…'}
           >
@@ -231,7 +205,7 @@ export default function OnlineGame({ onBack, onExit }) {
       if (room.iHaveDialled) {
         return shell(
           <WaitingScreen
-            emoji="✅"
+            icon="check"
             title="Dial locked in"
             subtitle={waitingOn ? `Waiting on: ${waitingOn}` : 'Revealing…'}
           >
@@ -288,12 +262,12 @@ export default function OnlineGame({ onBack, onExit }) {
         players={room.players}
         totalScores={room.totalScores}
         onPlayAgain={room.isHost ? room.returnToLobby : null}
-        playAgainLabel="🔁 Back to lobby"
+        playAgainLabel="Back to lobby"
         onBack={handleExitToHub}
-        backLabel="🏠 Leave the room"
+        backLabel="Leave the room"
       />
     );
   }
 
-  return shell(<WaitingScreen emoji="🌐" title="Loading…" />);
+  return shell(<WaitingScreen title="Loading…" />);
 }

@@ -4,9 +4,18 @@ import {
 } from '../prefs';
 import { BOARD } from '../rules';
 import { ROWS, TOPICS } from '../clues';
+import MoreSettings from '../../../shared/components/MoreSettings';
 import SettingHelp, { DetailToggle } from '../../../shared/components/SettingHelp';
 import {
-  Banner, Button, Card, Checkbox, Field, GhostButton, NumberInput, Select,
+  Banner,
+  Button,
+  Card,
+  Checkbox,
+  Field,
+  GhostButton,
+  Icon,
+  NumberInput,
+  Select,
 } from '../../../shared/ui';
 
 // The format picker and both settings cards, rendered identically by QuizSetup
@@ -31,15 +40,15 @@ export default function QuizSettings({ values, onChange, report, packStatus, onR
               className={`focus-pop rounded-pop border-2 p-4 text-left transition-colors disabled:opacity-40
                 ${on ? 'border-pop-red bg-pop-red/15' : 'border-line-strong bg-surface hover:border-line-loud'}`}
             >
-              <span className="text-2xl">{f.icon}</span>
-              <p className="mt-1 font-display text-lg font-extrabold text-white">{f.label}</p>
+              <span className="text-2xl text-pop-red"><Icon name={f.icon} /></span>
+              <p className="mt-1 font-display text-lg font-extrabold text-fg-strong">{f.label}</p>
               <p className="mt-1 text-sm text-fg-helper">{f.blurb}</p>
             </button>
           );
         })}
       </div>
 
-      <Card title="⚙️ The game" action={<DetailToggle />} padding="lg" className="mb-6">
+      <Card title="The game" action={<DetailToggle />} padding="lg" className="mb-6">
         <Field label="Answers" htmlFor="aniquiz-answer-style" className="mb-2">
           <Select
             id="aniquiz-answer-style"
@@ -55,7 +64,7 @@ export default function QuizSettings({ values, onChange, report, packStatus, onR
         </SettingHelp>
 
         {board ? (
-          <Field label="Categories" htmlFor="aniquiz-categories" className="mb-5">
+          <Field label="Categories" htmlFor="aniquiz-categories">
             <NumberInput
               id="aniquiz-categories"
               ariaLabel="Categories"
@@ -67,7 +76,7 @@ export default function QuizSettings({ values, onChange, report, packStatus, onR
             />
           </Field>
         ) : (
-          <Field label="Questions" htmlFor="aniquiz-quiz-length" className="mb-5">
+          <Field label="Questions" htmlFor="aniquiz-quiz-length">
             <NumberInput
               id="aniquiz-quiz-length"
               ariaLabel="Questions"
@@ -80,71 +89,75 @@ export default function QuizSettings({ values, onChange, report, packStatus, onR
           </Field>
         )}
 
-        {board && (
-          <>
-            <Checkbox
-              label="Daily Double"
-              checked={values.dailyDouble}
-              disabled={disabled}
-              onChange={(e) => onChange('dailyDouble', e.target.checked)}
-              className="mb-2"
-            />
-            <SettingHelp
-              indent
-              className="mb-4"
-              more="Never in the top row — a wager on the easiest clue on the board would be free money. Somebody on zero can still bet up to 1,000."
-            >
-              One hidden cell where whoever finds it bets on the clue, alone.
-            </SettingHelp>
+        {/* The board's extras and the clock — set once at most tables. The
+            answer style and the length stay up front. */}
+        <MoreSettings about="the game">
+          {board && (
+            <>
+              <Checkbox
+                label="Daily Double"
+                checked={values.dailyDouble}
+                disabled={disabled}
+                onChange={(e) => onChange('dailyDouble', e.target.checked)}
+                className="mb-2"
+              />
+              <SettingHelp
+                indent
+                className="mb-4"
+                more="Never in the top row — a wager on the easiest clue on the board would be free money. Somebody on zero can still bet up to 1,000."
+              >
+                One hidden cell where whoever finds it bets on the clue, alone.
+              </SettingHelp>
 
-            <Checkbox
-              label="Final round"
-              checked={values.finalRound}
-              disabled={disabled}
-              onChange={(e) => onChange('finalRound', e.target.checked)}
-              className="mb-2"
-            />
-            <SettingHelp
-              indent
-              className="mb-5"
-              more="Wagers go in after the category is shown and before the clue. A wrong answer loses the stake — the only place besides the Daily Double that a miss costs anything."
-            >
-              After the board, everyone bets on one last hard clue.
-            </SettingHelp>
-          </>
-        )}
+              <Checkbox
+                label="Final round"
+                checked={values.finalRound}
+                disabled={disabled}
+                onChange={(e) => onChange('finalRound', e.target.checked)}
+                className="mb-2"
+              />
+              <SettingHelp
+                indent
+                className="mb-5"
+                more="Wagers go in after the category is shown and before the clue. A wrong answer loses the stake — the only place besides the Daily Double that a miss costs anything."
+              >
+                After the board, everyone bets on one last hard clue.
+              </SettingHelp>
+            </>
+          )}
 
-        <Checkbox
-          label="Timed answers"
-          checked={values.timed}
-          disabled={disabled}
-          onChange={(e) => onChange('timed', e.target.checked)}
-          className="mb-2"
-        />
-        <SettingHelp
-          indent
-          className="mb-3"
-          more="Running out the clock counts as a blank. Online, an untimed clue waits for everyone — the host can reveal early."
-        >
-          A countdown on every clue.
-        </SettingHelp>
-        {values.timed && (
-          <Field label="Seconds per clue" htmlFor="aniquiz-answer-seconds" className="ml-10">
-            <NumberInput
-              id="aniquiz-answer-seconds"
-              ariaLabel="Seconds per clue"
-              min={ANSWER_SECONDS_RANGE.min}
-              max={ANSWER_SECONDS_RANGE.max}
-              step={5}
-              value={values.answerSeconds}
-              disabled={disabled}
-              onChange={(answerSeconds) => onChange('answerSeconds', answerSeconds)}
-            />
-          </Field>
-        )}
+          <Checkbox
+            label="Timed answers"
+            checked={values.timed}
+            disabled={disabled}
+            onChange={(e) => onChange('timed', e.target.checked)}
+            className="mb-2"
+          />
+          <SettingHelp
+            indent
+            className="mb-3"
+            more="Running out the clock counts as a blank. Online, an untimed clue waits for everyone — the host can reveal early."
+          >
+            A countdown on every clue.
+          </SettingHelp>
+          {values.timed && (
+            <Field label="Seconds per clue" htmlFor="aniquiz-answer-seconds" className="ml-10">
+              <NumberInput
+                id="aniquiz-answer-seconds"
+                ariaLabel="Seconds per clue"
+                min={ANSWER_SECONDS_RANGE.min}
+                max={ANSWER_SECONDS_RANGE.max}
+                step={5}
+                value={values.answerSeconds}
+                disabled={disabled}
+                onChange={(answerSeconds) => onChange('answerSeconds', answerSeconds)}
+              />
+            </Field>
+          )}
+        </MoreSettings>
       </Card>
 
-      <Card title="📚 What clues are about" padding="lg" className="mb-6">
+      <Card title="What clues are about" padding="lg" className="mb-6">
         <Field label="Shows" htmlFor="aniquiz-pool" className="mb-2">
           <Select
             id="aniquiz-pool"
@@ -196,54 +209,59 @@ function TopicSwitches({ values, onChange, report, disabled }) {
 
   return (
     <Card
-      title="🗂️ Categories"
+      title="Categories"
       action={off.size ? (
         <GhostButton onClick={() => onChange('topicsOff', [])} disabled={disabled}>Switch all on</GhostButton>
       ) : null}
       padding="lg"
       className="mb-6"
     >
-      <SettingHelp className="mb-4">
-        {board
-          ? 'Switch off any you’d rather skip. The board picks its columns from the ones left on.'
-          : 'Switch off any you’d rather skip. Questions come from the ones left on.'}
-      </SettingHelp>
+      {/* Every topic is on by default, and most tables never switch one off,
+          so the switches fold away; the warnings below stay out of the fold. */}
+      <p className="text-sm text-fg-helper">{enabled} of {TOPICS.length} categories on</p>
+      <MoreSettings about="categories">
+        <SettingHelp className="mb-4">
+          {board
+            ? 'Switch off any you’d rather skip. The board picks its columns from the ones left on.'
+            : 'Switch off any you’d rather skip. Questions come from the ones left on.'}
+        </SettingHelp>
 
-      <div className="grid gap-3 sm:grid-cols-2">
-        {TOPICS.map((t) => {
-          const count = countFor.get(t.id);
-          const thin = board && count != null && count < ROWS;
-          return (
-            <Checkbox
-              key={t.id}
-              checked={!off.has(t.id)}
-              disabled={disabled}
-              onChange={(e) => set(t.id, e.target.checked)}
-              label={(
-                <span className="min-w-0">
-                  <span className="block font-bold text-white">{t.title}</span>
-                  <span className="block text-sm text-fg-subtle">
-                    {t.blurb}
-                    {count != null && (
-                      <>
-                        {' · '}
-                        <span className={thin ? 'text-pop-amber' : ''}>
-                          {thin
-                            ? `only ${count} question${count === 1 ? '' : 's'}, too few for a column`
-                            : `${count} questions`}
-                        </span>
-                      </>
-                    )}
+        <div className="grid gap-3 sm:grid-cols-2">
+          {TOPICS.map((t) => {
+            const count = countFor.get(t.id);
+            const thin = board && count != null && count < ROWS;
+            return (
+              <Checkbox
+                key={t.id}
+                checked={!off.has(t.id)}
+                disabled={disabled}
+                onChange={(e) => set(t.id, e.target.checked)}
+                label={(
+                  <span className="min-w-0">
+                    <span className="block font-bold text-fg-strong">{t.title}</span>
+                    <span className="block text-sm text-fg-subtle">
+                      {t.blurb}
+                      {count != null && (
+                        <>
+                          {' · '}
+                          <span className={thin ? 'text-pop-amber' : ''}>
+                            {thin
+                              ? `only ${count} question${count === 1 ? '' : 's'}, too few for a column`
+                              : `${count} questions`}
+                          </span>
+                        </>
+                      )}
+                    </span>
                   </span>
-                </span>
-              )}
-            />
-          );
-        })}
-      </div>
+                )}
+              />
+            );
+          })}
+        </div>
+      </MoreSettings>
 
       {enabled === 0 && (
-        <Banner tone="warning" className="mt-4">⚠️ Every category is off. Switch at least one back on.</Banner>
+        <Banner tone="warning" className="mt-4">Every category is off. Switch at least one back on.</Banner>
       )}
       {/* Only once there are enough for a board at all — below two, PoolLine's
           "not enough to fill a game" already says it, louder. */}
@@ -267,8 +285,8 @@ function PoolLine({ report, pool, players, topicsOff }) {
     return (
       <Banner tone="warning">
         {pool === 'shared' && players.length > 1
-          ? '⚠️ No shows in common. Pick “Shows anyone has”, or “The whole fact pack” to play without lists.'
-          : '⚠️ No shows on these lists yet. Import one, or pick “The whole fact pack”.'}
+          ? 'No shows in common. Pick “Shows anyone has”, or “The whole fact pack” to play without lists.'
+          : 'No shows on these lists yet. Import one, or pick “The whole fact pack”.'}
       </Banner>
     );
   }
@@ -276,15 +294,15 @@ function PoolLine({ report, pool, players, topicsOff }) {
     <>
       <p className="text-base text-fg-body">
         {needsLists(pool)
-          ? <><span className="font-bold text-white">{report.shows}</span> of {report.requested} show{report.requested === 1 ? '' : 's'} have facts</>
-          : <><span className="font-bold text-white">{report.shows}</span> shows</>}
+          ? <><span className="font-bold text-fg-strong">{report.shows}</span> of {report.requested} show{report.requested === 1 ? '' : 's'} have facts</>
+          : <><span className="font-bold text-fg-strong">{report.shows}</span> shows</>}
         {' · '}{report.characters} characters
       </p>
       {!report.playable && (
         <Banner tone="warning" className="mt-3">
           {topicsOff?.length
-            ? '⚠️ That isn’t enough to fill a game. Widen the pool above, or switch more categories on below.'
-            : '⚠️ That isn’t enough to fill a game. Widen the pool above.'}
+            ? 'That isn’t enough to fill a game. Widen the pool above, or switch more categories on below.'
+            : 'That isn’t enough to fill a game. Widen the pool above.'}
         </Banner>
       )}
     </>

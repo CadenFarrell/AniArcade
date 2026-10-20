@@ -1,4 +1,5 @@
 import SettingsFooter from '../../../shared/components/SettingsFooter';
+import MoreSettings from '../../../shared/components/MoreSettings';
 import SettingHelp, { DetailToggle } from '../../../shared/components/SettingHelp';
 import { Card, Checkbox, Field, NumberInput } from '../../../shared/ui';
 import OptionRow from './OptionRow';
@@ -39,7 +40,7 @@ export default function AniTagSettings({
 
   return (
     <>
-      <Card title="⚙️ The game" action={<DetailToggle />} padding="lg" className="mb-6">
+      <Card title="The game" action={<DetailToggle />} padding="lg" className="mb-6">
         {/* First, because it is the only setting that changes what the game IS
             rather than how long it runs — and because the hint under each option
             is the fastest way to explain a game somebody has not played. */}
@@ -81,7 +82,7 @@ export default function AniTagSettings({
         </p>
       </Card>
 
-      <Card title="⚙️ Length" padding="lg" className="mb-6">
+      <Card title="Length" padding="lg" className="mb-6">
         <Field label="Rounds" htmlFor="anitag-rounds" className="mb-2">
           <NumberInput
             id="anitag-rounds"
@@ -92,36 +93,40 @@ export default function AniTagSettings({
             onChange={(v) => onChange('rounds', v)}
           />
         </Field>
-        <SettingHelp className="mb-5" more={SETTING_HELP.rounds.more}>
+        <SettingHelp more={SETTING_HELP.rounds.more}>
           {SETTING_HELP.rounds.short}
         </SettingHelp>
 
-        {/* "Per round" rather than "per turn", and the change is not cosmetic:
-            names are spent one at a time as the seat goes round, so this is the
-            size of a player's whole round rather than the length of one sitting. */}
-        <Field label="Names each, per round" htmlFor="anitag-cap" className="mb-2">
-          <NumberInput
-            id="anitag-cap"
-            ariaLabel="Names each, per round"
-            min={MIN_CAP}
-            max={MAX_CAP}
-            value={proposalCap}
-            onChange={(v) => onChange('proposalCap', v)}
-          />
-        </Field>
-        <SettingHelp className="mb-5" more={SETTING_HELP.proposalCap.more}>
-          {SETTING_HELP.proposalCap.short} {capHelp}
-        </SettingHelp>
+        {/* How long a round runs per player, and whether your own written
+            categories join the draw — rounds stay up front. */}
+        <MoreSettings>
+          {/* "Per round" rather than "per turn", and the change is not cosmetic:
+              names are spent one at a time as the seat goes round, so this is the
+              size of a player's whole round rather than the length of one sitting. */}
+          <Field label="Names each, per round" htmlFor="anitag-cap" className="mb-2">
+            <NumberInput
+              id="anitag-cap"
+              ariaLabel="Names each, per round"
+              min={MIN_CAP}
+              max={MAX_CAP}
+              value={proposalCap}
+              onChange={(v) => onChange('proposalCap', v)}
+            />
+          </Field>
+          <SettingHelp className="mb-5" more={SETTING_HELP.proposalCap.more}>
+            {SETTING_HELP.proposalCap.short} {capHelp}
+          </SettingHelp>
 
-        <Checkbox
-          label={dealt ? 'Deal my own categories too' : 'Offer my own categories too'}
-          checked={useCustom}
-          onChange={(e) => onChange('useCustom', e.target.checked)}
-          className="mb-2"
-        />
-        <SettingHelp indent more={SETTING_HELP.useCustom.more}>
-          {SETTING_HELP.useCustom.short}
-        </SettingHelp>
+          <Checkbox
+            label={dealt ? 'Deal my own categories too' : 'Offer my own categories too'}
+            checked={useCustom}
+            onChange={(e) => onChange('useCustom', e.target.checked)}
+            className="mb-2"
+          />
+          <SettingHelp indent more={SETTING_HELP.useCustom.more}>
+            {SETTING_HELP.useCustom.short}
+          </SettingHelp>
+        </MoreSettings>
 
         <SettingsFooter values={values} defaults={DEFAULT_PREFS} onReset={onReset} />
       </Card>

@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { Button, Card } from '../../../shared/ui';
+import { Button, Card, Icon } from '../../../shared/ui';
 import { pickSpectra } from '../spectra';
 import { useCustomSpectra } from '../hooks/useCustomSpectra';
 import SpectrumEditor from './SpectrumEditor';
@@ -17,7 +17,7 @@ import SpectrumEditor from './SpectrumEditor';
 //
 // Three suggestions rather than every eligible spectrum: the psychic is holding
 // the device while everyone else waits, and a wall of options is where that wait
-// comes from. 🔄 redraws for anyone who wants more.
+// comes from. The refresh button redraws for anyone who wants more.
 //
 // `pool` IS WHICH DECK THIS ROUND DEALS FROM — 'shows', 'characters', or null in
 // text mode, which deals none. It only ever narrows the *suggestions*: a round
@@ -71,9 +71,9 @@ export default function SpectrumPicker({ excludeId = null, pool = null, onPick }
                 onClick={() => setEditing(s)}
                 aria-label={`Edit ${s.leftLabel} to ${s.rightLabel}`}
                 className="focus-pop grid h-11 w-11 flex-shrink-0 place-items-center rounded-pop-sm
-                  text-lg text-fg-icon hover:text-white"
+                  text-lg text-fg-icon hover:text-fg-strong"
               >
-                ✏️
+                <Icon name="pencil" />
               </button>
             </div>
           ))}
@@ -88,9 +88,9 @@ export default function SpectrumPicker({ excludeId = null, pool = null, onPick }
           <button
             onClick={reroll}
             aria-label="Suggest three different spectrums"
-            className="focus-pop rounded-pop-sm px-2 py-1 text-lg text-fg-icon hover:text-white"
+            className="focus-pop rounded-pop-sm px-2 py-1 text-lg text-fg-icon hover:text-fg-strong"
           >
-            🔄
+            <Icon name="refresh" />
           </button>
         )}
       >
@@ -102,7 +102,7 @@ export default function SpectrumPicker({ excludeId = null, pool = null, onPick }
       </Card>
 
       <Button variant="neutral" size="lg" fullWidth onClick={() => setEditing({})}>
-        ✏️ Write your own
+        Write your own
       </Button>
 
       {editing && (
@@ -129,7 +129,7 @@ function SpectrumButton({ spectrum, onClick }) {
       className="focus-pop min-w-0 flex-1 rounded-pop-sm border-2 border-line-strong bg-surface-2 px-4 py-3
         text-left transition-colors hover:border-pop-purple hover:bg-surface w-full"
     >
-      <span className="flex items-center gap-2 font-display text-base font-extrabold text-white">
+      <span className="flex items-center gap-2 font-display text-base font-extrabold text-fg-strong">
         <span className="min-w-0 flex-1 truncate">{spectrum.leftLabel}</span>
         <span className="flex-shrink-0 text-fg-subtle">→</span>
         <span className="min-w-0 flex-1 truncate text-right">{spectrum.rightLabel}</span>

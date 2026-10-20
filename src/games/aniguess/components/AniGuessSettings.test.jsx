@@ -9,7 +9,7 @@ import { cleanup, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import AniGuessSettings from './AniGuessSettings';
 import { DEFAULT_PREFS } from '../prefs';
-import { renderArcade } from '../../../shared/testing/arcade';
+import { openMoreSettings, renderArcade } from '../../../shared/testing/arcade';
 
 afterEach(cleanup);
 
@@ -49,6 +49,8 @@ describe('AniGuessSettings', () => {
     const onChange = mount({ local: false });
     await user.click(screen.getByRole('checkbox', { name: /shared shows only/i }));
     expect(onChange).toHaveBeenLastCalledWith('sharedShowsOnly', !DEFAULT_PREFS.sharedShowsOnly);
+    // The randomizer lives under the fold (shared/components/MoreSettings).
+    await openMoreSettings(user);
     await user.click(screen.getByRole('checkbox', { name: /anime-first/i }));
     expect(onChange).toHaveBeenLastCalledWith('twoStepRandom', !DEFAULT_PREFS.twoStepRandom);
   });
@@ -57,6 +59,7 @@ describe('AniGuessSettings', () => {
     const user = userEvent.setup();
     const before = [...DEFAULT_PREFS.pointsPerPosition];
     const onChange = mount({ local: false });
+    await openMoreSettings(user);
     await user.click(screen.getByRole('button', { name: /increase points for 2nd place/i }));
     const [key, value] = onChange.mock.lastCall;
     expect(key).toBe('pointsPerPosition');

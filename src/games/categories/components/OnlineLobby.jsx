@@ -1,15 +1,15 @@
 import { useState } from 'react';
 import { useGamePrefs } from '../../../shared/hooks/useGamePrefs';
 import { HostWaitCard, PlayerRoster, RoomCode } from '../../../shared/components/Lobby';
-import {
-  Backdrop, Banner, Button, Screen, Wordmark,
-} from '../../../shared/ui';
+import SetupLayout, { StartBar } from '../../../shared/components/SetupLayout';
+import { Banner, Button } from '../../../shared/ui';
 import AniTagSettings from './AniTagSettings';
 import CategoryEditor from './CategoryEditor';
 import { useCustomCategories } from '../hooks/useCustomCategories';
 import { NO_LIST_NEEDED } from '../help';
 import { DEFAULT_PREFS, POOL_LABELS } from '../prefs';
 import { MIN_PLAYERS } from '../rules';
+import descriptor from '../index';
 
 // The online lobby. The room code, roster and guest wait card are
 // shared/components/Lobby.jsx; what lives here is AniTag's own banner, settings
@@ -61,30 +61,39 @@ export default function OnlineLobby({ room }) {
   // otherwise satisfy the minimum and hand somebody absent the opening go.
   const enoughPlayers = active.length >= MIN_PLAYERS;
 
+  const status = !room.isHost ? `Waiting for ${room.hostName || 'the host'} to start.`
+    : enoughPlayers ? `${active.length} players · no list needed`
+      : `Waiting for players — this game needs ${MIN_PLAYERS}.`;
+
   return (
-    <>
-      <Backdrop />
-      <Screen>
-        <Wordmark tone="lime" size="md" className="mb-8">AniTag</Wordmark>
-
-        <RoomCode code={room.roomCode} />
-
-        <Banner tone="info" className="mb-6">{NO_LIST_NEEDED}</Banner>
-
-        {/* No badgeFor, unlike every other lobby in the arcade — nothing here
-            reads an anime list, so a list badge would be a warning about
-            nothing and would contradict the banner above. */}
-        <PlayerRoster
-          room={room}
-          players={players}
-          active={active}
-          statuses={statuses}
-          tone="lime"
-          minPlayers={MIN_PLAYERS}
-        />
-
-        {room.isHost ? (
-          <>
+    <SetupLayout
+      game={descriptor}
+      tagline="Everyone has a secret category. Name things until you work one out."
+      aside={<RoomCode code={room.roomCode} />}
+      left={(
+        <>
+          <Banner tone="info" className="mb-6">{NO_LIST_NEEDED}</Banner>
+          {/* No badgeFor, unlike every other lobby in the arcade — nothing here
+              reads an anime list, so a list badge would be a warning about
+              nothing and would contradict the banner above. */}
+          <PlayerRoster
+            room={room}
+            players={players}
+            active={active}
+            statuses={statuses}
+            tone="lime"
+            minPlayers={MIN_PLAYERS}
+          />
+          {room.isHost && !enoughPlayers && (
+            <Banner tone="warning" className="mb-6">
+              Needs {MIN_PLAYERS} players — somebody has to be able to answer.
+            </Banner>
+          )}
+        </>
+      )}
+      right={(
+        <>
+          {room.isHost ? (
             <AniTagSettings
               values={settings}
               onChange={change}
@@ -92,39 +101,35 @@ export default function OnlineLobby({ room }) {
               customCategories={categories}
               onReset={() => { setSettings({ ...DEFAULT_PREFS }); resetPrefs(); }}
             />
-
-            {!enoughPlayers && (
-              <Banner tone="warning" className="mb-6">
-                ⚠️ Needs {MIN_PLAYERS} players — somebody has to be able to answer.
-              </Banner>
-            )}
-          </>
-        ) : (
-          <HostWaitCard hostName={room.hostName} />
-        )}
-
-        <CategoryEditor
-          categories={categories}
-          onSave={saveCategory}
-          onDelete={deleteCategory}
-          noun={pool.noun}
-        />
-
-        {room.isHost && (
-          <Button
-            variant="primary"
-            size="xl"
-            fullWidth
-            disabled={!enoughPlayers}
-            onClick={() => {
-              savePrefs(settings);
-              room.startGame(settings);
-            }}
-          >
-            🎮 Start Game
-          </Button>
-        )}
-      </Screen>
-    </>
+          ) : (
+            <HostWaitCard hostName={room.hostName} />
+          )}
+          {/* For everyone, host or not — see the note at the top of the file. */}
+          <CategoryEditor
+            categories={categories}
+            onSave={saveCategory}
+            onDelete={deleteCategory}
+            noun={pool.noun}
+          />
+        </>
+      )}
+      start={(
+        <StartBar status={status} ready={room.isHost && enoughPlayers}>
+          {room.isHost && (
+            <Button
+              variant="primary"
+              size="lg"
+              disabled={!enoughPlayers}
+              onClick={() => {
+                savePrefs(settings);
+                room.startGame(settings);
+              }}
+            >
+              Start Game
+            </Button>
+          )}
+        </StartBar>
+      )}
+    />
   );
 }

@@ -10,7 +10,8 @@ import RoundEnd from './components/RoundEnd';
 import Leaderboard from './components/Leaderboard';
 import { useGameSession } from './hooks/useGameSession';
 import { useGameFlow, RESUMABLE_VIEWS } from './hooks/useGameFlow';
-import { Button, GhostButton, HubButton, Modal } from '../../shared/ui';
+import { Button, GhostButton, HubButton, Icon, Modal } from '../../shared/ui';
+import TablePortraits from '../../shared/components/TablePortraits';
 
 function App({ onExit, onBack }) {
   const [view, setView] = useState('setup');
@@ -62,155 +63,160 @@ function App({ onExit, onBack }) {
     ? 'Return to the hub? Your game is saved — you can resume it next time.'
     : null;
 
+  // Faces shared out once for the whole table (see TablePortraits), so the turn
+  // strip, the pass-the-device panel and the results all match the setup slots.
   return (
-    <div>
-      <HubButton onClick={onExit} confirm={exitConfirm} />
+    <TablePortraits players={gameSession?.players}>
+      <div>
+        <HubButton onClick={onExit} confirm={exitConfirm} />
 
-      {/* Resume Prompt. Escape discards, as it always has — but not a stray
-          backdrop click, which would throw away an unfinished game. */}
-      {showResumePrompt && (
-        <Modal onClose={handleDiscardSession} closeOnBackdrop={false} className="text-center">
-          <div className="mb-4 text-6xl">🎮</div>
-          <h2 className="mb-3 font-display text-3xl font-extrabold text-white">Resume Game?</h2>
-          <p className="mb-8 text-lg text-fg-body">
-            You have an unfinished game. Pick up where you left off?
-          </p>
-          <div className="flex flex-col gap-3">
-            <Button variant="success" size="lg" fullWidth onClick={handleResumeSession}>
-              ✅ Resume Game
-            </Button>
-            <Button variant="neutral" size="lg" fullWidth onClick={handleDiscardSession}>
-              🗑️ Start Fresh
-            </Button>
-          </div>
-        </Modal>
-      )}
+        {/* Resume Prompt. Escape discards, as it always has — but not a stray
+            backdrop click, which would throw away an unfinished game. */}
+        {showResumePrompt && (
+          <Modal onClose={handleDiscardSession} closeOnBackdrop={false} className="text-center">
+            <div className="mb-4 text-6xl text-fg-strong"><Icon name="play" /></div>
+            <h2 className="mb-3 font-display text-3xl font-extrabold text-fg-strong">Resume Game?</h2>
+            <p className="mb-8 text-lg text-fg-body">
+              You have an unfinished game. Pick up where you left off?
+            </p>
+            <div className="flex flex-col gap-3">
+              <Button variant="success" size="lg" fullWidth onClick={handleResumeSession}>
+                Resume Game
+              </Button>
+              <Button variant="neutral" size="lg" fullWidth onClick={handleDiscardSession}>
+                Start Fresh
+              </Button>
+            </div>
+          </Modal>
+        )}
 
-      {view === 'setup' && (
-        <PlayerSetup onStartGame={handleStartGame} onGoToList={handleGoToList} players={setupPlayers} onPlayersChange={setSetupPlayers} onBack={onBack} />
-      )}
+        {view === 'setup' && (
+          <PlayerSetup onStartGame={handleStartGame} onGoToList={handleGoToList} players={setupPlayers} onPlayersChange={setSetupPlayers} onBack={onBack} />
+        )}
 
-      {view === 'listManager' && (
-        <>
-          {/* mt-16 clears the fixed HubButton at top-left; this row is the
-              in-flow "← Back" + player switcher and would otherwise sit under it. */}
-          <div className="flex flex-wrap items-center gap-3 mx-5 mb-0 mt-16 sm:mx-6">
-            <GhostButton onClick={() => setView(listManagerOrigin)}>← Back</GhostButton>
-            {/* Player switcher — shown when multiple players are available */}
-            {gameSession && gameSession.players.length > 1 && (
-              <div className="flex gap-2 flex-wrap">
-                {gameSession.players.map((p) => (
-                  <Button
-                    key={p.id}
-                    size="sm"
-                    variant={listManagerProfile?.id === p.id ? 'secondary' : 'neutral'}
-                    onClick={() => setListManagerProfile(gameSession.players.find(pl => pl.id === p.id))}
-                  >
-                    {p.name}
-                  </Button>
-                ))}
-              </div>
-            )}
-          </div>
-          <ListManager
-            key={listManagerProfile?.id}
-            profile={listManagerProfile}
-            onProfileUpdated={handleProfileUpdated}
-            // The header row above already clears the fixed HubButton, so this
-            // body only needs a small gap beneath it.
-            className="pt-4"
+        {view === 'listManager' && (
+          <>
+            {/* mt-20 clears the fixed top bar (Screen's own clearance); this row
+                is the in-flow "← Back" + player switcher and would otherwise sit
+                under it. */}
+            <div className="flex flex-wrap items-center gap-3 mx-5 mb-0 mt-20 sm:mx-6">
+              <GhostButton onClick={() => setView(listManagerOrigin)}>← Back</GhostButton>
+              {/* Player switcher — shown when multiple players are available */}
+              {gameSession && gameSession.players.length > 1 && (
+                <div className="flex gap-2 flex-wrap">
+                  {gameSession.players.map((p) => (
+                    <Button
+                      key={p.id}
+                      size="sm"
+                      variant={listManagerProfile?.id === p.id ? 'secondary' : 'neutral'}
+                      onClick={() => setListManagerProfile(gameSession.players.find(pl => pl.id === p.id))}
+                    >
+                      {p.name}
+                    </Button>
+                  ))}
+                </div>
+              )}
+            </div>
+            <ListManager
+              key={listManagerProfile?.id}
+              profile={listManagerProfile}
+              onProfileUpdated={handleProfileUpdated}
+              // The header row above already clears the fixed top bar, so this
+              // body only needs a small gap beneath it.
+              className="pt-4"
+            />
+          </>
+        )}
+
+        {view === 'assignment' && gameSession && (
+          <CharacterAssignment
+            guesser={assignmentPlayer}
+            allPlayers={gameSession.players}
+            sharedShowsOnly={gameSession.settings.sharedShowsOnly}
+            twoStepRandom={gameSession.settings.twoStepRandom}
+            onCharacterAssigned={handleCharacterAssigned}
+            assignmentNumber={assignmentIndex + 1}
+            totalPlayers={gameSession.players.length}
           />
-        </>
-      )}
+        )}
 
-      {view === 'assignment' && gameSession && (
-        <CharacterAssignment
-          guesser={assignmentPlayer}
-          allPlayers={gameSession.players}
-          sharedShowsOnly={gameSession.settings.sharedShowsOnly}
-          twoStepRandom={gameSession.settings.twoStepRandom}
-          onCharacterAssigned={handleCharacterAssigned}
-          assignmentNumber={assignmentIndex + 1}
-          totalPlayers={gameSession.players.length}
-        />
-      )}
+        {view === 'reveal' && assignmentCharacter && (
+          <CharacterReveal
+            character={assignmentCharacter.character}
+            guesserName={assignmentPlayer.name}
+            onStartQuestioning={handleRevealDone}
+            isLastPlayer={assignmentIndex === gameSession.players.length - 1}
+          />
+        )}
 
-      {view === 'reveal' && assignmentCharacter && (
-        <CharacterReveal
-          character={assignmentCharacter.character}
-          guesserName={assignmentPlayer.name}
-          onStartQuestioning={handleRevealDone}
-          isLastPlayer={assignmentIndex === gameSession.players.length - 1}
-        />
-      )}
+        {/* GameScreen brings its own <Screen> shell now, so no outer wrapper. */}
+        {view === 'game' && currentAssignment && (
+          <GameScreen
+            guesser={currentGuesser}
+            character={currentAssignment.character}
+            players={gameSession.players}
+            assignments={assignments}
+            lockedPositions={lockedPositions}
+            questionLog={questionLogs[currentGuesser.id] || []}
+            turnCount={turnCounts[currentGuesser.id] || 0}
+            hasPeeked={hasPeeked}
+            onPeek={handlePeek}
+            onTurnComplete={handleTurnComplete}
+            onCorrectGuess={handleCorrectGuess}
+            onWrongGuess={handleWrongGuess}
+            timerEnabled={gameSession.settings.timerEnabled}
+            timerSeconds={gameSession.settings.timerSeconds}
+            sharedShowsOnly={gameSession.settings.sharedShowsOnly ?? true}
+            talkMode={gameSession.settings.talkMode ?? false}
+          />
+        )}
 
-      {/* GameScreen brings its own <Screen> shell now, so no outer wrapper. */}
-      {view === 'game' && currentAssignment && (
-        <GameScreen
-          guesser={currentGuesser}
-          character={currentAssignment.character}
-          players={gameSession.players}
-          assignments={assignments}
-          lockedPositions={lockedPositions}
-          questionLog={questionLogs[currentGuesser.id] || []}
-          turnCount={turnCounts[currentGuesser.id] || 0}
-          hasPeeked={hasPeeked}
-          onPeek={handlePeek}
-          onTurnComplete={handleTurnComplete}
-          onCorrectGuess={handleCorrectGuess}
-          onWrongGuess={handleWrongGuess}
-          timerEnabled={gameSession.settings.timerEnabled}
-          timerSeconds={gameSession.settings.timerSeconds}
-          sharedShowsOnly={gameSession.settings.sharedShowsOnly ?? true}
-          talkMode={gameSession.settings.talkMode ?? false}
-        />
-      )}
+        {view === 'correctGuess' && lastLocked && (
+          <CorrectGuessScreen
+            lastLocked={lastLocked}
+            lockedPositions={lockedPositions}
+            onContinue={() => {
+              if (lockedPositions.length >= gameSession.players.length) {
+                finishRound(lockedPositions);
+              } else {
+                setView('game');
+              }
+            }}
+          />
+        )}
 
-      {view === 'correctGuess' && lastLocked && (
-        <CorrectGuessScreen
-          lastLocked={lastLocked}
-          lockedPositions={lockedPositions}
-          onContinue={() => {
-            if (lockedPositions.length >= gameSession.players.length) {
-              finishRound(lockedPositions);
-            } else {
-              setView('game');
-            }
-          }}
-        />
-      )}
+        {view === 'roundEnd' && gameSession && (
+          <RoundEnd
+            players={gameSession.players}
+            lockedPositions={lockedPositions}
+            roundNumber={roundNumber}
+            totalScores={totalScores}
+            onNewRound={handleNewRound}
+            onEndSession={handleEndSession}
+          />
+        )}
 
-      {view === 'roundEnd' && gameSession && (
-        <RoundEnd
-          players={gameSession.players}
-          lockedPositions={lockedPositions}
-          roundNumber={roundNumber}
-          totalScores={totalScores}
-          onNewRound={handleNewRound}
-          onEndSession={handleEndSession}
-        />
-      )}
-
-      {view === 'leaderboard' && gameSession && (
-        <Leaderboard
-          players={gameSession.players}
-          totalScores={totalScores}
-          roundNumber={roundNumber}
-          onPlayAgain={() => {
-            clearSession();
-            setGameSession(null);
-            // Back to the same starting state as a fresh visit, not to an empty
-            // roster — otherwise "Play Again" quietly un-seats you.
-            setSetupPlayers(activeProfile ? [activeProfile] : []);
-            setView('setup');
-          }}
-          onEditLists={() => {
-            setListManagerProfile(gameSession.players[0]);
-            setView('listManager');
-          }}
-        />
-      )}
-    </div>
+        {view === 'leaderboard' && gameSession && (
+          <Leaderboard
+            players={gameSession.players}
+            totalScores={totalScores}
+            roundNumber={roundNumber}
+            onPlayAgain={() => {
+              clearSession();
+              setGameSession(null);
+              // Back to the same starting state as a fresh visit, not to an empty
+              // roster — otherwise "Play Again" quietly un-seats you.
+              setSetupPlayers(activeProfile ? [activeProfile] : []);
+              setView('setup');
+            }}
+            onEditLists={() => {
+              setListManagerProfile(gameSession.players[0]);
+              setView('listManager');
+            }}
+          />
+        )}
+      </div>
+    </TablePortraits>
   );
 }
 

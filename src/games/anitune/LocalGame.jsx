@@ -6,7 +6,8 @@ import { prepareQuestions } from './services/buildQuestions';
 import { resumeRound } from './rules';
 import { storage } from '../../shared/services/storage';
 import { useProfileStore } from '../../shared/context/profileContext';
-import { Button, HubButton, Modal } from '../../shared/ui';
+import { Button, HubButton, Icon, Modal } from '../../shared/ui';
+import TablePortraits from '../../shared/components/TablePortraits';
 
 // Per-game, matching the `<game>_*` convention, so it cannot collide with
 // aniguess_session.
@@ -153,7 +154,7 @@ export default function LocalGame({ onExit, onBack }) {
     }
   }
 
-  // Every local screen sits under one fixed "🏠 Hub" button rather than carrying
+  // Every local screen sits under one fixed "Hub" button rather than carrying
   // its own way out, so the exit never moves between views.
   const body = () => {
     if (view === 'round' && game) {
@@ -227,45 +228,49 @@ export default function LocalGame({ onExit, onBack }) {
     );
   };
 
+  // Faces shared out once for the whole table (see TablePortraits), so the turn
+  // strip, the pass-the-device panel and the results all match the setup slots.
   return (
-    <>
-      <HubButton
-        onClick={onExit}
-        // No longer a warning, because it is no longer true: the round view
-        // saves after every state change, so leaving mid-round parks the game
-        // rather than discarding it.
-        confirm={
-          view === 'round'
-            ? 'Return to the hub? Your game is saved — you can resume it next time.'
-            : null
-        }
-      />
+    <TablePortraits players={game?.players}>
+      <>
+        <HubButton
+          onClick={onExit}
+          // No longer a warning, because it is no longer true: the round view
+          // saves after every state change, so leaving mid-round parks the game
+          // rather than discarding it.
+          confirm={
+            view === 'round'
+              ? 'Return to the hub? Your game is saved — you can resume it next time.'
+              : null
+          }
+        />
 
-      {/* Escape discards, matching AniGuess's — but not a stray backdrop click,
-          which would throw away an unfinished round. */}
-      {showResume && (
-        <Modal onClose={discardSession} closeOnBackdrop={false} className="text-center">
-          <div className="mb-4 text-6xl">🎵</div>
-          <h2 className="mb-3 font-display text-3xl font-extrabold text-white">Resume round?</h2>
-          <p className="mb-8 text-lg text-fg-body">
-            You left a round unfinished
-            {saved?.round?.length
-              ? ` on song ${Math.min((saved.state?.index ?? 0) + 1, saved.round.length)} of ${saved.round.length}`
-              : ''}
-            . Scores carry over, and that song starts again from the top.
-          </p>
-          <div className="flex flex-col gap-3">
-            <Button variant="success" size="lg" fullWidth onClick={handleResume}>
-              ✅ Resume round
-            </Button>
-            <Button variant="neutral" size="lg" fullWidth onClick={discardSession}>
-              🗑️ Start fresh
-            </Button>
-          </div>
-        </Modal>
-      )}
+        {/* Escape discards, matching AniGuess's — but not a stray backdrop click,
+            which would throw away an unfinished round. */}
+        {showResume && (
+          <Modal onClose={discardSession} closeOnBackdrop={false} className="text-center">
+            <div className="mb-4 text-6xl text-fg-strong"><Icon name="play" /></div>
+            <h2 className="mb-3 font-display text-3xl font-extrabold text-fg-strong">Resume round?</h2>
+            <p className="mb-8 text-lg text-fg-body">
+              You left a round unfinished
+              {saved?.round?.length
+                ? ` on song ${Math.min((saved.state?.index ?? 0) + 1, saved.round.length)} of ${saved.round.length}`
+                : ''}
+              . Scores carry over, and that song starts again from the top.
+            </p>
+            <div className="flex flex-col gap-3">
+              <Button variant="success" size="lg" fullWidth onClick={handleResume}>
+                Resume round
+              </Button>
+              <Button variant="neutral" size="lg" fullWidth onClick={discardSession}>
+                Start fresh
+              </Button>
+            </div>
+          </Modal>
+        )}
 
-      {body()}
-    </>
+        {body()}
+      </>
+    </TablePortraits>
   );
 }

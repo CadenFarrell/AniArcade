@@ -28,7 +28,7 @@ export default function OptionRow({ active, onClick, title, hint }) {
       ? 'border-pop-lime bg-pop-lime/15'
       : 'border-line bg-surface-2/40 hover:border-line-loud'}`}
     >
-      <span className="block font-display text-base font-extrabold text-white">{title}</span>
+      <span className="block font-display text-base font-extrabold text-fg-strong">{title}</span>
       {hint && <span className="mt-0.5 block text-sm text-fg-helper">{hint}</span>}
     </button>
   );

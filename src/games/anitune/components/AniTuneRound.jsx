@@ -7,13 +7,17 @@ import { useAniTuneRound } from '../hooks/useAniTuneRound';
 import { isRace, hasLives, isEliminated } from '../rules';
 import { formatPoints } from '../../../shared/utils/deadline';
 import { Backdrop, Badge, GhostButton, Screen, TimerBar } from '../../../shared/ui';
+import Lives from './Lives';
+import { useSoundCue } from '../../../shared/hooks/useSoundCue';
+import PlayerRow from '../../../shared/components/PlayerRow';
+import RoundHeader from '../../../shared/components/RoundHeader';
 
 // Orchestrates one round: scoreboard, clip, and whichever mode's input area is
 // in play. All the game logic lives in ../rules.js via useAniTuneRound — this
 // component only decides what to render for the current phase.
 //
 // onBackToSetup re-deals with the same players. Leaving the game entirely is not
-// this component's business: LocalGame renders the one fixed "🏠 Hub" button
+// this component's business: LocalGame renders the one fixed "Hub" button
 // over every local view, so the exit stays in the same corner on all of them.
 export default function AniTuneRound({
   round, players, questions, clipSeconds, playbackRate = 1, mode, settings = {},
@@ -43,6 +47,12 @@ export default function AniTuneRound({
   const clipDone = clipDoneIndex === state.index;
   const race = isRace(mode);
   const lastManStanding = hasLives(mode);
+
+  // A buzzed answer that misses locks that player out: on the one shared
+  // device, the table hears it. Keyed on how many are out this question, so
+  // each miss sounds once.
+  const outCount = state.lockedOut?.length ?? 0;
+  useSoundCue('wrong', race && outCount ? `${state.index}:${outCount}` : null);
 
   // The expiry rule needs the question to grade the blank answers it records,
   // and it fires from a timer rather than from a handler — so hand the current
@@ -97,35 +107,26 @@ export default function AniTuneRound({
     <>
       <Backdrop />
       <Screen width="md">
-        {/* Scoreboard. In Lives the hearts matter more than the points, so they
-            sit beside the name and a knocked-out player is struck through rather
-            than dropped — being out is a standing, not an absence. */}
-        <div className="mb-6 flex flex-wrap justify-center gap-2">
-          {ranked.map((p) => {
-            const out = lastManStanding && isEliminated(state, p.id);
-            return (
-              <Badge
-                key={p.id}
-                tone={out ? 'red' : p.id === activeId ? 'purple' : 'neutral'}
-                className={out ? 'opacity-60' : ''}
-              >
-                {p.name} {formatPoints(state.scores[p.id] || 0)}
-                {lastManStanding && (
-                  <span className="ml-1">
-                    {out ? '💀' : '♥'.repeat(Math.max(0, state.lives?.[p.id] ?? 0))}
-                  </span>
-                )}
-              </Badge>
-            );
-          })}
-        </div>
+        {/* Scoreboard, as the row of faces, best first — nobody takes turns in
+            AniTune, so the row is a live leaderboard rather than a rotation. In
+            Lives the hearts matter more than the points, so they sit under each
+            face, and a knocked-out player's face dims rather than leaving the
+            row — being out is a standing, not an absence. */}
+        <PlayerRow
+          players={ranked}
+          activeId={activeId}
+          label="Scores"
+          dimIds={lastManStanding ? ranked.filter((p) => isEliminated(state, p.id)).map((p) => p.id) : []}
+          score={(p) => formatPoints(state.scores[p.id] || 0)}
+          status={lastManStanding ? (p) => (
+            <Lives count={isEliminated(state, p.id) ? 0 : state.lives?.[p.id]} className="text-pop-red" />
+          ) : undefined}
+        />
 
-        <p className="mb-1 text-center text-base text-fg-subtle">
-          Question {state.index + 1} of {round.length}
-        </p>
-        <h2 className="mb-6 text-center font-display text-3xl font-extrabold text-white">
-          {race ? 'Buzz in 🔔' : lastManStanding ? 'Last one standing 💀' : 'Everyone guesses 🤫'}
-        </h2>
+        <RoundHeader
+          title={race ? 'Buzz in' : lastManStanding ? 'Last one standing' : 'Everyone guesses'}
+          tag={`Song ${state.index + 1}/${round.length}`}
+        />
 
         <ClipPlayer
           key={question.id}

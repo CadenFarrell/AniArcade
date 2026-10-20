@@ -1,16 +1,17 @@
 import { useState } from 'react';
 import { useProfileStore } from '../../../shared/context/profileContext';
 import ListImport from '../../../shared/components/ListImport';
+import { LocalRoster } from '../../../shared/components/PlayerSlots';
 import ProfilePicker from '../../../shared/components/ProfilePicker';
 import SettingsFooter from '../../../shared/components/SettingsFooter';
+import SetupLayout, { StartBar } from '../../../shared/components/SetupLayout';
 import { useGamePrefs } from '../../../shared/hooks/useGamePrefs';
 import { usePackBackfill } from '../../../shared/hooks/usePackBackfill';
 import AniTuneSettings from './AniTuneSettings';
 import { eligibleCount } from '../utils/questionPool';
 import { DEFAULT_PREFS } from '../prefs';
-import {
-  Backdrop, Badge, Banner, Button, Card, CardRow, Screen, Wordmark,
-} from '../../../shared/ui';
+import descriptor from '../index';
+import { Banner, Button } from '../../../shared/ui';
 
 export default function AniTuneSetup({ onStart, preparing, progress, error, onBack }) {
   const { activeId, activeProfile, saveProfile } = useProfileStore();
@@ -48,169 +49,110 @@ export default function AniTuneSetup({ onStart, preparing, progress, error, onBa
 
   const eligible = eligibleCount(players, settings);
   const everyoneHasShows = players.every((p) => (p.animeList || []).length > 0);
+  const noKinds = !settings.includeOpenings && !settings.includeEndings;
   const canStart =
-    players.length >= 1 &&
-    everyoneHasShows &&
-    eligible > 0 &&
-    (settings.includeOpenings || settings.includeEndings) &&
-    !preparing;
+    players.length >= 1 && everyoneHasShows && eligible > 0 && !noKinds && !preparing;
+
+  // The Start bar's one line: what is ready, or the first thing that is not.
+  const status = preparing && progress
+    ? `${progress.phase === 'resolving' ? 'Matching your shows…' : 'Loading themes…'} ${progress.done}/${progress.total}`
+    : players.length === 0 ? 'Seat at least one player.'
+      : !everyoneHasShows ? 'Everyone needs an anime list.'
+        : noKinds ? 'Pick openings, endings, or both.'
+          : eligible === 0 ? 'No shows in play.'
+            : `${players.length} player${players.length === 1 ? '' : 's'} · ${eligible} show${eligible === 1 ? '' : 's'} in play${
+              settings.sharedSongsOnly && players.length > 1 ? ' (shared)' : ''}`;
+
+  const left = (
+    <>
+      {/* A picker, not a name box: a saved profile, not a retyped name, so
+          nobody gets seated as a fresh empty duplicate. */}
+      <LocalRoster
+        players={players}
+        activeId={activeId}
+        disabled={preparing}
+        onAdd={() => setShowPicker(true)}
+        onImport={setImportTarget}
+        onRemove={(id) => setPlayers((prev) => prev.filter((x) => x.id !== id))}
+      />
+
+      {players.length > 1 && settings.sharedSongsOnly && eligible === 0 && (
+        <Banner tone="warning" className="mb-4">
+          No shows in common — turn off &ldquo;Shared songs only&rdquo; or import more lists.
+        </Banner>
+      )}
+      {!everyoneHasShows && players.length > 0 && (
+        <Banner tone="warning" className="mb-4">
+          Everyone needs an anime list — tap the link button on a player to import theirs.
+        </Banner>
+      )}
+      {error && <Banner tone="danger" className="mb-4">{error}</Banner>}
+      {preparing && progress && (
+        <div className="mb-4">
+          <div
+            className="h-4 w-full overflow-hidden rounded-pop-sm border-2 border-ink bg-surface-2"
+            role="progressbar"
+            aria-valuenow={progress.done}
+            aria-valuemin={0}
+            aria-valuemax={progress.total}
+          >
+            <div
+              className="h-full bg-pop-blue transition-[width]"
+              style={{ width: `${(progress.done / Math.max(progress.total, 1)) * 100}%` }}
+            />
+          </div>
+          <p className="mt-2 text-sm text-fg-subtle">First time takes a moment; after that it&apos;s cached.</p>
+        </div>
+      )}
+    </>
+  );
 
   return (
     <>
-      <Backdrop />
-      <Screen width="md" onBack={onBack}>
-        <Wordmark
-          tone="blue"
-          subtitle="Name the anime from its opening or ending"
-          className="mb-10"
-        >
-          AniTune
-        </Wordmark>
-
-        {/* Add Player. Same picker AniGuess uses — a saved profile, not a
-            retyped name, so nobody gets seated as a fresh empty duplicate. */}
-        <Button
-          variant="secondary"
-          size="lg"
-          fullWidth
-          className="mb-5"
-          disabled={preparing}
-          onClick={() => setShowPicker(true)}
-        >
-          ➕ Add player
-        </Button>
-
-        {showPicker && (
-          <ProfilePicker
-            mode="add"
-            excludeIds={players.map((p) => p.id)}
-            onPick={(profile) => setPlayers((prev) => [...prev, profile])}
-            onClose={() => setShowPicker(false)}
-          />
+      <SetupLayout
+        game={descriptor}
+        tagline="Name the anime from its opening or ending"
+        onBack={onBack}
+        left={left}
+        right={(
+          <>
+            <AniTuneSettings
+              players={players}
+              values={settings}
+              disabled={preparing}
+              onChange={(key, value) => setSettings((s) => ({ ...s, [key]: value }))}
+            />
+            <SettingsFooter values={settings} defaults={DEFAULT_PREFS} onReset={applyDefaults} />
+          </>
         )}
-
-        {players.length === 0 && (
-          <p className="mb-6 text-center text-base text-fg-subtle">
-            Nobody seated yet — set your main profile with the 👤 button at the hub,
-            or add a player above. Profiles and anime lists are shared with AniGuess.
-          </p>
-        )}
-
-        {players.length > 0 && (
-          <Card padding="sm" className="mb-6">
-            {players.map((p) => {
-              const shows = (p.animeList || []).length;
-              return (
-                <CardRow key={p.id}>
-                  <span className="min-w-0 flex-1 truncate font-display text-lg font-extrabold text-white">
-                    {p.name}
-                  </span>
-                  {p.id === activeId && <Badge tone="purple">You</Badge>}
-                  <Badge tone={shows ? 'lime' : 'amber'}>
-                    {shows ? `${shows} shows` : '⚠️ No list'}
-                  </Badge>
-                  <Button
-                    variant="neutral"
-                    size="sm"
-                    className="flex-shrink-0"
-                    aria-label={`Import ${p.name}'s list`}
-                    disabled={preparing}
-                    onClick={() => setImportTarget(p)}
-                  >
-                    🔗
-                  </Button>
-                  <button
-                    onClick={() => setPlayers(players.filter((x) => x.id !== p.id))}
-                    disabled={preparing}
-                    aria-label={`Remove ${p.name}`}
-                    className="focus-pop grid h-11 w-11 flex-shrink-0 place-items-center rounded-pop-sm
-                      text-lg font-black text-pop-red hover:text-white disabled:opacity-30"
-                  >
-                    ✕
-                  </button>
-                </CardRow>
-              );
-            })}
-          </Card>
-        )}
-
-        <AniTuneSettings
-          players={players}
-          values={settings}
-          disabled={preparing}
-          onChange={(key, value) => setSettings((s) => ({ ...s, [key]: value }))}
-        />
-
-        <div className="mb-6">
-          <SettingsFooter values={settings} defaults={DEFAULT_PREFS} onReset={applyDefaults} />
-        </div>
-
-        {players.length > 0 && (
-          <p className="mb-4 text-center text-base text-fg-helper">
-            {eligible} show{eligible === 1 ? '' : 's'} in play
-            {settings.sharedSongsOnly && players.length > 1 && ' (shared by everyone)'}
-          </p>
-        )}
-
-        {players.length > 1 && settings.sharedSongsOnly && eligible === 0 && (
-          <Banner tone="warning" className="mb-4">
-            ⚠️ No shows in common — turn off &ldquo;Shared songs only&rdquo; or import more lists.
-          </Banner>
-        )}
-
-        {!everyoneHasShows && players.length > 0 && (
-          <Banner tone="warning" className="mb-4">
-            ⚠️ Everyone needs an anime list — tap 🔗 next to a player to import theirs.
-          </Banner>
-        )}
-
-        {importTarget && (
-          <ListImport
-            profile={importTarget}
-            onClose={() => setImportTarget(null)}
-            onImported={handleImported}
-          />
-        )}
-
-        {error && <Banner tone="danger" className="mb-4">{error}</Banner>}
-
-        {preparing && progress && (
-          <div className="mb-4">
-            <p className="mb-2 text-center text-base text-fg-body">
-              {progress.phase === 'resolving' ? 'Matching your shows…' : 'Loading themes…'}{' '}
-              {progress.done}/{progress.total}
-            </p>
-            <div
-              className="h-4 w-full overflow-hidden rounded-pop-sm border-2 border-ink bg-surface-2"
-              role="progressbar"
-              aria-valuenow={progress.done}
-              aria-valuemin={0}
-              aria-valuemax={progress.total}
+        start={(
+          <StartBar status={status} ready={canStart}>
+            <Button
+              variant="primary"
+              size="lg"
+              onClick={() => {
+                savePrefs(settings);
+                onStart({ players, ...settings });
+              }}
+              disabled={!canStart}
             >
-              <div
-                className="h-full bg-pop-blue transition-[width]"
-                style={{ width: `${(progress.done / Math.max(progress.total, 1)) * 100}%` }}
-              />
-            </div>
-            <p className="mt-2 text-center text-sm text-fg-subtle">
-              First time takes a moment; after that it&apos;s cached.
-            </p>
-          </div>
+              {preparing ? 'Preparing…' : 'Start Game'}
+            </Button>
+          </StartBar>
         )}
+      />
 
-        <Button
-          variant="primary"
-          size="xl"
-          fullWidth
-          onClick={() => {
-            savePrefs(settings);
-            onStart({ players, ...settings });
-          }}
-          disabled={!canStart}
-        >
-          {preparing ? 'Preparing…' : '🎮 Start Game'}
-        </Button>
-      </Screen>
+      {showPicker && (
+        <ProfilePicker
+          mode="add"
+          excludeIds={players.map((p) => p.id)}
+          onPick={(profile) => setPlayers((prev) => [...prev, profile])}
+          onClose={() => setShowPicker(false)}
+        />
+      )}
+      {importTarget && (
+        <ListImport profile={importTarget} onClose={() => setImportTarget(null)} onImported={handleImported} />
+      )}
     </>
   );
 }

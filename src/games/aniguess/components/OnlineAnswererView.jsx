@@ -1,7 +1,8 @@
 import LastOutcomeBanner from './LastOutcomeBanner';
 import QuestionLog from './QuestionLog';
 import WhoIsWhoPanel from './WhoIsWhoPanel';
-import { Avatar, Button, Card, Screen } from '../../../shared/ui';
+import { Avatar, Button, Card, Icon, Screen } from '../../../shared/ui';
+import SpeechBubble from '../../../shared/components/SpeechBubble';
 
 // Shown on every device during 'game' phase except the current guesser's.
 // Resolves pending questions via a button click (guesses are auto-resolved
@@ -21,7 +22,7 @@ export default function OnlineAnswererView({
       <LastOutcomeBanner outcome={lastOutcome} />
 
       <div className="mb-6 text-center">
-        <h2 className="font-display text-3xl font-extrabold text-white">
+        <h2 className="font-display text-3xl font-extrabold text-fg-strong">
           {guesser?.name}&apos;s Turn
         </h2>
         <p className="mt-1 text-base text-fg-helper">
@@ -39,7 +40,7 @@ export default function OnlineAnswererView({
               <p className="font-display text-xs uppercase tracking-widest text-fg-subtle">
                 {guesser?.name} is
               </p>
-              <p className="truncate font-display text-xl font-extrabold text-white">
+              <p className="truncate font-display text-xl font-extrabold text-fg-strong">
                 {guesserCharacter.name}
               </p>
               <p className="truncate text-sm text-fg-helper">{guesserCharacter.series}</p>
@@ -56,34 +57,34 @@ export default function OnlineAnswererView({
 
       {!live && (
         <div className="py-8 text-center">
-          <div className="mb-3 text-6xl">⏳</div>
+          <div className="mb-3 text-6xl text-fg-icon"><Icon name="hourglass" /></div>
           <p className="text-lg text-fg-helper">Waiting for a question or guess…</p>
         </div>
       )}
 
       {live && pendingAction.kind === 'question' && (
         <div className="mb-8 text-center">
-          <p className="mb-6 font-display text-xl font-extrabold text-white">
-            ❓ {pendingAction.text}
-          </p>
+          <SpeechBubble who={guesser?.name}>{pendingAction.text}</SpeechBubble>
           <div className="flex gap-4">
             <Button
               variant="success"
               size="xl"
+              sound="yes"
               className="flex-1"
               onClick={() => onAnswer('Yes')}
               disabled={resolving}
             >
-              ✅ Yes
+              <Icon name="check" /> Yes
             </Button>
             <Button
               variant="danger"
               size="xl"
+              sound="no"
               className="flex-1"
               onClick={() => onAnswer('No')}
               disabled={resolving}
             >
-              ❌ No
+              <Icon name="cross" /> No
             </Button>
           </div>
           <p className="mt-3 text-sm text-fg-subtle">
@@ -94,7 +95,7 @@ export default function OnlineAnswererView({
 
       {live && pendingAction.kind === 'guess' && (
         <p className="mb-8 text-center text-lg text-fg-body">
-          🎯 Checking guess: &quot;{pendingAction.text}&quot;…
+          Checking guess: &quot;{pendingAction.text}&quot;…
         </p>
       )}
 

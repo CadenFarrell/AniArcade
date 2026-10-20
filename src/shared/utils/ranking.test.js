@@ -1,20 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { getPositionEmoji, normalizeTitle, computeRankedPlayers } from './ranking';
+import { normalizeTitle, computeRankedPlayers } from './ranking';
 
 const p = (id, name = id) => ({ id, name });
-
-describe('getPositionEmoji', () => {
-  it('medals the top three', () => {
-    expect(getPositionEmoji(1)).toBe('🥇');
-    expect(getPositionEmoji(2)).toBe('🥈');
-    expect(getPositionEmoji(3)).toBe('🥉');
-  });
-
-  it('numbers everyone below the podium', () => {
-    expect(getPositionEmoji(4)).toBe('#4');
-    expect(getPositionEmoji(12)).toBe('#12');
-  });
-});
 
 describe('normalizeTitle', () => {
   it('ignores case and surrounding whitespace, so one show in two lists is one show', () => {

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Badge, Banner, Button, Card, CardRow, GhostButton, Screen } from '../../../shared/ui';
+import { useSoundCue } from '../../../shared/hooks/useSoundCue';
 import ClueCard from './ClueCard';
 import Dial from './Dial';
 
@@ -126,6 +127,11 @@ export default function RevealScreen({
 }) {
   const nameOf = (id) => players.find((p) => p.id === id)?.name ?? id;
 
+  // The target coming out is a moment the whole table shares, so every phone
+  // sounds it — a sting rather than right/wrong, since a dial is scored by
+  // distance, not marked. An abandoned round has no target to reveal.
+  useSoundCue('reveal', abandoned ? null : `${psychic?.id ?? ''}:${target}`);
+
   // Labels are computed across the WHOLE set rather than per name, because
   // uniqueness is a property of the set — a name cannot know it collides.
   const placed = explain.filter((r) => r.placed);
@@ -139,7 +145,7 @@ export default function RevealScreen({
 
   return (
     <Screen>
-      <h2 className="mb-6 font-display text-2xl font-extrabold text-white">
+      <h2 className="mb-6 font-display text-2xl font-extrabold text-fg-strong">
         {abandoned ? 'Round abandoned' : 'Reveal'}
       </h2>
 
@@ -171,12 +177,12 @@ export default function RevealScreen({
             {mode === 'readroom' ? (
               <>
                 {psychic ? psychic.name : 'The psychic'} put it at{' '}
-                <span className="font-display font-extrabold text-white">{target}</span>.
+                <span className="font-display font-extrabold text-fg-strong">{target}</span>.
               </>
             ) : (
               <>
                 {psychic ? `${psychic.name}'s` : 'The'} target was{' '}
-                <span className="font-display font-extrabold text-white">{target}</span>.
+                <span className="font-display font-extrabold text-fg-strong">{target}</span>.
               </>
             )}
           </p>
@@ -187,7 +193,7 @@ export default function RevealScreen({
         <Card title="This round" padding="sm" className="mb-6">
           {explain.map((r, i) => (
             <CardRow key={r.playerId}>
-              <span className="min-w-0 flex-1 truncate font-display text-lg font-extrabold text-white">
+              <span className="min-w-0 flex-1 truncate font-display text-lg font-extrabold text-fg-strong">
                 {nameOf(r.playerId)}
               </span>
               {/* A player who never dialled scored zero for a completely
@@ -205,7 +211,7 @@ export default function RevealScreen({
           ))}
           {psychic && (
             <CardRow>
-              <span className="min-w-0 flex-1 truncate font-display text-lg font-extrabold text-white">
+              <span className="min-w-0 flex-1 truncate font-display text-lg font-extrabold text-fg-strong">
                 {psychic.name}
               </span>
               <span className="text-sm text-fg-helper">psychic — average of the dials</span>

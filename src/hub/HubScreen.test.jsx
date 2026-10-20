@@ -7,7 +7,7 @@
 // path is caught by the per-game ErrorBoundary, which a player sees as one game
 // being broken and which no rules test would ever notice.
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, screen } from '@testing-library/react';
+import { cleanup, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { readFile } from 'node:fs/promises';
 import HubScreen from './HubScreen';
@@ -36,6 +36,7 @@ beforeAll(() => Promise.all(games.map((g) => g.Component.preload())), 60_000);
 let errors;
 beforeEach(() => {
   localStorage.clear();
+  sessionStorage.clear();
   // A network call from a local screen is a bug (see CLAUDE.md: with no
   // Firebase config, local play touches no network at all) — with ONE
   // exception: the fact pack, which is a static file the app serves itself
@@ -65,11 +66,48 @@ afterEach(() => {
 // are in the tree), so no word boundary can find it. A substring can.
 const tileFor = (game) =>
   screen.getByRole('button', { name: (name) => name.includes(game.title) });
+// Leaving a game runs the panel wipe (useWipe.js), which swaps the screen a
+// beat after the press rather than in the same render — hence find, not get.
+//
+// And a press during the wipe is ignored on purpose (a player cannot reach the
+// screen under it either), so a test that presses again must wait for it to end.
+const afterWipe = () => waitFor(() => expect(document.querySelector('[data-wipe]')).toBeNull());
+const findTile = async (game) => {
+  const tile = await screen.findByRole('button', { name: (name) => name.includes(game.title) });
+  await afterWipe();
+  return tile;
+};
+const findHub = async () => {
+  const hub = await screen.findByRole('button', { name: /^hub$/i });
+  await afterWipe();
+  return hub;
+};
+
+describe('title screen', () => {
+  it('greets a fresh tab and opens the hub on Press start', async () => {
+    const user = userEvent.setup();
+    renderArcade(<HubScreen />, { showTitle: true });
+    expect(screen.queryByRole('button', { name: (n) => n.includes(games[0].title) })).toBeNull();
+
+    await user.click(screen.getByRole('button', { name: /press start/i }));
+    expect(await findTile(games[0])).toBeTruthy();
+    // Remembered for the session, so a refresh mid-game skips it.
+    expect(sessionStorage.getItem('aniarcade_title_seen')).toBe('1');
+  });
+});
 
 describe('hub', () => {
   it('renders one tile per registered game', () => {
     renderArcade(<HubScreen />);
     for (const game of games) expect(tileFor(game)).toBeTruthy();
+  });
+
+  it('puts the Hub control in the top bar inside a game', async () => {
+    const user = userEvent.setup();
+    renderArcade(<HubScreen />);
+    await user.click(tileFor(games[0]));
+    const hub = await screen.findByRole('button', { name: /^hub$/i });
+    expect(hub.closest('header')).toBeTruthy();
   });
 
   it('asks a first-time player to set up a profile', () => {
@@ -81,6 +119,53 @@ describe('hub', () => {
     seedProfiles([makeProfile('Caden')]);
     renderArcade(<HubScreen />);
     expect(screen.queryByText(/no profile yet/i)).toBeNull();
+  });
+
+  // The tiles wear characters from the MAIN profile's list — a different one
+  // on every tile — and a tile with nobody left for it is a bare panel.
+  const withPortraits = (name, count) => {
+    const p = makeProfile(name, count);
+    for (const show of p.animeList) {
+      for (const c of show.characters) c.imageUrl = `https://img.test/${encodeURIComponent(c.name)}.jpg`;
+    }
+    return p;
+  };
+  const tilePortraits = () =>
+    games.map((g) => tileFor(g).querySelector('img')?.getAttribute('src') ?? null);
+
+  it('puts a different character from your list on every tile', () => {
+    seedProfiles([withPortraits('Caden', 14), withPortraits('Ayu', 14)], 'caden');
+    renderArcade(<HubScreen />);
+    const srcs = tilePortraits();
+    expect(srcs.every(Boolean)).toBe(true);
+    expect(new Set(srcs).size).toBe(games.length);
+    // The main profile's characters, never the other saved profile's.
+    const caden = withPortraits('Caden', 14).animeList.flatMap((s) => s.characters.map((c) => c.imageUrl));
+    for (const src of srcs) expect(caden).toContain(src);
+  });
+
+  it('opens the tapped tile into a cover page wearing the same character', async () => {
+    seedProfiles([withPortraits('Caden', 14)]);
+    const user = userEvent.setup();
+    renderArcade(<HubScreen />);
+    const game = games[0];
+    const src = tileFor(game).querySelector('img').getAttribute('src');
+
+    await user.click(tileFor(game));
+    await screen.findByRole('button', { name: /play on this device/i });
+    expect(screen.getByRole('heading', { level: 1, name: game.title })).toBeTruthy();
+    expect([...document.querySelectorAll('img')].map((i) => i.getAttribute('src'))).toContain(src);
+  });
+
+  it('leaves the tiles bare with no profile, and fills only what a small list can', () => {
+    renderArcade(<HubScreen />);
+    expect(tilePortraits().every((s) => s === null)).toBe(true);
+    cleanup();
+
+    // Two shows × two characters: four faces for seven tiles.
+    seedProfiles([withPortraits('Caden', 2)]);
+    renderArcade(<HubScreen />);
+    expect(tilePortraits().filter(Boolean)).toHaveLength(4);
   });
 });
 
@@ -102,7 +187,7 @@ describe.each(games.map((g) => [g.title, g]))('%s', (_title, game) => {
 
       await user.click(local);
       expect(screen.queryByText(CRASH)).toBeNull();
-      expect(screen.getByRole('button', { name: /hub/i })).toBeTruthy();
+      expect(screen.getByRole('button', { name: /^hub$/i })).toBeTruthy();
       expect(errors).toEqual([]);
       // Asserted, not left to the stub's throw: a caller that swallows a failed
       // fetch would otherwise hide the request from this test entirely.
@@ -116,15 +201,14 @@ describe.each(games.map((g) => [g.title, g]))('%s', (_title, game) => {
     renderArcade(<HubScreen />);
 
     await user.click(tileFor(game));
-    await user.click(await screen.findByRole('button', { name: /🏠 hub/i }));
-    expect(tileFor(game)).toBeTruthy();
-
-    await user.click(tileFor(game));
+    await user.click(await findHub());
+    await user.click(await findTile(game));
     await user.click(await screen.findByRole('button', { name: /play on this device/i }));
     // Setup is not mid-session, so the Hub button must leave without a confirm.
     const confirm = vi.spyOn(window, 'confirm');
-    await user.click(screen.getByRole('button', { name: /🏠 hub/i }));
+    await user.click(await findHub());
     expect(confirm).not.toHaveBeenCalled();
+    await findTile(game);
     for (const g of games) expect(tileFor(g)).toBeTruthy();
     expect(errors).toEqual([]);
   });

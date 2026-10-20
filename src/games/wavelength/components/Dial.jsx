@@ -41,13 +41,6 @@ const R_NEEDLE_IN = 26;
 // lime = correct, and a band is just how correct.
 const BAND_TONES = ['fill-pop-lime/20', 'fill-pop-lime/40', 'fill-pop-lime/80'];
 
-// Only the bullseye lights, and only because it is the answer. Glowing all
-// three would draw three concentric halos that bleed into each other and read
-// as one soft blob — which is the opposite of a target, and would lose the
-// band edges the score is actually read off. Parallel to BAND_TONES, so the
-// reversal in TargetBands indexes both the same way.
-const BAND_GLOW = ['', '', 'glow-svg-lg [--glow:var(--color-pop-lime)]'];
-
 // A badge is about 22 units wide at R_LABEL, which is this many degrees of arc.
 const LABEL_GAP_DEG = 11;
 
@@ -66,7 +59,7 @@ function TargetBands({ target, animate }) {
       // rather than drawn past it — which is what keeps the painted bands and
       // the scored distances the same object.
       d={wedgePath(CX, CY, R_INNER, R_OUTER, target - band.within, target + band.within)}
-      className={`${BAND_TONES[i] ?? 'fill-pop-lime/20'} ${BAND_GLOW[i] ?? ''}
+      className={`${BAND_TONES[i] ?? 'fill-pop-lime/20'}
         ${animate ? 'dial-band-in' : ''}`}
       style={animate ? { animationDelay: `${i * 90}ms` } : undefined}
     />
@@ -181,12 +174,8 @@ export default function Dial({
             ))}
 
             {placed && (
-              // The needle is the one thing on this screen the player is
-              // actually moving, so it is the one thing that glows. Grouped so
-              // the filter is applied once to the needle and its hub together —
-              // per-element it would halo the hub's ink stroke separately and
-              // draw a dark ring inside the pink one.
-              <g className="glow-svg [--glow:var(--color-pop-pink)]">
+              // The needle and its hub, grouped so they move as one piece.
+              <g>
                 <Spoke
                   value={value}
                   from={R_NEEDLE_IN}
@@ -214,7 +203,7 @@ export default function Dial({
                 ...(animate ? { animationDelay: `${260 + i * 110}ms` } : null),
               }}
               className={`absolute -translate-x-1/2 -translate-y-1/2 rounded-pop-sm border border-ink
-                bg-white px-1 font-display text-[10px] font-extrabold text-ink
+                bg-paper px-1 font-display text-[10px] font-extrabold text-ink
                 ${animate ? 'dial-marker-in' : ''}`}
             >
               {m.short}
@@ -246,17 +235,16 @@ export default function Dial({
             onClick={() => onChange(clamp((placed ? value : 50) - 1))}
             aria-label="Nudge left"
             className="focus-pop grid h-11 w-11 place-items-center rounded-pop-sm border-2 border-line-strong
-              bg-surface-2 font-display text-xl font-black text-white hover:bg-surface"
+              bg-surface-2 font-display text-xl font-black text-fg-strong hover:bg-surface"
           >
             −
           </button>
           <span
-            // Lit only once a value is placed: an unplaced dial shows an em
-            // dash, and a glowing placeholder would claim the player has
-            // answered when they have not.
+            // Inked in the needle's colour only once a value is placed: an
+            // unplaced dial shows an em dash, and a coloured placeholder
+            // would claim the player has answered when they have not.
             className={`min-w-[3.5rem] text-center font-display text-2xl font-extrabold
-              tabular-nums text-white
-              ${placed ? 'neon-text [--glow:var(--color-pop-pink)]' : ''}`}
+              tabular-nums ${placed ? 'text-pop-pink' : 'text-fg-strong'}`}
             aria-hidden="true"
           >
             {placed ? value : '—'}
@@ -266,7 +254,7 @@ export default function Dial({
             onClick={() => onChange(clamp((placed ? value : 50) + 1))}
             aria-label="Nudge right"
             className="focus-pop grid h-11 w-11 place-items-center rounded-pop-sm border-2 border-line-strong
-              bg-surface-2 font-display text-xl font-black text-white hover:bg-surface"
+              bg-surface-2 font-display text-xl font-black text-fg-strong hover:bg-surface"
           >
             +
           </button>

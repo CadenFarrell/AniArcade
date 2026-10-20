@@ -14,8 +14,12 @@ import OnlineAnswererView from './components/OnlineAnswererView';
 import CorrectGuessScreen from './components/CorrectGuessScreen';
 import RoundEnd from './components/RoundEnd';
 import Leaderboard from './components/Leaderboard';
-import WaitingScreen from './components/WaitingScreen';
-import { Banner, HubButton } from '../../shared/ui';
+import WaitingScreen from '../../shared/components/WaitingScreen';
+import RoomShell from '../../shared/components/RoomShell';
+import { useSoundCue } from '../../shared/hooks/useSoundCue';
+import { HubButton } from '../../shared/ui';
+import ResultImpact from '../../shared/components/ResultImpact';
+
 
 export default function OnlineGame({ onBack, onExit }) {
   const room = useRoom();
@@ -128,6 +132,38 @@ export default function OnlineGame({ onBack, onExit }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [room.view, room.isMyTurn, room.pendingAction]);
 
+  // Game sounds, from state — each phone sounds for ITS OWN result only, so a
+  // room of phones does not chime at once for one player's answer:
+  //  - the yes/no to the question I asked as it lands, and my wrong guess as
+  //    the impact frame (lastOutcome carries whose action it was; `at` makes
+  //    each one new);
+  //  - my turn coming round — keyed on my own turn count, which moves on once
+  //    per turn I take, so each new go pings once;
+  //  - a correct guess: CorrectGuessScreen's impact frame on the guesser's
+  //    phone, the reveal sting on everyone else's, since the whole table is
+  //    looking at that screen.
+  const outcome = room.lastOutcome;
+  const mine = outcome && outcome.playerId === room.myPlayerId;
+  useSoundCue(
+    mine && outcome.kind === 'question' ? (outcome.answer === 'Yes' ? 'yes' : 'no') : null,
+    mine ? outcome.at : null,
+  );
+  const missImpact = (
+    <ResultImpact result={mine && outcome.kind === 'guess' ? 'wrong' : null} eventKey={mine ? outcome.at : null} />
+  );
+  useSoundCue(
+    'turn',
+    room.view === 'game' && room.isMyTurn
+      ? `${room.roundNumber}:${room.turnCounts?.[room.myPlayerId] ?? 0}`
+      : null,
+  );
+  useSoundCue(
+    room.lastLocked?.playerId === room.myPlayerId ? null : 'reveal',
+    room.view === 'correctGuess' && room.lastLocked
+      ? `${room.roundNumber}:${room.lastLocked.playerId}`
+      : null,
+  );
+
   // Unanimous approval: once every non-assignee has approved the current shared
   // proposal, lock it in (advance to reveal). Any present device can trigger the
   // write (it's idempotent); the ref guards each device to one trigger per
@@ -166,17 +202,7 @@ export default function OnlineGame({ onBack, onExit }) {
     );
   }
 
-  const handleLeave = () => {
-    if (!window.confirm('Leave this room? You can rejoin with the same name and room code.')) return;
-    room.leaveRoom();
-  };
 
-  // Going to the hub from inside a room means leaving it — the room itself
-  // survives, so rejoining with the same name and code picks the game back up.
-  const handleExitToHub = () => {
-    room.leaveRoom();
-    onExit();
-  };
 
   const handleAnswerQuestion = async (answer) => {
     setResolving(true);
@@ -192,60 +218,27 @@ export default function OnlineGame({ onBack, onExit }) {
     }
   };
 
-  // Wraps every in-room screen so connection problems and the way out are
-  // always reachable, whatever phase the game is in.
-  const shell = (children) => (
-    <div className="relative">
-      <HubButton
-        onClick={handleExitToHub}
-        confirm="Leave this room and return to the hub? You can rejoin with the same name and room code."
-      />
-      {/* Mirrors HubButton's chrome treatment so the two corners read as one
-          layer floating over the screen rather than two unrelated controls. */}
-      <div className="fixed top-3 right-3 z-40 flex items-center gap-2">
-        <span className="hidden font-display text-xs tracking-widest text-fg-subtle sm:inline">
-          {room.roomCode}
-        </span>
-        <button
-          onClick={handleLeave}
-          className="focus-pop rounded-pop-sm bg-scrim px-3 py-1.5 font-display text-sm font-bold
-            text-fg-body backdrop-blur-sm transition-colors hover:bg-scrim-strong hover:text-white"
-        >
-          Leave
-        </button>
-      </div>
-      <div className="fixed top-3 left-1/2 z-40 flex w-[calc(100%-1.5rem)] max-w-md
-        -translate-x-1/2 flex-col gap-2">
-        {room.syncError && (
-          <Banner tone="danger" onDismiss={room.dismissSyncError} className="bg-canvas/95 backdrop-blur-sm">
-            ⚠️ {room.syncError}
-          </Banner>
-        )}
-        {/* Says out loud why the room has paused, and for how much longer, so a
-            dropped player doesn't just look like a frozen game. */}
-        {room.dropping.map(({ player, remainingMs }) => (
-          <Banner key={player.id} tone="warning" className="bg-canvas/95 backdrop-blur-sm">
-            🔌 {player.name} disconnected — waiting {Math.ceil(remainingMs / 1000)}s…
-          </Banner>
-        ))}
-      </div>
-      {children}
-    </div>
+  // Every in-room screen goes through RoomShell: the way out, the room code and
+  // Leave in the top bar, and the connection banners.
+  // The miss frame rides in the shell, because the guesser's turn has already
+  // moved on (to somebody else's) by the time their wrong guess lands.
+  const shell = (children, opts) => (
+    <RoomShell room={room} onExit={onExit} {...opts}>{children}{missImpact}</RoomShell>
   );
 
   if (!room.view) {
-    return shell(<WaitingScreen emoji="🌐" title="Loading room…" />);
+    return shell(<WaitingScreen title="Loading room…" />);
   }
 
   if (room.view === 'setup') {
-    return shell(<OnlineLobby room={room} />);
+    return shell(<OnlineLobby room={room} />, { codeInPage: true });
   }
 
   if (room.view === 'assignment') {
     if (room.isMyAssignmentTurn) {
       return shell(
         <WaitingScreen
-          emoji="📵"
+          icon="eye-off"
           title="Look away!"
           subtitle="The other players are choosing your character together."
         />
@@ -273,14 +266,14 @@ export default function OnlineGame({ onBack, onExit }) {
     if (room.isMyAssignmentTurn) {
       return shell(
         <WaitingScreen
-          emoji="🙈"
+          icon="eye-off"
           title="Still looking away!"
           subtitle="The other players are memorizing your character."
         />
       );
     }
     if (!revealCharacter) {
-      return shell(<WaitingScreen emoji="⏳" title="Loading character…" />);
+      return shell(<WaitingScreen title="Loading character…" />);
     }
     return shell(
       <CharacterReveal
@@ -333,6 +326,7 @@ export default function OnlineGame({ onBack, onExit }) {
       <CorrectGuessScreen
         lastLocked={room.lastLocked}
         lockedPositions={room.lockedPositions}
+        mine={room.lastLocked.playerId === room.myPlayerId}
         onContinue={() => {
           // Everyone still here has been placed. Counting lockedPositions
           // against the full roster would hold the round open for a player who
@@ -376,5 +370,5 @@ export default function OnlineGame({ onBack, onExit }) {
     );
   }
 
-  return shell(<WaitingScreen emoji="🌐" title="Loading…" />);
+  return shell(<WaitingScreen title="Loading…" />);
 }

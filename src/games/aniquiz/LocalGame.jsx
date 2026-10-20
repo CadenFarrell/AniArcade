@@ -4,6 +4,7 @@ import LocalRound from './components/LocalRound';
 import { buildDeal } from './deal';
 import { useFactPack } from '../../shared/hooks/useFactPack';
 import { HubButton } from '../../shared/ui';
+import TablePortraits from '../../shared/components/TablePortraits';
 
 // Single-device play: setup, then the round, whose own last screen is the
 // results. A thin router, like every other game's LocalGame.
@@ -27,25 +28,29 @@ export default function LocalGame({ onExit, onBack }) {
     setGame((g) => ({ players, settings, deal: res.deal, n: (g?.n ?? 0) + 1 }));
   };
 
+  // Faces shared out once for the whole table (see TablePortraits), so the turn
+  // strip, the pass-the-device panel and the results all match the setup slots.
   return (
-    <>
-      <HubButton
-        onClick={onExit}
-        confirm={game ? 'Return to the hub? This game will be lost.' : null}
-      />
-      {game ? (
-        <LocalRound
-          key={game.n}
-          players={game.players}
-          deal={game.deal}
-          settings={game.settings}
-          pack={pack.pack}
-          onPlayAgain={() => start(game)}
-          onBack={() => setGame(null)}
+    <TablePortraits players={game?.players}>
+      <>
+        <HubButton
+          onClick={onExit}
+          confirm={game ? 'Return to the hub? This game will be lost.' : null}
         />
-      ) : (
-        <QuizSetup pack={pack} onStart={start} error={error} onBack={onBack} />
-      )}
-    </>
+        {game ? (
+          <LocalRound
+            key={game.n}
+            players={game.players}
+            deal={game.deal}
+            settings={game.settings}
+            pack={pack.pack}
+            onPlayAgain={() => start(game)}
+            onBack={() => setGame(null)}
+          />
+        ) : (
+          <QuizSetup pack={pack} onStart={start} error={error} onBack={onBack} />
+        )}
+      </>
+    </TablePortraits>
   );
 }

@@ -3,12 +3,13 @@ import { useProfileStore } from '../../../shared/context/profileContext';
 import { useWins } from '../../../shared/hooks/useWins';
 import { useGamePrefs } from '../../../shared/hooks/useGamePrefs';
 import { normalizeTitle } from '../../../shared/utils/ranking';
+import { AddPlayerSlot, PlayerSlot, PlayerSlots, SlotAction } from '../../../shared/components/PlayerSlots';
 import ProfilePicker from '../../../shared/components/ProfilePicker';
+import SetupLayout, { StartBar } from '../../../shared/components/SetupLayout';
 import AniGuessSettings from './AniGuessSettings';
 import { DEFAULT_PREFS } from '../prefs';
-import {
-  Backdrop, Badge, Banner, Button, CardRow, Modal, Screen, Wordmark,
-} from '../../../shared/ui';
+import descriptor from '../index';
+import { Badge, Banner, Button, CardRow, Icon, Modal } from '../../../shared/ui';
 import {
   DndContext,
   closestCenter,
@@ -20,50 +21,53 @@ import {
   arrayMove,
   SortableContext,
   useSortable,
-  verticalListSortingStrategy,
+  rectSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
-function SortablePlayer({ player, isYou, onRemove, onGoToList }) {
-  const { attributes, listeners, setNodeRef, transform, transition } =
-    useSortable({ id: player.id });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-  };
-
-  const totalCharacters = player.animeList.reduce(
-    (sum, anime) => sum + anime.characters.length, 0
-  );
+// A seat that can be dragged: seat order IS turn order in AniGuess, so the
+// slots keep the drag-to-reorder the old list had. rectSortingStrategy because
+// the seats are a grid now, not a column. The grip is the only drag handle, so
+// the slot's own buttons stay ordinary buttons.
+function SortableSlot({ player, isYou, onRemove, onGoToList }) {
+  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: player.id });
+  const totalCharacters = player.animeList.reduce((sum, anime) => sum + anime.characters.length, 0);
 
   return (
-    <div ref={setNodeRef} style={style} className="card-pop mb-3 flex items-center gap-3 p-4">
-      <span
-        {...attributes}
-        {...listeners}
-        className="focus-pop cursor-grab rounded-pop-sm px-1 text-2xl text-fg-icon hover:text-white"
-      >
-        ☰
-      </span>
-      <span className="min-w-0 flex-1 truncate font-display font-extrabold text-lg text-white">
-        {player.name}
-      </span>
-      {isYou && <Badge tone="purple">You</Badge>}
-      <Badge tone={totalCharacters > 0 ? 'lime' : 'amber'}>
-        {totalCharacters > 0 ? `${totalCharacters} chars` : '⚠️ No chars'}
-      </Badge>
-      <Button variant="neutral" size="sm" onClick={() => onGoToList(player)}>
-        ✏️ Edit List
-      </Button>
-      <button
-        onClick={() => onRemove(player.id)}
-        aria-label={`Remove ${player.name}`}
-        className="focus-pop grid h-11 w-11 flex-shrink-0 place-items-center rounded-pop-sm text-lg font-black text-pop-red hover:text-white"
-      >
-        ✕
-      </button>
-    </div>
+    <PlayerSlot
+      ref={setNodeRef}
+      style={{ transform: CSS.Transform.toString(transform), transition }}
+      player={player}
+      corner={(
+        <span
+          {...attributes}
+          {...listeners}
+          aria-label={`Drag to reorder ${player.name}`}
+          className="focus-pop grid h-9 w-9 cursor-grab place-items-center border-2 border-ink bg-surface
+            text-lg text-fg-icon hover:text-fg-strong"
+        >
+          <Icon name="grip" />
+        </span>
+      )}
+      badges={(
+        <>
+          {isYou && <Badge tone="purple">You</Badge>}
+          <Badge tone={totalCharacters > 0 ? 'lime' : 'amber'}>
+            {totalCharacters > 0 ? `${totalCharacters} chars` : 'No chars'}
+          </Badge>
+        </>
+      )}
+      actions={(
+        <>
+          <SlotAction label={`Edit ${player.name}'s list`} onClick={() => onGoToList(player)}>
+            <Icon name="pencil" />
+          </SlotAction>
+          <SlotAction label={`Remove ${player.name}`} tone="danger" onClick={() => onRemove(player.id)}>
+            <Icon name="cross" />
+          </SlotAction>
+        </>
+      )}
+    />
   );
 }
 
@@ -109,6 +113,11 @@ export default function PlayerSetup({ onStartGame, onGoToList, players, onPlayer
   );
   const canStart = players.length >= 2 && allHaveChars && (!sharedShowsOnly || hasSharedAnime);
 
+  const status = players.length < 2 ? 'Add at least 2 players to start.'
+    : !allHaveChars ? 'Every player needs at least one character.'
+      : sharedShowsOnly && !hasSharedAnime ? 'No two players share a show.'
+        : `${players.length} players · drag to set the turn order`;
+
   const winsEntries = showWins ? Object.entries(getWins()).sort((a, b) => b[1] - a[1]) : [];
 
   const handleResetWins = () => {
@@ -120,120 +129,102 @@ export default function PlayerSetup({ onStartGame, onGoToList, players, onPlayer
 
   return (
     <>
-      <Backdrop />
-      <Screen width="md" onBack={onBack}>
-        <div className="mb-10 text-center">
-          <Wordmark tone="pink">AniGuess</Wordmark>
-          <p className="mt-5 text-lg text-fg-body">The anime character guessing game</p>
-          <Button
-            variant="neutral"
-            size="sm"
-            className="mt-4"
-            onClick={() => setShowWins(true)}
-          >
-            🏅 All-Time Leaderboard
+      <SetupLayout
+        game={descriptor}
+        tagline="The anime character guessing game"
+        onBack={onBack}
+        aside={(
+          <Button variant="secondary" size="sm" onClick={() => setShowWins(true)}>
+            All-Time Leaderboard
           </Button>
-        </div>
+        )}
+        left={(
+          <>
+            {/* A picker, not a name box: everyone on this couch is already saved
+                on the device, and retyping their name was one typo away from
+                seating a brand-new empty profile that looked like theirs.
+                Importing a list is per-seat (the pencil) — it has to work for
+                someone already seated, which a name box never could. */}
+            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+              <SortableContext items={players.map((p) => p.id)} strategy={rectSortingStrategy}>
+                <PlayerSlots count={players.length} players={players}>
+                  {players.map((p) => (
+                    <SortableSlot
+                      key={p.id}
+                      player={p}
+                      isYou={p.id === activeId}
+                      onRemove={removePlayer}
+                      onGoToList={onGoToList}
+                    />
+                  ))}
+                  <AddPlayerSlot onClick={() => setShowPicker(true)} />
+                </PlayerSlots>
+              </SortableContext>
+            </DndContext>
 
-        {showWins && (
-          <Modal onClose={() => setShowWins(false)} width="sm">
-            <h2 className="mb-6 font-display text-3xl font-extrabold text-white">
-              🏅 All-Time Wins
-            </h2>
-            {winsEntries.length === 0
-              ? <p className="py-4 text-center text-fg-subtle">No games played yet!</p>
-              : winsEntries.map(([name, count], i) => (
-                <CardRow key={name}>
-                  <span className="text-lg text-white">{i === 0 ? '👑 ' : ''}{name}</span>
-                  <span className="font-display text-xl font-extrabold text-pop-amber">
-                    {count} W
-                  </span>
-                </CardRow>
-              ))
-            }
-            <div className="mt-6 flex gap-3">
-              <Button variant="neutral" fullWidth onClick={() => setShowWins(false)}>
-                Close
+            {players.length >= 2 && sharedShowsOnly && !hasSharedAnime && (
+              <Banner tone="warning" className="mb-5">
+                No two players share an anime title — uncheck &quot;Shared shows
+                only&quot; or add matching titles.
+              </Banner>
+            )}
+          </>
+        )}
+        right={<AniGuessSettings values={settings} onChange={change} local onReset={applyDefaults} />}
+        start={(
+          <StartBar status={status} ready={canStart}>
+            <Button
+              variant="primary"
+              size="lg"
+              onClick={() => {
+                savePrefs(settings);
+                onStartGame({ players, settings });
+              }}
+              disabled={!canStart}
+            >
+              Start Game
+            </Button>
+          </StartBar>
+        )}
+      />
+
+      {showPicker && (
+        <ProfilePicker
+          mode="add"
+          excludeIds={players.map((p) => p.id)}
+          onPick={(profile) => onPlayersChange([...players, profile])}
+          onClose={() => setShowPicker(false)}
+        />
+      )}
+
+      {showWins && (
+        <Modal onClose={() => setShowWins(false)} width="sm">
+          <h2 className="mb-6 font-display text-3xl font-extrabold text-fg-strong">
+            All-Time Wins
+          </h2>
+          {winsEntries.length === 0
+            ? <p className="py-4 text-center text-fg-subtle">No games played yet!</p>
+            : winsEntries.map(([name, count], i) => (
+              <CardRow key={name}>
+                <span className="text-lg text-fg-strong">{i === 0 && <><Icon name="crown" label="Most wins" className="text-pop-amber" />{' '}</>}{name}</span>
+                <span className="font-display text-xl font-extrabold text-pop-amber">
+                  {count} W
+                </span>
+              </CardRow>
+            ))
+          }
+          <div className="mt-6 flex gap-3">
+            <Button variant="neutral" fullWidth onClick={() => setShowWins(false)}>
+              Close
+            </Button>
+            {winsEntries.length > 0 && (
+              <Button variant="danger" fullWidth onClick={handleResetWins}>
+                Reset
               </Button>
-              {winsEntries.length > 0 && (
-                <Button variant="danger" fullWidth onClick={handleResetWins}>
-                  Reset
-                </Button>
-              )}
-            </div>
-          </Modal>
-        )}
-
-        {/* Add Player. A picker, not a name box: everyone on this couch is
-            already saved on the device, and retyping their name was one typo
-            away from seating a brand-new empty profile that looked like theirs.
-            Importing a list is per-row (✏️ Edit List) — it has to work for
-            someone already seated, which a name box never could. */}
-        <Button
-          variant="secondary"
-          size="lg"
-          fullWidth
-          className="mb-5"
-          onClick={() => setShowPicker(true)}
-        >
-          ➕ Add player
-        </Button>
-
-        {showPicker && (
-          <ProfilePicker
-            mode="add"
-            excludeIds={players.map((p) => p.id)}
-            onPick={(profile) => onPlayersChange([...players, profile])}
-            onClose={() => setShowPicker(false)}
-          />
-        )}
-
-        {/* Player List */}
-        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-          <SortableContext items={players.map((p) => p.id)} strategy={verticalListSortingStrategy}>
-            {players.map((p) => (
-              <SortablePlayer
-                key={p.id}
-                player={p}
-                isYou={p.id === activeId}
-                onRemove={removePlayer}
-                onGoToList={onGoToList}
-              />
-            ))}
-          </SortableContext>
-        </DndContext>
-
-        {players.length < 2 && (
-          <p className="mb-5 text-center text-base text-fg-subtle">
-            Add at least 2 players to start
-          </p>
-        )}
-        {players.length >= 2 && sharedShowsOnly && !hasSharedAnime && (
-          <Banner tone="warning" className="mb-5">
-            ⚠️ No two players share an anime title — uncheck &quot;Shared shows
-            only&quot; or add matching titles.
-          </Banner>
-        )}
-
-        {/* mb-2 on top of the card's own mb-6 keeps the gap above Start this
-            screen always had. */}
-        <div className="mb-2 mt-4">
-          <AniGuessSettings values={settings} onChange={change} local onReset={applyDefaults} />
-        </div>
-
-        <Button
-          variant="primary"
-          size="xl"
-          fullWidth
-          onClick={() => {
-            savePrefs(settings);
-            onStartGame({ players, settings });
-          }}
-          disabled={!canStart}
-        >
-          🎮 Start Game
-        </Button>
-      </Screen>
+            )}
+          </div>
+        </Modal>
+      )}
     </>
   );
 }

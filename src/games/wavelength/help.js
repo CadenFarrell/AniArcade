@@ -75,6 +75,6 @@ export const poolTooSmall = ({ eligible, noun, sharedOnly, players }) => (
   `Only ${eligible} ${noun} to draw from — this mode needs ${MIN_CARD_POOL}.${
     sharedOnly && players > 1
       ? ' Turn off “Shared cards only”, or import more lists.'
-      : ' Import a bigger list with the 🔗 button, or switch to a typed clue.'
+      : ' Import a bigger list with the link button beside a player, or switch to a typed clue.'
   }`
 );

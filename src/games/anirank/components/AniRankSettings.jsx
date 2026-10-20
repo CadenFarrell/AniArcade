@@ -5,7 +5,7 @@ import { SETTING_HELP, sharedOnlyHelp } from '../help';
 import { DEFAULT_PREFS } from '../prefs';
 
 /**
- * AniRank's ⚙️ Settings card, rendered by both AniRankSetup and the online
+ * AniRank's Settings card, rendered by both AniRankSetup and the online
  * lobby. AniTagSettings and AniTuneSettings are the precedent: two hand-kept
  * copies of one card drift an edit at a time, invisibly until somebody plays the
  * other half.
@@ -33,7 +33,7 @@ export default function AniRankSettings({
   const sharedHelp = sharedOnlyHelp({ noun, tiering });
 
   return (
-    <Card title="⚙️ Settings" action={<DetailToggle />} padding="lg" className="mb-6">
+    <Card title="Settings" action={<DetailToggle />} padding="lg" className="mb-6">
       <Checkbox
         label={`Shared ${noun} only`}
         checked={sharedOnly}

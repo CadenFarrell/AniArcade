@@ -5,7 +5,9 @@ import { useRepublishProfile } from '../../../shared/hooks/useRepublishProfile';
 import { normalizeTitle } from '../../../shared/utils/ranking';
 import AniGuessSettings from './AniGuessSettings';
 import { DEFAULT_PREFS } from '../prefs';
-import { Backdrop, Banner, Button, Screen, Wordmark } from '../../../shared/ui';
+import SetupLayout, { StartBar } from '../../../shared/components/SetupLayout';
+import descriptor from '../index';
+import { Banner, Button } from '../../../shared/ui';
 
 export default function OnlineLobby({ room }) {
   // Shares one saved set with PlayerSetup, which offers three more options than
@@ -66,55 +68,53 @@ export default function OnlineLobby({ room }) {
     });
   };
 
+  const status = !room.isHost ? `Waiting for ${room.hostName || 'the host'} to start.`
+    : active.length < 2 ? 'Waiting for more players to join.'
+      : !allHaveChars ? 'Every player needs at least one character.'
+        : sharedShowsOnly && !hasSharedAnime ? 'No two players share a show.'
+          : `${active.length} players ready`;
+
   return (
-    <>
-      <Backdrop />
-      <Screen>
-        <Wordmark tone="purple" size="sm" level={2} className="mb-6">
-          🌐 Room Lobby
-        </Wordmark>
-
-        <RoomCode code={room.roomCode} />
-
-        <PlayerRoster
-          room={room}
-          players={players}
-          active={active}
-          statuses={statuses}
-          tone="purple"
-          badgeFor={(p) => <ListBadge count={charCount(p)} unit="chars" empty="⚠️ No chars" />}
-        />
-
-        <LobbyImport />
-
-        {!room.isHost && <HostWaitCard hostName={room.hostName} needsList />}
-
-        {room.isHost && (<>
-        <AniGuessSettings values={settings} onChange={change} local={false} onReset={applyDefaults} />
-
-        {active.length >= 2 && !allHaveChars && (
-          <Banner tone="warning" className="mb-4">
-            ⚠️ Every player needs at least one character before you can start.
-          </Banner>
-        )}
-        {active.length >= 2 && allHaveChars && sharedShowsOnly && !hasSharedAnime && (
-          <Banner tone="warning" className="mb-4">
-            ⚠️ No anime titles overlap between players — turn off &quot;Shared shows only&quot; or
-            import matching titles.
-          </Banner>
-        )}
-
-        <Button
-          variant="primary"
-          size="xl"
-          fullWidth
-          onClick={handleStart}
-          disabled={!canStart}
-        >
-          🎮 Start Game
-        </Button>
-        </>)}
-      </Screen>
-    </>
+    <SetupLayout
+      game={descriptor}
+      tagline="The anime character guessing game"
+      aside={<RoomCode code={room.roomCode} />}
+      left={(
+        <>
+          <PlayerRoster
+            room={room}
+            players={players}
+            active={active}
+            statuses={statuses}
+            tone="pink"
+            badgeFor={(p) => <ListBadge count={charCount(p)} unit="chars" empty="No chars" />}
+          />
+          <LobbyImport />
+          {room.isHost && active.length >= 2 && !allHaveChars && (
+            <Banner tone="warning" className="mb-4">
+              Every player needs at least one character before you can start.
+            </Banner>
+          )}
+          {room.isHost && active.length >= 2 && allHaveChars && sharedShowsOnly && !hasSharedAnime && (
+            <Banner tone="warning" className="mb-4">
+              No anime titles overlap between players — turn off &quot;Shared shows only&quot; or
+              import matching titles.
+            </Banner>
+          )}
+        </>
+      )}
+      right={room.isHost
+        ? <AniGuessSettings values={settings} onChange={change} local={false} onReset={applyDefaults} />
+        : <HostWaitCard hostName={room.hostName} needsList />}
+      start={(
+        <StartBar status={status} ready={room.isHost && canStart}>
+          {room.isHost && (
+            <Button variant="primary" size="lg" onClick={handleStart} disabled={!canStart}>
+              Start Game
+            </Button>
+          )}
+        </StartBar>
+      )}
+    />
   );
 }

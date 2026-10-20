@@ -1,50 +1,61 @@
-// Replaces the gradient-clipped <h1> that was copy-pasted into the hub, the
-// AniGuess entry screen and PlayerSetup. Now a tilted sticker block — the same
-// border + hard-shadow language as every button, at title scale.
+import Kana from './Kana';
 
-// Each tone sets `--glow` alongside its fill, which `sticker` paints as a halo
-// behind the hard shadow. This is the marquee — the single element on a screen
-// that is allowed to be the brightest thing on it — so it carries the widest
-// glow in the app. Badges deliberately do NOT get one: there can be six of them
-// in a row, and a lit label repeated six times stops reading as emphasis.
+// A screen's title, set like a manga title: heavy condensed caps in ink, with a
+// brush-cut stroke of the game's ink across the foot of the letters. It replaced
+// a tilted sticker block (a coloured fill with the title knocked out of it),
+// which on paper read as a label stuck on the page rather than as type printed
+// on it.
+//
+// Same props as the sticker had, so all seventy-odd call sites restyled without
+// an edit. `tone` now picks the stroke's colour rather than a fill; `tilt` is
+// still accepted and ignored — a rotated title on a ruled page reads as a
+// mistake, and the stroke's own cut angle carries the energy instead.
 const TONES = {
-  pink: 'bg-pop-pink text-ink [--glow:var(--color-pop-pink)]',
-  purple: 'bg-pop-purple text-ink [--glow:var(--color-pop-purple)]',
-  lime: 'bg-pop-lime text-ink [--glow:var(--color-pop-lime)]',
-  amber: 'bg-pop-amber text-ink [--glow:var(--color-pop-amber)]',
-  blue: 'bg-pop-blue text-ink [--glow:var(--color-pop-blue)]',
-  teal: 'bg-pop-teal text-ink [--glow:var(--color-pop-teal)]',
-  red: 'bg-pop-red text-ink [--glow:var(--color-pop-red)]',
+  pink: '[--slash:var(--color-pop-pink)]',
+  purple: '[--slash:var(--color-pop-purple)]',
+  lime: '[--slash:var(--color-pop-lime)]',
+  amber: '[--slash:var(--color-pop-amber)]',
+  blue: '[--slash:var(--color-pop-blue)]',
+  teal: '[--slash:var(--color-pop-teal)]',
+  red: '[--slash:var(--color-pop-red)]',
 };
 
 const SIZES = {
-  sm: 'px-5 py-2 text-2xl sm:text-3xl',
-  md: 'px-6 py-3 text-3xl sm:text-4xl',
-  lg: 'px-7 py-4 text-4xl sm:text-6xl',
+  sm: 'text-3xl sm:text-4xl',
+  md: 'text-4xl sm:text-5xl',
+  lg: 'text-5xl sm:text-7xl',
 };
 
 export default function Wordmark({
   tone = 'pink',
   size = 'lg',
-  tilt = -2,
   subtitle,
+  kana, // optional decorative katakana above the title — see kanaText.js
   level = 1, // heading level — a screen nested under another title wants 2
   className = '',
   children,
 }) {
-  // Inline rotation rather than a utility so sibling stickers can be tilted
-  // opposite ways without minting a class for each angle.
-  const headingProps = {
-    style: { transform: `rotate(${tilt}deg)` },
-    className: `sticker inline-block ${TONES[tone]} ${SIZES[size]}`,
-    children,
-  };
+  const Heading = level === 1 ? 'h1' : 'h2';
 
   return (
     <div className={`text-center ${className}`}>
-      {level === 1 ? <h1 {...headingProps} /> : <h2 {...headingProps} />}
+      {kana && <Kana className="mb-1 block text-sm text-pop-pink">{kana}</Kana>}
+      <Heading
+        className={`relative isolate inline-block px-1 font-display font-bold uppercase leading-none
+          tracking-tight text-fg-strong ${SIZES[size]}`}
+      >
+        {/* Behind the letters (-z-10 inside the heading's own stacking context,
+            which `isolate` creates so it can never slip under the page), and
+            low enough that it crosses only their feet: the title has to stay
+            ink-on-paper to read, with the colour as an accent under it. */}
+        <span
+          aria-hidden="true"
+          className={`slash absolute -inset-x-2 bottom-[0.02em] -z-10 h-[0.26em] ${TONES[tone] ?? TONES.pink}`}
+        />
+        {children}
+      </Heading>
       {subtitle && (
-        <p className="mt-5 text-lg text-fg-body">{subtitle}</p>
+        <p className="mt-4 text-lg text-fg-body">{subtitle}</p>
       )}
     </div>
   );

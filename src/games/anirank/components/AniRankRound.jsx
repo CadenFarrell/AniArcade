@@ -1,14 +1,15 @@
 import { useEffect, useState } from 'react';
 import { useAniRankRound } from '../hooks/useAniRankRound';
-import RankBoard, { CardTray, CurrentItem, LockInButton, PlacerBanner } from './RankBoard';
+import RankBoard, { CardTray, CurrentItem, LockInButton } from './RankBoard';
 import { isOpinion, promptFor } from '../axes';
 import { Backdrop, GhostButton, Screen } from '../../../shared/ui';
+import RoundHeader from '../../../shared/components/RoundHeader';
 
 // Local round orchestration: hands the pure round hook to the board, and calls
 // onFinish once the round is over.
 //
 // onQuit drops back to setup, and that is all it does. It used to be wired to a
-// "🏠 Hub" button here as well, which is why that button spent a release
+// "Hub" button here as well, which is why that button spent a release
 // returning to setup instead of the hub; leaving the game is now LocalGame's
 // one fixed Hub button, over every local view.
 export default function AniRankRound({
@@ -74,26 +75,24 @@ export default function AniRankRound({
     <>
       <Backdrop />
       <Screen width="md">
-        <PlacerBanner
-          name={round.currentPlacer?.name ?? ''}
-          placed={round.placedThisItem}
-          total={players.length}
-          verb={open ? 'locked in' : 'placed'}
+        {/* Whose turn as the screen's heading (it had none — the bots filed it
+            as "no heading"), how far round the table it has got as the tab, and
+            what is being asked as the hint. The subject ranks for real — they
+            are the answer key, so telling them to guess at themselves would be
+            nonsense. */}
+        <RoundHeader
+          title={`${round.currentPlacer?.name ?? ''}’s turn`}
+          tag={`${round.placedThisItem}/${players.length} ${open ? 'locked in' : 'placed'}`}
+          hint={isSubject
+            ? `Your turn, ${subject?.name ?? ''} — rank these honestly. Everyone else is guessing at you.`
+            : promptFor(axis, subject?.name ?? 'they')}
         />
 
         {open
           ? <CardTray items={round.tray} selectedId={selectedId} onSelect={setSelectedId} />
           : <CurrentItem item={round.item} index={round.cursor} total={deck.length} />}
 
-        <p className="mb-2 text-center text-base font-bold text-fg-strong">
-          {/* The subject ranks for real — they are the answer key, so telling
-              them to guess at themselves would be nonsense. */}
-          {isSubject
-            ? `Your turn, ${subject?.name ?? ''} — rank these honestly. Everyone else is guessing at you.`
-            : promptFor(axis, subject?.name ?? 'they')}
-        </p>
-
-        <p className="mb-4 text-center text-base text-fg-helper">
+        <p className="mb-4 text-center text-sm text-fg-helper">
           {open
             ? players.length > 1
               ? 'Tap a card then a slot. Tap two slots to swap them. Lock in when you’re happy and pass the device on.'

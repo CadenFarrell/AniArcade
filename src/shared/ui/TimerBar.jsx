@@ -1,3 +1,5 @@
+import Icon from './Icon';
+import { useCountdownCue } from '../hooks/useSoundCue';
 // A draining countdown bar with the seconds beside it.
 //
 // Takes a *fraction remaining* and a seconds count rather than a deadline, so
@@ -14,20 +16,16 @@
 // tick would talk over a screen-reader user for the entire round, so the live
 // region carries only the coarse seconds and only while the clock is running.
 
-// The bar also lights, and the halo widens as the clock runs out — 12px of lime
-// at the start against 22px of red at the end. That is the one place in the app
-// where glow carries information rather than emphasis, and it is worth it here
-// because the whole point of a countdown is to be noticed from across a room
-// without being read. A paused clock is unlit, for the same reason a disabled
-// button is: nothing is happening, so nothing should be emitting.
+// The last five seconds also change TEXTURE: the red fill takes a paper hatch.
+// It used to be a widening glow, the one place glow carried information, and
+// the job it did still needs doing — a countdown has to be noticed from across
+// a room without being read. On paper the halo is gone, so the hatch does it,
+// and it does it without relying on hue: a red-green colour-blind player sees
+// the bar change pattern, not just shade.
 function toneFor(secondsLeft) {
-  if (secondsLeft > 10) {
-    return { bar: 'bg-pop-lime [--glow:var(--color-pop-lime)] shadow-[0_0_12px_-2px_var(--glow)]', text: 'text-pop-lime' };
-  }
-  if (secondsLeft > 5) {
-    return { bar: 'bg-pop-amber [--glow:var(--color-pop-amber)] shadow-[0_0_16px_-2px_var(--glow)]', text: 'text-pop-amber' };
-  }
-  return { bar: 'bg-pop-red [--glow:var(--color-pop-red)] shadow-[0_0_22px_-1px_var(--glow)]', text: 'text-pop-red' };
+  if (secondsLeft > 10) return { bar: 'bg-pop-lime', text: 'text-pop-lime' };
+  if (secondsLeft > 5) return { bar: 'bg-pop-amber', text: 'text-pop-amber' };
+  return { bar: 'bg-pop-red hatch [--hatch:rgb(250_248_243/0.35)]', text: 'text-pop-red' };
 }
 
 export default function TimerBar({
@@ -37,6 +35,9 @@ export default function TimerBar({
   label = 'Time left',
   className = '',
 }) {
+  // The last five seconds are heard as well as seen: every clock in the arcade
+  // draws through here, so every one of them ticks the same way.
+  useCountdownCue(secondsLeft, !paused);
   const tone = paused
     ? { bar: 'bg-wash-bar', text: 'text-fg-subtle' }
     : toneFor(secondsLeft);
@@ -61,7 +62,7 @@ export default function TimerBar({
         className={`w-14 text-right font-display text-xl font-extrabold tabular-nums ${tone.text}`}
         aria-hidden="true"
       >
-        {paused ? '⏸' : `${secondsLeft}s`}
+        {paused ? <Icon name="pause" /> : `${secondsLeft}s`}
       </span>
       <span className="sr-only" aria-live="polite">
         {paused ? 'Timer paused' : `${secondsLeft} seconds left`}

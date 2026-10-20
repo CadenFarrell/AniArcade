@@ -23,8 +23,8 @@ export const DEFAULT_PREFS = {
 // labels out inline, and a fifth position added to one would have missed the
 // other. The last slot is everybody who did not place, not a fourth place.
 export const POSITIONS = [
-  { icon: '🥇', label: '1st place' },
-  { icon: '🥈', label: '2nd place' },
-  { icon: '🥉', label: '3rd place' },
-  { icon: '👥', label: 'Everyone else' },
+  { place: 1, label: '1st place' },
+  { place: 2, label: '2nd place' },
+  { place: 3, label: '3rd place' },
+  { place: null, label: 'Everyone else' },
 ];

@@ -186,11 +186,11 @@ export default function NumberInput({
       // fixed border — the block would slide out of its own outline. A
       // background tint reads as "pressed" without moving anything.
       className={`grid shrink-0 place-items-center font-black leading-none transition-colors
-        outline-none focus-visible:bg-pop-purple/40
+        outline-none focus-visible:bg-wash-bar
         ${sizing.button} ${side === 'left' ? 'border-r-2' : 'border-l-2'} border-ink
         ${disabled || atBound
           ? 'cursor-not-allowed bg-surface-2 text-fg-disabled'
-          : 'bg-pop-purple/20 text-white hover:bg-pop-purple/40 active:bg-pop-purple/60'}`}
+          : 'bg-wash text-fg-strong hover:bg-wash-strong active:bg-wash-bar'}`}
     >
       {glyph}
     </button>
@@ -214,11 +214,11 @@ export default function NumberInput({
     <div
       // `field-lit` is applied only when the value is valid. It sets
       // border-color on :focus-within, so on an invalid stepper it would repaint
-      // the red error border pink the moment the field is focused — which is
+      // the red error border vermilion the moment the field is focused — which is
       // exactly when the user is looking at it and most needs to still see the
-      // error. The white focus ring is unconditional either way.
-      className={`flex max-w-64 items-stretch overflow-hidden rounded-pop-sm border-2 bg-surface-2
-        transition-colors focus-within:ring-4 focus-within:ring-focus
+      // error. The ink focus ring is unconditional either way.
+      className={`flex max-w-64 items-stretch overflow-hidden rounded-pop-sm border-2 bg-surface
+        transition-colors focus-within:ring-3 focus-within:ring-focus
         focus-within:ring-offset-2 focus-within:ring-offset-canvas
         ${invalid ? 'border-pop-red' : 'border-ink field-lit'}
         ${disabled ? 'opacity-50' : ''} ${className}`}
@@ -244,8 +244,14 @@ export default function NumberInput({
         aria-describedby={hintId}
         // The ring belongs to the wrapper, so the input itself must not draw
         // one — two rings on nested elements read as a rendering glitch.
-        className={`min-w-0 flex-1 bg-transparent px-2 text-center font-display font-extrabold
-          tabular-nums text-white outline-none ${sizing.input} ${inputClassName}`}
+        //
+        // w-0 + flex-1, not just flex-1: an <input> brings an intrinsic width
+        // of ~20 characters into its parent's min-content size, which min-w-0
+        // does not remove — so two steppers side by side in a narrow column
+        // (the setup screens' settings column) refused to shrink and ran out of
+        // their card. A zero base lets the field take only what is left.
+        className={`w-0 min-w-0 flex-1 bg-transparent px-2 text-center font-display font-extrabold
+          tabular-nums text-fg-strong outline-none ${sizing.input} ${inputClassName}`}
       />
       {stepper(1, '+', 'Increase', value >= max, 'right')}
       <span id={hintId} className="sr-only">

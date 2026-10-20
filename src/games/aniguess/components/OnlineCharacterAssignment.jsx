@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { getAssignableAnimeList, pickRandomCharacter } from '../utils/characterPool';
 import AnimeBrowser from './AnimeBrowser';
-import { Avatar, Button, Card, Screen, Wordmark } from '../../../shared/ui';
+import { Avatar, Button, Card, Icon, Screen, Wordmark } from '../../../shared/ui';
 
 const NO_SHARED_HELP = 'Turn off "Shared shows only" in the lobby, or make sure your lists overlap.';
 
@@ -43,7 +43,7 @@ export default function OnlineCharacterAssignment({
       <p className="mb-6 text-center text-base text-fg-subtle">
         Assigning characters — {assignmentNumber} of {totalPlayers}
       </p>
-      <p className="mb-4 text-center font-display text-3xl font-extrabold text-white">
+      <p className="mb-4 text-center font-display text-3xl font-extrabold text-fg-strong">
         Pick a character for
       </p>
       <Wordmark tone="pink" size="md" level={2} className="mb-3">
@@ -55,7 +55,7 @@ export default function OnlineCharacterAssignment({
 
       {filteredAnimeList.length === 0 ? (
         <div className="text-center">
-          <div className="mb-5 text-6xl">🤷</div>
+          <div className="mb-5 text-6xl text-pop-amber"><Icon name="warning" /></div>
           <p className="text-lg text-fg-body">
             {guesser.name} doesn&apos;t share any anime titles with the other players.{' '}
             {NO_SHARED_HELP}
@@ -80,7 +80,7 @@ export default function OnlineCharacterAssignment({
             <div className="mb-3 flex justify-center">
               <Avatar src={proposed.imageUrl} alt={proposed.name} size="lg" />
             </div>
-            <h4 className="font-display text-2xl font-extrabold text-white">{proposed.name}</h4>
+            <h4 className="font-display text-2xl font-extrabold text-fg-strong">{proposed.name}</h4>
             <p className="text-fg-body">from {proposed.series}</p>
           </Card>
 
@@ -107,15 +107,15 @@ export default function OnlineCharacterAssignment({
             className="mb-4"
             onClick={() => onToggleApproval(!iApproved)}
           >
-            {iApproved ? '✓ You approved — tap to undo' : '✅ Approve this pick'}
+            {iApproved ? <><Icon name="check" /> You approved — tap to undo</> : 'Approve this pick'}
           </Button>
 
           <div className="flex gap-4">
             <Button variant="info" size="lg" className="flex-1" onClick={proposeRandom}>
-              🎲 Re-roll
+              Re-roll
             </Button>
             <Button variant="secondary" size="lg" className="flex-1" onClick={() => setBrowseMode(true)}>
-              🔍 Change
+              Change
             </Button>
           </div>
           <p className="mt-3 text-center text-sm text-fg-subtle">
@@ -129,10 +129,10 @@ export default function OnlineCharacterAssignment({
           </p>
           <div className="flex gap-4">
             <Button variant="info" size="lg" className="flex-1" onClick={proposeRandom}>
-              🎲 Pick Random
+              Pick Random
             </Button>
             <Button variant="secondary" size="lg" className="flex-1" onClick={() => setBrowseMode(true)}>
-              🔍 Pick Manually
+              Pick Manually
             </Button>
           </div>
         </>

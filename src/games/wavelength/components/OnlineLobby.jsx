@@ -2,13 +2,15 @@ import { useMemo, useState } from 'react';
 import { useGamePrefs } from '../../../shared/hooks/useGamePrefs';
 import { useRepublishProfile } from '../../../shared/hooks/useRepublishProfile';
 import { HostWaitCard, ListBadge, PlayerRoster, RoomCode } from '../../../shared/components/Lobby';
-import { Backdrop, Banner, Button, Screen, Wordmark } from '../../../shared/ui';
+import SetupLayout, { StartBar } from '../../../shared/components/SetupLayout';
+import { Banner, Button } from '../../../shared/ui';
 import ClueModePicker from './ClueModePicker';
 import WavelengthSettings from './WavelengthSettings';
 import { poolTooSmall } from '../help';
 import { DEFAULT_PREFS } from '../prefs';
 import { MIN_PLAYERS, needsCardPool } from '../rules';
 import { MIN_CARD_POOL, eligibleCards, poolNoun } from '../utils/cards';
+import descriptor from '../index';
 
 // The online lobby. The room code, roster and guest wait card are
 // shared/components/Lobby.jsx; what lives here is AniWave's own host-only
@@ -64,81 +66,87 @@ export default function OnlineLobby({ room }) {
   const everyoneHasList = !needsCards || active.every((p) => (p.animeList || []).length > 0);
   const canStart = enoughPlayers && everyoneHasList && (!needsCards || eligible >= MIN_CARD_POOL);
 
+  const status = !room.isHost ? `Waiting for ${room.hostName || 'the host'} to start.`
+    : !enoughPlayers ? `Waiting for players — this game needs ${MIN_PLAYERS}.`
+      : !everyoneHasList ? 'Everyone needs an anime list for this mode.'
+        : needsCards && eligible < MIN_CARD_POOL ? `Not enough ${noun} to deal — found ${eligible}.`
+          : needsCards ? `${active.length} players · ${eligible} ${noun} to draw from`
+            : `${active.length} players · no list needed`;
+
   return (
-    <>
-      <Backdrop />
-      <Screen>
-        <Wordmark tone="purple" size="md" className="mb-8">AniWave</Wordmark>
-
-        <RoomCode code={room.roomCode} />
-
-        <PlayerRoster
-          room={room}
-          players={players}
-          active={active}
-          statuses={statuses}
-          tone="purple"
-          minPlayers={MIN_PLAYERS}
-          // Only in the modes that deal — a list badge on a typed-clue round is
-          // a warning about nothing. Whoever it names is the person who has to
-          // go and import, so it has to be per-row.
-          badgeFor={needsCards ? (p) => <ListBadge count={(p.animeList || []).length} /> : undefined}
-        />
-
-        {room.isHost ? (
-          <>
-            <ClueModePicker value={clueMode} onChange={(m) => change('clueMode', m)} />
-
-            <WavelengthSettings
-              values={settings}
-              onChange={change}
-              eligible={eligible}
-              playerCount={active.length}
-              online
-              onReset={applyDefaults}
-            />
-
-            {!enoughPlayers && (
-              <Banner tone="warning" className="mb-6">
-                ⚠️ Needs {MIN_PLAYERS} players — with one guesser there is no
-                spread for the psychic to be read against.
-              </Banner>
-            )}
-
-            {/* Two different problems, and conflating them sends the wrong
-                person to go and import: one player with no list at all is not
-                the same as everyone having one and the overlap being thin. */}
-            {enoughPlayers && needsCards && !everyoneHasList && (
-              <Banner tone="warning" className="mb-6">
-                ⚠️ Everyone needs an anime list for this mode — whoever is marked
-                ⚠️ above can import one from the hub, or you can switch back to a
-                typed clue.
-              </Banner>
-            )}
-
-            {enoughPlayers && needsCards && everyoneHasList && eligible < MIN_CARD_POOL && (
-              <Banner tone="warning" className="mb-6">
-                ⚠️ {poolTooSmall({ eligible, noun, sharedOnly, players: active.length })}
-              </Banner>
-            )}
-
+    <SetupLayout
+      game={descriptor}
+      tagline="One of you knows where the target is. Say the right words."
+      aside={<RoomCode code={room.roomCode} />}
+      left={(
+        <>
+          <PlayerRoster
+            room={room}
+            players={players}
+            active={active}
+            statuses={statuses}
+            tone="purple"
+            minPlayers={MIN_PLAYERS}
+            // Only in the modes that deal — a list badge on a typed-clue round is
+            // a warning about nothing. Whoever it names is the person who has to
+            // go and import, so it has to be per-player.
+            badgeFor={needsCards ? (p) => <ListBadge count={(p.animeList || []).length} /> : undefined}
+          />
+          {room.isHost && !enoughPlayers && (
+            <Banner tone="warning" className="mb-6">
+              Needs {MIN_PLAYERS} players — with one guesser there is no
+              spread for the psychic to be read against.
+            </Banner>
+          )}
+          {/* Two different problems, and conflating them sends the wrong
+              person to go and import: one player with no list at all is not
+              the same as everyone having one and the overlap being thin. */}
+          {room.isHost && enoughPlayers && needsCards && !everyoneHasList && (
+            <Banner tone="warning" className="mb-6">
+              Everyone needs an anime list for this mode — whoever is marked
+              above can import one from the hub, or you can switch back to a
+              typed clue.
+            </Banner>
+          )}
+          {room.isHost && enoughPlayers && needsCards && everyoneHasList && eligible < MIN_CARD_POOL && (
+            <Banner tone="warning" className="mb-6">
+              {poolTooSmall({ eligible, noun, sharedOnly, players: active.length })}
+            </Banner>
+          )}
+        </>
+      )}
+      right={room.isHost ? (
+        <>
+          <ClueModePicker value={clueMode} onChange={(m) => change('clueMode', m)} />
+          <WavelengthSettings
+            values={settings}
+            onChange={change}
+            eligible={eligible}
+            playerCount={active.length}
+            online
+            onReset={applyDefaults}
+          />
+        </>
+      ) : (
+        <HostWaitCard hostName={room.hostName} />
+      )}
+      start={(
+        <StartBar status={status} ready={room.isHost && canStart}>
+          {room.isHost && (
             <Button
               variant="primary"
-              size="xl"
-              fullWidth
+              size="lg"
               disabled={!canStart}
               onClick={() => {
                 savePrefs(settings);
                 room.startGame(settings);
               }}
             >
-              🎮 Start Game
+              Start Game
             </Button>
-          </>
-        ) : (
-          <HostWaitCard hostName={room.hostName} />
-        )}
-      </Screen>
-    </>
+          )}
+        </StartBar>
+      )}
+    />
   );
 }

@@ -9,7 +9,11 @@ import { isCorrectGuess as matchGuess } from '../utils/guessMatch';
 import { rankSuggestions } from '../../../shared/utils/guessSuggest';
 import { buildWhoIsWho } from '../utils/whoIsWho';
 import { answerTrail } from '../utils/answerTrail';
-import { Avatar, Button, Combobox, GhostButton, Input, Modal, Screen } from '../../../shared/ui';
+import { Avatar, Button, Combobox, GhostButton, Icon, Input, Modal, Screen, TimerBar } from '../../../shared/ui';
+import ResultImpact from '../../../shared/components/ResultImpact';
+import RoundHeader from '../../../shared/components/RoundHeader';
+import TurnChoice from './TurnChoice';
+import SpeechBubble from '../../../shared/components/SpeechBubble';
 
 export default function GameScreen({
   guesser,
@@ -118,7 +122,7 @@ export default function GameScreen({
         setWaitingForAnswer(false);
         setTurnOver({
           reason: 'timer',
-          logEntry: { id: crypto.randomUUID(), type: 'timer', text: "⏱️ Time's up!" },
+          logEntry: { id: crypto.randomUUID(), type: 'timer', text: "Time's up!" },
         });
       }, 0);
     }
@@ -210,8 +214,6 @@ export default function GameScreen({
     else onWrongGuess(logEntry);
   };
 
-  const timerColor = timeLeft > 10 ? 'text-pop-lime' : timeLeft > 5 ? 'text-pop-amber' : 'text-pop-red';
-
   return (
     <Screen width="md">
       <TurnTracker
@@ -220,26 +222,28 @@ export default function GameScreen({
         lockedPositions={lockedPositions}
       />
 
-      {/* Header */}
-      <div className="mb-6 text-center">
-        <h2 className="font-display text-3xl font-extrabold text-white">
-          🎮 {guesser.name}&apos;s Turn
-        </h2>
-        <p className="mt-1 text-base text-fg-helper">
-          Turn {turnCount + 1} · Ask a question or submit a guess
-        </p>
+      <RoundHeader
+        title={`${guesser.name}'s Turn`}
+        tag={`Turn ${turnCount + 1}`}
+        hint="Ask a question or submit a guess"
+      >
+        {/* The shared clock (it ticks the last five seconds itself). Paused,
+            not hidden, while the table answers — the turn has not ended. */}
+        {timerEnabled && (
+          <TimerBar
+            secondsLeft={timeLeft}
+            fraction={timerSeconds ? 1 - timeLeft / timerSeconds : 1}
+            paused={!timerActive && timeLeft > 0}
+            label="Time left in this turn"
+          />
+        )}
+      </RoundHeader>
+
+      {/* The turn's two tools, side by side: neither is the turn itself. */}
+      <div className="mb-5 grid grid-cols-2 gap-3">
+        <PeekPanel peekList={peekList} hasPeeked={hasPeeked} onPeek={onPeek} className="h-full" />
+        <WhoIsWhoPanel entries={whoIsWho} gated className="h-full" />
       </div>
-
-      {/* Timer */}
-      {timerEnabled && timerActive && (
-        <div className={`mb-4 text-center font-display text-5xl font-extrabold ${timerColor}`}>
-          ⏱️ {timeLeft}s
-        </div>
-      )}
-
-      <PeekPanel peekList={peekList} hasPeeked={hasPeeked} onPeek={onPeek} />
-
-      <WhoIsWhoPanel entries={whoIsWho} gated />
 
       {/* Action Area. Talk mode swaps the entire ask-or-guess choreography for
           one card, rather than threading a flag through each screen below: the
@@ -256,14 +260,7 @@ export default function GameScreen({
       ) : (
         <>
           {mode === 'choose' && !waitingForAnswer && (
-            <div className="mb-5 flex gap-4">
-              <Button variant="info" size="lg" className="flex-1" onClick={() => setMode('question')}>
-                ❓ Ask a Question
-              </Button>
-              <Button variant="primary" size="lg" className="flex-1" onClick={() => setMode('guess')}>
-                🎯 Submit Guess
-              </Button>
-            </div>
+            <TurnChoice onAsk={() => setMode('question')} onGuess={() => setMode('guess')} />
           )}
 
           {mode === 'question' && !waitingForAnswer && (
@@ -289,7 +286,7 @@ export default function GameScreen({
                   onClick={submitQuestion}
                   disabled={!question.trim()}
                 >
-                  Ask ❓
+                  Ask
                 </Button>
               </div>
             </div>
@@ -308,7 +305,7 @@ export default function GameScreen({
                   <>
                     <Avatar src={s.imageUrl} size="sm" />
                     <div>
-                      <p className="text-sm font-semibold text-white">{s.name}</p>
+                      <p className="text-sm font-semibold text-fg-strong">{s.name}</p>
                       <p className="text-xs text-fg-subtle">{s.series}</p>
                     </div>
                   </>
@@ -325,11 +322,14 @@ export default function GameScreen({
                 <Button
                   variant="primary"
                   size="lg"
+                  // The verdict plays instead of a click: the impact frame on a
+                  // miss (below), CorrectGuessScreen's on a hit.
+                  sound={null}
                   className="flex-1"
                   onClick={submitGuess}
                   disabled={!guess.trim()}
                 >
-                  Guess 🎯
+                  Guess
                 </Button>
               </div>
             </div>
@@ -338,18 +338,16 @@ export default function GameScreen({
           {/* Yes / No buttons */}
           {waitingForAnswer && (
             <div className="mb-5">
-              <p className="mb-4 text-center text-base text-fg-body">
-                ❓ <span className="font-display text-lg font-extrabold text-white">{pendingQuestion}</span>
-              </p>
+              <SpeechBubble who={guesser.name}>{pendingQuestion}</SpeechBubble>
               <p className="mb-4 text-center text-sm text-fg-subtle">
                 Everyone else — answer this question
               </p>
               <div className="flex gap-4">
-                <Button variant="success" size="xl" className="flex-1" onClick={() => answerQuestion('Yes')}>
-                  ✅ Yes
+                <Button variant="success" size="xl" sound="yes" className="flex-1" onClick={() => answerQuestion('Yes')}>
+                  <Icon name="check" /> Yes
                 </Button>
-                <Button variant="danger" size="xl" className="flex-1" onClick={() => answerQuestion('No')}>
-                  ❌ No
+                <Button variant="danger" size="xl" sound="no" className="flex-1" onClick={() => answerQuestion('No')}>
+                  <Icon name="cross" /> No
                 </Button>
               </div>
             </div>
@@ -361,19 +359,26 @@ export default function GameScreen({
         </>
       )}
 
+      {/* A missed guess lands as the impact frame (and its sound) before the
+          acknowledgement below; a correct one lands on CorrectGuessScreen. */}
+      <ResultImpact result={turnOver?.reason === 'wrong' ? 'wrong' : null} eventKey={turnOver?.logEntry.id ?? null} />
+
       {/* Turn-over acknowledgement — blocks until the device is handed on, so
           the result doesn't vanish the instant the next player's turn loads.
           Deliberately not dismissible: the log entry is only committed by the
           button, so an Escape or backdrop click would drop the turn's result. */}
       {turnOver && (
-        <Modal dismissible={false} bare width="md" className="text-center">
-          <div className="mb-6 text-8xl">{turnOver.reason === 'timer' ? '⏱️' : '❌'}</div>
-          <h2 className="mb-3 font-display text-4xl font-extrabold text-white">
+        // No dialog sound: the wrong guess or the clock already made one.
+        <Modal dismissible={false} bare width="md" sound={null} className="text-center">
+          <div className={`mb-6 text-8xl ${turnOver.reason === 'timer' ? 'text-pop-amber' : 'text-pop-red'}`}>
+            <Icon name={turnOver.reason === 'timer' ? 'clock' : 'cross'} />
+          </div>
+          <h2 className="mb-3 font-display text-4xl font-extrabold text-fg-strong">
             {turnOver.reason === 'timer' ? "Time's up!" : 'Not quite!'}
           </h2>
           {turnOver.reason === 'wrong' && (
             <p className="mb-3 text-xl text-fg-body">
-              <span className="font-bold text-white">&quot;{turnOver.logEntry.text}&quot;</span>{' '}
+              <span className="font-bold text-fg-strong">&quot;{turnOver.logEntry.text}&quot;</span>{' '}
               isn&apos;t your character.
             </p>
           )}

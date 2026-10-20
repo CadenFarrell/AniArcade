@@ -1,4 +1,4 @@
-import { Badge, Button, Card } from '../../../shared/ui';
+import { Badge, Button, Card, Icon } from '../../../shared/ui';
 import { railTone } from '../utils/rail';
 
 // The ten slots. Shared by local and online play, and by both ways a round can
@@ -97,14 +97,14 @@ export default function RankBoard({
             <span
               className={`grid h-8 w-8 flex-shrink-0 place-items-center rounded-pop-sm
                 font-display text-sm font-black
-                ${empty ? 'bg-wash text-fg-subtle' : 'bg-pop-amber text-ink'}`}
+                ${empty ? 'bg-wash text-fg-subtle' : 'bg-pop-amber text-paper'}`}
             >
               {i + 1}
             </span>
           );
 
           const title = (
-            <span className="min-w-0 flex-1 truncate font-display text-base font-extrabold text-white">
+            <span className="min-w-0 flex-1 truncate font-display text-base font-extrabold text-fg-strong">
               {slot?.title}
             </span>
           );
@@ -148,7 +148,7 @@ export default function RankBoard({
                         rounded-pop-sm text-base font-black text-fg-subtle transition-colors
                         hover:bg-wash hover:text-pop-red"
                     >
-                      ✕
+                      <Icon name="cross" />
                     </button>
                   )}
                 </div>
@@ -199,7 +199,7 @@ export function CurrentItem({ item, index, total }) {
           className="mx-auto mb-3 h-40 w-auto rounded-pop border-2 border-ink object-cover"
         />
       )}
-      <h2 className="font-display text-3xl font-extrabold text-white">{item.title}</h2>
+      <h2 className="font-display text-3xl font-extrabold text-fg-strong">{item.title}</h2>
       {/* `value` is the answer on a fact axis — never rendered before the reveal. */}
       {item.subtitle && <p className="mt-2 text-lg text-fg-body">{item.subtitle}</p>}
     </div>
@@ -240,7 +240,7 @@ export function CardTray({ items, selectedId, onSelect }) {
                     className="h-24 w-full rounded-pop-sm border-2 border-ink object-cover"
                   />
                 )}
-                <span className="line-clamp-2 font-display text-xs font-bold leading-tight text-white">
+                <span className="line-clamp-2 font-display text-xs font-bold leading-tight text-fg-strong">
                   {item.title}
                 </span>
               </button>
@@ -259,17 +259,8 @@ export function LockInButton({ ready, onLockIn }) {
   return (
     <div className="mb-6">
       <Button variant="primary" size="xl" fullWidth disabled={!ready} onClick={onLockIn}>
-        {ready ? '🔒 Lock in board' : 'Fill every slot to lock in'}
+        {ready ? 'Lock in board' : 'Fill every slot to lock in'}
       </Button>
-    </div>
-  );
-}
-
-export function PlacerBanner({ name, placed, total, verb = 'placed' }) {
-  return (
-    <div className="mb-5 flex flex-wrap items-center justify-center gap-3">
-      <Badge tone="purple" className="text-lg">{name}&rsquo;s turn</Badge>
-      <span className="text-base text-fg-subtle">{placed} of {total} {verb}</span>
     </div>
   );
 }

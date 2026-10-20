@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Avatar, Button, Card, GhostButton, Modal } from '../../../shared/ui';
+import { Avatar, Button, Card, GhostButton, Icon, Modal } from '../../../shared/ui';
 
 // "Who is who?" — re-check the assigned characters you're already entitled to
 // know. Everyone sees a character exactly once, on CharacterReveal, and then has
@@ -46,7 +46,7 @@ export default function WhoIsWhoPanel({ entries = [], gated = false, className =
         onClick={() => setOpen(true)}
         disabled={entries.length === 0}
       >
-        🙈 Who is who?
+        Who is who?
       </Button>
 
       {open && (
@@ -55,7 +55,7 @@ export default function WhoIsWhoPanel({ entries = [], gated = false, className =
               compete with "look away!". */}
           {!(gated && selected && !revealed) && (
             <>
-              <h3 className="font-display text-2xl font-extrabold text-white">🙈 Who is who?</h3>
+              <h3 className="font-display text-2xl font-extrabold text-fg-strong">Who is who?</h3>
               <p className="mb-5 text-base text-fg-helper">
                 {gated
                   ? 'Tap a player to recheck their character.'
@@ -85,11 +85,14 @@ export default function WhoIsWhoPanel({ entries = [], gated = false, className =
                   key={entry.playerId}
                   onClick={() => pickPlayer(entry)}
                   className="focus-pop flex items-center gap-2 rounded-pop-sm border-2 border-line-strong
-                    bg-surface-2 px-4 py-2 font-display text-base font-extrabold text-white
+                    bg-surface-2 px-4 py-2 font-display text-base font-extrabold text-fg-strong
                     transition-colors hover:bg-wash"
                 >
                   <span>{entry.name}</span>
-                  <span>{entry.locked ? '🔓' : '🙈'}</span>
+                  <Icon
+                    name={entry.locked ? 'check' : 'eye-off'}
+                    label={entry.locked ? 'Already guessed' : 'They look away first'}
+                  />
                 </button>
               ))}
             </div>
@@ -98,15 +101,15 @@ export default function WhoIsWhoPanel({ entries = [], gated = false, className =
           {/* Local, step 2: the look-away gate. */}
           {gated && selected && !revealed && (
             <div className="text-center">
-              <div className="mb-5 text-7xl">📵</div>
-              <h3 className="mb-3 font-display text-3xl font-extrabold text-white">
+              <div className="mb-5 text-7xl text-fg-strong"><Icon name="eye-off" /></div>
+              <h3 className="mb-3 font-display text-3xl font-extrabold text-fg-strong">
                 {selected.name}, look away!
               </h3>
               <p className="mb-8 text-lg text-fg-body">
                 Everyone else — here&apos;s who {selected.name} is playing as.
               </p>
               <Button variant="success" size="lg" fullWidth onClick={() => setRevealed(true)}>
-                {selected.name} is looking away — Ready! ✅
+                {selected.name} is looking away — Ready!
               </Button>
               <GhostButton className="mt-4" onClick={backToPlayers}>
                 ← Back to players
@@ -143,7 +146,7 @@ function CharacterCard({ name, character }) {
       <Avatar src={character.imageUrl} alt={character.name} size="md" />
       <div className="min-w-0">
         <p className="font-display text-xs uppercase tracking-widest text-fg-subtle">{name} is</p>
-        <p className="truncate font-display text-xl font-extrabold text-white">{character.name}</p>
+        <p className="truncate font-display text-xl font-extrabold text-fg-strong">{character.name}</p>
         <p className="truncate text-sm text-fg-helper">{character.series}</p>
         {details && <p className="truncate text-xs text-fg-subtle">{details}</p>}
       </div>

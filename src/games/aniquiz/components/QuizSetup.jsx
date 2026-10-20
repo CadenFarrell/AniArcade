@@ -8,12 +8,13 @@ import QuizSettings from './QuizSettings';
 import { usePoolReport } from '../hooks/usePoolReport';
 import { needsLists } from '../utils/pool';
 import { DEFAULT_PREFS } from '../prefs';
-import {
-  Backdrop, Badge, Banner, Button, Card, CardRow, Screen, Wordmark,
-} from '../../../shared/ui';
+import { LocalRoster } from '../../../shared/components/PlayerSlots';
+import SetupLayout, { StartBar } from '../../../shared/components/SetupLayout';
+import descriptor from '../index';
+import { Banner, Button } from '../../../shared/ui';
 
 // Local setup. AniTuneSetup's shape: your main profile is already seated, the
-// picker adds the rest of the couch, and 🔗 imports into a seated player.
+// picker adds the rest of the couch, and the link button imports into a seated player.
 // A single player is a real game here — a quiz is a quiz on your own.
 export default function QuizSetup({ pack, onStart, error, onBack }) {
   const { activeId, activeProfile, saveProfile } = useProfileStore();
@@ -37,103 +38,75 @@ export default function QuizSetup({ pack, onStart, error, onBack }) {
     setImportTarget(null);
   };
 
+  const status = players.length === 0 ? 'Seat at least one player.'
+    : pack.status === 'loading' ? 'Loading the fact pack…'
+      : pack.status !== 'ready' ? 'Couldn’t load the fact pack.'
+        : !report?.playable ? 'Not enough clues to fill a game.'
+          : `${players.length} player${players.length === 1 ? '' : 's'} · ${report.shows} shows · ${report.characters} characters`;
+
   return (
     <>
-      <Backdrop />
-      <Screen width="md" onBack={onBack}>
-        <Wordmark tone="red" subtitle="Anime trivia, straight from the credits" className="mb-10">
-          AniQuiz
-        </Wordmark>
-
-        <Button variant="secondary" size="lg" fullWidth className="mb-5" onClick={() => setShowPicker(true)}>
-          ➕ Add player
-        </Button>
-
-        {showPicker && (
-          <ProfilePicker
-            mode="add"
-            excludeIds={players.map((p) => p.id)}
-            onPick={(profile) => setPlayers((prev) => [...prev, profile])}
-            onClose={() => setShowPicker(false)}
-          />
+      <SetupLayout
+        game={descriptor}
+        tagline="Anime trivia, straight from the credits"
+        onBack={onBack}
+        left={(
+          <>
+            {/* The list badge only when the pool reads lists at all; a quiz on
+                the whole fact pack needs none. A single player is a real game
+                here — a quiz is a quiz on your own. */}
+            <LocalRoster
+              players={players}
+              activeId={activeId}
+              badgeFor={needsLists(settings.pool) ? undefined : null}
+              onAdd={() => setShowPicker(true)}
+              onImport={setImportTarget}
+              onRemove={(id) => setPlayers((prev) => prev.filter((x) => x.id !== id))}
+            />
+            {error && <Banner tone="danger" className="mb-4">{error}</Banner>}
+          </>
         )}
-
-        {players.length === 0 && (
-          <p className="mb-6 text-center text-base text-fg-subtle">
-            Nobody seated yet — set your main profile with the 👤 button at the hub, or add a player above.
-          </p>
+        right={(
+          <>
+            <QuizSettings
+              values={settings}
+              onChange={(key, value) => setSettings((s) => ({ ...s, [key]: value }))}
+              report={report}
+              packStatus={pack.status}
+              onRetryPack={pack.retry}
+              players={players}
+            />
+            <SettingsFooter values={settings} defaults={DEFAULT_PREFS} onReset={applyDefaults} />
+          </>
         )}
-
-        {players.length > 0 && (
-          <Card padding="sm" className="mb-6">
-            {players.map((p) => {
-              const shows = (p.animeList || []).length;
-              return (
-                <CardRow key={p.id}>
-                  <span className="min-w-0 flex-1 truncate font-display text-lg font-extrabold text-white">
-                    {p.name}
-                  </span>
-                  {p.id === activeId && <Badge tone="purple">You</Badge>}
-                  {/* Only worth flagging when the pool reads lists at all. */}
-                  {needsLists(settings.pool) && (
-                    <Badge tone={shows ? 'lime' : 'amber'}>{shows ? `${shows} shows` : '⚠️ No list'}</Badge>
-                  )}
-                  <Button
-                    variant="neutral"
-                    size="sm"
-                    className="flex-shrink-0"
-                    aria-label={`Import ${p.name}'s list`}
-                    onClick={() => setImportTarget(p)}
-                  >
-                    🔗
-                  </Button>
-                  <button
-                    type="button"
-                    onClick={() => setPlayers(players.filter((x) => x.id !== p.id))}
-                    aria-label={`Remove ${p.name}`}
-                    className="focus-pop grid h-11 w-11 flex-shrink-0 place-items-center rounded-pop-sm
-                      text-lg font-black text-pop-red hover:text-white"
-                  >
-                    ✕
-                  </button>
-                </CardRow>
-              );
-            })}
-          </Card>
+        start={(
+          <StartBar status={status} ready={canStart}>
+            <Button
+              variant="primary"
+              size="lg"
+              disabled={!canStart}
+              onClick={() => {
+                savePrefs(settings);
+                onStart({ players, settings });
+              }}
+            >
+              Start Game
+            </Button>
+          </StartBar>
         )}
+      />
 
-        <QuizSettings
-          values={settings}
-          onChange={(key, value) => setSettings((s) => ({ ...s, [key]: value }))}
-          report={report}
-          packStatus={pack.status}
-          onRetryPack={pack.retry}
-          players={players}
+      {showPicker && (
+        <ProfilePicker
+          mode="add"
+          excludeIds={players.map((p) => p.id)}
+          onPick={(profile) => setPlayers((prev) => [...prev, profile])}
+          onClose={() => setShowPicker(false)}
         />
-
-        <div className="mb-6">
-          <SettingsFooter values={settings} defaults={DEFAULT_PREFS} onReset={applyDefaults} />
-        </div>
-
-        {importTarget && (
-          <ListImport profile={importTarget} onClose={() => setImportTarget(null)} onImported={handleImported} />
-        )}
-
-        {error && <Banner tone="danger" className="mb-4">{error}</Banner>}
-
-        <Button
-          variant="primary"
-          size="xl"
-          fullWidth
-          disabled={!canStart}
-          onClick={() => {
-            savePrefs(settings);
-            onStart({ players, settings });
-          }}
-        >
-          🎮 Start Game
-        </Button>
-      </Screen>
+      )}
+      {importTarget && (
+        <ListImport profile={importTarget} onClose={() => setImportTarget(null)} onImported={handleImported} />
+      )}
     </>
   );
 }

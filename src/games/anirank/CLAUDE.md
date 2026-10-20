@@ -120,4 +120,5 @@ the primary gesture stops working.
 shows you say yes to. Every other ordered list in the app has no good/bad axis, which is why
 `rail.js` steps one accent instead. Its ladder is five rungs *because* the default board is
 S/A/B/C/D — a six-rung ladder made the middle row skip solid amber and come out olive — and
-each rung carries its own text colour, because `text-ink` on `bg-pop-red/60` falls under AA.
+each rung carries its own text colour, because a solid ink rung takes `text-paper` while a
+knocked-back /45 tint over paper is mid-tone and takes `text-ink`.

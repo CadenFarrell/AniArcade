@@ -1,4 +1,6 @@
+import { useEffect } from 'react';
 import { useEscapeKey } from '../hooks/useEscapeKey';
+import { playSound } from '../services/sound';
 
 // There were six hand-rolled copies of this overlay, and only three of them
 // wired up Escape. Folding the hook in here means every dialog gets keyboard
@@ -20,20 +22,31 @@ export default function Modal({
   closeOnBackdrop = true,
   width = 'md',
   bare = false, // skip the panel chrome — for full-bleed announcement screens
+  // The sound it opens with. null for a dialog that announces something with a
+  // sound of its own (AniGuess's "Not quite!" plays `wrong`), so the two do
+  // not land on top of each other.
+  sound = 'open',
   className = '',
   children,
 }) {
   const canDismiss = dismissible && typeof onClose === 'function';
   useEscapeKey(canDismiss, onClose);
 
+  // A dialog opening is an event the player should hear. Once per mount; a
+  // dialog that opened without any gesture (a resume prompt on load) is simply
+  // silent, because the sound engine will not start outside one.
+  useEffect(() => {
+    if (sound) playSound(sound);
+    // Once per mount, whatever the prop does afterwards.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   return (
     <div
-      // backdrop-blur as well as the scrim: the panel is a dark card on a dark
-      // backdrop over a near-black canvas, so dimming alone leaves three nearly
-      // identical greys stacked up and the dialog stops reading as in front of
-      // anything. Blurring what is behind it is what restores the depth the
-      // luminance no longer supplies.
-      className="fixed inset-0 z-50 flex items-center justify-center bg-scrim-strong backdrop-blur-sm px-4 py-8 overflow-y-auto"
+      // backdrop-blur as well as the scrim: an ink scrim over a busy page
+      // leaves the page's own ink lines showing through as noise behind the
+      // panel. Blurring them is what makes the dialog read as IN FRONT.
+      className="fixed inset-0 z-50 flex items-center justify-center bg-scrim backdrop-blur-sm px-4 py-8 overflow-y-auto"
       onClick={canDismiss && closeOnBackdrop ? onClose : undefined}
       role="dialog"
       aria-modal="true"
@@ -41,11 +54,10 @@ export default function Modal({
       <div
         // Without this the backdrop's onClick fires for every click inside.
         onClick={(e) => e.stopPropagation()}
-        // The panel takes a brighter edge than a plain card-pop. A dialog is the
-        // one surface that has to look like it is in front of everything else,
-        // and border-line-strong reads as flush against a blurred backdrop.
+        // A heavier rule and a deeper shadow than a plain card-pop: a dialog is
+        // the one panel that has to look like it is lifted off the page.
         className={`w-full ${WIDTHS[width]}
-          ${bare ? '' : 'card-pop border-line-loud p-6 sm:p-8'} ${className}`}
+          ${bare ? '' : 'card-pop border-[3px] p-6 shadow-[0_8px_0_0_var(--color-ink)] sm:p-8'} ${className}`}
       >
         {children}
       </div>

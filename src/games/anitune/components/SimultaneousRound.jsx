@@ -1,5 +1,7 @@
 import GuessInput from './GuessInput';
-import { Badge, Button, Card } from '../../../shared/ui';
+import { Badge, Button, Card, Icon } from '../../../shared/ui';
+import Lives from './Lives';
+import Handoff from '../../../shared/components/Handoff';
 
 // Simultaneous mode: one clip, then the device goes round the table and each
 // player types their own answer. Verdicts are withheld until everyone is in, so
@@ -22,9 +24,13 @@ export default function SimultaneousRound({
         const tone = out ? 'red' : locked ? 'lime' : id === currentId ? 'purple' : 'neutral';
         return (
           <Badge key={id} tone={tone} className={out ? 'opacity-60' : ''}>
-            {out ? '💀' : locked ? '🔒' : id === currentId ? '✍️' : '⏳'} {player?.name}
+            <Icon
+              name={out ? 'skull' : locked ? 'lock' : id === currentId ? 'pencil' : 'hourglass'}
+              label={out ? 'Out' : locked ? 'Locked in' : id === currentId ? 'Answering' : 'Waiting'}
+            />{' '}
+            {player?.name}
             {lives && !out && (
-              <span className="ml-1">{'♥'.repeat(Math.max(0, lives[id] ?? 0))}</span>
+              <Lives count={lives[id]} className="ml-1" />
             )}
           </Badge>
         );
@@ -53,14 +59,12 @@ export default function SimultaneousRound({
   if (phase === 'handoff') {
     return (
       <div className="mt-6">
-        <Card padding="lg" className="text-center">
-          <div className="mb-3 text-5xl">📲</div>
-          <p className="mb-1 text-base text-fg-body">Pass the device to</p>
-          <p className="mb-6 font-display text-3xl font-extrabold text-white">{current?.name}</p>
-          <Button variant="primary" size="lg" fullWidth onClick={onReady}>
-            I&apos;m {current?.name} — ready
-          </Button>
-        </Card>
+        <Handoff
+          player={current}
+          note="Answers stay hidden until everyone is in."
+          cta={`I'm ${current?.name} — ready`}
+          onReady={onReady}
+        />
         {strip}
       </div>
     );
@@ -68,7 +72,7 @@ export default function SimultaneousRound({
 
   return (
     <div className="mt-6">
-      <p className="mb-1 text-center font-display text-xl font-extrabold text-white">
+      <p className="mb-1 text-center font-display text-xl font-extrabold text-fg-strong">
         {current?.name}, which anime?
       </p>
       <p className="mb-4 text-center text-sm text-fg-subtle">
@@ -79,7 +83,7 @@ export default function SimultaneousRound({
         questions={questions}
         masked
         placeholder="Type your answer…"
-        submitLabel="Lock in 🔒"
+        submitLabel="Lock in"
         skipLabel="Pass"
         onSubmit={(text) => onSubmit(text)}
         onSkip={() => onSubmit('')}

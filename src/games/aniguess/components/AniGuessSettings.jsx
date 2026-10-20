@@ -1,10 +1,11 @@
+import MoreSettings from '../../../shared/components/MoreSettings';
 import SettingsFooter from '../../../shared/components/SettingsFooter';
 import SettingHelp, { DetailToggle } from '../../../shared/components/SettingHelp';
-import { Card, CardRow, Checkbox, NumberInput } from '../../../shared/ui';
+import { Card, CardRow, Checkbox, NumberInput, PlaceMark } from '../../../shared/ui';
 import { DEFAULT_PREFS, POSITIONS } from '../prefs';
 
 /**
- * AniGuess's ⚙️ Settings card, rendered by both PlayerSetup and the online
+ * AniGuess's Settings card, rendered by both PlayerSetup and the online
  * lobby. It was the last game still hand-keeping the card in two files, and the
  * copies had already drifted: the two screens listed the options in different
  * orders, and only local play had the detail switch. AniFakeSettings is the
@@ -35,7 +36,7 @@ export default function AniGuessSettings({ values, onChange, local, onReset }) {
   };
 
   return (
-    <Card title="⚙️ Settings" action={<DetailToggle />} padding="lg" className="mb-6">
+    <Card title="Settings" action={<DetailToggle />} padding="lg" className="mb-6">
       <Checkbox
         label="Shared shows only"
         checked={sharedShowsOnly}
@@ -52,21 +53,6 @@ export default function AniGuessSettings({ values, onChange, local, onReset }) {
               table has to answer questions about someone they may never have seen."
       >
         Characters only come from shows at least one other player has too.
-      </SettingHelp>
-
-      <Checkbox
-        label="Anime-first randomizer"
-        checked={twoStepRandom}
-        onChange={(e) => onChange('twoStepRandom', e.target.checked)}
-        className="mb-2"
-      />
-      <SettingHelp
-        indent
-        className="mb-5"
-        more="Off, every character is equally likely, so a show with a cast of forty comes
-              up far more often than one with five."
-      >
-        Picks a show first, then a character from it, so every show gets an equal chance.
       </SettingHelp>
 
       {local && (
@@ -99,7 +85,7 @@ export default function AniGuessSettings({ values, onChange, local, onReset }) {
           )}
 
           <Checkbox
-            label="🗣️ Talk it out"
+            label="Talk it out"
             checked={talkMode}
             onChange={(e) => onChange('talkMode', e.target.checked)}
             className="mb-2"
@@ -107,8 +93,8 @@ export default function AniGuessSettings({ values, onChange, local, onReset }) {
           <SettingHelp
             indent
             className="mb-5"
-            more="Nothing is typed, so instead of a question history you get a running ✅/❌
-                  trail of each player's answers."
+            more="Nothing is typed, so instead of a question history you get a running row of
+                  yes/no marks for each player's answers."
           >
             Ask your questions and say your guess out loud — the table taps what happened
             and the turn passes on that one tap.
@@ -116,27 +102,49 @@ export default function AniGuessSettings({ values, onChange, local, onReset }) {
         </>
       )}
 
-      <p className="mb-1 text-base text-fg-strong">Points per position:</p>
-      {/* One per row rather than four across. Four steppers sharing a row left
-          the number narrower than either of its own buttons, and the online
-          lobby's max-w-md screen had no width for them at all. */}
-      {POSITIONS.map(({ icon, label }, i) => (
-        <CardRow key={label}>
-          <span className="text-fg-strong">
-            <span className="mr-2 text-lg">{icon}</span>
-            {label}
-          </span>
-          <NumberInput
-            size="sm"
-            value={pointsPerPosition[i]}
-            min={0}
-            max={99}
-            ariaLabel={`Points for ${label}`}
-            onChange={(n) => updatePoints(i, n)}
-            className="w-40 flex-shrink-0"
-          />
-        </CardRow>
-      ))}
+      {/* How characters are drawn and how places pay — set once at most
+          tables. Shared shows, the timer and talk mode stay up front. */}
+      <MoreSettings>
+        <Checkbox
+          label="Anime-first randomizer"
+          checked={twoStepRandom}
+          onChange={(e) => onChange('twoStepRandom', e.target.checked)}
+          className="mb-2"
+        />
+        <SettingHelp
+          indent
+          className="mb-5"
+          more="Off, every character is equally likely, so a show with a cast of forty comes
+                up far more often than one with five."
+        >
+          Picks a show first, then a character from it, so every show gets an equal chance.
+        </SettingHelp>
+
+        <p className="mb-1 text-base text-fg-strong">Points per position:</p>
+        {/* One per row rather than four across. Four steppers sharing a row left
+            the number narrower than either of its own buttons, and the online
+            lobby's max-w-md screen had no width for them at all. */}
+        {POSITIONS.map(({ place, label }, i) => (
+          <CardRow key={label}>
+            <span className="flex items-center gap-2 text-fg-strong">
+              {/* aria-hidden: the label beside it already says the place */}
+              <span aria-hidden="true" className="inline-flex w-7 justify-center">
+                {place && <PlaceMark place={place} />}
+              </span>
+              {label}
+            </span>
+            <NumberInput
+              size="sm"
+              value={pointsPerPosition[i]}
+              min={0}
+              max={99}
+              ariaLabel={`Points for ${label}`}
+              onChange={(n) => updatePoints(i, n)}
+              className="w-40 flex-shrink-0"
+            />
+          </CardRow>
+        ))}
+      </MoreSettings>
 
       {!local && (
         <p className="mt-4 text-sm text-fg-subtle">

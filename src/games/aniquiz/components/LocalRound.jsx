@@ -10,7 +10,9 @@ import WagerEntry from './WagerEntry';
 import QuizResults from './QuizResults';
 import LocalClock from './LocalClock';
 import { categoryFor, nextLabel, stakeLabelFor } from '../roundText';
-import { Backdrop, Button, Card, Screen } from '../../../shared/ui';
+import { Backdrop, Button, Card, Icon, Screen } from '../../../shared/ui';
+import Handoff from '../../../shared/components/Handoff';
+import WagerBanner from './WagerBanner';
 
 // One device, passed round the table. The screen sequence is DERIVED from the
 // game, never stored: whoever is next is `stillToAct(...)[0]`, and the only
@@ -48,22 +50,19 @@ export default function LocalRound({ players, deal, settings, pack, onPlayAgain,
   );
 
   const handoff = (what) => (
-    <Card padding="lg" className="text-center">
-      <div className="mb-3 text-5xl">📲</div>
-      <p className="mb-1 text-base text-fg-body">Pass the device to</p>
-      <p className="mb-2 font-display text-3xl font-extrabold text-white">{nameOf(current)}</p>
-      <p className="mb-6 text-sm text-fg-subtle">{what}</p>
-      <Button variant="primary" size="lg" fullWidth onClick={() => setHolding(current)}>
-        I&apos;m {nameOf(current)} — ready
-      </Button>
-    </Card>
+    <Handoff
+      player={players.find((p) => p.id === current)}
+      note={what}
+      cta={`I'm ${nameOf(current)} — ready`}
+      onReady={() => setHolding(current)}
+    />
   );
 
   let body;
   if (game.phase === 'board') {
     body = (
       <>
-        <h2 className="mb-4 text-center font-display text-2xl font-extrabold text-white">
+        <h2 className="mb-4 text-center font-display text-2xl font-bold uppercase tracking-wide text-fg-strong sm:text-3xl">
           {players.length > 1 ? `${nameOf(game.pickerId)}, pick a clue` : 'Pick a clue'}
         </h2>
         <Board deal={deal} game={game} canPick onPick={round.pick} />
@@ -73,17 +72,12 @@ export default function LocalRound({ players, deal, settings, pack, onPlayAgain,
     const finalRound = game.round === 'final';
     body = (
       <>
-        <div className="mb-6 text-center">
-          <p className="font-display text-4xl font-extrabold text-pop-amber">
-            {finalRound ? '🏁 Final round' : '💥 Daily Double!'}
-          </p>
-          {category && <p className="mt-2 text-lg text-fg-body">Category: <span className="font-bold text-white">{category}</span></p>}
-        </div>
+        <WagerBanner finalRound={finalRound} category={category} />
         {needsHandoff
           ? handoff('Your wager is private — nobody else should see it.')
           : current && (
             <Card padding="lg">
-              <p className="mb-4 text-center font-display text-xl font-extrabold text-white">{nameOf(current)}, your wager</p>
+              <p className="mb-4 text-center font-display text-xl font-extrabold text-fg-strong">{nameOf(current)}, your wager</p>
               <WagerEntry
                 key={`${clueKey}:${current}`}
                 limit={wagerLimit(game, current)}
@@ -102,7 +96,7 @@ export default function LocalRound({ players, deal, settings, pack, onPlayAgain,
           : current && (
             <div key={`${clueKey}:${current}`}>
               {shared && (
-                <p className="mb-3 text-center font-display text-xl font-extrabold text-white">{nameOf(current)}, your answer</p>
+                <p className="mb-3 text-center font-display text-xl font-extrabold text-fg-strong">{nameOf(current)}, your answer</p>
               )}
               {game.timed && (
                 <LocalClock ms={game.answerMs} onExpire={() => { round.answer(current, ''); setHolding(null); }} />

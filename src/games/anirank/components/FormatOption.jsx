@@ -20,7 +20,7 @@ export default function FormatOption({ active, onClick, title, hint }) {
       ? 'border-pop-amber bg-pop-amber/20'
       : 'border-line bg-surface-2/40 hover:border-line-loud'}`}
     >
-      <span className="block font-display text-base font-extrabold text-white">{title}</span>
+      <span className="block font-display text-base font-extrabold text-fg-strong">{title}</span>
       <span className="block text-sm text-fg-helper">{hint}</span>
     </button>
   );

@@ -34,7 +34,12 @@ function ChoiceEntry({ options, onSubmit, disabled }) {
   return (
     <div>
       <div className="mb-4 grid gap-3 sm:grid-cols-2" role="radiogroup" aria-label="Answers">
-        {options.map((o) => {
+        {/* Lettered answer panels, quiz-show style. The pick fills with ink —
+            the arcade's "chosen" fill, the same ink as every primary button —
+            rather than a tint of the brand red, which beside a red "wrong" a
+            moment later would say two things in one colour. The letter is
+            decoration (aria-hidden); the answer text is the radio's name. */}
+        {options.map((o, i) => {
           const on = picked === o;
           return (
             <button
@@ -44,17 +49,23 @@ function ChoiceEntry({ options, onSubmit, disabled }) {
               aria-checked={on}
               disabled={disabled}
               onClick={() => setPicked(o)}
-              className={`focus-pop rounded-pop border-2 px-4 py-4 text-left font-display text-lg font-extrabold
-                transition-colors disabled:opacity-40
-                ${on ? 'border-pop-pink bg-pop-pink/20 text-white' : 'border-line-strong bg-surface text-fg-strong hover:border-line-loud'}`}
+              className={`btn-pop focus-pop flex items-center gap-3 rounded-pop-sm! px-3 py-3 text-left text-lg
+                disabled:opacity-40 ${on ? 'border-ink bg-ink text-paper' : 'border-ink bg-surface text-fg-strong hover:bg-surface-2'}`}
             >
-              {o}
+              <span
+                aria-hidden="true"
+                className={`grid h-8 w-8 shrink-0 place-items-center border-2 font-display text-base
+                  ${on ? 'border-paper bg-paper text-ink' : 'border-ink bg-ink text-paper'}`}
+              >
+                {String.fromCharCode(65 + i)}
+              </span>
+              <span className="min-w-0 [overflow-wrap:anywhere]">{o}</span>
             </button>
           );
         })}
       </div>
       <Button variant="primary" size="lg" fullWidth disabled={disabled || picked == null} onClick={() => onSubmit(picked)}>
-        Lock in 🔒
+        Lock in
       </Button>
     </div>
   );
@@ -80,7 +91,7 @@ function NumberEntry({ onSubmit, disabled }) {
           Pass
         </Button>
         <Button variant="primary" size="lg" fullWidth disabled={disabled || !ok} onClick={() => onSubmit(text)}>
-          Lock in 🔒
+          Lock in
         </Button>
       </div>
     </div>
@@ -117,7 +128,7 @@ function TypedEntry({ clue, pack, onSubmit, disabled }) {
         onSelect={(s) => { setText(s.name); setSuggestions([]); }}
         onSubmit={submit}
         optionKey={(s) => s.name}
-        renderOption={(s) => <p className="truncate text-base font-bold text-white">{s.name}</p>}
+        renderOption={(s) => <p className="truncate text-base font-bold text-fg-strong">{s.name}</p>}
         placeholder="Type your answer…"
         ariaLabel="Your answer"
         maxLength={120}
@@ -129,7 +140,7 @@ function TypedEntry({ clue, pack, onSubmit, disabled }) {
           Pass
         </Button>
         <Button variant="primary" size="lg" fullWidth disabled={disabled || !text.trim()} onClick={submit}>
-          Lock in 🔒
+          Lock in
         </Button>
       </div>
     </div>

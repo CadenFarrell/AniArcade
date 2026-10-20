@@ -3,6 +3,34 @@ import { storage } from '../services/storage';
 import { keysToClear } from '../utils/resetKeys';
 import Button from '../ui/Button';
 import Screen from '../ui/Screen';
+import { Icon, Kana } from '../ui';
+import { KANA } from '../ui/kanaText';
+
+// Both screens are one panel of the page — WaitingScreen's ink-ruled frame,
+// with the mark stamped in an ink block — so a crash looks like part of the
+// arcade rather than the bare column it was before the restyle. The stamp's
+// ink is the meaning: amber (warning) for a download that failed, crimson
+// (wrong) for a real crash. Still no texture utility and no Backdrop: the
+// boundary must render with as little as possible, since whatever crashed may
+// be something the rest of the page is built from.
+function ErrorPanel({ icon, tone, title, children }) {
+  return (
+    <Screen center width="md" className="text-center">
+      <div className="border-2 border-ink bg-surface px-6 py-8 shadow-pop">
+        <div
+          className={`mx-auto mb-5 grid size-16 place-items-center border-2 border-ink text-4xl text-paper
+            shadow-pop-sm ${tone}`}
+        >
+          <Icon name={icon} />
+        </div>
+        <h2 className="mb-3 font-display text-3xl font-bold uppercase tracking-wide text-fg-strong">
+          {title} <Kana className="ml-1 text-base text-fg-subtle">{KANA.error}</Kana>
+        </h2>
+        {children}
+      </div>
+    </Screen>
+  );
+}
 
 // The one deliberate exception to "no class components" — React requires
 // a class component for componentDidCatch/getDerivedStateFromError.
@@ -40,24 +68,20 @@ export default class ErrorBoundary extends Component {
     if (this.state.loadFailed) {
       const { onBack } = this.props;
       return (
-        <Screen center width="md" className="text-center">
-          <div className="text-6xl mb-4">📡</div>
-          <h2 className="font-display text-3xl font-extrabold text-white mb-3">
-            Couldn&apos;t load this game
-          </h2>
+        <ErrorPanel icon="warning" tone="bg-pop-amber" title="Couldn't load this game">
           <p className="text-fg-body text-lg mb-8">
             Check your connection and reload. If the arcade was just updated, reloading picks
             up the new version.
           </p>
           <Button variant="primary" size="xl" fullWidth onClick={() => window.location.reload()} className="mb-4">
-            🔄 Reload
+            Reload
           </Button>
           {onBack && (
             <Button variant="neutral" size="lg" fullWidth onClick={onBack}>
-              🏠 Back to the hub
+              Back to the hub
             </Button>
           )}
-        </Screen>
+        </ErrorPanel>
       );
     }
 
@@ -66,11 +90,7 @@ export default class ErrorBoundary extends Component {
       return (
         // No <Backdrop /> here: the boundary catches render crashes, so it has
         // to stay as close to plain markup as possible.
-        <Screen center width="md" className="text-center">
-          <div className="text-6xl mb-4">💥</div>
-          <h2 className="font-display text-3xl font-extrabold text-white mb-3">
-            Something went wrong
-          </h2>
+        <ErrorPanel icon="burst" tone="bg-pop-red" title="Something went wrong">
           <p className="text-fg-body text-lg mb-8">
             {onBack
               ? 'This game hit an unexpected error. The rest of the arcade is fine — head back to the menu, or reset if it keeps happening.'
@@ -82,7 +102,7 @@ export default class ErrorBoundary extends Component {
               someone hits on the way past. Profiles survive either way. */}
           {onBack && (
             <Button variant="primary" size="xl" fullWidth onClick={onBack} className="mb-4">
-              🏠 Back to the hub
+              Back to the hub
             </Button>
           )}
           <Button
@@ -91,7 +111,7 @@ export default class ErrorBoundary extends Component {
             fullWidth
             onClick={this.handleReset}
           >
-            🔄 Reset Game &amp; Reload
+            Reset Game &amp; Reload
           </Button>
           {onBack && (
             <p className="mt-4 text-sm text-fg-subtle">
@@ -99,7 +119,7 @@ export default class ErrorBoundary extends Component {
               imported lists are kept.
             </p>
           )}
-        </Screen>
+        </ErrorPanel>
       );
     }
     return this.props.children;

@@ -1,5 +1,5 @@
 import GuessInput from './GuessInput';
-import { Button, GhostButton } from '../../../shared/ui';
+import { Button, GhostButton, Icon } from '../../../shared/ui';
 
 // Race mode: the clip plays for the room and everyone is in until they miss.
 // Buzzing is committing — the button is your claim on the answer — so a wrong
@@ -12,14 +12,14 @@ export default function RaceRound({
     const player = players.find((p) => p.id === buzzedBy);
     return (
       <div className="mt-6">
-        <p className="mb-4 text-center font-display text-xl font-extrabold text-white">
-          🔔 {player?.name} buzzed — name the anime
+        <p className="mb-4 text-center font-display text-xl font-extrabold text-fg-strong">
+          {player?.name} buzzed — name the anime
         </p>
         <GuessInput
           key={buzzedBy}
           questions={questions}
           onSubmit={onAnswer}
-          submitLabel="Lock it in 🎯"
+          submitLabel="Lock it in"
         />
         <p className="mt-3 text-center text-sm text-fg-subtle">
           Miss it and you&apos;re out for this song — the clip picks back up for everyone else.
@@ -47,10 +47,11 @@ export default function RaceRound({
               variant="primary"
               size="xl"
               fullWidth
+              sound="buzz"
               onClick={() => onBuzz(p.id)}
               disabled={out}
             >
-              {out ? `🚫 ${p.name}` : `🔔 ${p.name}`}
+              <Icon name={out ? 'ban' : 'bell'} label={out ? 'Out' : 'Buzz'} /> {p.name}
             </Button>
           );
         })}

@@ -7,6 +7,7 @@ import { buildDeck } from './utils/deck';
 import { getAxis, isOpinion } from './axes';
 import { applyRoundScores, subjectFor } from './rules';
 import { HubButton } from '../../shared/ui';
+import TablePortraits from '../../shared/components/TablePortraits';
 
 // Single-device pass-and-play. A thin view-router, the same shape as
 // src/games/anitune/LocalGame.jsx: it holds a `view` string and hands the work
@@ -75,11 +76,11 @@ export default function LocalGame({ onExit, onBack }) {
     setView('results');
   }, []);
 
-  // Every local screen sits under one fixed "🏠 Hub" button rather than carrying
+  // Every local screen sits under one fixed "Hub" button rather than carrying
   // its own way out, so the exit never moves between views. This is also what
   // separates the two exits the round has: the Hub button leaves the game, while
   // AniRankRound's own "← Quit round" drops back to setup — they used to be the
-  // same `onQuit`, so the round's 🏠 Hub button went to setup and never home.
+  // same `onQuit`, so the round's Hub button went to setup and never home.
   const body = () => {
     if (view === 'tiers' && game) {
       return (
@@ -131,7 +132,7 @@ export default function LocalGame({ onExit, onBack }) {
           // round is over and the deck already shown, so there is nothing left
           // to un-reveal.
           onBack={() => { setGame(null); setView('setup'); }}
-          playAgainLabel="🔁 New ten"
+          playAgainLabel="New ten"
         />
       );
     }
@@ -139,13 +140,17 @@ export default function LocalGame({ onExit, onBack }) {
     return <AniRankSetup onStart={start} error={error} onBack={onBack} />;
   };
 
+  // Faces shared out once for the whole table (see TablePortraits), so the turn
+  // strip, the pass-the-device panel and the results all match the setup slots.
   return (
-    <>
-      <HubButton
-        onClick={onExit}
-        confirm={view === 'round' ? 'Return to the hub? The board will be lost.' : null}
-      />
-      {body()}
-    </>
+    <TablePortraits players={game?.players}>
+      <>
+        <HubButton
+          onClick={onExit}
+          confirm={view === 'round' ? 'Return to the hub? The board will be lost.' : null}
+        />
+        {body()}
+      </>
+    </TablePortraits>
   );
 }

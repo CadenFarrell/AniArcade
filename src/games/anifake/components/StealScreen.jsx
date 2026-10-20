@@ -2,7 +2,15 @@ import { useMemo, useState } from 'react';
 import { MAX_STEAL_LEN } from '../rules';
 import { rankSuggestions } from '../../../shared/utils/guessSuggest';
 import {
-  Avatar, Backdrop, Button, Card, Combobox, GhostButton, Screen, Wordmark,
+  Avatar,
+  Backdrop,
+  Button,
+  Card,
+  Combobox,
+  GhostButton,
+  Icon,
+  Screen,
+  Wordmark,
 } from '../../../shared/ui';
 
 // A caught fake's one shot: name the secret and take a point back. Blind mode
@@ -40,10 +48,10 @@ export default function StealScreen({ fakeName = '', isMine, options = [], onSte
       <>
         <Backdrop />
         <Screen center>
-          <Wordmark tone="teal" size="md" level={2} className="mb-8">🎣 Caught!</Wordmark>
+          <Wordmark tone="teal" size="md" level={2} className="mb-8">Caught!</Wordmark>
           <Card padding="lg" className="mb-8 w-full border-pop-teal text-center">
-            <div className="text-6xl">🎣</div>
-            <p className="mt-4 font-display text-3xl font-extrabold text-white">
+            <div className="text-6xl text-pop-teal"><Icon name="target" /></div>
+            <p className="mt-4 font-display text-3xl font-extrabold text-fg-strong">
               The table caught {fakeName}
             </p>
             <p className="mt-2 text-lg text-pop-teal">They were the fake.</p>
@@ -54,7 +62,7 @@ export default function StealScreen({ fakeName = '', isMine, options = [], onSte
           {/* The round is paused on one person — say so, rather than leaving a
               static card up that reads as a screen nobody has to act on. */}
           <p className="animate-pulse text-center text-lg text-fg-helper">
-            ⏳ Waiting on {fakeName}&apos;s one guess…
+            Waiting on {fakeName}&apos;s one guess…
           </p>
         </Screen>
       </>
@@ -65,11 +73,11 @@ export default function StealScreen({ fakeName = '', isMine, options = [], onSte
     <>
       <Backdrop />
       <Screen center>
-        <Wordmark tone="teal" size="md" level={2} className="mb-6">🎣 Caught!</Wordmark>
+        <Wordmark tone="teal" size="md" level={2} className="mb-6">Caught!</Wordmark>
 
         <Card padding="lg" className="mb-6 w-full border-pop-teal text-center">
-          <div className="text-6xl">🎣</div>
-          <p className="mt-4 font-display text-3xl font-extrabold text-white">
+          <div className="text-6xl text-pop-teal"><Icon name="target" /></div>
+          <p className="mt-4 font-display text-3xl font-extrabold text-fg-strong">
             The vote landed on you, {fakeName}
           </p>
           <p className="mt-2 text-lg text-fg-body">
@@ -93,7 +101,7 @@ export default function StealScreen({ fakeName = '', isMine, options = [], onSte
               <>
                 <Avatar src={option.imageUrl} alt="" size="sm" />
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold text-white">{option.name}</p>
+                  <p className="truncate text-sm font-semibold text-fg-strong">{option.name}</p>
                   <p className="truncate text-xs text-fg-subtle">{option.series}</p>
                 </div>
               </>
@@ -122,7 +130,7 @@ export default function StealScreen({ fakeName = '', isMine, options = [], onSte
           disabled={!guess}
           onClick={() => onSteal(guess)}
         >
-          {guess ? `🎯 Lock in ${guess}` : 'Pick a character'}
+          {guess ? `Lock in ${guess}` : 'Pick a character'}
         </Button>
       </Screen>
     </>

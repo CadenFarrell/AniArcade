@@ -1,8 +1,12 @@
-import { computeRankedPlayers, getPositionEmoji } from '../../../shared/utils/ranking';
+import { computeRankedPlayers } from '../../../shared/utils/ranking';
 import { formatPoints } from '../../../shared/utils/deadline';
 import { themeAndYear, songCredit } from '../utils/labels';
 import { hasLives } from '../rules';
-import { Avatar, Backdrop, Badge, Button, Card, CardRow, Screen, Wordmark } from '../../../shared/ui';
+import ResultsLayout, { Splash, Standings } from '../../../shared/components/Results';
+import { StartBar } from '../../../shared/components/SetupLayout';
+import { splitPodium } from '../../../shared/utils/podium';
+import { Avatar, Badge, Button, Card, CardRow, Icon } from '../../../shared/ui';
+import descriptor from '../index';
 
 // `departedIds` is online-only: anyone who left mid-match keeps the score they
 // had, ranked alongside everyone else, but is dimmed and tagged so the standings
@@ -42,69 +46,72 @@ export default function AniTuneResults({
   // the wrong number entirely — so the total stands alone.
   const suffix = roundSize ? `over ${roundSize} song${roundSize === 1 ? '' : 's'}` : '';
 
+  const podium = splitPodium(ranked);
+  const { winners, rest, kana } = podium;
+  // Lives has no ties at the top — survival orders everyone — and the one left
+  // standing is what the mode is about, so the stamp says so.
+  const stamp = lastManStanding && ranked.length > 1 ? 'Survivor' : podium.stamp;
+
+  const livesBadge = (p) => {
+    const out = eliminated.includes(p.id);
+    return (
+      <Badge tone={out ? 'red' : 'lime'}>
+        {out ? <><Icon name="skull" /> Out</> : <><Icon name="heart" /> {lives?.[p.id] ?? 0}</>}
+      </Badge>
+    );
+  };
+
   return (
-    <>
-      <Backdrop />
-      <Screen center width="md" onBack={onBack} backLabel="← Back to setup">
-        <Wordmark tone="blue" size="md" level={2} className="mb-2">
-          🏆 Final Scores
-        </Wordmark>
-        {suffix && <p className="mb-8 text-center text-base text-fg-subtle">{suffix}</p>}
+    <ResultsLayout
+      game={descriptor}
+      title="Final Scores"
+      subtitle={suffix}
+      players={players}
+      onBack={onBack}
+      backLabel="← Back to setup"
+      splash={winners.length > 0 && (
+        <Splash players={winners} stamp={stamp} kana={kana} score={`${formatPoints(winners[0].total)} pts`}>
+          {lastManStanding && <div className="mt-1">{livesBadge(winners[0])}</div>}
+        </Splash>
+      )}
+      bar={(
+        <StartBar width="md" status={`${played.length} song${played.length === 1 ? '' : 's'} played`} ready>
+          <Button variant="primary" size="lg" onClick={onPlayAgain}>Play again</Button>
+        </StartBar>
+      )}
+    >
+      <Standings
+        ranked={rest}
+        departedIds={departedIds}
+        score={(p) => formatPoints(p.total)}
+        extra={lastManStanding ? livesBadge : undefined}
+      />
 
-        <Card padding="sm" className="mb-8">
-          {ranked.map((p) => {
-            const left = departedIds.includes(p.id);
-            const out = lastManStanding && eliminated.includes(p.id);
-            return (
-              <CardRow key={p.id} className={left ? 'opacity-50' : ''}>
-                <span className="w-10 text-2xl">{getPositionEmoji(p.position)}</span>
-                <span className="min-w-0 flex-1 truncate text-left font-display text-lg font-extrabold text-white">
-                  {p.name}
-                  {left && <span className="ml-2 text-sm font-bold text-fg-helper">left</span>}
+      {/* The round's setlist. Not a spoiler measure — the reveal already names
+          the song and its performers as each one is played — just the
+          "what was that second one again?" list a music quiz wants at the end,
+          in one place instead of scattered across screens nobody can go back
+          to. */}
+      {played.length > 0 && (
+        <Card title={`The ${played.length} song${played.length === 1 ? '' : 's'}`} padding="sm" className="mb-6">
+          {played.map((q, i) => (
+            <CardRow key={`${q.id}:${i}`} className="text-left">
+              <span className="w-6 flex-shrink-0 text-sm tabular-nums text-fg-subtle">{i + 1}</span>
+              {q.coverImageUrl
+                ? <Avatar src={q.coverImageUrl} alt="" size="sm" className="flex-shrink-0" />
+                : <span className="w-10 flex-shrink-0" />}
+              <span className="min-w-0 flex-1">
+                <span className="block truncate font-display font-extrabold text-fg-strong">
+                  {songCredit(q) || '—'}
                 </span>
-                {lastManStanding && (
-                  <Badge tone={out ? 'red' : 'lime'}>
-                    {out ? '💀 out' : `♥ ${lives?.[p.id] ?? 0}`}
-                  </Badge>
-                )}
-                <span className="font-display text-xl font-extrabold text-pop-amber">
-                  {formatPoints(p.total)}
+                <span className="block truncate text-sm text-fg-subtle">
+                  {q.animeTitle} · {themeAndYear(q)}
                 </span>
-              </CardRow>
-            );
-          })}
+              </span>
+            </CardRow>
+          ))}
         </Card>
-
-        {/* The round's setlist. Not a spoiler measure — the reveal already names
-            the song and its performers as each one is played — just the
-            "what was that second one again?" list a music quiz wants at the end,
-            in one place instead of scattered across screens nobody can go back
-            to. */}
-        {played.length > 0 && (
-          <Card title={`🎵 The ${played.length} song${played.length === 1 ? '' : 's'}`} padding="sm" className="mb-8">
-            {played.map((q, i) => (
-              <CardRow key={`${q.id}:${i}`} className="text-left">
-                <span className="w-6 flex-shrink-0 text-sm tabular-nums text-fg-subtle">{i + 1}</span>
-                {q.coverImageUrl
-                  ? <Avatar src={q.coverImageUrl} alt="" size="sm" className="flex-shrink-0" />
-                  : <span className="w-10 flex-shrink-0" />}
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate font-display font-extrabold text-white">
-                    {songCredit(q) || '—'}
-                  </span>
-                  <span className="block truncate text-sm text-fg-subtle">
-                    {q.animeTitle} · {themeAndYear(q)}
-                  </span>
-                </span>
-              </CardRow>
-            ))}
-          </Card>
-        )}
-
-        <Button variant="success" size="xl" fullWidth onClick={onPlayAgain}>
-          🔁 Play again
-        </Button>
-      </Screen>
-    </>
+      )}
+    </ResultsLayout>
   );
 }

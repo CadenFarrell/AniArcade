@@ -66,6 +66,7 @@ export default function LocalSession({
       return (
         <PickPhase
           playerName={picker.name}
+          player={picker}
           suggestions={suggestions}
           noun={noun}
           handover
@@ -88,6 +89,8 @@ export default function LocalSession({
           canAdvance
           onNext={round.nextRound}
           onFinish={() => onFinish(round.totalScores)}
+          onBack={onQuit}
+          backLabel="← Quit session"
         />
       );
     }
@@ -166,13 +169,17 @@ export default function LocalSession({
     );
   };
 
+  // The round end is a whole screen of its own (the results frame), so it
+  // renders outside this one rather than as a card inside it.
+  if (round.phase === 'roundEnd') return body();
+
   return (
     <>
       <Backdrop />
       <Screen onBack={onQuit} backLabel="← Quit session">
         {!round.seat && (
           <Banner tone="warning" className="mb-6">
-            ⚠️ Nobody left to take a turn.
+            Nobody left to take a turn.
           </Banner>
         )}
         {body()}

@@ -1,5 +1,7 @@
 import { Badge, Button, Card } from '../../../shared/ui';
 import TrailBoard from './TrailBoard';
+import { useSoundCue } from '../../../shared/hooks/useSoundCue';
+import ResultImpact from '../../../shared/components/ResultImpact';
 
 /**
  * One player's round is over, and — only when it is safe — what the clause was.
@@ -41,6 +43,18 @@ export default function TurnEnd({
   const solved = result?.solved === true;
   const claimed = chosen && solved;
 
+  // A finished turn's sound, once as it appears: a solve or a missed call. On
+  // the one local device it is the table's; online (`myPlayerId` set) it is the
+  // seat's own result on the seat's phone and the plain reveal on everyone
+  // else's. A give-up made no call, so it has nothing to sound.
+  const verdict = solved ? 'correct' : result?.guess ? 'wrong' : null;
+  const online = myPlayerId != null;
+  // The seat's own solve or miss lands as the impact frame (with its sound);
+  // anyone else's is the plain reveal sting.
+  const mineToShow = !online || isYou;
+  const turnKey = seatId ?? 'seat';
+  useSoundCue(!mineToShow && verdict ? 'reveal' : null, turnKey);
+
   const heading = () => {
     if (!chosen) return isYou ? 'Your category was' : `${seatName}'s category was`;
     if (claimed) return `${isYou ? 'You' : seatName} got ${targetName ?? 'them'}`;
@@ -60,6 +74,7 @@ export default function TurnEnd({
 
   return (
     <>
+      <ResultImpact result={mineToShow ? verdict : null} eventKey={turnKey} />
       <Card padding="lg" className="mb-6 text-center">
         <p className="font-display text-sm font-extrabold uppercase tracking-widest text-fg-helper">
           {/* Built here rather than by the caller, which is how "Your" and an
@@ -69,7 +84,7 @@ export default function TurnEnd({
 
         {/* Dealt always shows it; chosen shows it only on a claim. */}
         {(!chosen || claimed) && (category ? (
-          <p className="mt-3 font-display text-3xl font-extrabold text-white">{category.label}</p>
+          <p className="mt-3 font-display text-3xl font-extrabold text-fg-strong">{category.label}</p>
         ) : (
           <p className="mt-3 font-display text-xl font-extrabold text-fg-subtle">
             Waiting for it to be revealed…

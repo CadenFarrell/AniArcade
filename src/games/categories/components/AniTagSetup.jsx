@@ -2,15 +2,16 @@ import { useState } from 'react';
 import { useProfileStore } from '../../../shared/context/profileContext';
 import ProfilePicker from '../../../shared/components/ProfilePicker';
 import { useGamePrefs } from '../../../shared/hooks/useGamePrefs';
-import {
-  Backdrop, Badge, Banner, Button, Card, CardRow, Screen, Wordmark,
-} from '../../../shared/ui';
+import { LocalRoster } from '../../../shared/components/PlayerSlots';
+import SetupLayout, { StartBar } from '../../../shared/components/SetupLayout';
+import { Banner, Button } from '../../../shared/ui';
 import AniTagSettings from './AniTagSettings';
 import CategoryEditor from './CategoryEditor';
 import { useCustomCategories } from '../hooks/useCustomCategories';
 import { NO_LIST_NEEDED } from '../help';
 import { DEFAULT_PREFS, POOL_LABELS } from '../prefs';
 import { MIN_PLAYERS } from '../rules';
+import descriptor from '../index';
 
 // Local setup.
 //
@@ -56,96 +57,71 @@ export default function AniTagSetup({ onStart, onBack }) {
     });
   };
 
+  const status = enoughPlayers
+    ? `${players.length} players · no list needed`
+    : `Needs ${MIN_PLAYERS} players — somebody has to be able to answer.`;
+
   return (
     <>
-      <Backdrop />
-      <Screen onBack={onBack}>
-        <Wordmark tone="lime" size="md" className="mb-8">AniTag</Wordmark>
-
-        <Banner tone="info" className="mb-6">{NO_LIST_NEEDED}</Banner>
-
-        <Button
-          variant="secondary"
-          size="lg"
-          fullWidth
-          className="mb-6"
-          onClick={() => setShowPicker(true)}
-        >
-          ➕ Add player
-        </Button>
-
-        {showPicker && (
-          <ProfilePicker
-            mode="add"
-            excludeIds={players.map((p) => p.id)}
-            onPick={(profile) => setPlayers((prev) => [...prev, profile])}
-            onClose={() => setShowPicker(false)}
-          />
+      <SetupLayout
+        game={descriptor}
+        tagline="Everyone has a secret category. Name things until you work one out."
+        onBack={onBack}
+        left={(
+          <>
+            <Banner tone="info" className="mb-6">{NO_LIST_NEEDED}</Banner>
+            {/* No list badge and no link (import) button, unlike every other
+                setup screen in the arcade. Nothing here reads an anime list, so
+                a warning about an empty one would be a warning about nothing —
+                and would quietly contradict the banner. */}
+            <LocalRoster
+              players={players}
+              activeId={activeId}
+              badgeFor={null}
+              onAdd={() => setShowPicker(true)}
+              onRemove={(id) => setPlayers((prev) => prev.filter((x) => x.id !== id))}
+            />
+            {players.length > 0 && !enoughPlayers && (
+              <Banner tone="warning" className="mb-6">
+                Needs {MIN_PLAYERS} players — somebody has to be able to answer.
+              </Banner>
+            )}
+          </>
         )}
-
-        {players.length === 0 && (
-          <p className="mb-6 text-center text-base text-fg-subtle">
-            Nobody seated yet — set your main profile with the 👤 button at the hub,
-            or add a player above.
-          </p>
+        right={(
+          <>
+            <AniTagSettings
+              values={settings}
+              onChange={change}
+              playerCount={players.length}
+              customCategories={categories}
+              onReset={() => { setSettings({ ...DEFAULT_PREFS }); resetPrefs(); }}
+            />
+            <CategoryEditor
+              categories={categories}
+              onSave={saveCategory}
+              onDelete={deleteCategory}
+              noun={pool.noun}
+            />
+          </>
         )}
-
-        {players.length > 0 && (
-          <Card title={`Players (${players.length})`} padding="sm" className="mb-6">
-            {players.map((p) => (
-              <CardRow key={p.id}>
-                <span className="min-w-0 flex-1 truncate font-display text-lg font-extrabold text-white">
-                  {p.name}
-                </span>
-                {p.id === activeId && <Badge tone="lime">You</Badge>}
-                {/* No list badge and no 🔗 import button, unlike every other
-                    setup screen in the arcade. Nothing here reads an anime
-                    list, so a warning about an empty one would be a warning
-                    about nothing — and would quietly contradict the banner. */}
-                <button
-                  onClick={() => setPlayers(players.filter((x) => x.id !== p.id))}
-                  aria-label={`Remove ${p.name}`}
-                  className="focus-pop grid h-11 w-11 flex-shrink-0 place-items-center rounded-pop-sm
-                    text-lg font-black text-pop-red hover:text-white"
-                >
-                  ✕
-                </button>
-              </CardRow>
-            ))}
-          </Card>
+        start={(
+          <StartBar status={status} ready={enoughPlayers}>
+            <Button variant="primary" size="lg" disabled={!enoughPlayers} onClick={start}>
+              Start
+            </Button>
+          </StartBar>
         )}
+      />
 
-        <AniTagSettings
-          values={settings}
-          onChange={change}
-          playerCount={players.length}
-          customCategories={categories}
-          onReset={() => { setSettings({ ...DEFAULT_PREFS }); resetPrefs(); }}
+      {showPicker && (
+        <ProfilePicker
+          mode="add"
+          excludeIds={players.map((p) => p.id)}
+          onPick={(profile) => setPlayers((prev) => [...prev, profile])}
+          onClose={() => setShowPicker(false)}
         />
-
-        <CategoryEditor
-          categories={categories}
-          onSave={saveCategory}
-          onDelete={deleteCategory}
-          noun={pool.noun}
-        />
-
-        {players.length > 0 && !enoughPlayers && (
-          <Banner tone="warning" className="mb-6">
-            ⚠️ Needs {MIN_PLAYERS} players — somebody has to be able to answer.
-          </Banner>
-        )}
-
-        <Button
-          variant="primary"
-          size="xl"
-          fullWidth
-          disabled={!enoughPlayers}
-          onClick={start}
-        >
-          ▶ Start
-        </Button>
-      </Screen>
+      )}
     </>
   );
 }

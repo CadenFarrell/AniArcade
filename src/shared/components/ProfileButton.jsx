@@ -1,6 +1,7 @@
 import { countCharacters } from '../utils/profileStats';
+import { Icon } from '../ui';
 
-// Who you are, parked in the corner of the hub.
+// Who you are, at the right end of the hub's top bar.
 //
 // This used to be a full-width card between the wordmark and the game list,
 // which framed picking a profile as a setup step you had to clear before the
@@ -8,22 +9,36 @@ import { countCharacters } from '../utils/profileStats';
 // forget, so it belongs in the chrome, next to where every other app puts an
 // account control.
 //
-// Mirrors HubButton's `fixed top-3 … z-40` geometry on the opposite corner. The
-// hub deliberately renders no HubButton, and the top-right slot the online
-// shells use for the room code only exists once a game has replaced the hub
-// entirely, so nothing can collide with this.
+// HubScreen hands it to TopBar as `end`, on the menu only. Inside a game the
+// same end of the bar holds the room code and Leave (RoomShell), and a profile
+// switch mid-round would change who you are in a room that already seated you
+// — so the two never share the bar, by construction rather than by layout.
+
+// Drawn, not 👤: the platform emoji is the one full-colour object on an
+// ink-and-paper bar. Stroke via a token class driven by the button's hover, the
+// rule every drawn glyph here follows.
+function PersonGlyph({ className }) {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" className={`h-4 w-4 fill-none ${className}`}>
+      <circle cx="12" cy="8" r="4" strokeWidth="2.2" />
+      <path d="M4.5 20.5a7.5 7.5 0 0 1 15 0" strokeWidth="2.2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 export default function ProfileButton({ profile, onOpen }) {
   // No profile yet: this is the one control on the screen that has to be found,
-  // so it gets the primary accent rather than the muted chrome treatment.
+  // so it gets the brand vermilion rather than the quiet outline.
   if (!profile) {
     return (
       <button
+        type="button"
         onClick={onOpen}
-        className="focus-pop fixed top-3 right-3 z-40 flex items-center gap-2 rounded-pop-sm
-          border-2 border-ink bg-pop-pink px-3 py-1.5 font-display text-sm font-bold text-ink
+        className="focus-pop flex h-10 items-center gap-2 rounded-pop-sm border-2 border-ink bg-pop-pink
+          px-3 font-display text-sm font-bold uppercase tracking-wider text-paper
           transition-transform hover:-translate-y-0.5"
       >
-        <span aria-hidden="true">👤</span>
+        <PersonGlyph className="stroke-paper" />
         Set profile
       </button>
     );
@@ -35,16 +50,17 @@ export default function ProfileButton({ profile, onOpen }) {
 
   return (
     <button
+      type="button"
       onClick={onOpen}
-      aria-label={`Profile: ${profile.name}. Change profile`}
-      className="focus-pop fixed top-3 right-3 z-40 flex items-center gap-2 rounded-pop-sm
-        bg-scrim px-3 py-1.5 font-display text-sm font-bold text-fg-body backdrop-blur-sm
-        transition-colors hover:bg-scrim-strong hover:text-white"
+      aria-label={`Profile: ${profile.name}${empty ? ' (anime list is empty)' : ''}. Change profile`}
+      className="group focus-pop flex h-10 items-center gap-2 rounded-pop-sm border-2 border-ink bg-surface
+        px-3 font-display text-sm font-bold uppercase tracking-wider text-fg-strong
+        transition-colors hover:bg-ink hover:text-paper"
     >
-      <span aria-hidden="true">👤</span>
-      {/* Capped so a long name can never reach the centred wordmark on a phone. */}
-      <span className="max-w-[40vw] truncate sm:max-w-[12rem]">{profile.name}</span>
-      {empty && <span aria-label="Anime list is empty" className="text-pop-amber">⚠️</span>}
+      <PersonGlyph className="stroke-ink transition-colors group-hover:stroke-paper" />
+      {/* Capped so a long name can never push the brand off a phone's bar. */}
+      <span className="max-w-[32vw] truncate sm:max-w-[12rem]">{profile.name}</span>
+      {empty && <Icon name="warning" className="text-pop-amber group-hover:text-paper" />}
     </button>
   );
 }

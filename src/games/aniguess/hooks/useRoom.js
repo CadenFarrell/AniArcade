@@ -195,6 +195,9 @@ export function useRoom() {
   const outcomeFor = useCallback((logEntry) => {
     const player = state.gameSession.players[state.currentPlayerIndex];
     return {
+      // Whose action it was, so their device alone sounds the result (the
+      // yes/no to THEIR question, THEIR wrong guess) — see OnlineGame.
+      playerId: player.id,
       name: player.name,
       kind: logEntry.type,
       text: logEntry.text,

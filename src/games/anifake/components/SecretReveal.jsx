@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import SecretCard from './SecretCard';
 import { Backdrop, Button, Screen, Wordmark } from '../../../shared/ui';
+import Handoff from '../../../shared/components/Handoff';
 
 // How long after this screen appears the "show me" button ignores a tap.
 //
 // The hand-off is the one place in the app where a stray tap costs something
-// real: "🙈 Hide & pass on" and "👀 I'm X — show me" are both a full-width
+// real: "Hide & pass on" and "I'm X — show me" are both a full-width
 // primary block, and the card above them changes height with its content, so the
 // two land within a few pixels of each other about as often as not. A bounced
 // tap, a double-tap, or a touch begun before the commit therefore hides one
@@ -66,30 +67,19 @@ export default function SecretReveal({
       <Backdrop />
       <Screen center>
         {!showing ? (
-          <>
-            <Wordmark tone="teal" size="md" level={2} className="mb-8">
-              🕵️ Pass the device
-            </Wordmark>
-            <p className="mb-2 text-center text-xl text-fg-body">Hand it to</p>
-            <p className="mb-10 text-center font-display text-4xl font-extrabold text-white">
-              {player.name}
-            </p>
-            <Button
-              variant="primary"
-              size="xl"
-              fullWidth
-              onClick={() => {
-                // Swallowed, not queued: a tap this early was aimed at the
-                // previous screen's button, so honouring it late would be the
-                // same leak one frame further on. See ARM_MS.
-                if (shownAt.current === null) return;
-                if (Date.now() - shownAt.current < ARM_MS) return;
-                setShowing(true);
-              }}
-            >
-              👀 I&apos;m {player.name} — show me
-            </Button>
-          </>
+          <Handoff
+            player={player}
+            note="Everyone else, look away — this is their card."
+            cta={`I'm ${player.name} — show me`}
+            onReady={() => {
+              // Swallowed, not queued: a tap this early was aimed at the
+              // previous screen's button, so honouring it late would be the
+              // same leak one frame further on. See ARM_MS.
+              if (shownAt.current === null) return;
+              if (Date.now() - shownAt.current < ARM_MS) return;
+              setShowing(true);
+            }}
+          />
         ) : (
           <>
             <Wordmark tone="teal" size="sm" level={2} className="mb-6">
@@ -115,7 +105,7 @@ export default function SecretReveal({
                   player from the label alone that nobody asked — and at three
                   players, if they confirmed themselves, that is a one-in-two
                   accusation handed out for free. */}
-              {isLast && !canRedeal ? '🙈 Hide & start the clues' : '🙈 Hide & pass on'}
+              {isLast && !canRedeal ? 'Hide & start the clues' : 'Hide & pass on'}
             </Button>
             {canRedeal && (blindFake ? (
               // Said plainly, because only this player ever reads it: without a
@@ -140,7 +130,7 @@ export default function SecretReveal({
                   className="mt-3"
                   onClick={() => { setShowing(false); onNext(true); }}
                 >
-                  🔁 Deal again — I can&apos;t work with this
+                  Deal again — I can&apos;t work with this
                 </Button>
                 {/* The last sentence matches CardCheck's word for word — see the
                     note there for why the pinned role is stated publicly, and why

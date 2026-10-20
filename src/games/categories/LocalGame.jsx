@@ -3,6 +3,7 @@ import AniTagSetup from './components/AniTagSetup';
 import LocalSession from './components/LocalSession';
 import AniTagResults from './components/AniTagResults';
 import { HubButton } from '../../shared/ui';
+import TablePortraits from '../../shared/components/TablePortraits';
 
 // Single-device pass-and-play. A thin view-router, the same shape as
 // src/games/wavelength/LocalGame.jsx: it holds a `view` string and hands the
@@ -54,15 +55,19 @@ export default function LocalGame({ onExit, onBack }) {
     return <AniTagSetup onStart={start} onBack={onBack} />;
   };
 
-  // Every local screen sits under one fixed "🏠 Hub" button rather than carrying
+  // Every local screen sits under one fixed "Hub" button rather than carrying
   // its own way out, so the exit never moves between views.
+  // Faces shared out once for the whole table (see TablePortraits), so the turn
+  // strip, the pass-the-device panel and the results all match the setup slots.
   return (
-    <>
-      <HubButton
-        onClick={onExit}
-        confirm={view === 'playing' ? 'Return to the hub? The session will be lost.' : null}
-      />
-      {body()}
-    </>
+    <TablePortraits players={game?.players}>
+      <>
+        <HubButton
+          onClick={onExit}
+          confirm={view === 'playing' ? 'Return to the hub? The session will be lost.' : null}
+        />
+        {body()}
+      </>
+    </TablePortraits>
   );
 }

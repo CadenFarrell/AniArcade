@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Badge, Button, Card, Screen, TimerBar } from '../../../shared/ui';
 import ClueCard from './ClueCard';
 import Dial from './Dial';
+import RoundHeader from '../../../shared/components/RoundHeader';
 
 // A guesser's turn. The target is not passed in — not hidden by a style, not
 // rendered behind a flag: the local hook withholds it from its return value
@@ -50,21 +51,13 @@ export default function GuessView({
 
   return (
     <Screen>
-      <div className="mb-6 flex items-center justify-between gap-3">
-        <h2 className="font-display text-2xl font-extrabold text-white">
-          {who ? `${who}'s guess` : 'Your guess'}
-        </h2>
-        {waitingFor != null && <Badge tone="amber">{waitingFor}</Badge>}
-      </div>
-
-      {timer && (
-        <TimerBar
-          secondsLeft={timer.secondsLeft}
-          fraction={timer.fraction}
-          label="Time to dial"
-          className="mb-6"
-        />
-      )}
+      {/* The clock sits inside the header it is timing, as on every round
+          screen; the count of dials still to come rides beside the title. */}
+      <RoundHeader title={who ? `${who}'s guess` : 'Your guess'} tag={waitingFor}>
+        {timer && (
+          <TimerBar secondsLeft={timer.secondsLeft} fraction={timer.fraction} label="Time to dial" />
+        )}
+      </RoundHeader>
 
       <Card padding="lg" className="mb-6 text-center">
         <p className="font-display text-sm font-extrabold uppercase tracking-widest text-fg-helper">
@@ -73,7 +66,7 @@ export default function GuessView({
         {card ? (
           <ClueCard card={card} size="lg" className="mt-4" />
         ) : (
-          <p className="mt-3 font-display text-3xl font-extrabold text-white">“{clue}”</p>
+          <p className="mt-3 font-display text-3xl font-extrabold text-fg-strong">“{clue}”</p>
         )}
       </Card>
 

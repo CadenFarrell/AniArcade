@@ -24,16 +24,19 @@
 // board; check that S/A/B/C/D still lands on each rung before doing it.
 //
 // The text colour is PAIRED with the background here rather than picked at the
-// call site, because two of these rungs cannot take the same one. `text-ink` is
-// near-black, and over `bg-pop-red/60` composited on the dark surface it falls
-// to roughly 4:1 — under AA. Splitting the two lists apart is how that gets
-// re-broken the next time a rung is retuned.
+// call site, because the rungs cannot all take the same one. On paper the solid
+// inks carry `text-paper` (index.css's accent contract), but a knocked-back rung
+// is a TINT — ink composited over paper — and lands mid-tone, where paper text
+// fails and ink text passes. So the tints sit at /45, light enough that
+// `text-ink` clears 7:1 on both (lime ≈9.1, red ≈7.3); at /60 the red rung fell
+// to ~4.5 either way, which is a coin flip rather than a choice. Splitting the
+// two lists apart is how that gets re-broken the next time a rung is retuned.
 const LADDER = [
-  { bg: 'bg-pop-lime', text: 'text-ink' },
-  { bg: 'bg-pop-lime/60', text: 'text-ink' },
-  { bg: 'bg-pop-amber', text: 'text-ink' },
-  { bg: 'bg-pop-red/60', text: 'text-white' },
-  { bg: 'bg-pop-red', text: 'text-ink' },
+  { bg: 'bg-pop-lime', text: 'text-paper' },
+  { bg: 'bg-pop-lime/45', text: 'text-ink' },
+  { bg: 'bg-pop-amber', text: 'text-paper' },
+  { bg: 'bg-pop-red/45', text: 'text-ink' },
+  { bg: 'bg-pop-red', text: 'text-paper' },
 ];
 
 /**

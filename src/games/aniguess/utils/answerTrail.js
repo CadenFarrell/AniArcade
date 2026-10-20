@@ -29,18 +29,18 @@ function chipFor(entry) {
       // that claims one of the two.
       if (entry.answer !== 'Yes' && entry.answer !== 'No') return null;
       return entry.answer === 'Yes'
-        ? { id: entry.id, icon: '✅', label: 'Yes', tone: 'yes' }
-        : { id: entry.id, icon: '❌', label: 'No', tone: 'no' };
+        ? { id: entry.id, icon: 'check', label: 'Yes', tone: 'yes' }
+        : { id: entry.id, icon: 'cross', label: 'No', tone: 'no' };
     case 'guess':
       // A correct guess locks the player's position and ends their round, so
       // it can only ever be the last chip — and in practice the trail is gone
       // by the time anyone could see it. Rendered anyway: `correct` is the
       // entry's own field and branching on it costs nothing.
       return entry.correct
-        ? { id: entry.id, icon: '🎯', label: 'Guessed right', tone: 'yes' }
-        : { id: entry.id, icon: '🎯❌', label: 'Wrong guess', tone: 'no' };
+        ? { id: entry.id, icon: 'target', label: 'Guessed right', tone: 'yes' }
+        : { id: entry.id, icon: 'miss', label: 'Wrong guess', tone: 'no' };
     case 'timer':
-      return { id: entry.id, icon: '⏱️', label: 'Ran out of time', tone: 'warn' };
+      return { id: entry.id, icon: 'clock', label: 'Ran out of time', tone: 'warn' };
     default:
       return null;
   }

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Badge, Button, Card, CardRow, GhostButton, Input } from '../../../shared/ui';
+import { Badge, Button, Card, CardRow, GhostButton, Icon, Input } from '../../../shared/ui';
 import { MAX_LABEL_LEN, normalizeCustomCategory } from '../categories';
 
 /**
@@ -32,7 +32,7 @@ export default function CategoryEditor({ categories, onSave, onDelete, noun = 'c
   };
 
   return (
-    <Card title="✍️ Your own categories" padding="lg" className="mb-6">
+    <Card title="Your own categories" padding="lg" className="mb-6">
       <p className="mb-3 text-sm text-fg-helper">
         Anything the table can rule on — the app never checks an answer, so a clause
         no anime database could ever know is exactly the point.
@@ -79,15 +79,15 @@ export default function CategoryEditor({ categories, onSave, onDelete, noun = 'c
                 onClick={() => { setEditingId(c.id); setDraft(c.label); }}
                 aria-label={`Edit “${c.label}”`}
                 className="focus-pop grid h-11 w-11 flex-shrink-0 place-items-center rounded-pop-sm
-                  text-base hover:text-white"
+                  text-base hover:text-fg-strong"
               >
-                ✏️
+                <Icon name="pencil" />
               </button>
               <button
                 onClick={() => { onDelete(c.id); if (editingId === c.id) { setEditingId(null); setDraft(''); } }}
                 aria-label={`Delete “${c.label}”`}
                 className="focus-pop grid h-11 w-11 flex-shrink-0 place-items-center rounded-pop-sm
-                  text-lg font-black text-pop-red hover:text-white"
+                  text-lg font-black text-pop-red hover:text-fg-strong"
               >
                 ✕
               </button>

@@ -28,7 +28,7 @@ export default function ClueCard({
     <>
       <Avatar src={card.imageUrl} alt="" size={avatarSize} className="mx-auto mb-2" />
       <p
-        className={`font-display font-extrabold leading-tight text-white ${
+        className={`font-display font-extrabold leading-tight text-fg-strong ${
           size === 'lg' ? 'text-xl' : 'line-clamp-2 text-sm'
         }`}
       >

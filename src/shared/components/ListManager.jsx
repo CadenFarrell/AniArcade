@@ -3,12 +3,12 @@ import { useProfileStore } from '../context/profileContext';
 import { normalizeTitle } from '../utils/ranking';
 import ListImport from './ListImport';
 import { canRefreshList } from '../services/listSources';
-import { Button, Field, Input, Select } from '../ui';
+import { Button, Field, Icon, Input, Select } from '../ui';
 
 // `className` carries the top padding, because the two callers genuinely differ:
 // AniGuess renders its own back/player-switcher header above this and needs only
-// a small gap (`pt-4`), while the hub renders nothing but the fixed 🏠 Hub button
-// and needs to clear it (`pt-16`). It is a prop rather than a baked-in default
+// a small gap (`pt-4`), while the hub renders nothing above it but the fixed top
+// bar and needs to clear that. It is a prop rather than a baked-in default
 // plus an override because two conflicting Tailwind `pt-` utilities on one element
 // resolve by CSS source order, not by the order they appear in the attribute.
 export default function ListManager({ profile, onProfileUpdated, className = '' }) {
@@ -105,7 +105,7 @@ export default function ListManager({ profile, onProfileUpdated, className = '' 
     // Not a <Screen>: the head-room above this body is the caller's call — see
     // the note on `className` at the top of the file.
     <div className={`mx-auto min-h-dvh max-w-2xl px-5 pb-8 sm:px-6 ${className}`}>
-      <h2 className="font-display text-3xl font-extrabold text-white">{profile.name}&apos;s Anime List</h2>
+      <h2 className="font-display text-3xl font-extrabold text-fg-strong">{profile.name}&apos;s Anime List</h2>
       <p className="mb-6 text-sm text-fg-subtle">
         {profile.animeList.length} anime · {profile.animeList.reduce((n, a) => n + a.characters.length, 0)} characters
       </p>
@@ -125,13 +125,13 @@ export default function ListManager({ profile, onProfileUpdated, className = '' 
           + Add
         </Button>
         <Button variant="neutral" onClick={() => setImportMode('pick')} className="whitespace-nowrap">
-          🔗 Import
+          Import
         </Button>
         {/* Only once there is an account to refresh from. This is the screen
             dedicated to managing a list, so the one-tap path belongs here. */}
         {canRefreshList(profile) && (
           <Button variant="neutral" onClick={() => setImportMode('refresh')} className="whitespace-nowrap">
-            🔄 Refresh
+            Refresh
           </Button>
         )}
       </div>
@@ -151,7 +151,6 @@ export default function ListManager({ profile, onProfileUpdated, className = '' 
       {/* Anime List */}
       {profile.animeList.length === 0 ? (
         <div className="py-16 text-center text-fg-subtle">
-          <div className="mb-3 text-5xl">📺</div>
           <p className="text-lg">No anime yet — add one above!</p>
         </div>
       ) : (
@@ -164,9 +163,9 @@ export default function ListManager({ profile, onProfileUpdated, className = '' 
                   onClick={() => setExpandedAnime(expandedAnime === anime.id ? null : anime.id)}
                   className="focus-pop flex-1 rounded-pop-sm text-left"
                 >
-                  <span className="font-display text-lg font-extrabold text-white">{anime.title}</span>
+                  <span className="font-display text-lg font-extrabold text-fg-strong">{anime.title}</span>
                   <span className="ml-2 text-sm text-fg-subtle">
-                    {anime.characters.length === 0 ? '⚠️ No characters' : `${anime.characters.length} character${anime.characters.length !== 1 ? 's' : ''}`}
+                    {anime.characters.length === 0 ? 'No characters' : `${anime.characters.length} character${anime.characters.length !== 1 ? 's' : ''}`}
                   </span>
                   <span className="ml-2 text-fg-subtle">{expandedAnime === anime.id ? '▲' : '▼'}</span>
                 </button>
@@ -183,7 +182,7 @@ export default function ListManager({ profile, onProfileUpdated, className = '' 
                     aria-label={`Delete ${anime.title}`}
                     className="focus-pop grid h-11 w-11 place-items-center rounded-pop-sm text-fg-icon hover:text-pop-red"
                   >
-                    🗑️
+                    <Icon name="trash" />
                   </button>
                 </div>
               </div>
@@ -202,13 +201,13 @@ export default function ListManager({ profile, onProfileUpdated, className = '' 
                         <button
                           onClick={() => openEditCharacter(anime.id, char)}
                           aria-label={`Edit ${char.name}`}
-                          className="focus-pop grid h-11 w-11 place-items-center rounded-pop-sm text-fg-body hover:text-white"
-                        >✏️</button>
+                          className="focus-pop grid h-11 w-11 place-items-center rounded-pop-sm text-fg-body hover:text-fg-strong"
+                        ><Icon name="pencil" /></button>
                         <button
                           onClick={() => deleteCharacter(anime.id, char.id)}
                           aria-label={`Delete ${char.name}`}
                           className="focus-pop grid h-11 w-11 place-items-center rounded-pop-sm text-fg-icon hover:text-pop-red"
-                        >🗑️</button>
+                        ><Icon name="trash" /></button>
                       </div>
                     </div>
                   ))}
@@ -216,28 +215,32 @@ export default function ListManager({ profile, onProfileUpdated, className = '' 
                   {/* Add / Edit Character Form */}
                   {addingCharacterTo === anime.id && (
                     <div className="mt-4 space-y-4 rounded-pop border-2 border-line bg-surface-2 p-5">
-                      <h4 className="font-display text-lg font-extrabold text-white">
-                        {editingCharacter ? '✏️ Edit Character' : '➕ Add Character'}
+                      <h4 className="font-display text-lg font-extrabold text-fg-strong">
+                        {editingCharacter ? 'Edit Character' : 'Add Character'}
                       </h4>
 
-                      <Field label="Name *">
-                        <Input value={characterForm.name} onChange={(e) => setCharacterForm({ ...characterForm, name: e.target.value })} placeholder="Character name" />
+                      {/* Each Field names its control by id: Field draws a <label> but ties
+                          it only when told which control, and an untied one is read out
+                          as a bare "edit text" / "combo box". One form is open at a time,
+                          so the ids are unique on the page. */}
+                      <Field label="Name *" htmlFor="character-name">
+                        <Input id="character-name" value={characterForm.name} onChange={(e) => setCharacterForm({ ...characterForm, name: e.target.value })} placeholder="Character name" />
                       </Field>
 
-                      <Field label="Image URL (optional)">
-                        <Input value={characterForm.imageUrl} onChange={(e) => setCharacterForm({ ...characterForm, imageUrl: e.target.value })} placeholder="https://..." />
+                      <Field label="Image URL (optional)" htmlFor="character-image">
+                        <Input id="character-image" value={characterForm.imageUrl} onChange={(e) => setCharacterForm({ ...characterForm, imageUrl: e.target.value })} placeholder="https://..." />
                       </Field>
 
                       <div className="grid grid-cols-2 gap-4">
-                        <Field label="Gender *">
-                          <Select value={characterForm.gender} onChange={(e) => setCharacterForm({ ...characterForm, gender: e.target.value })}>
+                        <Field label="Gender *" htmlFor="character-gender">
+                          <Select id="character-gender" value={characterForm.gender} onChange={(e) => setCharacterForm({ ...characterForm, gender: e.target.value })}>
                             <option>Male</option>
                             <option>Female</option>
                             <option>Other</option>
                           </Select>
                         </Field>
-                        <Field label="Role *">
-                          <Select value={characterForm.role} onChange={(e) => setCharacterForm({ ...characterForm, role: e.target.value })}>
+                        <Field label="Role *" htmlFor="character-role">
+                          <Select id="character-role" value={characterForm.role} onChange={(e) => setCharacterForm({ ...characterForm, role: e.target.value })}>
                             <option>Protagonist</option>
                             <option>Antagonist</option>
                             <option>Supporting</option>
@@ -246,11 +249,11 @@ export default function ListManager({ profile, onProfileUpdated, className = '' 
                       </div>
 
                       <div className="grid grid-cols-2 gap-4">
-                        <Field label="Hair Color *">
-                          <Input value={characterForm.hairColor} onChange={(e) => setCharacterForm({ ...characterForm, hairColor: e.target.value })} placeholder="e.g. Black" />
+                        <Field label="Hair Color *" htmlFor="character-hair">
+                          <Input id="character-hair" value={characterForm.hairColor} onChange={(e) => setCharacterForm({ ...characterForm, hairColor: e.target.value })} placeholder="e.g. Black" />
                         </Field>
-                        <Field label="Genre *">
-                          <Select value={characterForm.genre} onChange={(e) => setCharacterForm({ ...characterForm, genre: e.target.value })}>
+                        <Field label="Genre *" htmlFor="character-genre">
+                          <Select id="character-genre" value={characterForm.genre} onChange={(e) => setCharacterForm({ ...characterForm, genre: e.target.value })}>
                             <option>Action</option>
                             <option>Romance</option>
                             <option>Comedy</option>
@@ -263,8 +266,8 @@ export default function ListManager({ profile, onProfileUpdated, className = '' 
                         </Field>
                       </div>
 
-                      <Field label="Power / Ability *">
-                        <Input value={characterForm.ability} onChange={(e) => setCharacterForm({ ...characterForm, ability: e.target.value })} placeholder="e.g. Stretches body like rubber" />
+                      <Field label="Power / Ability *" htmlFor="character-ability">
+                        <Input id="character-ability" value={characterForm.ability} onChange={(e) => setCharacterForm({ ...characterForm, ability: e.target.value })} placeholder="e.g. Stretches body like rubber" />
                       </Field>
 
                       <div className="flex gap-3 pt-1">

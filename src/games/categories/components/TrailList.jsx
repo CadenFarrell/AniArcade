@@ -1,4 +1,4 @@
-import { Badge } from '../../../shared/ui';
+import { Badge, Mark } from '../../../shared/ui';
 import { verdictsOf } from '../rules';
 
 /**
@@ -62,11 +62,11 @@ export default function TrailList({ trail = [], nameFor, className = '' }) {
           >
             <span
               className={`w-5 flex-shrink-0 text-right font-display text-sm font-extrabold
-                ${missed ? 'text-pop-red/70' : 'text-fg-subtle'}`}
+                ${missed ? 'text-pop-red' : 'text-fg-subtle'}`}
             >
               {missed ? '✕' : i + 1}
             </span>
-            <span className="min-w-0 flex-1 truncate text-lg text-white">
+            <span className="min-w-0 flex-1 truncate text-lg text-fg-strong">
               {missed && <span className="text-fg-subtle">guessed </span>}
               {entry.text}
               {missed && entry.targetId && (
@@ -75,13 +75,14 @@ export default function TrailList({ trail = [], nameFor, className = '' }) {
             </span>
             <span className="flex flex-shrink-0 flex-wrap justify-end gap-1.5">
               {verdicts.length ? verdicts.map(({ judgeId, verdict }) => (
-                <Badge key={judgeId ?? 'only'} tone={verdict ? 'lime' : 'red'}>
-                  {/* Named only when more than one person answered, which is
-                      chosen mode. A lone "YES" needs no owner and a labelled one
-                      is noise on every row. */}
-                  {verdicts.length > 1 ? `${nameFor?.(judgeId) ?? '?'} ` : ''}
-                  {verdict ? 'YES' : 'NO'}
-                </Badge>
+                // Named only when more than one person answered, which is
+                // chosen mode. A lone "YES" needs no owner and a labelled one is
+                // noise on every row. A stamped ✓/✗, never a coloured word.
+                <Mark
+                  key={judgeId ?? 'only'}
+                  yes={verdict}
+                  label={`${verdicts.length > 1 ? `${nameFor?.(judgeId) ?? '?'} ` : ''}${verdict ? 'yes' : 'no'}`}
+                />
               )) : (
                 // A name nobody was left to answer settles with no verdicts at
                 // all — see rules.settlePending. Saying so beats a blank space

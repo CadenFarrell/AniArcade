@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Button, Field, Input, Modal } from '../../../shared/ui';
+import { Button, Field, Icon, Input, Modal } from '../../../shared/ui';
 import { MAX_LABEL_LEN, normalizeCustomSpectrum } from '../spectra';
 
 // Writes or edits one spectrum. A port of anirank's PromptEditor, and shorter
@@ -35,8 +35,8 @@ export default function SpectrumEditor({ spectrum, onSave, onDelete, onClose }) 
 
   return (
     <Modal onClose={onClose} width="md">
-      <h2 className="mb-2 font-display text-2xl font-black text-white">
-        {editing ? '✏️ Edit spectrum' : '✏️ New spectrum'}
+      <h2 className="mb-2 font-display text-2xl font-black text-fg-strong">
+        {editing ? 'Edit spectrum' : 'New spectrum'}
       </h2>
       <p className="mb-6 text-base text-fg-helper">
         Two ends of one idea. The psychic gets a hidden point somewhere between
@@ -89,7 +89,7 @@ export default function SpectrumEditor({ spectrum, onSave, onDelete, onClose }) 
             aria-label={`Delete ${spectrum.leftLabel} to ${spectrum.rightLabel}`}
             onClick={handleDelete}
           >
-            🗑️
+            <Icon name="trash" />
           </Button>
         )}
         <Button variant="neutral" size="lg" fullWidth onClick={onClose}>

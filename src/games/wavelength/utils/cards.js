@@ -12,8 +12,8 @@
 //
 // The cost, stated rather than discovered later: AniWave now depends on
 // AniRank's deck module, and a change to that card shape breaks this. That is
-// the trade — a loud break over a silent drift. Cross-game imports are already
-// precedented (OnlineGame.jsx renders AniGuess's WaitingScreen).
+// the trade — a loud break over a silent drift. AniQuiz's utils/pool.js makes
+// the same trade over the same module.
 //
 // AniWave never draws cards in the default mode, so nothing here runs at all
 // unless `clueMode` has been changed. See prefs.js.

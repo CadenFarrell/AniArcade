@@ -4,19 +4,30 @@
 // It mounts what main.jsx mounts — the same providers in the same order — so a
 // test exercises the tree a player actually gets rather than a screen in
 // isolation that happens to be missing the context it reads.
-import { render } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import ErrorBoundary from '../components/ErrorBoundary';
 import ProfileProvider from '../context/ProfileProvider';
 import HelpDetailProvider from '../context/HelpDetailProvider';
+import SoundProvider from '../context/SoundProvider';
 import { profileIdFromName } from '../utils/profileStats';
+import { markTitleSeen } from '../../hub/titleSeen';
 
-export function renderArcade(ui) {
+// `options` goes straight to RTL's render — the playtest bots pass a
+// `container` per simulated device, so several arcades share one document —
+// except `showTitle`. By default the tab is marked as past the title screen,
+// the way a player mid-session is, so a test lands on the hub it is about;
+// pass `showTitle: true` to test the title screen itself.
+export function renderArcade(ui, { showTitle = false, ...options } = {}) {
+  if (!showTitle) markTitleSeen();
   return render(
     <ErrorBoundary>
       <ProfileProvider>
-        <HelpDetailProvider>{ui}</HelpDetailProvider>
+        <HelpDetailProvider>
+          <SoundProvider>{ui}</SoundProvider>
+        </HelpDetailProvider>
       </ProfileProvider>
-    </ErrorBoundary>
+    </ErrorBoundary>,
+    options,
   );
 }
 
@@ -56,4 +67,14 @@ export function seedProfiles(profiles, activeId = profiles[0]?.id) {
     JSON.stringify(Object.fromEntries(profiles.map((p) => [p.id, p])))
   );
   if (activeId) localStorage.setItem('aniarcade_active_profile', JSON.stringify(activeId));
+}
+
+// Opens every "More settings" fold on screen (shared/components/MoreSettings)
+// that is closed. Only the closed ones: the fold remembers its state in
+// localStorage, so a test that clicked it open leaves the next test's fold
+// already open, and a blind click would shut it.
+export async function openMoreSettings(user) {
+  for (const fold of screen.queryAllByRole('button', { name: /more settings/i })) {
+    if (fold.getAttribute('aria-expanded') !== 'true') await user.click(fold);
+  }
 }

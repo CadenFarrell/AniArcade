@@ -23,22 +23,23 @@ export default function OnlineIdentityCard({ profile, stat, tone = 'purple', onS
     <Card className="mb-6 flex items-center justify-between gap-3">
       <div className="min-w-0">
         <p className="text-sm text-fg-subtle">Playing online as</p>
-        <p className="truncate font-display text-lg font-extrabold text-white">{profile.name}</p>
+        <p className="truncate font-display text-lg font-extrabold text-fg-strong">{profile.name}</p>
         {/* A game whose default mode draws no cards passes none — an empty line
             of the right height is worse than no line, since it reads as a stat
             that failed to load. */}
         {stat && <p className="text-sm text-fg-subtle">{stat}</p>}
         {/* Player ids come from the profile name, so a room rejects a second
-            person using the same one — make switching easy. */}
+            person using the same one — make switching easy. min-h-6 is the
+            24px tap floor (WCAG 2.5.8); the bare text-sm line was 20px. */}
         <button
           onClick={onSwitch}
-          className={`focus-pop mt-1 rounded-pop-sm text-sm hover:text-white ${TONES[tone] ?? TONES.purple}`}
+          className={`focus-pop mt-1 min-h-6 rounded-pop-sm text-sm hover:text-fg-strong ${TONES[tone] ?? TONES.purple}`}
         >
           Not you? Switch profile
         </button>
       </div>
       <Button variant="neutral" size="sm" className="flex-shrink-0" onClick={onImport}>
-        🔗 Import my list
+        Import my list
       </Button>
     </Card>
   );

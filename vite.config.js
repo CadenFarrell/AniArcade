@@ -7,6 +7,9 @@ export default defineConfig(({ mode }) => ({
     react(),
     tailwindcss(),
   ],
+  // The playtest bots write reports and builds while a dev server may be up;
+  // none of it is source, and a watched write would reload the open app.
+  server: { watch: { ignored: ['**/playtest-report/**', '**/dist-playtest/**', '**/dist-playtest-emu/**'] } },
   // Test-only, and needed only until vitest moves to Vite 8. vitest 3 runs on
   // its OWN bundled Vite 7, which transforms with esbuild — while plugin-react
   // v6 configures JSX through `oxc`, a Vite 8 option Vite 7 never reads. So the

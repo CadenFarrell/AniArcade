@@ -5,7 +5,16 @@ import { resolveSavedAxis } from '../prefs';
 import { getAxis } from '../axes';
 import { placedIds } from '../tiers';
 import {
-  Badge, Banner, Button, Card, CardRow, Field, Screen, Select, Wordmark,
+  Badge,
+  Banner,
+  Button,
+  Card,
+  CardRow,
+  Field,
+  Icon,
+  Screen,
+  Select,
+  Wordmark,
 } from '../../../shared/ui';
 
 // Pick one of my saved lists and send it to the room.
@@ -62,13 +71,13 @@ export default function TierPublish({ room, onCompare }) {
   return (
     <Screen width="md">
       <Wordmark tone="amber" size="sm" level={2} className="mb-2">
-        📊 Compare lists
+        Compare lists
       </Wordmark>
       <p className="mb-8 text-center text-fg-helper">
         Everyone sends a list they&rsquo;ve already built, then the room sees where you agree.
       </p>
 
-      {saveError && <Banner tone="danger" className="mb-4">⚠️ {saveError}</Banner>}
+      {saveError && <Banner tone="danger" className="mb-4">{saveError}</Banner>}
 
       <Card title={`Sent (${readyCount} of ${players.length})`} padding="lg" className="mb-6">
         {players.map((p) => {
@@ -76,8 +85,8 @@ export default function TierPublish({ room, onCompare }) {
           const gone = !activeIds.includes(p.id);
           return (
             <CardRow key={p.id} className={gone ? 'opacity-40' : ''}>
-              <span className="min-w-0 flex-1 truncate text-white">
-                {p.id === room.hostId && <span title="Host">👑 </span>}
+              <span className="min-w-0 flex-1 truncate text-fg-strong">
+                {p.id === room.hostId && <><Icon name="crown" label="Host" className="text-pop-amber" />{' '}</>}
                 {p.name}
                 {p.id === room.myPlayerId && <span className="text-pop-amber"> (you)</span>}
                 {sent && (
@@ -87,7 +96,7 @@ export default function TierPublish({ room, onCompare }) {
                 )}
               </span>
               {gone && <Badge tone="red">Left</Badge>}
-              <Badge tone={sent ? 'lime' : 'neutral'}>{sent ? 'Sent ✓' : 'Waiting'}</Badge>
+              <Badge tone={sent ? 'lime' : 'neutral'}>{sent ? <>Sent <Icon name="check" /></> : 'Waiting'}</Badge>
             </CardRow>
           );
         })}
@@ -98,8 +107,7 @@ export default function TierPublish({ room, onCompare }) {
         // showing an empty picker: lists are built in local play, and there is
         // no builder in here to send someone to.
         <Card padding="lg" className="mb-6 text-center">
-          <div className="mb-2 text-4xl">📋</div>
-          <p className="font-display text-lg font-extrabold text-white">
+          <p className="font-display text-lg font-extrabold text-fg-strong">
             You haven&rsquo;t built a list yet
           </p>
           <p className="mt-1 text-fg-helper">
@@ -109,7 +117,7 @@ export default function TierPublish({ room, onCompare }) {
           </p>
         </Card>
       ) : (
-        <Card title="📤 Send a list" padding="lg" className="mb-6">
+        <Card title="Send a list" padding="lg" className="mb-6">
           <Field label="Which list" htmlFor="publish-pick" className="mb-4">
             <Select
               id="publish-pick"
@@ -132,7 +140,7 @@ export default function TierPublish({ room, onCompare }) {
             onClick={publish}
             disabled={!picked || publishing}
           >
-            {room.myList ? '🔁 Replace my list' : '📤 Send my list'}
+            {room.myList ? 'Replace my list' : 'Send my list'}
           </Button>
 
           {room.myList && (
@@ -157,7 +165,7 @@ export default function TierPublish({ room, onCompare }) {
         onClick={onCompare}
         disabled={!canCompare}
       >
-        {canCompare ? '🔍 Compare the room' : '🔍 Need two lists to compare'}
+        {canCompare ? 'Compare the room' : 'Need two lists to compare'}
       </Button>
     </Screen>
   );

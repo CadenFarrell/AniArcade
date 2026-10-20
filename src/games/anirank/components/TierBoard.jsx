@@ -9,7 +9,7 @@ import {
   rowOf, setFormat, trayCards,
 } from '../tiers';
 import { tierTone } from '../utils/tierTone';
-import { Badge, Banner, Button, Card, GhostButton, Input, Modal, Screen } from '../../../shared/ui';
+import { Badge, Banner, Button, Card, GhostButton, Icon, Input, Modal, Screen } from '../../../shared/ui';
 
 // The tier list builder. Both formats, one component — a 'ranked' list is a
 // tier list with one row (see ../tiers.js), so the only thing that branches
@@ -116,7 +116,7 @@ export default function TierBoard({
     <>
       <Screen width="lg" onBack={onBack} backLabel="← Saved lists">
         <header className="mb-6">
-          <h1 className="font-display text-3xl font-black text-white">{list.name || 'Untitled list'}</h1>
+          <h1 className="font-display text-3xl font-black text-fg-strong">{list.name || 'Untitled list'}</h1>
           <p className="mt-1 text-base text-fg-helper">
             {axis.label} · {list.items === 'characters' ? 'Characters' : 'Shows'}
             {' · '}
@@ -124,7 +124,7 @@ export default function TierBoard({
           </p>
         </header>
 
-        {saveError && <Banner tone="danger" className="mb-4">⚠️ {saveError}</Banner>}
+        {saveError && <Banner tone="danger" className="mb-4">{saveError}</Banner>}
 
         {/* A saved list outlives the profile it was built from. Say what went
             rather than shrinking by three cards in silence. */}
@@ -153,7 +153,7 @@ export default function TierBoard({
               ? setConfirmFormat(true)
               : apply(setFormat(list, ranked ? 'tiers' : 'ranked')))}
           >
-            {ranked ? '📋 Use tiers' : '🔢 Use 1–N'}
+            {ranked ? 'Use tiers' : 'Use 1–N'}
           </Button>
           {!ranked && (
             <Button
@@ -162,11 +162,11 @@ export default function TierBoard({
               aria-pressed={editRows}
               onClick={() => setEditRows((v) => !v)}
             >
-              {editRows ? '✓ Done editing' : '⚙️ Edit rows'}
+              {editRows ? 'Done editing' : 'Edit rows'}
             </Button>
           )}
           {canCompare && (
-            <Button variant="secondary" size="sm" onClick={onCompare}>⚖️ Compare</Button>
+            <Button variant="secondary" size="sm" onClick={onCompare}>Compare</Button>
           )}
         </div>
 
@@ -233,7 +233,7 @@ export default function TierBoard({
 
       {confirmFormat && (
         <Modal onClose={() => setConfirmFormat(false)} width="sm">
-          <h2 className="mb-3 font-display text-2xl font-black text-white">
+          <h2 className="mb-3 font-display text-2xl font-black text-fg-strong">
             {ranked ? 'Cut this ranking into tiers?' : 'Flatten these tiers into one ranking?'}
           </h2>
           <p className="mb-6 text-base text-fg-body">
@@ -251,7 +251,10 @@ export default function TierBoard({
                 setConfirmFormat(false);
               }}
             >
-              {ranked ? '📋 Use tiers' : '🔢 Use 1–N'}
+              {/* Not the toolbar button's words: that button is still on the
+                  page behind this dialog, and two controls with one name read
+                  as one control to a screen reader. */}
+              {ranked ? 'Switch to tiers' : 'Switch to 1–N'}
             </Button>
             <Button variant="neutral" size="lg" fullWidth onClick={() => setConfirmFormat(false)}>
               Cancel
@@ -268,7 +271,7 @@ export default function TierBoard({
           className="fixed inset-x-0 bottom-0 z-30 border-t-2 border-ink bg-surface-2 px-4 py-3
             text-center"
         >
-          <span className="font-display text-base font-extrabold text-white">
+          <span className="font-display text-base font-extrabold text-fg-strong">
             Holding {byId.get(heldId).title}
           </span>
           <span className="ml-2 text-base text-fg-helper">— tap a row to place it</span>
@@ -353,8 +356,10 @@ function TierRow({
                 </button>
               )}
 
+              {/* fg-subtle, not fg-disabled: this is a note to read, and only a
+                  disabled control is exempt from 4.5:1. */}
               {!heldId && row.cards.length === 0 && (
-                <span className="px-2 py-6 text-sm text-fg-disabled">Empty</span>
+                <span className="px-2 py-6 text-sm text-fg-subtle">Empty</span>
               )}
             </div>
           </SortableContext>
@@ -363,12 +368,24 @@ function TierRow({
 
       {editing && !ranked && (
         <div className="mt-2 flex flex-wrap items-center gap-2">
-          <Button variant="neutral" size="sm" disabled={index === 0} onClick={() => onMove(-1)}>▲</Button>
-          <Button variant="neutral" size="sm" disabled={index === count - 1} onClick={() => onMove(1)}>▼</Button>
-          <Button variant="neutral" size="sm" onClick={onFill}>Fill from tray</Button>
-          <Button variant="neutral" size="sm" disabled={!row.cards.length} onClick={onClear}>Empty</Button>
+          {/* Every row carries this same strip, so each control names its row
+              — five rows of "Remove row" give a screen reader no way to tell
+              which one it is on. The row goes in sr-only text after the
+              visible words, so the spoken name still starts with them. */}
+          <Button variant="neutral" size="sm" aria-label={`Move row ${row.label} up`} disabled={index === 0} onClick={() => onMove(-1)}>
+            <Icon name="chevron" className="-rotate-90" />
+          </Button>
+          <Button variant="neutral" size="sm" aria-label={`Move row ${row.label} down`} disabled={index === count - 1} onClick={() => onMove(1)}>
+            <Icon name="chevron" className="rotate-90" />
+          </Button>
+          <Button variant="neutral" size="sm" onClick={onFill}>
+            Fill from tray<span className="sr-only"> into row {row.label}</span>
+          </Button>
+          <Button variant="neutral" size="sm" disabled={!row.cards.length} onClick={onClear}>
+            Empty<span className="sr-only"> row {row.label}</span>
+          </Button>
           <Button variant="danger" size="sm" disabled={!canRemove} onClick={onRemove}>
-            ✕ Remove row
+            Remove row<span className="sr-only"> {row.label}</span>
           </Button>
         </div>
       )}
@@ -381,7 +398,7 @@ function TrayZone({ cards, total, matched, query, onQuery, heldId, onTile, onDro
   const hidden = matched - cards.length;
 
   return (
-    <Card title={`🗃️ Unplaced · ${total}`} padding="lg" className="mb-6">
+    <Card title={`Unplaced · ${total}`} padding="lg" className="mb-6">
       <Input
         type="search"
         value={query}
@@ -393,7 +410,7 @@ function TrayZone({ cards, total, matched, query, onQuery, heldId, onTile, onDro
 
       {heldId && (
         <Button variant="neutral" size="sm" fullWidth className="mb-3" onClick={onDropHere}>
-          ↩️ Put it back here
+          Put it back here
         </Button>
       )}
 
@@ -413,8 +430,8 @@ function TrayZone({ cards, total, matched, query, onQuery, heldId, onTile, onDro
               />
             ))}
             {!cards.length && (
-              <span className="px-2 py-6 text-sm text-fg-disabled">
-                {total ? 'Nothing matches that search.' : 'Everything is placed. 🎉'}
+              <span className="px-2 py-6 text-sm text-fg-subtle">
+                {total ? 'Nothing matches that search.' : 'Everything is placed.'}
               </span>
             )}
           </div>
@@ -506,7 +523,7 @@ function Tile({
             className={`flex-shrink-0 rounded-sm border border-ink object-cover ${art}`}
           />
         ) : null}
-        <span className={`font-display font-extrabold leading-tight text-white ${name}`}>
+        <span className={`font-display font-extrabold leading-tight text-fg-strong ${name}`}>
           {card.title}
         </span>
       </button>
@@ -520,12 +537,12 @@ function Tile({
           onClick={onEject}
           aria-label={`Return ${card.title} to the tray`}
           className={`focus-pop grid place-items-center rounded-full border-2 border-ink
-            bg-surface font-black text-pop-red hover:bg-pop-red hover:text-ink
+            bg-surface font-black text-pop-red hover:bg-pop-red hover:text-paper
             ${wide
               ? 'mr-2 h-8 w-8 flex-shrink-0 text-sm'
               : 'absolute -right-1 -top-1 h-6 w-6 text-xs'}`}
         >
-          ✕
+          <Icon name="cross" />
         </button>
       )}
     </div>

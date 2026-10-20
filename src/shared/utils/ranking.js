@@ -1,7 +1,3 @@
-export function getPositionEmoji(pos) {
-  return ['🥇', '🥈', '🥉'][pos - 1] || `#${pos}`;
-}
-
 export function normalizeTitle(s) {
   return (s || '').trim().toLowerCase();
 }

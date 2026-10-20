@@ -6,7 +6,7 @@ import { Card } from '../../../shared/ui';
 // axes.js.
 export default function ModePicker({ value, onChange }) {
   return (
-    <Card title="🎭 Deal" padding="lg" className="mb-6">
+    <Card title="Deal" padding="lg" className="mb-6">
       <div className="flex flex-col gap-3">
         {MODES.map((mode) => {
           const selected = mode.id === value;
@@ -19,7 +19,7 @@ export default function ModePicker({ value, onChange }) {
               className={`btn-pop focus-pop rounded-pop border-2 p-4 text-left
                 ${selected ? 'border-pop-teal bg-pop-teal/15' : 'border-line-strong bg-surface'}`}
             >
-              <span className="font-display text-lg font-extrabold text-white">
+              <span className="font-display text-lg font-extrabold text-fg-strong">
                 {mode.label}
               </span>
               <span className="mt-1 block text-base text-fg-helper">{mode.blurb}</span>

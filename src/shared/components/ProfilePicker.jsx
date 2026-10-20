@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useProfileStore } from '../context/profileContext';
 import { summarizeProfiles } from '../utils/profileStats';
 import ListImport from './ListImport';
-import { Badge, Button, Input, Label, Modal } from '../ui';
+import { Badge, Button, Icon, Input, Label, Modal } from '../ui';
 
 // Pick who you are, once, for the whole arcade.
 //
@@ -18,7 +18,7 @@ import { Badge, Button, Input, Label, Modal } from '../ui';
 // ListImport is already a dialog, so it can replace this one in place. A
 // brand-new profile is handed straight to it, because creating a profile used to
 // dead-end on the menu with an empty list and a warning pill — the import was
-// three navigations away (reopen the picker, ✏️, ListManager) and nothing on
+// three navigations away (reopen the picker, the pencil, ListManager) and nothing on
 // screen said so. An empty profile is the one state where the import is the only
 // useful next action, so it is offered rather than merely reachable.
 //
@@ -93,6 +93,10 @@ export default function ProfilePicker({
   const renderRow = (row) => {
     // Already seated players stay visible but inert. Hiding them would leave
     // you hunting for a name that is right there on the roster behind the modal.
+    // Only the disabled button dims, never the row: the "In game" badge beside
+    // it is the reason the row is inert, and dimmed with it (the whole row at
+    // 40%) it fell to 2.34:1 — a disabled control is exempt from contrast, the
+    // label explaining it is not.
     const seated = adding && excludeIds.includes(row.id);
 
     return (
@@ -101,8 +105,7 @@ export default function ProfilePicker({
         className={`flex items-center gap-3 rounded-pop border-2 p-3 transition-colors
           ${row.isActive && !adding
             ? 'border-pop-purple bg-pop-purple/15'
-            : 'border-line-strong bg-surface'}
-          ${seated ? 'opacity-40' : ''}`}
+            : 'border-line-strong bg-surface'}`}
       >
         <button
           onClick={() => handleRow(row)}
@@ -114,9 +117,9 @@ export default function ProfilePicker({
           aria-label={adding
             ? `Add ${row.name} to this game`
             : `Make ${row.name} your main profile`}
-          className="focus-pop min-w-0 flex-1 rounded-pop-sm text-left disabled:cursor-default"
+          className="focus-pop min-w-0 flex-1 rounded-pop-sm text-left disabled:cursor-default disabled:opacity-40"
         >
-          <span className="block truncate font-display font-extrabold text-white">
+          <span className="block truncate font-display font-extrabold text-fg-strong">
             <span aria-hidden="true">{row.isActive && !adding ? '▸ ' : ''}</span>{row.name}
           </span>
           <span className="mt-0.5 block text-sm text-fg-subtle">
@@ -125,7 +128,7 @@ export default function ProfilePicker({
         </button>
 
         {seated && <Badge tone="neutral">In game</Badge>}
-        {row.characters === 0 && !seated && <Badge tone="amber">⚠️ Empty</Badge>}
+        {row.characters === 0 && !seated && <Badge tone="amber">Empty</Badge>}
 
         {!adding && (
           <>
@@ -135,14 +138,14 @@ export default function ProfilePicker({
               aria-label={`Edit ${row.name}'s anime list`}
               onClick={() => onEditList(row.id)}
             >
-              ✏️
+              <Icon name="pencil" />
             </Button>
             <button
               onClick={() => handleDelete(row)}
               aria-label={`Delete ${row.name}`}
               className="focus-pop grid h-11 w-11 flex-shrink-0 place-items-center rounded-pop-sm text-fg-icon hover:text-pop-red"
             >
-              🗑️
+              <Icon name="trash" />
             </button>
           </>
         )}
@@ -169,13 +172,13 @@ export default function ProfilePicker({
   return (
     <Modal onClose={onClose} width="sm">
       <div className="mb-2 flex items-center justify-between">
-        <h2 className="font-display text-2xl font-extrabold text-white">
-          {adding ? '➕ Add a player' : '👤 Your profiles'}
+        <h2 className="font-display text-2xl font-extrabold text-fg-strong">
+          {adding ? 'Add a player' : 'Your profiles'}
         </h2>
         <button
           onClick={onClose}
           aria-label="Close"
-          className="focus-pop -mr-2 grid h-11 w-11 place-items-center rounded-pop-sm text-xl font-black text-fg-icon hover:text-white"
+          className="focus-pop -mr-2 grid h-11 w-11 place-items-center rounded-pop-sm text-xl font-black text-fg-icon hover:text-fg-strong"
         >
           ✕
         </button>
@@ -246,7 +249,7 @@ export default function ProfilePicker({
         </div>
       ) : (
         <Button variant="neutral" fullWidth onClick={() => setCreating(true)}>
-          ➕ New profile
+          New profile
         </Button>
       )}
     </Modal>

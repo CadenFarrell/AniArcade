@@ -3,7 +3,7 @@ import { answerTrail } from './answerTrail';
 
 const question = (id, answer) => ({ id, type: 'question', answer });
 const guess = (id, correct) => ({ id, type: 'guess', correct });
-const timer = (id) => ({ id, type: 'timer', text: "⏱️ Time's up!" });
+const timer = (id) => ({ id, type: 'timer', text: "Time's up!" });
 
 describe('answerTrail', () => {
   it('reads oldest-first, the reverse of the stored log', () => {
@@ -11,7 +11,7 @@ describe('answerTrail', () => {
     const log = [question('c', 'Yes'), question('b', 'No'), question('a', 'Yes')];
 
     expect(answerTrail(log).map((chip) => chip.id)).toEqual(['a', 'b', 'c']);
-    expect(answerTrail(log).map((chip) => chip.icon)).toEqual(['✅', '❌', '✅']);
+    expect(answerTrail(log).map((chip) => chip.icon)).toEqual(['check', 'cross', 'check']);
   });
 
   it('does not reverse the caller in place', () => {
@@ -25,7 +25,7 @@ describe('answerTrail', () => {
     const trail = answerTrail([timer('t'), guess('g', false), question('q', 'No')]);
 
     expect(trail.map((chip) => chip.tone)).toEqual(['no', 'no', 'warn']);
-    expect(trail.map((chip) => chip.icon)).toEqual(['❌', '🎯❌', '⏱️']);
+    expect(trail.map((chip) => chip.icon)).toEqual(['cross', 'miss', 'clock']);
   });
 
   it('drops entries with no answer rather than guessing at one', () => {

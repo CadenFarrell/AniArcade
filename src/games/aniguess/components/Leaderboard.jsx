@@ -1,113 +1,56 @@
 import { useMemo } from 'react';
-import { computeRankedPlayers, getPositionEmoji } from '../../../shared/utils/ranking';
-import { Button, Card, CardRow, Screen, Wordmark } from '../../../shared/ui';
+import ResultsLayout, { Splash, Standings } from '../../../shared/components/Results';
+import { StartBar } from '../../../shared/components/SetupLayout';
+import { Button } from '../../../shared/ui';
+import { computeRankedPlayers } from '../../../shared/utils/ranking';
+import { splitPodium } from '../../../shared/utils/podium';
+import descriptor from '../index';
 
 // `departedIds` is online-only: anyone who left mid-session keeps the points
 // they earned and stays in the standings, dimmed and tagged, so the result
 // doesn't read as though they played it out.
+//
+// The stepped 2-1-3 podium this screen used to open with is the splash now, as
+// on every results screen: one panel for the winner (or everyone tied for it),
+// wearing the character they sat down as.
 export default function Leaderboard({
   players, totalScores, roundNumber, departedIds = [], onPlayAgain, onEditLists,
 }) {
-  const withPositions = useMemo(
+  const ranked = useMemo(
     () => computeRankedPlayers(players, totalScores),
     [players, totalScores]
   );
+  const { winners, rest, stamp, kana } = splitPodium(ranked);
 
-  const isTied = (player) =>
-    withPositions.filter((p) => p.position === player.position).length > 1;
-
-  // Group players by podium position (2nd, 1st, 3rd) — all tied players share the same slot
-  const podiumSlots = [2, 1, 3].map((pos) => ({
-    pos,
-    players: withPositions.filter((p) => p.position === pos),
-  })).filter((slot) => slot.players.length > 0);
-
-  // Gold / silver / bronze. The palette has no brown, so bronze is a knocked-
-  // back amber — still clearly a step below gold.
-  //
-  // Only first place lights. A podium where all three blocks glow is three
-  // winners, which is exactly the thing a podium exists not to say — and the
-  // silver block is a white fill, so a halo on it would be the brightest object
-  // on the screen while ranking second.
-  const podiumConfig = {
-    1: { height: 'h-44', color: 'bg-pop-amber', emoji: '🥇', glow: 'shadow-[0_0_34px_-4px_var(--color-pop-amber)]' },
-    2: { height: 'h-28', color: 'bg-wash-bright', emoji: '🥈', glow: '' },
-    3: { height: 'h-20', color: 'bg-pop-amber/50', emoji: '🥉', glow: '' },
-  };
+  // A tie below first is said in words beside the place mark: two "2"s in a
+  // column otherwise read as a typo.
+  const isTied = (player) => ranked.filter((p) => p.position === player.position).length > 1;
+  const rounds = `${roundNumber} round${roundNumber !== 1 ? 's' : ''} played`;
 
   return (
-    <Screen center width="md" className="text-center">
-      <Wordmark tone="amber" size="md" level={2} className="mb-3">
-        🏆 Final Results
-      </Wordmark>
-      <p className="mb-10 text-lg text-fg-helper">
-        {roundNumber} round{roundNumber !== 1 ? 's' : ''} played
-      </p>
-
-      {/* Podium */}
-      {withPositions.length >= 2 && (
-        <div className="mb-10 flex items-end justify-center gap-4">
-          {podiumSlots.map((slot) => {
-            const { height, color, emoji, glow } = podiumConfig[slot.pos];
-            return (
-              <div key={slot.pos} className="flex items-end gap-2">
-                {slot.players.map((player) => (
-                  <div key={player.id} className="flex flex-col items-center">
-                    <span className="mb-2 text-3xl">{emoji}</span>
-                    <p className="mb-1 font-display text-base font-extrabold text-white">
-                      {player.name}
-                    </p>
-                    <p className="mb-1 text-sm text-fg-strong">{player.total} pts</p>
-                    {isTied(player) && <p className="mb-1 text-xs text-pop-amber">🤝</p>}
-                    {/* Blocks, not bars — same ink border as every other solid
-                        fill. No bottom border so they sit on the baseline. */}
-                    <div
-                      className={`${height} ${color} ${glow} w-24 rounded-t-pop-sm border-2 border-b-0 border-ink sm:w-28`}
-                    />
-                  </div>
-                ))}
-              </div>
-            );
-          })}
-        </div>
+    <ResultsLayout
+      game={descriptor}
+      title="Final Results"
+      subtitle={rounds}
+      players={players}
+      splash={winners.length > 0 && (
+        <Splash players={winners} stamp={stamp} kana={kana} score={`${winners[0].total} pts`} />
       )}
-
-      {/* Full Rankings */}
-      <Card padding="lg" className="mb-8 text-left">
-        {withPositions.map((player) => {
-          const left = departedIds.includes(player.id);
-          return (
-            <CardRow
-              key={player.id}
-              className={`${player.position === 1 ? 'text-pop-amber' : 'text-white'} ${left ? 'opacity-50' : ''}`}
-            >
-              <span className="font-display text-lg font-extrabold">
-                {getPositionEmoji(player.position)} {player.name}
-                {isTied(player) && <span className="ml-2 text-sm text-pop-amber">🤝 Tied</span>}
-                {left && <span className="ml-2 text-sm font-bold text-fg-helper">left</span>}
-              </span>
-              {/* The leader's total lights; everyone else's does not. The row is
-                  already amber for first place, so this reinforces a distinction
-                  the screen makes rather than inventing a second one. */}
-              <span
-                className={`font-display text-2xl font-extrabold
-                  ${player.position === 1 && !left ? 'neon-text [--glow:var(--color-pop-amber)]' : ''}`}
-              >
-                {player.total} pts
-              </span>
-            </CardRow>
-          );
-        })}
-      </Card>
-
-      <div className="flex flex-col gap-4">
-        <Button variant="primary" size="xl" fullWidth onClick={onPlayAgain}>
-          🎮 Play Again
-        </Button>
-        <Button variant="neutral" size="lg" fullWidth onClick={onEditLists}>
-          ✏️ Edit Character Lists
-        </Button>
-      </div>
-    </Screen>
+      bar={(
+        <StartBar width="md" status={`${players.length} players`} ready>
+          <Button variant="neutral" size="lg" onClick={onEditLists}>Edit Character Lists</Button>
+          <Button variant="primary" size="lg" onClick={onPlayAgain}>Play Again</Button>
+        </StartBar>
+      )}
+    >
+      <Standings
+        ranked={rest}
+        departedIds={departedIds}
+        score={(p) => `${p.total} pts`}
+        extra={(p) => isTied(p) && (
+          <span className="font-display text-xs font-bold uppercase tracking-wider text-pop-amber">Tied</span>
+        )}
+      />
+    </ResultsLayout>
   );
 }

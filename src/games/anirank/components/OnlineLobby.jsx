@@ -12,7 +12,9 @@ import { eligibleItems, opinionPoolCounts } from '../utils/deck';
 import { DEFAULT_PREFS, axisIdOf, resolveSavedAxis } from '../prefs';
 import { AXES, getAxis } from '../axes';
 import { BOARD_SIZE } from '../rules';
-import { Backdrop, Banner, Button, Card, Screen, Wordmark } from '../../../shared/ui';
+import SetupLayout, { StartBar } from '../../../shared/components/SetupLayout';
+import descriptor from '../index';
+import { Banner, Button, Card } from '../../../shared/ui';
 
 // The online lobby. The room code, roster, list import and guest wait card are
 // shared/components/Lobby.jsx; what lives here is AniRank's own host-only
@@ -113,112 +115,112 @@ export default function OnlineLobby({ room }) {
     ? active.length >= 2
     : active.length >= 2 && everyoneHasShows && enough;
 
+  const status = !room.isHost ? `Waiting for ${room.hostName || 'the host'} to start.`
+    : active.length < 2 ? 'Waiting for more players to join.'
+      : comparing ? `${active.length} players · everyone picks a list to send after Start`
+        : !everyoneHasShows ? 'Every player needs an anime list.'
+          : !enough ? `Need ${BOARD_SIZE} ${noun} — found ${eligible}.`
+            : `${active.length} players · ${eligible} ${noun} to draw from${sharedOnly ? ' (shared)' : ''}`;
+
   return (
-    <>
-      <Backdrop />
-      <Screen width="md">
-        <Wordmark tone="amber" size="sm" level={2} className="mb-6">
-          🌐 AniRank Lobby
-        </Wordmark>
+    <SetupLayout
+      game={descriptor}
+      tagline={comparing ? 'Compare the tier lists you built' : 'Ten cards, one board, best at the top'}
+      aside={<RoomCode code={room.roomCode} />}
+      left={(
+        <>
+          <PlayerRoster
+            room={room}
+            players={players}
+            active={active}
+            statuses={statuses}
+            tone="amber"
+            badgeFor={(p) => <ListBadge count={showCount(p)} />}
+          />
+          <LobbyImport />
+          {room.isHost && !comparing && active.length >= 2 && !everyoneHasShows && (
+            <Banner tone="warning" className="mb-4">
+              Every player needs an anime list before you can start.
+            </Banner>
+          )}
+          {room.isHost && !comparing && active.length >= 2 && everyoneHasShows && !enough && (
+            <Banner tone="warning" className="mb-4">
+              Need {BOARD_SIZE} {noun} to fill a board — found {eligible}.
+              {resolved.kind === 'fact'
+                ? ' This mode needs AniList stats that older saved profiles don’t carry — everyone should refresh their list above.'
+                : sharedOnly ? ` Turn off “Shared ${noun} only”, or import matching titles.` : ''}
+            </Banner>
+          )}
+        </>
+      )}
+      right={!room.isHost ? (
+        <HostWaitCard hostName={room.hostName} needsList />
+      ) : (
+        <>
+          {/* Above the mode picker because it decides how much of the picker
+              applies — the same order and the same reason as AniRankSetup. */}
+          <Card title="Format" padding="lg" className="mb-6">
+            <div className="flex flex-col gap-2">
+              <FormatOption
+                active={!comparing}
+                onClick={() => setFormat('round')}
+                title="Round of ten"
+                hint="Ten random cards, everyone ranks the same board, scored against an answer key."
+              />
+              <FormatOption
+                active={comparing}
+                onClick={() => setFormat(savedTierFormat)}
+                title="Compare tier lists"
+                hint="Everyone sends a list they already built, and the room sees where you agree."
+              />
+            </div>
+          </Card>
 
-        <RoomCode code={room.roomCode} />
-
-        <PlayerRoster
-          room={room}
-          players={players}
-          active={active}
-          statuses={statuses}
-          tone="amber"
-          badgeFor={(p) => <ListBadge count={showCount(p)} />}
-        />
-
-        <LobbyImport />
-
-        {!room.isHost && <HostWaitCard hostName={room.hostName} needsList />}
-
-        {room.isHost && (
-          <>
-            {/* Above the mode picker because it decides how much of the picker
-                applies — the same order and the same reason as AniRankSetup. */}
-            <Card title="🎲 Format" padding="lg" className="mb-6">
-              <div className="flex flex-col gap-2">
-                <FormatOption
-                  active={!comparing}
-                  onClick={() => setFormat('round')}
-                  title="🎲 Round of ten"
-                  hint="Ten random cards, everyone ranks the same board, scored against an answer key."
-                />
-                <FormatOption
-                  active={comparing}
-                  onClick={() => setFormat(savedTierFormat)}
-                  title="📊 Compare tier lists"
-                  hint="Everyone sends a list they already built, and the room sees where you agree."
-                />
-              </div>
+          {/* None of the round options mean anything to a comparison: there is
+              no deal to make blind, no answer key to score against, and each
+              published list already carries the axis it was built with. An
+              inert control is worse than an absent one — see AniRankSetup. */}
+          {comparing ? (
+            <Card padding="lg" className="mb-6">
+              <p className="text-base text-fg-body">
+                Lists are built in local play and saved to each player&rsquo;s own device.
+                Start, and everyone picks one to send.
+              </p>
+              <p className="mt-3 text-sm text-fg-subtle">
+                You&apos;re the host — your settings apply to everyone.
+              </p>
+              <SettingsFooter values={remembered} defaults={DEFAULT_PREFS} onReset={applyDefaults} />
             </Card>
-
-            {/* None of the round options mean anything to a comparison: there is
-                no deal to make blind, no answer key to score against, and each
-                published list already carries the axis it was built with. An
-                inert control is worse than an absent one — see AniRankSetup. */}
-            {comparing ? (
-              <Card padding="lg" className="mb-6">
-                <p className="text-base text-fg-body">
-                  Lists are built in local play and saved to each player&rsquo;s own device.
-                  Start, and everyone picks one to send.
-                </p>
-                <p className="mt-3 text-sm text-fg-subtle">
-                  You&apos;re the host — your settings apply to everyone.
-                </p>
-                <SettingsFooter
-                  values={remembered}
-                  defaults={DEFAULT_PREFS}
-                  onReset={applyDefaults}
-                />
-              </Card>
-            ) : (
-              <>
-            <AxisPicker
-              value={axis}
-              onChange={handleAxisChange}
-              counts={active.length ? counts : undefined}
-              prompts={prompts}
-              onSavePrompt={savePrompt}
-              onDeletePrompt={deletePrompt}
-            />
-
-            {/* Never `tiering` here: this card renders only for a round, so it
-                always takes the round wording — a comparison has no board to
-                share a pool for. */}
-            <AniRankSettings
-              values={{ sharedOnly, blind, scoring }}
-              onChange={changeSetting}
-              noun={noun}
-              remembered={remembered}
-              onReset={applyDefaults}
-              hostNote
-            />
-
-            {active.length >= 2 && !everyoneHasShows && (
-              <Banner tone="warning" className="mb-4">
-                ⚠️ Every player needs an anime list before you can start.
-              </Banner>
-            )}
-            {active.length >= 2 && everyoneHasShows && !enough && (
-              <Banner tone="warning" className="mb-4">
-                ⚠️ Need {BOARD_SIZE} {noun} to fill a board — found {eligible}.
-                {resolved.kind === 'fact'
-                  ? ' This mode needs AniList stats that older saved profiles don’t carry — everyone should refresh their list above.'
-                  : sharedOnly ? ` Turn off “Shared ${noun} only”, or import matching titles.` : ''}
-              </Banner>
-            )}
-              </>
-            )}
-
+          ) : (
+            <>
+              <AxisPicker
+                value={axis}
+                onChange={handleAxisChange}
+                counts={active.length ? counts : undefined}
+                prompts={prompts}
+                onSavePrompt={savePrompt}
+                onDeletePrompt={deletePrompt}
+              />
+              {/* Never `tiering` here: this card renders only for a round, so it
+                  always takes the round wording. */}
+              <AniRankSettings
+                values={{ sharedOnly, blind, scoring }}
+                onChange={changeSetting}
+                noun={noun}
+                remembered={remembered}
+                onReset={applyDefaults}
+                hostNote
+              />
+            </>
+          )}
+        </>
+      )}
+      start={(
+        <StartBar status={status} ready={room.isHost && canStart}>
+          {room.isHost && (
             <Button
               variant="primary"
-              size="xl"
-              fullWidth
+              size="lg"
               onClick={() => {
                 savePrefs(remembered);
                 const settings = { sharedOnly, axis, scoring, blind, format };
@@ -227,11 +229,11 @@ export default function OnlineLobby({ room }) {
               }}
               disabled={!canStart}
             >
-              {comparing ? '📊 Open the comparison' : '🎮 Start Game'}
+              {comparing ? 'Open the comparison' : 'Start Game'}
             </Button>
-          </>
-        )}
-      </Screen>
-    </>
+          )}
+        </StartBar>
+      )}
+    />
   );
 }

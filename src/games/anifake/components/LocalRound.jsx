@@ -6,7 +6,7 @@ import StealScreen from './StealScreen';
 import { useAniFakeRound } from '../hooks/useAniFakeRound';
 import { MAX_DEALS } from '../rules';
 import { eligibleCharacters } from '../utils/pool';
-import { Backdrop, Button, Card, Screen, Wordmark } from '../../../shared/ui';
+import { Backdrop, Button, Card, Icon, Screen, Wordmark } from '../../../shared/ui';
 
 // One local round, start to steal. Owns the hot-seat rotation — the two indices
 // below are the only state that exists in local play and has no online twin,
@@ -104,10 +104,10 @@ export default function LocalRound({ players, pool, settings, onFinish, onQuit }
       <>
         <Backdrop />
         <Screen center>
-          <Wordmark tone="teal" size="md" level={2} className="mb-8">🔁 New characters</Wordmark>
+          <Wordmark tone="teal" size="md" level={2} className="mb-8">New characters</Wordmark>
           <Card padding="lg" className="mb-8 text-center">
-            <div className="text-5xl">🔁</div>
-            <p className="mt-3 font-display text-2xl font-extrabold text-white">
+            <div className="text-5xl text-fg-strong"><Icon name="refresh" /></div>
+            <p className="mt-3 font-display text-2xl font-extrabold text-fg-strong">
               Someone drew a blank
             </p>
             <p className="mt-2 text-lg text-fg-body">
@@ -128,7 +128,7 @@ export default function LocalRound({ players, pool, settings, onFinish, onQuit }
             fullWidth
             onClick={() => setAnnouncing(false)}
           >
-            🕵️ Pass to {seated[0].name}
+            Pass to {seated[0].name}
           </Button>
         </Screen>
       </>
@@ -176,10 +176,10 @@ export default function LocalRound({ players, pool, settings, onFinish, onQuit }
       <>
         <Backdrop />
         <Screen center>
-          <Wordmark tone="teal" size="md" level={2} className="mb-8">⚖️ It&apos;s a tie</Wordmark>
+          <Wordmark tone="teal" size="md" level={2} className="mb-8">It&apos;s a tie</Wordmark>
           <Card padding="lg" className="mb-8 text-center">
-            <div className="text-5xl">⚖️</div>
-            <p className="mt-3 font-display text-2xl font-extrabold text-white">{names}</p>
+            <div className="text-5xl text-fg-strong"><Icon name="scales" /></div>
+            <p className="mt-3 font-display text-2xl font-extrabold text-fg-strong">{names}</p>
             <p className="mt-2 text-lg text-fg-body">
               Sudden death. Everyone votes again on just those names — and if it
               ties again, nobody is accused and the fake walks.
@@ -191,7 +191,7 @@ export default function LocalRound({ players, pool, settings, onFinish, onQuit }
             fullWidth
             onClick={() => { round.openRunoff(); setVoterIndex(0); }}
           >
-            ⚖️ Start the runoff
+            Start the runoff
           </Button>
         </Screen>
       </>
@@ -206,9 +206,9 @@ export default function LocalRound({ players, pool, settings, onFinish, onQuit }
       <>
         <Backdrop />
         <Screen center>
-          <Wordmark tone="teal" size="md" level={2} className="mb-8">🃏 Votes are in</Wordmark>
+          <Wordmark tone="teal" size="md" level={2} className="mb-8">Votes are in</Wordmark>
           <Card padding="lg" className="mb-8 text-center">
-            <div className="text-5xl">🕵️</div>
+            <div className="text-5xl text-fg-strong"><Icon name="mask" /></div>
             <p className="mt-3 text-lg text-fg-body">
               Everyone has voted. Gather round before you turn the cards over.
             </p>
@@ -225,7 +225,7 @@ export default function LocalRound({ players, pool, settings, onFinish, onQuit }
               scores: round.scores,
             })}
           >
-            🎭 Reveal
+            Reveal
           </Button>
         </Screen>
       </>

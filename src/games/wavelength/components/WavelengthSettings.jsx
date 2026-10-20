@@ -7,7 +7,7 @@ import { needsCardPool } from '../rules';
 import { CARD_POOLS, poolNoun } from '../utils/cards';
 
 /**
- * AniWave's ⚙️ Settings card, rendered by both WavelengthSetup and the online
+ * AniWave's Settings card, rendered by both WavelengthSetup and the online
  * lobby. AniTagSettings and AniTuneSettings are the precedent. The two copies
  * had already drifted: local play's reset link sat outside the card, under
  * Start, while the lobby's sat inside it.
@@ -35,7 +35,7 @@ export default function WavelengthSettings({
   const defaults = Object.fromEntries(Object.keys(values).map((k) => [k, DEFAULT_PREFS[k]]));
 
   return (
-    <Card title="⚙️ Settings" action={<DetailToggle />} padding="lg" className="mb-6">
+    <Card title="Settings" action={<DetailToggle />} padding="lg" className="mb-6">
       <Field label="Rounds" htmlFor="aniwave-rounds" className="mb-2">
         <NumberInput
           id="aniwave-rounds"

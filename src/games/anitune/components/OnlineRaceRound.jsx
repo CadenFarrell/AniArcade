@@ -1,5 +1,5 @@
 import GuessInput from './GuessInput';
-import { Button, GhostButton } from '../../../shared/ui';
+import { Button, GhostButton, Icon } from '../../../shared/ui';
 
 // Race mode, one player per device. The buzz is the whole game — first device to
 // claim it (a transaction in the room hook) gets the guess box; everyone else is
@@ -17,14 +17,14 @@ export default function OnlineRaceRound({
     if (isMyBuzz) {
       return (
         <div className="mt-6">
-          <p className="mb-4 text-center font-display text-xl font-extrabold text-white">
-            🔔 You buzzed — name the anime
+          <p className="mb-4 text-center font-display text-xl font-extrabold text-fg-strong">
+            You buzzed — name the anime
           </p>
           <GuessInput
             key={question.id}
             questions={questions}
             onSubmit={onAnswer}
-            submitLabel="Lock it in 🎯"
+            submitLabel="Lock it in"
           />
           <p className="mt-3 text-center text-sm text-fg-subtle">
             Miss it and you&apos;re out for this song — the clip picks back up for everyone else.
@@ -35,8 +35,8 @@ export default function OnlineRaceRound({
     const buzzer = players.find((p) => p.id === game.buzzedBy);
     return (
       <div className="mt-6 text-center">
-        <div className="mb-3 text-5xl">🔔</div>
-        <p className="font-display text-xl font-extrabold text-white">
+        <div className="mb-3 text-5xl text-pop-blue"><Icon name="bell" /></div>
+        <p className="font-display text-xl font-extrabold text-fg-strong">
           {buzzer?.name || 'Someone'} buzzed
         </p>
         <p className="mt-1 text-fg-helper">Hang tight — see if they get it…</p>
@@ -58,10 +58,11 @@ export default function OnlineRaceRound({
         variant="primary"
         size="xl"
         fullWidth
+        sound="buzz"
         onClick={onBuzz}
         disabled={amLockedOut || !clipStarted}
       >
-        {amLockedOut ? "🚫 You're out for this song" : '🔔 BUZZ'}
+        {amLockedOut ? <><Icon name="ban" /> You&apos;re out for this song</> : <><Icon name="bell" /> Buzz</>}
       </Button>
 
       {!clipStarted && !amLockedOut && (

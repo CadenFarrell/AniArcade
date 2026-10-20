@@ -1,5 +1,9 @@
+import ResultsLayout, { Splash } from '../../../shared/components/Results';
+import { StartBar } from '../../../shared/components/SetupLayout';
 import { Badge, Button, Card } from '../../../shared/ui';
+import { KANA } from '../../../shared/ui/kanaText';
 import { getCategory } from '../categories';
+import descriptor from '../index';
 
 /**
  * Everyone's round, side by side, at the end of one.
@@ -23,10 +27,16 @@ import { getCategory } from '../categories';
  * on a narrow screen, which doubled the row height for exactly the players who
  * had the most to say; a fixed right-hand column keeps every score in one
  * vertical line, which is what makes it scannable as a scoreboard at all.
+ *
+ * ITS OWN SCREEN, on the results frame every game ends on, rather than a card
+ * inside the session's Screen: the splash goes to the round's top scorer (all
+ * of them, on a tie; nobody, when nobody scored), and the way on is pinned to
+ * the bottom of the viewport. `onBack` is local play's "Quit session", which the
+ * session screen this used to sit inside carried.
  */
 export default function RoundEnd({
   explain, players, roundNumber, totalRounds, isFinalRound, chosen = false,
-  canAdvance, hostName, onNext, onFinish,
+  canAdvance, hostName, onNext, onFinish, onBack, backLabel,
 }) {
   const nameOf = (id) => players.find((p) => p.id === id)?.name ?? 'Someone';
 
@@ -42,9 +52,49 @@ export default function RoundEnd({
     return parts.length ? parts.join(' · ') : null;
   };
 
+  const best = explain.reduce((n, row) => Math.max(n, row.points), 0);
+  const leaders = best > 0
+    ? explain.filter((row) => row.points === best)
+      .map((row) => players.find((p) => p.id === row.playerId) ?? { id: row.playerId, name: nameOf(row.playerId) })
+    : [];
+  const leaderRow = explain.find((row) => best > 0 && row.points === best);
+
   return (
-    <>
-      <Card title={`Round ${roundNumber} of ${totalRounds}`} padding="lg" className="mb-6">
+    <ResultsLayout
+      game={descriptor}
+      title={`Round ${roundNumber} of ${totalRounds}`}
+      players={players}
+      onBack={onBack}
+      backLabel={backLabel}
+      splash={leaders.length > 0 && (
+        <Splash
+          players={leaders}
+          stamp={leaders.length > 1 ? 'Tied' : 'Round winner'}
+          kana={KANA.round}
+          score={`+${best}`}
+        >
+          {/* The clause only for an outright winner: on a tie, one clause under
+              two names would read as theirs jointly. */}
+          {leaders.length === 1 && leaderRow?.category && getCategory(leaderRow.category).label}
+        </Splash>
+      )}
+      bar={(
+        <StartBar
+          width="md"
+          status={canAdvance
+            ? (isFinalRound ? 'That was the last round.' : `${totalRounds - roundNumber} round${totalRounds - roundNumber === 1 ? '' : 's'} to go`)
+            : `Waiting for ${hostName || 'the host'} to move on…`}
+          ready={canAdvance}
+        >
+          {canAdvance && (
+            <Button variant="primary" size="lg" onClick={isFinalRound ? onFinish : onNext}>
+              {isFinalRound ? 'See the final scores' : 'Next round →'}
+            </Button>
+          )}
+        </StartBar>
+      )}
+    >
+      <Card title="Everyone’s round" padding="lg" className="mb-6">
         {explain.map((row) => {
           const line = story(row);
           return (
@@ -54,7 +104,7 @@ export default function RoundEnd({
                 py-3 last:border-0"
             >
               <div className="min-w-0">
-                <p className="truncate font-display text-lg font-extrabold text-white">
+                <p className="truncate font-display text-lg font-extrabold text-fg-strong">
                   {nameOf(row.playerId)}
                 </p>
                 <p className="truncate text-sm text-fg-helper">
@@ -69,9 +119,12 @@ export default function RoundEnd({
               ) : (
                 <Badge tone="neutral">no go</Badge>
               )}
+              {/* A +0 is a result the table reads, not a disabled control, so it
+                  takes the quietest LEGIBLE role — fg-disabled is exempt from
+                  4.5:1 only because WCAG exempts disabled controls. */}
               <span
                 className={`text-right font-display text-lg font-extrabold
-                  ${row.points > 0 ? 'text-pop-amber' : 'text-fg-disabled'}`}
+                  ${row.points > 0 ? 'text-pop-amber' : 'text-fg-subtle'}`}
               >
                 +{row.points}
               </span>
@@ -79,21 +132,6 @@ export default function RoundEnd({
           );
         })}
       </Card>
-
-      {canAdvance ? (
-        <Button
-          variant={isFinalRound ? 'success' : 'primary'}
-          size="lg"
-          fullWidth
-          onClick={isFinalRound ? onFinish : onNext}
-        >
-          {isFinalRound ? '🏁 See the final scores' : 'Next round →'}
-        </Button>
-      ) : (
-        <p className="text-center text-base text-fg-subtle">
-          Waiting for {hostName || 'the host'} to move on…
-        </p>
-      )}
-    </>
+    </ResultsLayout>
   );
 }

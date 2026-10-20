@@ -2,48 +2,71 @@
 
 /* ---------------------------------------------------------------------------
    Fonts — self-hosted so there is no CDN request and no flash of fallback.
-   Both files are variable fonts, so one file per subset covers every weight.
-   latin-ext matters here: romanized anime titles are full of ō / ū / ā.
+   All three were downloaded once from Google Fonts (OFL; see
+   shared/ui/credits.js). The two Latin families are variable, so one file per
+   subset covers every weight. latin-ext matters here: romanized anime titles
+   are full of ō / ū / ā.
+
+   Oswald is the display face because the references are set in heavy
+   condensed caps — a condensed face is what lets a game title run at poster
+   size inside a 140px tile. Archivo is the body face: a grotesk with enough
+   weight range that labels and prose share one family.
+
+   Dela Gothic One is DECORATION ONLY (every use is aria-hidden — see
+   shared/ui/Kana.jsx). The file is not the font, it is a cut of it: Google
+   Fonts' `text=` parameter returned just the katakana block plus the other
+   characters the app uses (べ を 中 選), 6.5 KB instead of several MB.
+   The unicode-range below is that cut's own, and `kanaText.test.js` pins every
+   string the app renders in this face against it, because a missing glyph
+   does not fail — it silently falls back to a system font mid-word.
 --------------------------------------------------------------------------- */
 @font-face {
-  font-family: 'Baloo 2';
+  font-family: 'Oswald';
   font-style: normal;
-  font-weight: 400 800;
+  font-weight: 200 700;
   font-display: swap;
-  src: url('/fonts/baloo2-latin.woff2') format('woff2');
+  src: url('/fonts/oswald-latin.woff2') format('woff2');
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
     U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
     U+2212, U+2215, U+FEFF, U+FFFD;
 }
 @font-face {
-  font-family: 'Baloo 2';
+  font-family: 'Oswald';
   font-style: normal;
-  font-weight: 400 800;
+  font-weight: 200 700;
   font-display: swap;
-  src: url('/fonts/baloo2-latin-ext.woff2') format('woff2');
+  src: url('/fonts/oswald-latin-ext.woff2') format('woff2');
   unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF,
     U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020,
-    U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+    U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
 }
 @font-face {
-  font-family: 'Nunito';
+  font-family: 'Archivo';
   font-style: normal;
-  font-weight: 400 900;
+  font-weight: 100 900;
   font-display: swap;
-  src: url('/fonts/nunito-latin.woff2') format('woff2');
+  src: url('/fonts/archivo-latin.woff2') format('woff2');
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
     U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
     U+2212, U+2215, U+FEFF, U+FFFD;
 }
 @font-face {
-  font-family: 'Nunito';
+  font-family: 'Archivo';
   font-style: normal;
-  font-weight: 400 900;
+  font-weight: 100 900;
   font-display: swap;
-  src: url('/fonts/nunito-latin-ext.woff2') format('woff2');
+  src: url('/fonts/archivo-latin-ext.woff2') format('woff2');
   unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF,
     U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020,
-    U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+    U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Dela Gothic One';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/delagothicone-kana.woff2') format('woff2');
+  unicode-range: U+3078-307A, U+3092, U+3099-309A, U+30A0-30FF, U+4E2D, U+9078;
 }
 
 /* ---------------------------------------------------------------------------
@@ -51,103 +74,132 @@
    --color-pop-pink gives bg-pop-pink / text-pop-pink / border-pop-pink,
    --radius-pop gives rounded-pop, --shadow-pop gives shadow-pop, and so on.
    Restyling the app should mean editing values here, not sweeping components.
+
+   THE LOOK IS A MANGA PAGE: paper, black ink, one red. It replaced a neon
+   arcade cabinet (near-black canvas, glow halos), and the token NAMES survived
+   the swap on purpose — every role below means what it meant before, which is
+   what let ~500 call sites change colour without being edited.
 --------------------------------------------------------------------------- */
 @theme {
-  /* Surfaces. Near-black on purpose: this is a cabinet screen, and neon only
-     reads as EMISSION against something close to off. The previous canvas
-     (#0f0f1a) was a dark navy that made bright fills look like paint. The three
-     steps are deliberately close together (1.07:1 apart) — they separate by
-     glow and hairline, not by luminance, because a big luminance step between
-     surfaces would compete with the accents for attention. */
-  --color-canvas: #05050c;
-  --color-surface: #0f0f1c;
-  --color-surface-2: #191930;
-  --color-ink: #04040a; /* every border and hard shadow */
+  /* Surfaces. Warm off-white rather than #fff: pure white under black ink is a
+     spreadsheet, a tinted sheet is a printed page. The three steps sit 1.12 and
+     1.24:1 apart — further than the old cabinet's 1.07, because on paper there
+     is no glow to separate them; the ink border does most of that work and the
+     tint does the rest. */
+  --color-canvas: #efebe2;
+  --color-surface: #faf8f3;
+  --color-surface-2: #e5e0d4;
+  /* Every border and hard shadow, and every solid "black" fill. 17.36:1 on
+     paper, 13.99 on surface-2. */
+  --color-ink: #141414;
+  /* The text colour that sits ON a solid fill. It exists because the accent
+     contract inverted — see the accent block below. Same value as surface, so
+     a label on a fill reads as the page showing through the ink. */
+  --color-paper: #faf8f3;
 
-  /* Accents. Each has a fixed semantic job — never pick these by vibe at the
-     call site. All seven were re-tuned for the darker ground and every one is
-     verified BOTH ways: legible as small text on the surface, and legible with
-     text-ink on top of it as a solid fill. Both numbers are in the comments,
-     and both must be re-checked if a value here changes. */
-  --color-pop-pink: #ff3d8b; /* primary, guessing    5.69 on surface / 6.13 ink */
-  --color-pop-purple: #b96bff; /* secondary, whose-turn 5.98 / 6.44 */
-  --color-pop-lime: #78f542; /* yes, correct, ready  13.51 / 14.55 */
-  --color-pop-red: #ff5a5a; /* no, wrong, destructive 6.21 / 6.68 */
-  --color-pop-amber: #ffc61a; /* warnings, scores, timer 12.07 / 12.99 */
-  --color-pop-blue: #31b6ff; /* asking a question     8.38 / 9.02 */
+  /* -------------------------------------------------------------------------
+     Accents. Each has a fixed semantic job — never pick these by vibe at the
+     call site. Muted print inks rather than neon: the references are
+     black-and-red, and a role that needs a colour of its own (correct, wrong,
+     whose turn) gets the quietest ink that still says it.
+
+     THE CONTRACT INVERTED WITH THE CANVAS, and it is the one non-obvious part
+     of this block. On the dark cabinet a bright fill carried ink text. On paper
+     no colour can do both jobs the old way: readable as text on paper forces
+     luminance below ~0.15, readable under ink text forces it above ~0.20, and
+     nothing lives in both. Print solves it the way the references do — every
+     solid fill is DARK and carries `text-paper` (black ORDER NOW, white-on-red
+     logo), and the same dark ink reads as text on the page.
+
+     So each value is measured both ways: as text on the WORST surface
+     (surface-2, the darkest) and with text-paper on top of it as a fill. Both
+     must clear 4.5:1, and both numbers must be re-checked together if a value
+     here changes. `pink` keeps its name and its job (primary, guessing) but is
+     now vermilion — the hanko-seal red, and the one brand colour on screen.
+     `red` is crimson, cooler and darker, so the two read as different inks;
+     where wrong and primary meet, a ✓/✗ shape carries the meaning as well.
+  ------------------------------------------------------------------------- */
+  --color-pop-pink: #b4300f; /* primary, guessing, brand  4.73 text / 5.87 fill */
+  --color-pop-purple: #3d4a9c; /* secondary, whose-turn    6.00 / 7.44 */
+  --color-pop-lime: #266b2d; /* yes, correct, ready       4.95 / 6.14 */
+  --color-pop-red: #931229; /* no, wrong, destructive     6.76 / 8.39 */
+  --color-pop-amber: #875a00; /* warnings, scores, timer  4.57 / 5.67 */
+  --color-pop-blue: #1d5d8c; /* asking a question         5.32 / 6.60 */
 
   /* DECORATIVE ONLY — a game's identity colour, with no semantic job. The six
      above were all spoken for by the fourth game: pink, blue and amber name a
      game each, and purple/lime/red mean whose-turn/yes/no everywhere in the app,
      so a game wearing one of those would fight the meaning on its own screens.
      Do not give this one a semantic role later; add another decorative token. */
-  --color-pop-teal: #2ce0cb; /* AniFake             11.43 / 12.30 */
+  --color-pop-teal: #126b66; /* AniFake                   4.80 / 5.96 */
 
   /* -------------------------------------------------------------------------
-     The neutral ramp: white at graded opacity over the canvas. This replaced
+     The neutral ramp: ink at graded opacity over the paper. This replaced
      ~510 hardcoded `white/N` utilities at FIFTEEN opacity steps — drift rather
      than a system, with three treatments for helper text alone.
 
-     Named by ROLE, never by opacity, and that is what let the AA repair land as
-     a value edit when the canvas was finalised rather than a re-classification
-     of 169 call sites.
+     Named by ROLE, never by opacity, and that is what let the switch from a
+     black canvas to a paper one land as a value edit (white-alpha became
+     ink-alpha) rather than a re-classification of 169 call sites. A `white/N`
+     literal could not have followed it: it would have been white-on-paper.
 
-     THERE ARE FOUR TEXT LEVELS AND THAT IS A CEILING, NOT A PREFERENCE. On a
-     near-black ground, 4.5:1 puts a hard floor at ~0.46 alpha, so there is only
-     so much room above it before you reach plain white. The old ramp had six
-     levels and the bottom two were simply illegal — `fg-subtle` (2.69:1) was
-     folded into `fg-subtle` here because the alpha both of them needed to pass
-     was the same number, which means they were never two roles to begin with.
+     THERE ARE FOUR TEXT LEVELS AND THAT IS A CEILING, NOT A PREFERENCE. The
+     4.5:1 floor sits at ~0.62 alpha on surface-2, so there is only so much room
+     above it before you reach solid ink. The old ramp had six levels and the
+     bottom two were simply illegal — they were folded together because the
+     alpha both of them needed to pass was the same number, which means they
+     were never two roles to begin with.
 
      So: do not add a step back. If a shade seems missing, the question is which
      ROLE is missing, and whether it owes 4.5:1 (text), 3.0:1 (icons and UI
-     affordances) or nothing at all (disabled, decorative). Anything dimmer than
-     fg-subtle must not carry text a user has to read.
+     affordances) or nothing at all (disabled, decorative). Anything lighter than
+     fg-subtle must not carry text a user has to read. Ratios are the minimum
+     across canvas / surface / surface-2.
   ------------------------------------------------------------------------- */
-  --color-fg-strong: rgb(255 255 255 / 0.85); /* headings, emphasis  12.67:1 */
-  --color-fg-body: rgb(255 255 255 / 0.68); /* secondary prose        8.43:1 */
-  --color-fg-helper: rgb(255 255 255 / 0.55); /* helper lines         6.01:1 */
-  --color-fg-subtle: rgb(255 255 255 / 0.46); /* the AA floor         4.59:1 */
+  --color-fg-strong: rgb(20 20 20 / 0.92); /* headings, emphasis  11.76:1 */
+  --color-fg-body: rgb(20 20 20 / 0.78); /* secondary prose         7.75:1 */
+  --color-fg-helper: rgb(20 20 20 / 0.69); /* helper lines          5.82:1 */
+  --color-fg-subtle: rgb(20 20 20 / 0.62); /* the AA floor          4.64:1 */
 
   /* Exempt from 4.5:1, each for a different reason — which is the whole point
      of splitting them out rather than letting them ride on fg-subtle. */
-  --color-fg-icon: rgb(255 255 255 / 0.42); /* glyph buttons in 44px hit
-     targets: a UI affordance, so the floor is 3.0:1 and 4.00 clears it */
-  --color-fg-disabled: rgb(255 255 255 / 0.25); /* WCAG exempts disabled */
-  --color-fg-ghost: rgb(255 255 255 / 0.15); /* aria-hidden markers only */
-  --color-hint: rgb(255 255 255 / 0.40); /* input placeholders */
+  --color-fg-icon: rgb(20 20 20 / 0.5); /* glyph buttons in 44px hit
+     targets: a UI affordance, so the floor is 3.0:1 and 3.25 clears it */
+  --color-fg-disabled: rgb(20 20 20 / 0.32); /* WCAG exempts disabled */
+  --color-fg-ghost: rgb(20 20 20 / 0.16); /* aria-hidden markers only */
+  --color-hint: rgb(20 20 20 / 0.52); /* input placeholders  3.45:1 */
 
-  /* Hairlines. Never text, so no contrast floor applies. Brighter than before
-     because a near-black ground swallows a 5% line entirely. */
-  --color-line-soft: rgb(255 255 255 / 0.07);
-  --color-line: rgb(255 255 255 / 0.13);
-  --color-line-strong: rgb(255 255 255 / 0.18);
-  --color-line-loud: rgb(255 255 255 / 0.32);
-  --color-line-hover: rgb(255 255 255 / 0.45);
+  /* Hairlines. Never text, so no contrast floor applies. */
+  --color-line-soft: rgb(20 20 20 / 0.08);
+  --color-line: rgb(20 20 20 / 0.14);
+  --color-line-strong: rgb(20 20 20 / 0.22);
+  --color-line-loud: rgb(20 20 20 / 0.4);
+  --color-line-hover: rgb(20 20 20 / 0.55);
 
-  /* Washes: translucent fills over the canvas — inert rows, bars, badges. */
-  --color-wash-soft: rgb(255 255 255 / 0.06);
-  --color-wash: rgb(255 255 255 / 0.11);
-  --color-wash-strong: rgb(255 255 255 / 0.16);
-  --color-wash-bar: rgb(255 255 255 / 0.26);
-  --color-wash-mid: rgb(255 255 255 / 0.32);
-  --color-wash-bright: rgb(255 255 255 / 0.72);
+  /* Washes: translucent fills over the paper — inert rows, bars, badges.
+     `wash-bright` was the near-white fill of the dark theme and is now the
+     near-black one; anything set on it takes text-paper. */
+  --color-wash-soft: rgb(20 20 20 / 0.04);
+  --color-wash: rgb(20 20 20 / 0.07);
+  --color-wash-strong: rgb(20 20 20 / 0.11);
+  --color-wash-bar: rgb(20 20 20 / 0.18);
+  --color-wash-mid: rgb(20 20 20 / 0.26);
+  --color-wash-bright: rgb(20 20 20 / 0.78);
 
-  /* Scrims. BLACK, not white: these sit behind the floating pills that overlay
-     arbitrary game content, and their job is to darken whatever is underneath
-     so the label stays readable. That job is why they are separate tokens
-     rather than part of the wash scale — a wash tints the canvas, a scrim
-     hides it, and on a lighter canvas one of them has to invert and the other
-     probably does not. Decide that here, once, not in eight components. */
-  --color-scrim: rgb(0 0 0 / 0.55);
-  --color-scrim-strong: rgb(0 0 0 / 0.72);
+  /* Scrims. INK, and they stayed ink through the canvas swap — which is the
+     reason they were always separate from the wash scale. A wash tints the page;
+     a scrim hides whatever is under it so a label on top stays readable, and
+     hiding is darkening on any ground. Text on a scrim is text-paper. */
+  --color-scrim: rgb(20 20 20 / 0.55);
+  --color-scrim-strong: rgb(20 20 20 / 0.72);
 
-  --color-mark: rgb(255 255 255 / 0.72); /* AniWave's dial needle stroke */
-  --color-focus: rgb(255 255 255 / 0.85); /* focus-pop, and its two
+  --color-mark: rgb(20 20 20 / 0.8); /* AniWave's dial needle stroke */
+  --color-focus: rgb(20 20 20 / 0.9); /* focus-pop, and its two
      hand-rolled twins in Field.jsx and NumberInput.jsx */
 
-  --font-display: 'Baloo 2', 'Segoe UI', sans-serif;
-  --font-sans: 'Nunito', 'Segoe UI', sans-serif;
+  --font-display: 'Oswald', 'Arial Narrow', sans-serif;
+  --font-sans: 'Archivo', 'Segoe UI', sans-serif;
+  --font-kana: 'Dela Gothic One', 'Yu Gothic', 'Hiragino Kaku Gothic ProN', sans-serif;
 
   /* -------------------------------------------------------------------------
      Type scale. The SIZES are Tailwind's defaults and deliberately untouched —
@@ -175,11 +227,16 @@
   --text-3xl--line-height: 1.1;
   --text-4xl--line-height: 1.05;
 
-  --radius-pop: 1.25rem;
-  --radius-pop-sm: 0.875rem;
+  /* Nearly square. A manga panel has a ruled edge; the references round their
+     buttons only slightly, and a 20px radius on an ink-bordered block reads as
+     a sticker on a phone case, which is what the old look was. */
+  --radius-pop: 0.375rem;
+  --radius-pop-sm: 0.25rem;
 
-  --shadow-pop: 0 6px 0 0 var(--color-ink);
-  --shadow-pop-sm: 0 4px 0 0 var(--color-ink);
+  /* Hard offset ink shadows — the printed-panel depth, and the space the
+     press-down in btn-pop travels into. */
+  --shadow-pop: 0 4px 0 0 var(--color-ink);
+  --shadow-pop-sm: 0 3px 0 0 var(--color-ink);
 }
 
 /* Must stay inside @layer base. Unlayered rules beat every @layer, so a bare
@@ -196,8 +253,13 @@
   body {
     font-family: var(--font-sans);
     background: var(--color-canvas);
-    color: #ffffff;
+    color: var(--color-fg-strong);
     min-height: 100dvh; /* see Screen.jsx — vh jumps as the mobile URL bar hides */
+    /* No faux bold, anywhere. Every Latin face here is variable and reaches
+       700+, so nothing legitimate needs synthesis — but Dela Gothic One has one
+       weight, and kana inheriting a parent's font-bold would be smeared into a
+       blob by the browser's fake emboldening. */
+    font-synthesis-weight: none;
   }
 
   input, select, textarea {
@@ -206,134 +268,134 @@
 }
 
 /* ---------------------------------------------------------------------------
-   The signature recipes. A "pop" control is a solid block with a thick dark
-   border and a hard offset shadow underneath; hovering lifts it and pressing
-   pushes it down into its own shadow. Kept as utilities so the React
-   primitives in src/shared/ui stay short and the physics live in one place.
+   The signature recipes. A "pop" control is a solid block with a dark border
+   and a hard offset shadow underneath; hovering lifts it and pressing pushes it
+   down into its own shadow. Kept as utilities so the React primitives in
+   src/shared/ui stay short and the physics live in one place.
 
-   THE GLOW IS ADDITIVE TO THE PHYSICS, NOT A REPLACEMENT FOR THEM. The obvious
-   arcade move is to drop the hard shadow and make every control an outlined
-   neon tube, and it is wrong: the ink shadow is what the press-down animation
-   travels INTO, so deleting it leaves a button that dims and brightens but
-   never depresses. The tactility is the part players actually feel. So the
-   shadow stays exactly as it was and a coloured halo is layered behind it.
+   The neon halo that used to ride on top of these (`--glow`) is gone with the
+   cabinet: light needs a dark room, and on paper a coloured blur behind a block
+   reads as a printing fault. The physics stayed exactly as they were — the
+   tactility is the part players actually feel.
 --------------------------------------------------------------------------- */
-/* Note: no border-colour here. On a bright fill the border wants to be ink,
-   but on a dark surface an ink border is invisible against the canvas — so the
-   colour is the caller's choice and only the geometry is shared.
-
-   Same for --glow: the halo has to match the fill, and only the caller knows
-   the fill, so each variant in Button.jsx sets --glow and this only consumes
-   it. It defaults to transparent, so a control that never sets one renders the
-   pre-neon look rather than a black smear. */
+/* No border-colour here: most callers want ink, but a selected or disabled
+   state may want a line token, so the colour is the caller's and only the
+   geometry is shared. */
 @utility btn-pop {
-  @apply font-display font-extrabold tracking-wide rounded-pop
+  @apply font-display font-bold tracking-wide rounded-pop
          border-2 transition-transform duration-100
          disabled:cursor-not-allowed;
-  box-shadow: 0 6px 0 0 var(--color-ink), 0 0 18px -4px var(--glow, transparent);
+  box-shadow: 0 4px 0 0 var(--color-ink);
 
-  /* Lifting pulls the block away from the surface, so the halo spreads. */
   &:hover:not(:disabled) {
     @apply -translate-y-0.5;
-    box-shadow: 0 8px 0 0 var(--color-ink), 0 0 30px -2px var(--glow, transparent);
+    box-shadow: 0 6px 0 0 var(--color-ink);
   }
-  /* Travels the full shadow depth so the block visibly bottoms out — and the
-     halo tightens, which is what selling the contact looks like. */
+  /* Travels the full shadow depth so the block visibly bottoms out. */
   &:active:not(:disabled) {
-    @apply translate-y-1.5;
-    box-shadow: 0 0 0 0 var(--color-ink), 0 0 10px -3px var(--glow, transparent);
-  }
-  /* A disabled block is unlit. Without this the halo survives the grey fill and
-     advertises a control that cannot be pressed. */
-  &:disabled {
-    --glow: transparent;
+    @apply translate-y-1;
+    box-shadow: 0 0 0 0 var(--color-ink);
   }
 }
 
-/* Dark-on-dark, so the edge is a light hairline and the ink shadow underneath
-   supplies the depth. Using border-ink here would erase the card's outline. */
+/* A printed panel: paper, an ink rule, a hard shadow. The border is INK now —
+   on the dark cabinet an ink edge vanished into the canvas, so cards took a
+   light hairline; on paper the ruled edge is the whole manga-panel look. */
 @utility card-pop {
-  @apply bg-surface border-2 border-line-strong rounded-pop shadow-pop-sm;
+  @apply bg-surface border-2 border-ink rounded-pop shadow-pop-sm;
 }
 
-/* Stickers always sit on a bright fill, so ink is right for them. */
 @utility sticker {
-  @apply font-display font-extrabold uppercase tracking-wider
+  @apply font-display font-bold uppercase tracking-wider
          border-2 border-ink rounded-pop shadow-pop;
-  box-shadow: 0 6px 0 0 var(--color-ink), 0 0 26px -4px var(--glow, transparent);
 }
 
-/* Lit type — the marquee, game wordmarks, big score numerals. Deliberately a
-   text-shadow rather than a filter: `filter: drop-shadow` forces the element
-   onto its own compositing layer, which on a long list of glowing labels is a
-   measurable scroll cost for an effect nobody can point at. */
-@utility neon-text {
-  text-shadow: 0 0 18px var(--glow, transparent), 0 0 42px var(--glow, transparent);
+/* ---------------------------------------------------------------------------
+   Print textures. Every one is STATIC — no animation, so nothing for
+   prefers-reduced-motion to switch off and no full-screen compositing cost —
+   and every one is a gradient or an inline SVG, so none of them is a request
+   or can 404. Colour comes from a custom property with an ink default, the
+   same "the caller knows the colour" rule the old --glow followed.
+--------------------------------------------------------------------------- */
+
+/* The sheet's own fibre. Multiplied, so it darkens the page and never lightens
+   ink — grain that brightens a black line reads as dust on the screen. */
+@utility paper-grain {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.08 0 0 0 0 0.08 0 0 0 0 0.08 0 0 0 0.9 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+  mix-blend-mode: multiply;
 }
 
-/* Glow for SVG geometry. `box-shadow` follows the border box and an SVG <path>
-   has none, so a halo on a needle or an arc has to come from a filter — the one
-   `neon-text` deliberately avoids.
-
-   The reason that is not a contradiction: drop-shadow's cost is that it forces
-   the element onto its own compositing layer, which is priced per element.
-   `neon-text` would land on every glowing label in a long scrolling list, where
-   the count is unbounded; this lands on a fixed handful of shapes inside one
-   dial that does not scroll. Do not reach for it in a list. */
-@utility glow-svg {
-  filter: drop-shadow(0 0 5px var(--glow, transparent));
+/* The registration crosses scattered over the WEEBOO reference's page. */
+@utility plus-grid {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='56'%3E%3Cpath d='M28 23v10M23 28h10' stroke='%23141414' stroke-width='1'/%3E%3C/svg%3E");
+  background-size: 56px 56px;
 }
 
-@utility glow-svg-lg {
-  filter: drop-shadow(0 0 10px var(--glow, transparent));
+/* Screentone. `--tone` is the dot colour, `--tone-size` the cell. The dot
+   radius is fixed in px so the tone stays a TONE when the cell grows, rather
+   than becoming polka dots. */
+@utility halftone {
+  background-image: radial-gradient(
+    circle at center,
+    var(--tone, var(--color-ink)) 0.9px,
+    transparent 1.4px
+  );
+  background-size: var(--tone-size, 7px) var(--tone-size, 7px);
 }
 
-/* The cabinet screen: a vignette that darkens the corners and a fixed grain.
-   Both are STATIC. The brief allowed scanlines and flicker and they were turned
-   down on purpose — a full-screen animated overlay is a permanent compositing
-   cost on every screen in the app, and thin repeating lines alias badly at
-   fractional device pixel ratios, which is most laptops. A vignette plus grain
-   reads as a CRT with no animation to disable and nothing to shimmer.
-
-   The grain is an inline SVG turbulence rather than an image file: it is a few
-   hundred bytes, needs no request, and cannot 404. */
-@utility crt-vignette {
-  background: radial-gradient(ellipse at 50% 40%, transparent 40%, rgb(0 0 0 / 0.65) 100%);
+/* Manga speed lines radiating from the centre. A conic gradient, so it costs
+   one paint at any size; the radial mask empties the middle, which is where
+   the subject (an icon, a title) sits. */
+@utility speed-lines {
+  background-image: repeating-conic-gradient(
+    from 0deg at 50% 50%,
+    var(--lines, var(--color-ink)) 0deg 0.9deg,
+    transparent 0.9deg 6deg
+  );
+  mask-image: radial-gradient(circle at center, transparent 32%, #000 72%);
 }
 
-@utility crt-grain {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
+/* The diagonal hatch from the references' "2020 ////" bar — also the stamp for
+   a game that is not out yet. */
+@utility hatch {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    var(--hatch, var(--color-ink)) 0 3px,
+    transparent 3px 7px
+  );
 }
 
-/* A form control is a dark block on a dark ground, and on this canvas the ink
-   border it carries is very nearly the canvas itself — so "which field am I in?"
-   cannot be answered by a border-colour change, which is the exact bug
-   `focus-pop` was added to fix at the app level.
+/* A brush-cut parallelogram in the brand ink — the red stroke under a title. */
+@utility slash {
+  background: var(--slash, var(--color-pop-pink));
+  clip-path: polygon(6% 0, 100% 0, 94% 100%, 0 100%);
+}
+
+/* A form control is a paper block with an ink border, so "which field am I
+   in?" cannot be answered by the border alone — every field already has one.
 
    This does NOT replace focus-pop and must never be used instead of it. The
-   white ring is the accessible signal and is what a high-contrast or
-   forced-colours user actually gets; this is the cabinet's own signal layered
+   ink ring is the accessible signal and is what a high-contrast or
+   forced-colours user actually gets; this is the page's own signal layered
    underneath, and on its own it would be a colour-only affordance.
 
-   Pink because focus is the primary interaction and pink is the primary accent.
-   Deliberately on `:focus`, not `:focus-visible`: a text field that lights up
-   only for keyboard users leaves every pointer user looking at an unlit form. */
+   Vermilion because focus is the primary interaction and pink is the primary
+   accent. Deliberately on `:focus`, not `:focus-visible`: a text field that
+   lights up only for keyboard users leaves every pointer user on an unlit form. */
 @utility field-lit {
-  --glow: var(--color-pop-pink);
   transition: border-color 120ms ease, box-shadow 120ms ease;
 
   &:focus,
   &:focus-within {
     border-color: var(--color-pop-pink);
-    box-shadow: 0 0 22px -6px var(--glow);
+    box-shadow: 0 3px 0 0 var(--color-pop-pink);
   }
 }
 
-/* Every interactive element gets this. The old screens set outline-none on
-   inputs and signalled focus with a border-color change alone, which is
-   invisible on the dark canvas — this is the fix, applied centrally. */
+/* Every interactive element gets this. An ink ring with a paper gap, so it
+   reads on a paper card and on a solid ink button alike. */
 @utility focus-pop {
-  @apply outline-none focus-visible:ring-4 focus-visible:ring-focus
+  @apply outline-none focus-visible:ring-3 focus-visible:ring-focus
          focus-visible:ring-offset-2 focus-visible:ring-offset-canvas;
 }
 
@@ -367,16 +429,57 @@
   }
 }
 
-/* Slow drifting colour blobs behind the hub. Purely decorative. */
-@keyframes blob-drift {
-  0%, 100% { transform: translate(0, 0) scale(1); }
-  33% { transform: translate(6%, -8%) scale(1.12); }
-  66% { transform: translate(-5%, 6%) scale(0.94); }
+/* ---------------------------------------------------------------------------
+   Motion. Every animation below runs FROM a start state, so removing it under
+   reduced motion leaves the finished picture rather than a blank one.
+--------------------------------------------------------------------------- */
+
+/* Every screen arrives like a turned page: a diagonal reveal sweeping left to
+   right. It lives on Screen's root, and every view in every game renders its
+   own Screen, so each view change animates with no router involved.
+
+   clip-path and opacity only, NEVER transform. A transformed ancestor becomes
+   the containing block for `position: fixed` descendants, so a modal or banner
+   mounted inside a Screen during the animation would be positioned against the
+   Screen and jump when it ended. clip-path changes what paints, not where.
+   The last frame covers the whole box, so dropping the clip at the end is
+   invisible. */
+@keyframes screen-in {
+  from {
+    opacity: 0.35;
+    clip-path: polygon(0 0, 0 0, -25% 100%, -25% 100%);
+  }
+  to {
+    opacity: 1;
+    clip-path: polygon(0 0, 125% 0, 100% 100%, -25% 100%);
+  }
 }
 
-@utility blob {
-  @apply pointer-events-none absolute rounded-full blur-3xl opacity-25;
-  animation: blob-drift 24s ease-in-out infinite;
+@utility screen-in {
+  animation: screen-in 280ms cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
+}
+
+/* The launch wipe (hub/PanelWipe.jsx): an ink slab with a red edge crosses the
+   screen once, and the view swaps underneath it at the midpoint. A transform
+   is fine HERE — the overlay is its own fixed element with no descendants that
+   position themselves. */
+@keyframes panel-wipe {
+  from { transform: translateX(-120%) skewX(-12deg); }
+  to { transform: translateX(120%) skewX(-12deg); }
+}
+
+@utility panel-wipe {
+  animation: panel-wipe var(--wipe-ms, 520ms) cubic-bezier(0.7, 0, 0.3, 1) forwards;
+}
+
+/* PRESS START. A hard two-step blink, the way an attract screen does it — a
+   smooth fade reads as loading. */
+@keyframes attract-blink {
+  50% { opacity: 0.25; }
+}
+
+@utility attract-blink {
+  animation: attract-blink 1.1s steps(1, end) infinite;
 }
 
 /* AniWave's reveal, landing one piece at a time: the target bands settle, then
@@ -407,7 +510,64 @@
   animation: dial-marker-in 380ms cubic-bezier(0.2, 0.9, 0.3, 1.5) backwards;
 }
 
-/* Nothing above should move for anyone who has asked the OS to stop it. */
+/* The results splash's hanko stamp (shared/components/Results.jsx), slammed
+   onto the page as it turns. A FROM-state like the dial's: no `to`, so the end
+   state is the element's own — its -rotate-6, which Tailwind v4 compiles to the
+   separate `rotate` property, so this scale composes with the tilt rather than
+   erasing it. A transform is fine here: the stamp has no descendants that
+   position themselves.
+
+   Scale only, NO opacity and no delay. The first version faded in a beat late,
+   and the playtest's axe pass sampled it mid-fade at 1.3–3.9:1 on every results
+   screen — a stamp that is legible only once it has finished landing. */
+@keyframes stamp-in {
+  from { transform: scale(1.7); }
+}
+
+@utility stamp-in {
+  animation: stamp-in 220ms cubic-bezier(0.3, 0, 0.6, 1) backwards;
+}
+
+/* The result impact frame (shared/components/ResultImpact.jsx): the ✓/✗ block
+   slams in from oversize, the speed lines burst out behind it. FROM-states, so
+   under reduced motion the frame simply shows, still, for its time on screen.
+   A transform is fine: the frame is its own fixed overlay with nothing inside
+   that positions itself. Scale and no fade on the block, for stamp-in's
+   reason — axe samples a fading block mid-fade. */
+@keyframes impact-in {
+  from { transform: scale(2.2); }
+}
+
+@keyframes impact-lines {
+  from { opacity: 0; transform: scale(0.6); }
+}
+
+@utility impact-in {
+  animation: impact-in 180ms cubic-bezier(0.3, 0, 0.6, 1) backwards;
+}
+
+@utility impact-lines {
+  animation: impact-lines 220ms ease-out backwards;
+}
+
+/* AniTune's clip deck (games/anitune/components/ClipDeck.jsx): equaliser bars
+   bouncing from their foot while the song plays. Infinite, so — unlike the
+   from-state animations above — reduced motion has to switch it off outright,
+   and each bar then stands at its own height as a still waveform. Paused (a
+   held race clip, a finished one) freezes them mid-bounce via play-state. */
+@keyframes eq-bar {
+  0%, 100% { transform: scaleY(0.35); }
+  50% { transform: scaleY(1); }
+}
+
+@utility eq-bar {
+  transform-origin: bottom;
+  animation: eq-bar 900ms ease-in-out infinite;
+}
+
+/* Nothing above should move for anyone who has asked the OS to stop it. The
+   wipe is also skipped in JS (useWipe swaps immediately), so this rule is the
+   belt to that pair of braces. */
 @media (prefers-reduced-motion: reduce) {
   .btn-pop {
     transition: none;
@@ -416,11 +576,15 @@
   .btn-pop:active:not(:disabled) {
     transform: none;
   }
-  .blob {
-    animation: none;
-  }
+  .screen-in,
+  .panel-wipe,
+  .attract-blink,
   .dial-band-in,
-  .dial-marker-in {
+  .dial-marker-in,
+  .stamp-in,
+  .impact-in,
+  .impact-lines,
+  .eq-bar {
     animation: none;
   }
   .blurb-overlay {

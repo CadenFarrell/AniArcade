@@ -34,13 +34,13 @@ export const DEFAULT_PREFS = {
 export const FORMATS = [
   {
     id: BOARD,
-    icon: '🟥',
+    icon: 'grid', // a name from shared/ui/icons.js
     label: 'Board',
     blurb: 'Pick from a grid of categories. Harder clues are worth more.',
   },
   {
     id: QUIZ,
-    icon: '⚡',
+    icon: 'list',
     label: 'Quick quiz',
     blurb: 'A straight run of questions, easiest first.',
   },

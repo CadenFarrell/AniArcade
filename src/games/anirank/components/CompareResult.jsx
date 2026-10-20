@@ -51,7 +51,7 @@ export default function CompareResult({ result, ownerA, ownerB, byId }) {
         </div>
       </Card>
 
-      <Card title="🔥 Biggest disagreements" padding="lg">
+      <Card title="Biggest disagreements" padding="lg">
         {result.clashes.length === 0 ? (
           <p className="text-base text-fg-body">
             Nothing is out of order between these two — every pair agrees.
@@ -79,7 +79,7 @@ export default function CompareResult({ result, ownerA, ownerB, byId }) {
                         className="h-10 w-10 flex-shrink-0 rounded-sm border border-ink object-cover"
                       />
                     )}
-                    <span className="min-w-0 flex-1 truncate font-display text-base font-extrabold text-white">
+                    <span className="min-w-0 flex-1 truncate font-display text-base font-extrabold text-fg-strong">
                       {card?.title ?? clash.id}
                     </span>
                     {/* A card can carry conflicts while sitting in the SAME

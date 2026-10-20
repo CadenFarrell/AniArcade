@@ -1,7 +1,10 @@
 import { isRace, scoreAnswer, answerElapsedMs } from '../rules';
 import { themeAndYear } from '../utils/labels';
 import { formatPoints, formatSeconds } from '../../../shared/utils/deadline';
-import { Avatar, Badge, Button, Card, CardRow } from '../../../shared/ui';
+import { Avatar, Badge, Button, Card, CardRow, Icon } from '../../../shared/ui';
+import Lives from './Lives';
+import { useSoundCue } from '../../../shared/hooks/useSoundCue';
+import ResultImpact from '../../../shared/components/ResultImpact';
 
 // The answer card plus the round leaderboard for this question.
 //
@@ -19,10 +22,24 @@ function nameList(names) {
 
 export default function QuestionReveal({
   question, mode, players, answers, windowMs = null, lives = null, onNext, nextLabel,
+  // Online only: whose phone this is, so the sound is that player's own result.
+  myId = null,
 }) {
   const race = isRace(mode);
   const scorers = players.filter((p) => answers[p.id]?.correct);
   const winner = race ? scorers[0] : null;
+
+  // The reveal's sound, once as it appears. Online it is MY result — right,
+  // wrong, or (a race I never buzzed in) just the reveal; on the one local
+  // device it is the table's: anybody right is a cheer, nobody is a miss.
+  const mine = myId ? answers[myId] : undefined;
+  const cue = myId
+    ? (mine?.correct ? 'correct' : mine ? 'wrong' : 'reveal')
+    : (scorers.length ? 'correct' : 'wrong');
+  // Right or wrong lands as the impact frame (which plays its own sound); the
+  // plain reveal — a race I never buzzed in — is a sound only.
+  const impact = cue === 'reveal' ? null : cue;
+  useSoundCue(impact ? null : cue, question.id);
 
   // Fastest correct answer, so every other row can show how far behind it was.
   // Only correct answers race each other — being quickly wrong is not a result.
@@ -61,7 +78,10 @@ export default function QuestionReveal({
 
   return (
     <div className="mt-6 text-center">
-      <div className="mb-3 text-5xl">{scorers.length ? '🎉' : '😶'}</div>
+      <ResultImpact result={impact} eventKey={question.id} />
+      <div className={`mb-3 text-5xl ${scorers.length ? 'text-pop-pink' : 'text-pop-red'}`}>
+        <Icon name={scorers.length ? 'burst' : 'cross'} />
+      </div>
       <p
         className={`mb-4 font-display text-2xl font-extrabold ${
           scorers.length ? 'text-pop-lime' : 'text-fg-body'
@@ -80,14 +100,14 @@ export default function QuestionReveal({
             <Avatar src={question.coverImageUrl} alt="" size="lg" className="flex-shrink-0" />
           )}
           <div className="min-w-0 flex-1">
-            <p className="font-display text-2xl font-extrabold text-white">{question.animeTitle}</p>
+            <p className="font-display text-2xl font-extrabold text-fg-strong">{question.animeTitle}</p>
             {question.displayTitle !== question.animeTitle && (
               <p className="text-sm text-fg-subtle">{question.displayTitle}</p>
             )}
             <p className="mt-2 text-fg-strong">{themeAndYear(question)}</p>
             {question.songTitle && (
               <p className="mt-1 font-display font-extrabold text-pop-blue">
-                🎵 {question.songTitle}
+                {question.songTitle}
               </p>
             )}
             {/* The performer belongs here: "oh, THAT'S who sings this" is half
@@ -124,13 +144,15 @@ export default function QuestionReveal({
       <Card padding="sm" className="mb-5">
         {rows.map(({ player: p, answer, ms, points }) => (
           <CardRow key={p.id} className="text-left">
-            <span className="w-6 flex-shrink-0 text-lg">{answer?.correct ? '✅' : '❌'}</span>
+            <span className={`w-6 flex-shrink-0 text-lg ${answer?.correct ? 'text-pop-lime' : 'text-pop-red'}`}>
+              <Icon name={answer?.correct ? 'check' : 'cross'} label={answer?.correct ? 'Right' : 'Wrong'} />
+            </span>
             <span className="min-w-0 flex-1">
-              <span className="block truncate font-display font-extrabold text-white">
+              <span className="block truncate font-display font-extrabold text-fg-strong">
                 {p.name}
                 {lives && (
                   <span className="ml-2 align-middle text-sm text-pop-red">
-                    {'♥'.repeat(Math.max(0, lives[p.id] ?? 0)) || '💀'}
+                    <Lives count={lives[p.id]} />
                   </span>
                 )}
               </span>

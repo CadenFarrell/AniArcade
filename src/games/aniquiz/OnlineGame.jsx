@@ -12,8 +12,11 @@ import Scoreboard from './components/Scoreboard';
 import WagerEntry from './components/WagerEntry';
 import QuizResults from './components/QuizResults';
 import { categoryFor, nextLabel, stakeLabelFor } from './roundText';
-import WaitingScreen from '../aniguess/components/WaitingScreen';
-import { Backdrop, Banner, Button, Card, HubButton, Screen, TimerBar } from '../../shared/ui';
+import WaitingScreen from '../../shared/components/WaitingScreen';
+import RoomShell from '../../shared/components/RoomShell';
+import { useSoundCue } from '../../shared/hooks/useSoundCue';
+import { Backdrop, Button, Card, HubButton, Screen, TimerBar } from '../../shared/ui';
+import WagerBanner from './components/WagerBanner';
 
 // The online view-router. Same shell as every other game's: the room code and
 // a way out pinned to the corners, connection problems in a banner, and
@@ -26,6 +29,16 @@ export default function OnlineGame({ onBack, onExit }) {
   const room = useQuizRoom();
   const pack = useFactPack();
 
+  // My pick coming round on the board, once per pick: the count of cells
+  // already opened moves on with every clue, so it names this pick.
+  const g = room.view === 'lobby' ? null : room.game ?? null;
+  useSoundCue(
+    'turn',
+    g?.phase === 'board' && g.pickerId === room.myPlayerId && g.order?.length > 1
+      ? Object.keys(g.used ?? {}).length
+      : null,
+  );
+
   if (!room.roomCode) {
     return (
       <>
@@ -35,53 +48,16 @@ export default function OnlineGame({ onBack, onExit }) {
     );
   }
 
-  const handleLeave = () => {
-    if (!window.confirm('Leave this room? You can rejoin with the same name and room code.')) return;
-    room.leaveRoom();
-  };
-  const handleExitToHub = () => {
-    room.leaveRoom();
-    onExit();
-  };
 
-  const shell = (children) => (
-    <div className="relative">
-      <HubButton
-        onClick={handleExitToHub}
-        confirm="Leave this room and return to the hub? You can rejoin with the same name and room code."
-      />
-      <div className="fixed top-3 right-3 z-40 flex items-center gap-2">
-        <span className="hidden font-display text-xs tracking-widest text-fg-subtle sm:inline">{room.roomCode}</span>
-        <button
-          type="button"
-          onClick={handleLeave}
-          className="focus-pop rounded-pop-sm bg-scrim px-3 py-1.5 font-display text-sm font-bold
-            text-fg-body backdrop-blur-sm transition-colors hover:bg-scrim-strong hover:text-white"
-        >
-          Leave
-        </button>
-      </div>
-      <div className="fixed top-3 left-1/2 z-40 flex w-[calc(100%-1.5rem)] max-w-md -translate-x-1/2 flex-col gap-2">
-        {room.syncError && (
-          <Banner tone="danger" onDismiss={room.dismissSyncError} className="bg-canvas/95 backdrop-blur-sm">
-            ⚠️ {room.syncError}
-          </Banner>
-        )}
-        {room.dropping.map(({ player, remainingMs }) => (
-          <Banner key={player.id} tone="warning" className="bg-canvas/95 backdrop-blur-sm">
-            🔌 {player.name} disconnected — waiting {Math.ceil(remainingMs / 1000)}s…
-          </Banner>
-        ))}
-      </div>
-      {children}
-    </div>
-  );
+  // Every in-room screen goes through RoomShell: the way out, the room code and
+  // Leave in the top bar, and the connection banners.
+  const shell = (children, opts) => <RoomShell room={room} onExit={onExit} {...opts}>{children}</RoomShell>;
 
-  if (!room.view) return shell(<WaitingScreen emoji="🌐" title="Loading room…" />);
-  if (room.view === 'lobby') return shell(<OnlineLobby room={room} pack={pack} />);
+  if (!room.view) return shell(<WaitingScreen title="Loading room…" />);
+  if (room.view === 'lobby') return shell(<OnlineLobby room={room} pack={pack} />, { codeInPage: true });
 
   const { game, deal } = room;
-  if (!game || !deal) return shell(<WaitingScreen emoji="🧠" title="Loading…" />);
+  if (!game || !deal) return shell(<WaitingScreen title="Loading…" />);
 
   // Seated players only — someone who joined the room but not this game has no
   // score and no seat in the rotation.
@@ -113,7 +89,7 @@ export default function OnlineGame({ onBack, onExit }) {
 
   const waiting = (names) => (
     <Card padding="lg" className="text-center">
-      <p className="mb-1 font-display text-xl font-extrabold text-white">🔒 Locked in</p>
+      <p className="mb-1 font-display text-xl font-extrabold text-fg-strong">Locked in</p>
       {names.length > 0 && <p className="text-fg-helper">Waiting for {names.join(', ')}…</p>}
     </Card>
   );
@@ -123,7 +99,7 @@ export default function OnlineGame({ onBack, onExit }) {
     const mine = game.pickerId === me;
     body = (
       <>
-        <h2 className="mb-4 text-center font-display text-2xl font-extrabold text-white">
+        <h2 className="mb-4 text-center font-display text-2xl font-bold uppercase tracking-wide text-fg-strong sm:text-3xl">
           {mine ? 'Your pick — choose a clue' : `${nameOf(game.pickerId)} is picking…`}
         </h2>
         <Board deal={deal} game={game} canPick={mine} onPick={room.pick} />
@@ -134,15 +110,10 @@ export default function OnlineGame({ onBack, onExit }) {
     const placed = game.wagers?.[me] != null;
     body = (
       <>
-        <div className="mb-6 text-center">
-          <p className="font-display text-4xl font-extrabold text-pop-amber">
-            {finalRound ? '🏁 Final round' : '💥 Daily Double!'}
-          </p>
-          {category && <p className="mt-2 text-lg text-fg-body">Category: <span className="font-bold text-white">{category}</span></p>}
-        </div>
+        <WagerBanner finalRound={finalRound} category={category} />
         {iMustAct && !placed && (
           <Card padding="lg">
-            <p className="mb-4 text-center font-display text-xl font-extrabold text-white">Your wager</p>
+            <p className="mb-4 text-center font-display text-xl font-extrabold text-fg-strong">Your wager</p>
             <WagerEntry key={clueKey} limit={wagerLimit(game, me)} onWager={room.wager} />
           </Card>
         )}
@@ -186,7 +157,7 @@ export default function OnlineGame({ onBack, onExit }) {
     body = (
       <>
         <ClueCard clue={clue} category={category} stakeLabel={stakeLabelFor(game, deal)} className="mb-6" />
-        <ClueReveal clue={clue} players={seated} answers={game.answers} required={required}>
+        <ClueReveal clue={clue} players={seated} answers={game.answers} required={required} myId={me}>
           <Button variant="primary" size="lg" fullWidth onClick={room.next}>
             {nextLabel(game, deal)}
           </Button>

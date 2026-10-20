@@ -5,6 +5,7 @@ import HubScreen from './hub/HubScreen.jsx'
 import ErrorBoundary from './shared/components/ErrorBoundary.jsx'
 import ProfileProvider from './shared/context/ProfileProvider.jsx'
 import HelpDetailProvider from './shared/context/HelpDetailProvider.jsx'
+import SoundProvider from './shared/context/SoundProvider.jsx'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
@@ -16,7 +17,9 @@ createRoot(document.getElementById('root')).render(
             their long-form reasoning is one arcade-wide preference, so every
             game's setup screen and online lobby has to read the same copy of it. */}
         <HelpDetailProvider>
-          <HubScreen />
+          <SoundProvider>
+            <HubScreen />
+          </SoundProvider>
         </HelpDetailProvider>
       </ProfileProvider>
     </ErrorBoundary>

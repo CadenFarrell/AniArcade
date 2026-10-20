@@ -10,8 +10,13 @@ import OnlineRaceRound from './components/OnlineRaceRound';
 import OnlineSimultaneousRound from './components/OnlineSimultaneousRound';
 import QuestionReveal from './components/QuestionReveal';
 import AniTuneResults from './components/AniTuneResults';
-import WaitingScreen from '../aniguess/components/WaitingScreen';
-import { Backdrop, Badge, Banner, GhostButton, HubButton, Screen, TimerBar } from '../../shared/ui';
+import WaitingScreen from '../../shared/components/WaitingScreen';
+import RoomShell from '../../shared/components/RoomShell';
+import { Backdrop, Badge, GhostButton, HubButton, Icon, Screen, TimerBar } from '../../shared/ui';
+import Lives from './components/Lives';
+import { useSoundCue } from '../../shared/hooks/useSoundCue';
+import PlayerRow from '../../shared/components/PlayerRow';
+import RoundHeader from '../../shared/components/RoundHeader';
 
 // The online view-router — the Firebase-backed counterpart to AniTuneRound's local
 // orchestration. Modelled on src/games/aniguess/OnlineGame.jsx: a shell() wraps
@@ -68,6 +73,14 @@ export default function OnlineGame({ onBack, onExit }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [room.view, room.game, room.allReady]);
 
+  // Race mode's two table events. Somebody else buzzing rings on every phone,
+  // the way a quiz-show bell is heard by the whole studio — the buzzer's own
+  // phone rang on the press already. Being locked out after a wrong answer is
+  // a result of my own, so only my phone hears it.
+  const g = room.view === 'round' ? room.game : null;
+  useSoundCue('buzz', g?.buzzedBy && g.buzzedBy !== room.myPlayerId ? `${g.index}:${g.buzzedBy}` : null);
+  useSoundCue('wrong', g?.lockedOut?.includes(room.myPlayerId) ? `${g.index}:out` : null);
+
   if (!room.roomCode) {
     return (
       <>
@@ -82,61 +95,18 @@ export default function OnlineGame({ onBack, onExit }) {
     );
   }
 
-  const handleLeave = () => {
-    if (!window.confirm('Leave this room? You can rejoin with the same name and room code.')) return;
-    room.leaveRoom();
-  };
 
-  const handleExitToHub = () => {
-    room.leaveRoom();
-    onExit();
-  };
 
-  // Wraps every in-room screen so the way out and connection problems are always
-  // reachable, whatever phase the game is in.
-  const shell = (children) => (
-    <div className="relative">
-      <HubButton
-        onClick={handleExitToHub}
-        confirm="Leave this room and return to the hub? You can rejoin with the same name and room code."
-      />
-      <div className="fixed top-3 right-3 z-40 flex items-center gap-2">
-        <span className="hidden font-display text-xs tracking-widest text-fg-subtle sm:inline">
-          {room.roomCode}
-        </span>
-        <button
-          onClick={handleLeave}
-          className="focus-pop rounded-pop-sm bg-scrim px-3 py-1.5 font-display text-sm font-bold
-            text-fg-body backdrop-blur-sm transition-colors hover:bg-scrim-strong hover:text-white"
-        >
-          Leave
-        </button>
-      </div>
-      <div className="fixed top-3 left-1/2 z-40 flex w-[calc(100%-1.5rem)] max-w-md
-        -translate-x-1/2 flex-col gap-2">
-        {room.syncError && (
-          <Banner tone="danger" onDismiss={room.dismissSyncError} className="bg-canvas/95 backdrop-blur-sm">
-            ⚠️ {room.syncError}
-          </Banner>
-        )}
-        {/* Says out loud why the round has paused, and for how much longer, so a
-            dropped player doesn't just look like a frozen game. */}
-        {room.dropping.map(({ player, remainingMs }) => (
-          <Banner key={player.id} tone="warning" className="bg-canvas/95 backdrop-blur-sm">
-            🔌 {player.name} disconnected — waiting {Math.ceil(remainingMs / 1000)}s…
-          </Banner>
-        ))}
-      </div>
-      {children}
-    </div>
-  );
+  // Every in-room screen goes through RoomShell: the way out, the room code and
+  // Leave in the top bar, and the connection banners.
+  const shell = (children, opts) => <RoomShell room={room} onExit={onExit} {...opts}>{children}</RoomShell>;
 
   if (!room.view) {
-    return shell(<WaitingScreen emoji="🌐" title="Loading room…" />);
+    return shell(<WaitingScreen title="Loading room…" />);
   }
 
   if (room.view === 'lobby') {
-    return shell(<OnlineLobby room={room} />);
+    return shell(<OnlineLobby room={room} />, { codeInPage: true });
   }
 
   if (room.view === 'preparing') {
@@ -145,8 +115,8 @@ export default function OnlineGame({ onBack, onExit }) {
       <>
         <Backdrop />
         <Screen center className="text-center">
-          <div className="mb-5 text-7xl">🎧</div>
-          <h2 className="mb-3 font-display text-3xl font-extrabold text-white">
+          <div className="mb-5 text-7xl text-pop-blue"><Icon name="headphones" /></div>
+          <h2 className="mb-3 font-display text-3xl font-extrabold text-fg-strong">
             {room.isPreparing ? 'Finding songs…' : 'Host is finding songs…'}
           </h2>
           {room.isPreparing && p ? (
@@ -172,7 +142,7 @@ export default function OnlineGame({ onBack, onExit }) {
   if (room.view === 'round' && room.game && room.round) {
     const { game, round } = room;
     const question = round[game.index];
-    if (!question) return shell(<WaitingScreen emoji="🎵" title="Loading clip…" />);
+    if (!question) return shell(<WaitingScreen title="Loading clip…" />);
 
     const revealed = game.phase === 'revealed';
     const race = isRace(game.mode);
@@ -191,36 +161,30 @@ export default function OnlineGame({ onBack, onExit }) {
       <>
         <Backdrop />
         <Screen width="md">
-          <div className="mb-6 flex flex-wrap justify-center gap-2">
-            {ranked.map((p) => {
-              // Departed players keep their frozen score on the board, dimmed,
-              // so the room can still see how the match stood when they went.
-              const gone = room.departedIds.includes(p.id);
-              const out = lastManStanding && isEliminated(game, p.id);
-              return (
-                <Badge
-                  key={p.id}
-                  tone={out ? 'red' : p.id === game.buzzedBy ? 'purple' : 'neutral'}
-                  className={gone || out ? 'opacity-40' : ''}
-                >
-                  {p.name}{p.id === room.myPlayerId ? ' (you)' : ''} {formatPoints(game.scores[p.id] || 0)}
-                  {lastManStanding && (
-                    <span className="ml-1">
-                      {out ? '💀' : '♥'.repeat(Math.max(0, game.lives?.[p.id] ?? 0))}
-                    </span>
-                  )}
-                  {gone && ' · left'}
-                </Badge>
-              );
-            })}
-          </div>
+          {/* The live leaderboard as the row of faces. The buzzer is framed under
+              NOW; departed players keep their frozen score with their face
+              dimmed, so the room can still see how the match stood when they
+              went, and so do players Lives has knocked out. */}
+          <PlayerRow
+            players={ranked}
+            activeId={game.buzzedBy ?? null}
+            youId={room.myPlayerId}
+            label="Scores"
+            dimIds={ranked
+              .filter((p) => room.departedIds.includes(p.id) || (lastManStanding && isEliminated(game, p.id)))
+              .map((p) => p.id)}
+            score={(p) => formatPoints(game.scores[p.id] || 0)}
+            status={(p) => (room.departedIds.includes(p.id)
+              ? <span className="font-display text-[10px] font-bold uppercase tracking-wider text-fg-helper">left</span>
+              : lastManStanding
+                ? <Lives count={isEliminated(game, p.id) ? 0 : game.lives?.[p.id]} className="text-pop-red" />
+                : null)}
+          />
 
-          <p className="mb-1 text-center text-base text-fg-subtle">
-            Question {game.index + 1} of {round.length}
-          </p>
-          <h2 className="mb-6 text-center font-display text-3xl font-extrabold text-white">
-            {race ? 'Buzz in 🔔' : lastManStanding ? 'Last one standing 💀' : 'Everyone guesses 🤫'}
-          </h2>
+          <RoundHeader
+            title={race ? 'Buzz in' : lastManStanding ? 'Last one standing' : 'Everyone guesses'}
+            tag={`Song ${game.index + 1}/${round.length}`}
+          />
 
           <SyncedClipPlayer
             key={question.id}
@@ -291,6 +255,7 @@ export default function OnlineGame({ onBack, onExit }) {
               answers={game.answers}
               windowMs={game.windowMs}
               lives={lastManStanding ? game.lives : null}
+              myId={room.myPlayerId}
               onNext={room.advance}
               nextLabel={isLast ? 'See results →' : 'Next question →'}
             />
@@ -319,5 +284,5 @@ export default function OnlineGame({ onBack, onExit }) {
     );
   }
 
-  return shell(<WaitingScreen emoji="🌐" title="Loading…" />);
+  return shell(<WaitingScreen title="Loading…" />);
 }

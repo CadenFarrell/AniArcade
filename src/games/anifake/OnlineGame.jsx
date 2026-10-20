@@ -9,9 +9,12 @@ import ClueRound from './components/ClueRound';
 import VoteScreen from './components/VoteScreen';
 import StealScreen from './components/StealScreen';
 import AniFakeResults from './components/AniFakeResults';
-import WaitingScreen from '../aniguess/components/WaitingScreen';
+import WaitingScreen from '../../shared/components/WaitingScreen';
 import { MAX_DEALS } from './rules';
-import { Banner, HubButton } from '../../shared/ui';
+import RoomShell from '../../shared/components/RoomShell';
+import { HubButton } from '../../shared/ui';
+import { useSoundCue } from '../../shared/hooks/useSoundCue';
+
 
 // The online view-router. Same shape as src/games/anirank/OnlineGame.jsx: a
 // shell() wraps every in-room screen with the room code, a way out and the
@@ -29,6 +32,15 @@ export default function OnlineGame({ onBack, onExit }) {
     [room.players]
   );
 
+  // My clue coming round (once per clue: the count of clues given names the
+  // moment), and the accusation landing on the fake — the steal screen is the
+  // first any phone learns the vote caught them, so every phone stings.
+  useSoundCue(
+    'turn',
+    room.view === 'clues' && room.isMyTurn ? `${room.lap}:${room.clues?.length ?? 0}` : null,
+  );
+  useSoundCue('reveal', room.view === 'steal' ? `steal:${room.caught}` : null);
+
   if (!room.roomCode) {
     return (
       <>
@@ -43,56 +55,22 @@ export default function OnlineGame({ onBack, onExit }) {
     );
   }
 
-  const handleLeave = () => {
-    if (!window.confirm('Leave this room? You can rejoin with the same name and room code.')) return;
-    room.leaveRoom();
-  };
 
+
+  // Leaving from inside a round's own screens leaves the room too, exactly as
+  // the bar's Hub does (RoomShell owns that one).
   const handleExitToHub = () => {
     room.leaveRoom();
     onExit();
   };
 
-  const shell = (children) => (
-    <div className="relative">
-      <HubButton
-        onClick={handleExitToHub}
-        confirm="Leave this room and return to the hub? You can rejoin with the same name and room code."
-      />
-      <div className="fixed top-3 right-3 z-40 flex items-center gap-2">
-        <span className="hidden font-display text-xs tracking-widest text-fg-subtle sm:inline">
-          {room.roomCode}
-        </span>
-        <button
-          onClick={handleLeave}
-          className="focus-pop rounded-pop-sm bg-scrim px-3 py-1.5 font-display text-sm font-bold
-            text-fg-body backdrop-blur-sm transition-colors hover:bg-scrim-strong hover:text-white"
-        >
-          Leave
-        </button>
-      </div>
-      <div className="fixed top-3 left-1/2 z-40 flex w-[calc(100%-1.5rem)] max-w-md
-        -translate-x-1/2 flex-col gap-2">
-        {room.syncError && (
-          <Banner tone="danger" onDismiss={room.dismissSyncError} className="bg-canvas/95 backdrop-blur-sm">
-            ⚠️ {room.syncError}
-          </Banner>
-        )}
-        {/* Says out loud why the round has paused, and for how much longer, so a
-            dropped player doesn't just look like a frozen game. */}
-        {room.dropping.map(({ player, remainingMs }) => (
-          <Banner key={player.id} tone="warning" className="bg-canvas/95 backdrop-blur-sm">
-            🔌 {player.name} disconnected — waiting {Math.ceil(remainingMs / 1000)}s…
-          </Banner>
-        ))}
-      </div>
-      {children}
-    </div>
-  );
+  // Every in-room screen goes through RoomShell: the way out, the room code and
+  // Leave in the top bar, and the connection banners.
+  const shell = (children, opts) => <RoomShell room={room} onExit={onExit} {...opts}>{children}</RoomShell>;
 
-  if (!room.view) return shell(<WaitingScreen emoji="🌐" title="Loading room…" />);
+  if (!room.view) return shell(<WaitingScreen title="Loading room…" />);
 
-  if (room.view === 'lobby') return shell(<OnlineLobby room={room} />);
+  if (room.view === 'lobby') return shell(<OnlineLobby room={room} />, { codeInPage: true });
 
   if (room.view === 'check' && room.game) {
     return shell(
@@ -166,7 +144,7 @@ export default function OnlineGame({ onBack, onExit }) {
   if (room.view === 'reveal') {
     // The publish window: every device is writing its own card into the round
     // right now, and the answer is only reconstructible once they land.
-    return shell(<WaitingScreen emoji="🃏" title="Turning the cards over…" />);
+    return shell(<WaitingScreen title="Turning the cards over…" />);
   }
 
   if (room.view === 'results' && room.game) {
@@ -180,11 +158,11 @@ export default function OnlineGame({ onBack, onExit }) {
         roundScores={room.roundScores}
         totalScores={room.totalScores}
         departedIds={room.departedIds}
-        onPlayAgain={room.returnToLobby}
-        playAgainLabel="🔁 Back to lobby"
+        onPlayAgain={room.returnToLobby}
+        playAgainLabel="Back to lobby"
       />
     );
   }
 
-  return shell(<WaitingScreen emoji="🌐" title="Loading…" />);
+  return shell(<WaitingScreen title="Loading…" />);
 }

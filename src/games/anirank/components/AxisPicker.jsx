@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { AXES, DEFAULT_AXIS_ID, axisForPool, getAxis, isOpinion, needsEndLabels } from '../axes';
 import PromptEditor from './PromptEditor';
-import { Badge, Button, Card } from '../../../shared/ui';
+import { Badge, Button, Card, Icon } from '../../../shared/ui';
 
 // Picks the round's axis. Used by both local setup and the online lobby, so the
 // two can't drift on which modes exist or how they're grouped.
@@ -100,19 +100,19 @@ export default function AxisPicker({
           disabled={disabled}
           onClick={() => handlePool('shows')}
         >
-          📺 Shows
+          Shows
         </PoolTab>
         <PoolTab
           active={items === 'characters'}
           disabled={disabled}
           onClick={() => handlePool('characters')}
         >
-          👤 Characters
+          Characters
         </PoolTab>
       </div>
 
       <ModeBox
-        title="🎭 Opinion"
+        title="Opinion"
         // One check for the whole box, precisely because a hydrated custom
         // prompt IS an opinion axis — the same fact that puts the two halves
         // together in here.
@@ -150,7 +150,7 @@ export default function AxisPicker({
                       className="focus-pop grid h-11 w-11 flex-shrink-0 place-items-center rounded-pop-sm
                         text-lg hover:bg-wash disabled:opacity-30"
                     >
-                      ✏️
+                      <Icon name="pencil" />
                     </button>
                   </div>
                 );
@@ -193,13 +193,13 @@ export default function AxisPicker({
           disabled={disabled}
           onClick={() => setEditing({ items })}
         >
-          ✏️ {myPrompts.length > 0 ? 'New prompt' : 'Write your own prompt'}
+          {myPrompts.length > 0 ? 'New prompt' : 'Write your own prompt'}
         </Button>
       </ModeBox>
 
       {!opinionOnly && (
         <ModeBox
-          title="📊 Facts"
+          title="Facts"
           selectedLabel={factAxes.find((a) => a.id === selected.id)?.label ?? null}
           emptyText={`None selected · ${factAxes.length} ${factAxes.length === 1 ? 'mode' : 'modes'}`}
         >
@@ -246,7 +246,7 @@ function PoolTab({ active, disabled, onClick, children }) {
       className={`focus-pop flex-1 rounded-pop-sm border-2 px-3 py-2.5 text-center
         font-display text-base font-extrabold transition-colors disabled:opacity-40
         ${active
-          ? 'border-pop-amber bg-pop-amber/20 text-white'
+          ? 'border-pop-amber bg-pop-amber/20 text-fg-strong'
           : 'border-line bg-surface-2/40 text-fg-helper hover:border-line-loud'}`}
     >
       {children}
@@ -286,11 +286,11 @@ function ModeBox({ title, selectedLabel, emptyText, children }) {
         className="focus-pop -mx-2 flex w-[calc(100%+1rem)] items-center gap-3 rounded-pop-sm
           px-2 py-1.5 text-left transition-colors hover:bg-wash-soft"
       >
-        <span className="flex-shrink-0 text-sm text-fg-subtle">{open ? '▼' : '▶'}</span>
+        <Icon name="chevron" className={`text-sm text-fg-subtle transition-transform ${open ? 'rotate-90' : ''}`} />
         {selectedLabel ? (
           <span className="flex min-w-0 flex-1 items-center gap-2">
             <span aria-hidden="true" className="flex-shrink-0 text-xs text-pop-amber">●</span>
-            <span className="min-w-0 truncate font-display text-base font-extrabold text-white">
+            <span className="min-w-0 truncate font-display text-base font-extrabold text-fg-strong">
               {selectedLabel}
             </span>
           </span>
@@ -324,7 +324,7 @@ function AxisButton({ axis, active, disabled, count, minCount, onClick }) {
           : 'border-line bg-surface-2/40 hover:border-line-loud'}`}
     >
       <span className="min-w-0 flex-1">
-        <span className="block truncate font-display text-base font-extrabold text-white">
+        <span className="block truncate font-display text-base font-extrabold text-fg-strong">
           {axis.label}
         </span>
         {/* Only where it adds something. This line used to read "Shows · #1 =

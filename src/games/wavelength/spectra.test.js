@@ -61,7 +61,7 @@ describe('the spectrum registry', () => {
 
   // The half of the fix that is not the filter. Tagging alone left characters
   // with three exclusive entries, so a filtered draw offered nearly the same
-  // three every time and 🔄 did nothing — a reroll needs at least one spectrum
+  // three every time and the refresh button did nothing — a reroll needs at least one spectrum
   // it did not just show you.
   it('leaves each pool enough spectra for a suggestion AND a reroll', () => {
     for (const pool of ['shows', 'characters']) {

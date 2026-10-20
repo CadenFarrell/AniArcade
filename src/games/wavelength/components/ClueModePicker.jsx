@@ -18,7 +18,7 @@ import { CLUE_MODES } from '../rules';
 // the modes are called.
 export default function ClueModePicker({ value, onChange }) {
   return (
-    <Card title="🔮 The clue" padding="lg" className="mb-6">
+    <Card title="The clue" padding="lg" className="mb-6">
       <div className="flex flex-col gap-3">
         {CLUE_MODES.map((id) => {
           const help = CLUE_MODE_HELP[id];
@@ -33,7 +33,7 @@ export default function ClueModePicker({ value, onChange }) {
                 ${selected ? 'border-pop-purple bg-pop-purple/15' : 'border-line-strong bg-surface'}`}
             >
               <span className="flex items-center gap-2">
-                <span className="min-w-0 flex-1 font-display text-lg font-extrabold text-white">
+                <span className="min-w-0 flex-1 font-display text-lg font-extrabold text-fg-strong">
                   {help.label}
                 </span>
                 <Badge tone={id === 'text' ? 'lime' : 'neutral'}>{help.tag}</Badge>

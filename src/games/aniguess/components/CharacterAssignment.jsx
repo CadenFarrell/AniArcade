@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { getAssignableAnimeList, pickRandomCharacter } from '../utils/characterPool';
 import AnimeBrowser from './AnimeBrowser';
-import { Avatar, Button, Card, Screen, Wordmark } from '../../../shared/ui';
+import { Avatar, Button, Card, Icon, Screen, Wordmark } from '../../../shared/ui';
+import Handoff from '../../../shared/components/Handoff';
 
 const NO_SHARED_HELP = "Go back and either add a matching anime title to each player's list, "
   + 'or turn off "Shared shows only" in Setup.';
@@ -39,25 +40,22 @@ export default function CharacterAssignment({ guesser, allPlayers, sharedShowsOn
       </p>
 
       {step === 'lookaway' && (
-        <div className="text-center">
-          <div className="mb-5 text-7xl">📵</div>
-          <h2 className="mb-3 font-display text-4xl font-extrabold text-white">
-            {guesser.name}, look away!
-          </h2>
-          <p className="mb-10 text-lg text-fg-body">
-            Everyone else — get ready to pick a character for {guesser.name}.
-          </p>
-          <Button variant="success" size="xl" fullWidth onClick={() => setStep('assign')}>
-            {guesser.name} is looking away — Ready! ✅
-          </Button>
-        </div>
+        // The pass-the-device panel run the other way: the device stays put and
+        // the one person whose face is on it turns round.
+        <Handoff
+          player={guesser}
+          kicker="Look away"
+          note={`Everyone else — get ready to pick a character for ${guesser.name}.`}
+          cta={`${guesser.name} is looking away — Ready!`}
+          onReady={() => setStep('assign')}
+        />
       )}
 
       {step === 'assign' && !browseMode && (
         <div className="text-center">
           {/* "Pick a character for <name>" is one heading, so the lead-in is a
               plain line and the name carries the <h2>. */}
-          <p className="mb-4 font-display text-3xl font-extrabold text-white">
+          <p className="mb-4 font-display text-3xl font-extrabold text-fg-strong">
             Pick a character for
           </p>
           <Wordmark tone="pink" size="md" level={2} className="mb-10">
@@ -65,10 +63,10 @@ export default function CharacterAssignment({ guesser, allPlayers, sharedShowsOn
           </Wordmark>
           <div className="flex flex-col gap-5">
             <Button variant="info" size="xl" fullWidth onClick={pickRandom}>
-              🎲 Pick Random
+              Pick Random
             </Button>
             <Button variant="secondary" size="xl" fullWidth onClick={() => setBrowseMode(true)}>
-              🔍 Pick Manually
+              Pick Manually
             </Button>
           </div>
         </div>
@@ -88,8 +86,8 @@ export default function CharacterAssignment({ guesser, allPlayers, sharedShowsOn
 
       {step === 'noSharedShows' && (
         <div className="text-center">
-          <div className="mb-5 text-6xl">🤷</div>
-          <h2 className="mb-4 font-display text-3xl font-extrabold text-white">
+          <div className="mb-5 text-6xl text-pop-amber"><Icon name="warning" /></div>
+          <h2 className="mb-4 font-display text-3xl font-extrabold text-fg-strong">
             No shared anime found
           </h2>
           <p className="mb-10 text-lg text-fg-body">
@@ -104,14 +102,14 @@ export default function CharacterAssignment({ guesser, allPlayers, sharedShowsOn
 
       {step === 'confirm' && selectedCharacter && (
         <div className="text-center">
-          <h2 className="mb-8 font-display text-3xl font-extrabold text-white">
+          <h2 className="mb-8 font-display text-3xl font-extrabold text-fg-strong">
             Confirm this character?
           </h2>
           <Card padding="lg" className="mb-8 border-pop-purple">
             <div className="mb-4 flex justify-center">
               <Avatar src={selectedCharacter.imageUrl} alt={selectedCharacter.name} size="lg" />
             </div>
-            <h3 className="font-display text-3xl font-extrabold text-white">
+            <h3 className="font-display text-3xl font-extrabold text-fg-strong">
               {selectedCharacter.name}
             </h3>
             <p className="text-lg text-fg-body">from {selectedCharacter.series}</p>
@@ -121,7 +119,7 @@ export default function CharacterAssignment({ guesser, allPlayers, sharedShowsOn
           </Card>
           {filteredAnimeList.length > 0 && (
             <Button variant="info" size="lg" fullWidth className="mb-4" onClick={reroll}>
-              🎲 Re-roll
+              Re-roll
             </Button>
           )}
           <div className="flex gap-4">
@@ -139,7 +137,7 @@ export default function CharacterAssignment({ guesser, allPlayers, sharedShowsOn
               className="flex-1"
               onClick={() => onCharacterAssigned(selectedCharacter)}
             >
-              ✅ Confirm
+              Confirm
             </Button>
           </div>
         </div>

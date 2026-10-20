@@ -125,7 +125,7 @@ export const AXES = [
     topLabel: 'MOST',
     bottomLabel: 'LEAST',
     valueFor: (char) => num(char?.favourites),
-    format: (v) => `${v.toLocaleString()} ♥`,
+    format: (v) => `${v.toLocaleString()} favs`,
   },
 
   // ---- opinion ------------------------------------------------------------

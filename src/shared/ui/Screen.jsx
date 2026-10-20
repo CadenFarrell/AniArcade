@@ -4,8 +4,16 @@ import { GhostButton } from './Button';
 // + `w-full max-w-md` pair that was hand-written at the top of a dozen screens,
 // each with slightly different padding.
 //
-// Top-anchored screens carry extra head-room so their first element clears the
-// fixed "🏠 Hub" button; centred menu screens float clear of it already.
+// Every screen carries pt-20 so its first element clears the fixed top bar
+// (shared/components/TopBar.jsx, h-14) with a gap to breathe — centred screens
+// included, since on a short viewport a centred column grows to the top edge
+// and would otherwise slide under it.
+//
+// `screen-in` is the page-turn every view arrives with (see index.css). It is
+// here rather than in any router because each view renders its own Screen, so
+// a view change unmounts one and mounts the next — which is exactly when the
+// animation runs. Online, where `view` changes under every player at once,
+// everyone sees the page turn together for free.
 
 const WIDTHS = {
   sm: 'max-w-md',
@@ -23,8 +31,8 @@ export default function Screen({
 }) {
   return (
     <div
-      className={`min-h-dvh flex flex-col items-center px-5 sm:px-6
-        ${center ? 'justify-center py-8 sm:py-10' : 'pt-16 pb-8 sm:pb-10'} ${className}`}
+      className={`screen-in min-h-dvh flex flex-col items-center px-5 pt-20 sm:px-6
+        ${center ? 'justify-center pb-8 sm:pb-10' : 'pb-8 sm:pb-10'} ${className}`}
     >
       <div className={`w-full ${WIDTHS[width]}`}>
         {onBack && (

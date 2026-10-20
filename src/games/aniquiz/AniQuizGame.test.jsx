@@ -9,7 +9,7 @@ import { cleanup, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { readFile } from 'node:fs/promises';
 import AniQuizGame from './AniQuizGame';
-import { makeProfile, renderArcade, seedProfiles } from '../../shared/testing/arcade';
+import { makeProfile, openMoreSettings, renderArcade, seedProfiles } from '../../shared/testing/arcade';
 
 vi.mock('../../shared/services/firebase', () => ({
   firebaseEnabled: false,
@@ -134,6 +134,8 @@ describe('AniQuiz, played locally', () => {
     seedPrefs({ format: 'board', pool: 'everything', categories: 6, timed: false, dailyDouble: false, finalRound: false });
     const user = userEvent.setup();
     const start = await openSetup(user);
+    // The switches fold away under the Categories card (MoreSettings).
+    await openMoreSettings(user);
 
     // Everything but Theme Songs and Studio Credits.
     const off = ['The Director’s Chair', 'Who Scored It?', 'Source Material', 'Air Dates', 'Voice Cast', 'Who’s Who'];
@@ -156,6 +158,7 @@ describe('AniQuiz, played locally', () => {
     seedPrefs({ format: 'quiz', pool: 'everything', topicsOff: ['studios', 'staff', 'music', 'origins', 'themes', 'calendar', 'voices'] });
     const user = userEvent.setup();
     const start = await openSetup(user);
+    await openMoreSettings(user);
     await user.click(screen.getByRole('checkbox', { name: /^Who’s Who/ }));
     expect(screen.getByText(/every category is off/i)).toBeTruthy();
     expect(start.disabled).toBe(true);

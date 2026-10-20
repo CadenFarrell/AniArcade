@@ -9,7 +9,7 @@ import {
   classifyImportGroups,
   mergeImportedAnilistIds,
 } from '../utils/profileMerge';
-import { Badge, Button, Card, Checkbox, Input, Label, Modal, NumberInput } from '../ui';
+import { Badge, Button, Card, Checkbox, Icon, Input, Label, Modal, NumberInput } from '../ui';
 
 const MAX_CHARACTERS_PER_SHOW = 60;
 
@@ -308,12 +308,12 @@ export default function ListImport({ profile, onClose, onImported, autoRefresh =
     // dialog would strand the in-progress fetch, so lock it during 'importing'.
     <Modal onClose={onClose} dismissible={step !== 'importing'}>
       <div className="mb-6 flex items-center justify-between">
-        <h2 className="font-display text-2xl font-extrabold text-white">🔗 Import your list</h2>
+        <h2 className="font-display text-2xl font-extrabold text-fg-strong">Import your list</h2>
         {step !== 'importing' && (
           <button
             onClick={onClose}
             aria-label="Close"
-            className="focus-pop -mr-2 grid h-11 w-11 place-items-center rounded-pop-sm text-xl font-black text-fg-icon hover:text-white"
+            className="focus-pop -mr-2 grid h-11 w-11 place-items-center rounded-pop-sm text-xl font-black text-fg-icon hover:text-fg-strong"
           >
             ✕
           </button>
@@ -341,7 +341,7 @@ export default function ListImport({ profile, onClose, onImported, autoRefresh =
                 className={`focus-pop rounded-pop-sm border-2 px-3 py-2.5 text-center font-display
                   text-base font-extrabold transition-colors disabled:opacity-40
                   ${site === s.id
-                    ? 'border-pop-purple bg-pop-purple/20 text-white'
+                    ? 'border-pop-purple bg-pop-purple/20 text-fg-strong'
                     : 'border-line bg-surface-2/40 text-fg-helper hover:border-line-loud'}`}
               >
                 {s.label}
@@ -361,7 +361,7 @@ export default function ListImport({ profile, onClose, onImported, autoRefresh =
                 onChange={(e) => setFile(e.target.files?.[0] ?? null)}
                 disabled={step === 'loading-list'}
                 className="mb-2 file:mr-3 file:rounded-pop-sm file:border-0 file:bg-pop-purple
-                  file:px-3 file:py-1 file:font-display file:font-extrabold file:text-ink"
+                  file:px-3 file:py-1 file:font-display file:font-extrabold file:text-paper"
               />
               {/* Where the file comes from, because "upload your export" is
                   useless to someone who has never seen the export page. */}
@@ -371,7 +371,7 @@ export default function ListImport({ profile, onClose, onImported, autoRefresh =
                   href={MAL_EXPORT_URL}
                   target="_blank"
                   rel="noreferrer"
-                  className="focus-pop rounded-sm text-pop-purple underline hover:text-white"
+                  className="focus-pop rounded-sm text-pop-purple underline hover:text-fg-strong"
                 >
                   Export My List
                 </a>
@@ -382,7 +382,7 @@ export default function ListImport({ profile, onClose, onImported, autoRefresh =
                 <button
                   type="button"
                   onClick={() => setMalByFile(false)}
-                  className="focus-pop mt-2 rounded-pop-sm text-sm text-fg-subtle hover:text-white"
+                  className="focus-pop mt-2 rounded-pop-sm text-sm text-fg-subtle hover:text-fg-strong"
                 >
                   or use my username instead
                 </button>
@@ -413,9 +413,10 @@ export default function ListImport({ profile, onClose, onImported, autoRefresh =
 
           <button
             onClick={() => setShowAdvanced((v) => !v)}
-            className="focus-pop mb-3 rounded-pop-sm text-sm text-fg-subtle hover:text-white"
+            className="focus-pop mb-3 rounded-pop-sm text-sm text-fg-subtle hover:text-fg-strong"
           >
-            {showAdvanced ? '▼' : '▶'} Advanced
+            <Icon name="chevron" className={`mr-1 transition-transform ${showAdvanced ? 'rotate-90' : ''}`} />
+            Advanced
           </button>
           {showAdvanced && (
             <Card padding="sm" className="mb-4 space-y-3">
@@ -452,14 +453,14 @@ export default function ListImport({ profile, onClose, onImported, autoRefresh =
           >
             {step === 'loading-list'
               ? 'Fetching your list…'
-              : canRefresh ? '🔄 Refresh my list' : usesFile ? 'Read My List' : 'Fetch My List'}
+              : canRefresh ? 'Refresh my list' : usesFile ? 'Read My List' : 'Fetch My List'}
           </Button>
           {/* The checklist is still one tap away — needed to re-fetch a show
               whose cast has grown, or to import with different settings. */}
           {canRefresh && step !== 'loading-list' && (
             <button
               onClick={() => fetchList()}
-              className="focus-pop mt-3 w-full rounded-pop-sm text-sm text-fg-subtle hover:text-white"
+              className="focus-pop mt-3 w-full rounded-pop-sm text-sm text-fg-subtle hover:text-fg-strong"
             >
               or choose what to import…
             </button>
@@ -479,7 +480,7 @@ export default function ListImport({ profile, onClose, onImported, autoRefresh =
           />
           {!isFirstImport && suggested.size === 0 && (
             <Card padding="sm" className="mb-3 text-center">
-              <p className="font-display font-extrabold text-white">✅ You&rsquo;re up to date</p>
+              <p className="font-display font-extrabold text-fg-strong">You&rsquo;re up to date</p>
               <p className="mt-1 text-sm text-fg-helper">
                 All {counts.known} shows on your {siteLabel(site)} list are already in your profile, with nothing
                 left to fill in. Use <strong className="text-fg-strong">Select All</strong> to
@@ -493,20 +494,20 @@ export default function ListImport({ profile, onClose, onImported, autoRefresh =
             {!isFirstImport && (
               <button
                 onClick={() => setSelected(new Set(suggested))}
-                className="focus-pop rounded-pop-sm text-sm text-fg-body hover:text-white"
+                className="focus-pop rounded-pop-sm text-sm text-fg-body hover:text-fg-strong"
               >
                 Select New
               </button>
             )}
             <button
               onClick={() => setSelected(new Set(animeOptions.map((g) => g.key)))}
-              className="focus-pop rounded-pop-sm text-sm text-fg-body hover:text-white"
+              className="focus-pop rounded-pop-sm text-sm text-fg-body hover:text-fg-strong"
             >
               Select All
             </button>
             <button
               onClick={() => setSelected(new Set())}
-              className="focus-pop rounded-pop-sm text-sm text-fg-body hover:text-white"
+              className="focus-pop rounded-pop-sm text-sm text-fg-body hover:text-fg-strong"
             >
               Select None
             </button>
@@ -560,7 +561,7 @@ export default function ListImport({ profile, onClose, onImported, autoRefresh =
                   ) : (
                     <div className="h-14 w-10 flex-shrink-0 rounded bg-wash" />
                   )}
-                  <span className="min-w-0 flex-1 text-sm text-white">{group.title}</span>
+                  <span className="min-w-0 flex-1 text-sm text-fg-strong">{group.title}</span>
                   {/* 'new' is already the checked majority and 'known' is dimmed
                       and unchecked, so badging either would be 200 rows of
                       decoration. The two that earn one are the states a user
@@ -593,8 +594,8 @@ export default function ListImport({ profile, onClose, onImported, autoRefresh =
 
       {step === 'importing' && (
         <div className="py-6 text-center">
-          <div className="mb-4 text-5xl">📥</div>
-          <p className="mb-1 font-display text-lg font-extrabold text-white">Importing characters…</p>
+          <div className="mb-4 text-5xl text-fg-icon"><Icon name="hourglass" /></div>
+          <p className="mb-1 font-display text-lg font-extrabold text-fg-strong">Importing characters…</p>
           <p className="mb-6 text-fg-helper">{progress.index} of {progress.total} shows</p>
           <div className="mb-6 h-3 w-full overflow-hidden rounded-pop-sm border-2 border-ink bg-surface-2">
             <div className="h-full bg-pop-pink transition-all" style={{ width: pct }} />
@@ -605,8 +606,8 @@ export default function ListImport({ profile, onClose, onImported, autoRefresh =
 
       {step === 'done' && (
         <div className="py-6 text-center">
-          <div className="mb-4 text-5xl">✅</div>
-          <p className="mb-2 font-display text-lg font-extrabold text-white">Import complete!</p>
+          <div className="mb-4 text-5xl text-pop-lime"><Icon name="check" /></div>
+          <p className="mb-2 font-display text-lg font-extrabold text-fg-strong">Import complete!</p>
           <p className="mb-6 text-fg-body">
             +{stats?.addedAnime ?? 0} anime, +{stats?.addedChars ?? 0} characters
             {/* Repairs are reported separately from additions, because a
@@ -637,7 +638,7 @@ export default function ListImport({ profile, onClose, onImported, autoRefresh =
 
       {step === 'error' && (
         <div className="py-6 text-center">
-          <div className="mb-4 text-5xl">⚠️</div>
+          <div className="mb-4 text-5xl text-pop-red"><Icon name="warning" /></div>
           <p className="mb-6 font-display font-extrabold text-pop-red">{errorMessage}</p>
           {/* MAL by username rides on a proxy; when that is unreachable the
               export file still works, so offer it rather than a retry loop. */}

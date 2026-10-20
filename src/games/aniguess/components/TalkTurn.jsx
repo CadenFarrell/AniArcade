@@ -1,4 +1,4 @@
-import { Button, Card } from '../../../shared/ui';
+import { Button, Card, Icon } from '../../../shared/ui';
 
 // The whole talk-mode action area: one screen, one tap, turn over.
 //
@@ -14,8 +14,8 @@ export default function TalkTurn({ guesserName, onAnswer, onJudgeGuess, trail = 
   return (
     <div className="mb-5">
       <div className="card-pop p-6 text-center">
-        <div className="text-5xl">🗣️</div>
-        <p className="mt-3 font-display text-2xl font-extrabold text-white">
+        <div className="text-5xl text-pop-pink"><Icon name="speech" /></div>
+        <p className="mt-3 font-display text-2xl font-extrabold text-fg-strong">
           {guesserName}, ask a yes/no question or guess out loud
         </p>
         <p className="mt-2 text-base text-fg-helper">
@@ -23,20 +23,20 @@ export default function TalkTurn({ guesserName, onAnswer, onJudgeGuess, trail = 
         </p>
 
         <Group label="They asked a question">
-          <Button variant="success" size="xl" className="flex-1" onClick={() => onAnswer('Yes')}>
-            ✅ Yes
+          <Button variant="success" size="xl" sound="yes" className="flex-1" onClick={() => onAnswer('Yes')}>
+            <Icon name="check" /> Yes
           </Button>
-          <Button variant="danger" size="xl" className="flex-1" onClick={() => onAnswer('No')}>
-            ❌ No
+          <Button variant="danger" size="xl" sound="no" className="flex-1" onClick={() => onAnswer('No')}>
+            <Icon name="cross" /> No
           </Button>
         </Group>
 
         <Group label="They guessed a character">
-          <Button variant="success" size="xl" className="flex-1" onClick={() => onJudgeGuess(true)}>
-            🎯 Got it!
+          <Button variant="success" size="xl" sound={null} className="flex-1" onClick={() => onJudgeGuess(true)}>
+            <Icon name="target" /> Got it!
           </Button>
-          <Button variant="danger" size="xl" className="flex-1" onClick={() => onJudgeGuess(false)}>
-            ❌ Wrong
+          <Button variant="danger" size="xl" sound="wrong" className="flex-1" onClick={() => onJudgeGuess(false)}>
+            <Icon name="miss" /> Wrong
           </Button>
         </Group>
       </div>
@@ -53,7 +53,7 @@ export default function TalkTurn({ guesserName, onAnswer, onJudgeGuess, trail = 
                 title={chip.label}
                 className={`rounded-pop-sm border-2 px-2 py-1 text-base ${TONES[chip.tone]}`}
               >
-                {chip.icon}
+                <Icon name={chip.icon} label={chip.label} />
               </span>
             ))}
           </div>
@@ -66,9 +66,9 @@ export default function TalkTurn({ guesserName, onAnswer, onJudgeGuess, trail = 
 // The chip carries its meaning in the emoji, so the tint is reinforcement, not
 // the signal — and `title` gives the same thing in words to a screen reader.
 const TONES = {
-  yes: 'border-pop-lime/40 bg-pop-lime/10',
-  no: 'border-pop-red/40 bg-pop-red/10',
-  warn: 'border-pop-amber/40 bg-pop-amber/10',
+  yes: 'border-pop-lime/40 bg-pop-lime/10 text-pop-lime',
+  no: 'border-pop-red/40 bg-pop-red/10 text-pop-red',
+  warn: 'border-pop-amber/40 bg-pop-amber/10 text-pop-amber',
 };
 
 // A labelled pair of buttons. The rule either side of the label is what stops

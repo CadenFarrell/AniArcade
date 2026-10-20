@@ -46,7 +46,7 @@ export default function ClueLog({ clues = [], players = [] }) {
                   <span className="font-display text-xs uppercase tracking-wider text-fg-subtle">
                     {speaker?.name ?? clue.by}
                   </span>
-                  <span className="ml-2 font-display text-lg font-extrabold text-white">
+                  <span className="ml-2 font-display text-lg font-extrabold text-fg-strong">
                     {clue.text}
                   </span>
                 </span>

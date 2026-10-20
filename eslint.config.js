@@ -5,7 +5,7 @@ import reactRefresh from 'eslint-plugin-react-refresh'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
-  globalIgnores(['dist', 'seedProfiles.js', '**/.wrangler']),
+  globalIgnores(['dist', 'dist-playtest', 'dist-playtest-emu', 'playtest-report', 'seedProfiles.js', '**/.wrangler']),
   {
     files: ['generateProfiles.js', 'generateFacts.js', 'animeCatalog.js', 'factSources/*.js'],
     languageOptions: { globals: globals.node },
@@ -29,6 +29,12 @@ export default defineConfig([
     rules: {
       'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]' }],
     },
+  },
+  // The playtest bots run in Node (vitest, Playwright, the CLI) while also
+  // touching the DOM they drive, so they get both sets of globals.
+  {
+    files: ['playtest/**/*.{js,jsx}'],
+    languageOptions: { globals: { ...globals.node, ...globals.browser } },
   },
   // The MAL proxy runs on Cloudflare Workers: fetch, Response and caches are
   // service-worker globals there, not browser ones.

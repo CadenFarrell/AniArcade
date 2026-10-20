@@ -72,14 +72,14 @@ export default function TierCompare({ players, listsFor, cardsFor, onBack }) {
 
       {mismatched && (
         <Banner tone="warning" className="mb-4">
-          ⚠️ One list ranks shows and the other ranks characters, so they have nothing in common
+          One list ranks shows and the other ranks characters, so they have nothing in common
           to compare.
         </Banner>
       )}
 
       {result && result.comparisons === 0 && (
         <Banner tone="warning" className="mb-4">
-          ⚠️ These two lists share {result.shared} {result.shared === 1 ? 'entry' : 'entries'} —
+          These two lists share {result.shared} {result.shared === 1 ? 'entry' : 'entries'} —
           not enough overlap to compare. Turn on &ldquo;Shared shows only&rdquo; at setup so both
           lists are built from the same pool.
         </Banner>

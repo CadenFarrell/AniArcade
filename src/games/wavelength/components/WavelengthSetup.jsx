@@ -1,17 +1,18 @@
 import { useMemo, useState } from 'react';
 import { useProfileStore } from '../../../shared/context/profileContext';
 import ListImport from '../../../shared/components/ListImport';
+import { LocalRoster } from '../../../shared/components/PlayerSlots';
 import ProfilePicker from '../../../shared/components/ProfilePicker';
+import SetupLayout, { StartBar } from '../../../shared/components/SetupLayout';
 import { useGamePrefs } from '../../../shared/hooks/useGamePrefs';
-import {
-  Backdrop, Badge, Banner, Button, Card, CardRow, Screen, Wordmark,
-} from '../../../shared/ui';
+import { Banner, Button } from '../../../shared/ui';
 import ClueModePicker from './ClueModePicker';
 import WavelengthSettings from './WavelengthSettings';
 import { poolTooSmall } from '../help';
 import { DEFAULT_PREFS } from '../prefs';
 import { MIN_PLAYERS, needsCardPool } from '../rules';
 import { MIN_CARD_POOL, eligibleCards, poolNoun } from '../utils/cards';
+import descriptor from '../index';
 
 // Local setup.
 //
@@ -22,8 +23,9 @@ import { MIN_CARD_POOL, eligibleCards, poolNoun } from '../utils/cards';
 // tells them otherwise, so the absence is the thing worth saying out loud.
 //
 // The two card modes need a pool, and everything about them is gated behind
-// that one choice — the toggles, the counts and the warnings all appear only
-// once a mode that deals cards is selected, so the default path is unchanged.
+// that one choice — the toggles, the counts, the list badges and the import
+// button all appear only once a mode that deals cards is selected, so the
+// default path is unchanged.
 export default function WavelengthSetup({ onStart, onBack }) {
   const { activeId, activeProfile, saveProfile } = useProfileStore();
   const { prefs, savePrefs, resetPrefs } = useGamePrefs('aniwave', DEFAULT_PREFS);
@@ -80,132 +82,87 @@ export default function WavelengthSetup({ onStart, onBack }) {
     onStart({ players, rounds, mode: clueMode, cardPool, sharedOnly });
   };
 
+  const status = !enoughPlayers ? `Needs ${MIN_PLAYERS} players.`
+    : !enoughCards ? `Not enough ${noun} to deal — found ${eligible}.`
+      : needsCards ? `${players.length} players · ${eligible} ${noun} to draw from`
+        : `${players.length} players · no list needed`;
+
   return (
     <>
-      <Backdrop />
-      <Screen onBack={onBack}>
-        <Wordmark tone="purple" size="md" className="mb-8">AniWave</Wordmark>
+      <SetupLayout
+        game={descriptor}
+        tagline="One of you knows where the target is. Say the right words."
+        onBack={onBack}
+        left={(
+          <>
+            {!needsCards && (
+              <Banner tone="info" className="mb-6">
+                No anime list needed — a typed clue is played on the spectrums alone,
+                so everyone can join straight away.
+              </Banner>
+            )}
 
-        {!needsCards && (
-          <Banner tone="info" className="mb-6">
-            No anime list needed — a typed clue is played on the spectrums alone,
-            so everyone can join straight away.
-          </Banner>
+            {/* The list badge and import only in the modes that deal: on a
+                typed-clue round they are a warning about nothing, and undo the
+                banner above. */}
+            <LocalRoster
+              players={players}
+              activeId={activeId}
+              onAdd={() => setShowPicker(true)}
+              onImport={needsCards ? setImportTarget : undefined}
+              badgeFor={needsCards ? undefined : null}
+              onRemove={(id) => setPlayers((prev) => prev.filter((x) => x.id !== id))}
+            />
+
+            {players.length > 0 && !enoughPlayers && (
+              <Banner tone="warning" className="mb-6">
+                Needs {MIN_PLAYERS} players — with one guesser there is no spread for
+                the psychic to be read against.
+              </Banner>
+            )}
+
+            {/* A reason rather than a dead Start button: with a short shared list
+                this is the ordinary outcome, not an edge case, and the remedy
+                depends on which cause it is. */}
+            {needsCards && enoughPlayers && !enoughCards && (
+              <Banner tone="warning" className="mb-6">
+                {poolTooSmall({ eligible, noun, sharedOnly, players: players.length })}
+              </Banner>
+            )}
+          </>
         )}
-
-        <Button
-          variant="secondary"
-          size="lg"
-          fullWidth
-          className="mb-5"
-          onClick={() => setShowPicker(true)}
-        >
-          ➕ Add player
-        </Button>
-
-        {showPicker && (
-          <ProfilePicker
-            mode="add"
-            excludeIds={players.map((p) => p.id)}
-            onPick={(profile) => setPlayers((prev) => [...prev, profile])}
-            onClose={() => setShowPicker(false)}
-          />
+        right={(
+          <>
+            <ClueModePicker value={clueMode} onChange={(m) => change('clueMode', m)} />
+            <WavelengthSettings
+              values={settings}
+              onChange={change}
+              eligible={eligible}
+              playerCount={players.length}
+              onReset={applyDefaults}
+            />
+          </>
         )}
-
-        {players.length === 0 && (
-          <p className="mb-6 text-center text-base text-fg-subtle">
-            Nobody seated yet — set your main profile with the 👤 button at the hub,
-            or add a player above.
-          </p>
+        start={(
+          <StartBar status={status} ready={canStart}>
+            <Button variant="primary" size="lg" disabled={!canStart} onClick={start}>
+              Start
+            </Button>
+          </StartBar>
         )}
+      />
 
-        {players.length > 0 && (
-          <Card padding="sm" className="mb-6">
-            {players.map((p) => {
-              const shows = (p.animeList || []).length;
-              return (
-                <CardRow key={p.id}>
-                  <span className="min-w-0 flex-1 truncate font-display text-lg font-extrabold text-white">
-                    {p.name}
-                  </span>
-                  {p.id === activeId && <Badge tone="purple">You</Badge>}
-                  {/* Only in the modes that deal: a list badge on a typed-clue
-                      round is a warning about nothing, and undoes the banner
-                      above it. */}
-                  {needsCards && (
-                    <>
-                      <Badge tone={shows ? 'lime' : 'amber'}>
-                        {shows ? `${shows} shows` : '⚠️ No list'}
-                      </Badge>
-                      <Button
-                        variant="neutral"
-                        size="sm"
-                        className="flex-shrink-0"
-                        aria-label={`Import ${p.name}'s list`}
-                        onClick={() => setImportTarget(p)}
-                      >
-                        🔗
-                      </Button>
-                    </>
-                  )}
-                  <button
-                    onClick={() => setPlayers(players.filter((x) => x.id !== p.id))}
-                    aria-label={`Remove ${p.name}`}
-                    className="focus-pop grid h-11 w-11 flex-shrink-0 place-items-center rounded-pop-sm
-                      text-lg font-black text-pop-red hover:text-white"
-                  >
-                    ✕
-                  </button>
-                </CardRow>
-              );
-            })}
-          </Card>
-        )}
-
-        <ClueModePicker value={clueMode} onChange={(m) => change('clueMode', m)} />
-
-        <WavelengthSettings
-          values={settings}
-          onChange={change}
-          eligible={eligible}
-          playerCount={players.length}
-          onReset={applyDefaults}
+      {showPicker && (
+        <ProfilePicker
+          mode="add"
+          excludeIds={players.map((p) => p.id)}
+          onPick={(profile) => setPlayers((prev) => [...prev, profile])}
+          onClose={() => setShowPicker(false)}
         />
-
-        {players.length > 0 && !enoughPlayers && (
-          <Banner tone="warning" className="mb-6">
-            ⚠️ Needs {MIN_PLAYERS} players — with one guesser there is no spread for
-            the psychic to be read against.
-          </Banner>
-        )}
-
-        {/* A reason rather than a dead Start button: with a short shared list
-            this is the ordinary outcome, not an edge case, and the remedy
-            depends on which cause it is. */}
-        {needsCards && enoughPlayers && !enoughCards && (
-          <Banner tone="warning" className="mb-6">
-            ⚠️ {poolTooSmall({ eligible, noun, sharedOnly, players: players.length })}
-          </Banner>
-        )}
-
-        {importTarget && (
-          <ListImport
-            profile={importTarget}
-            onClose={() => setImportTarget(null)}
-            onImported={handleImported}
-          />
-        )}
-
-        <Button
-          variant="primary"
-          size="xl"
-          fullWidth
-          disabled={!canStart}
-          onClick={start}
-        >
-          Start
-        </Button>
-      </Screen>
+      )}
+      {importTarget && (
+        <ListImport profile={importTarget} onClose={() => setImportTarget(null)} onImported={handleImported} />
+      )}
     </>
   );
 }

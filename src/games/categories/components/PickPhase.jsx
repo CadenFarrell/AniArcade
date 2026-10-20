@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { Badge, Button, Card } from '../../../shared/ui';
+import { Badge, Button, Card, Icon } from '../../../shared/ui';
 import CategoryPicker from './CategoryPicker';
+import Handoff from '../../../shared/components/Handoff';
 
 /**
  * CHOSEN MODE's opening phase: everybody commits a clause before anybody names
@@ -27,7 +28,7 @@ import CategoryPicker from './CategoryPicker';
  * still open — handing the next person a screen the last one was using.
  */
 export default function PickPhase({
-  playerName, suggestions, noun, onPick,
+  playerName, player = null, suggestions, noun, onPick,
   handover = false, busy = false,
   done = false, waitingOn = [], picked = 0, total = 0,
 }) {
@@ -44,7 +45,7 @@ export default function PickPhase({
         <p className="font-display text-xs font-extrabold uppercase tracking-widest text-fg-helper">
           Everyone picks a category
         </p>
-        <h2 className="truncate font-display text-2xl font-extrabold text-white">
+        <h2 className="truncate font-display text-2xl font-extrabold text-fg-strong">
           {done ? 'Locked in' : `${playerName}, choose yours`}
         </h2>
       </div>
@@ -63,7 +64,7 @@ export default function PickPhase({
       <>
         {header}
         <Card padding="lg" className="text-center">
-          <p className="font-display text-xl font-extrabold text-white">
+          <p className="font-display text-xl font-extrabold text-fg-strong">
             {waitingOn.length
               ? `Waiting on ${waitingOn.map((p) => p.name).join(', ')}…`
               : 'Starting the round…'}
@@ -83,19 +84,12 @@ export default function PickPhase({
     return (
       <>
         {header}
-        <Card padding="lg" className="mb-6 text-center">
-          <p className="text-4xl">🤝</p>
-          <p className="mt-3 font-display text-xl font-extrabold text-white">
-            Pass the device to {playerName}
-          </p>
-          <p className="mt-2 text-base text-fg-helper">
-            Everyone else, look away — this is the one screen in the round that is private.
-            After this the device sits in the middle and you each name one thing in turn.
-          </p>
-        </Card>
-        <Button variant="primary" size="lg" fullWidth onClick={() => setReady(true)}>
-          I&apos;m {playerName} — show me the list
-        </Button>
+        <Handoff
+          player={player ?? { id: playerName, name: playerName }}
+          note="Everyone else, look away — this is the one screen in the round that is private. After this the device sits in the middle and you each name one thing in turn."
+          cta={`I'm ${playerName} — show me the list`}
+          onReady={() => setReady(true)}
+        />
       </>
     );
   }

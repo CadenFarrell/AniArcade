@@ -1,3 +1,4 @@
+import MoreSettings from '../../../shared/components/MoreSettings';
 import SettingsFooter from '../../../shared/components/SettingsFooter';
 import SettingHelp, { DetailToggle } from '../../../shared/components/SettingHelp';
 import { Banner, Card, Checkbox, Field, NumberInput, Select } from '../../../shared/ui';
@@ -8,7 +9,7 @@ import { DEFAULT_PREFS } from '../prefs';
 import { MAX_CLUE_ROUNDS } from '../rules';
 
 /**
- * AniFake's ⚙️ Settings card, rendered by both AniFakeSetup and the online
+ * AniFake's Settings card, rendered by both AniFakeSetup and the online
  * lobby. It was the same card hand-kept in both files, and the copies had
  * already drifted — help.js exists because the card-check strings were "word
  * for word identical" by convention and were not. AniTagSettings and
@@ -33,7 +34,7 @@ export default function AniFakeSettings({ values, onChange, poolEntries, local, 
   const fameLabel = getFame(fame).label;
 
   return (
-    <Card title="⚙️ Settings" action={<DetailToggle />} padding="lg" className="mb-6">
+    <Card title="Settings" action={<DetailToggle />} padding="lg" className="mb-6">
       <Field label="Clue rounds" htmlFor="anifake-laps" className="mb-2">
         <NumberInput
           id="anifake-laps"
@@ -49,53 +50,7 @@ export default function AniFakeSettings({ values, onChange, poolEntries, local, 
       </SettingHelp>
 
       <Checkbox
-        label="Shared characters only"
-        checked={sharedOnly}
-        onChange={(e) => onChange('sharedOnly', e.target.checked)}
-        className="mb-2"
-      />
-      <SettingHelp indent className="mb-5" more={SETTING_HELP.sharedOnly.more}>
-        {SETTING_HELP.sharedOnly.short}
-      </SettingHelp>
-
-      <Field label="How well known">
-        <Select value={fame} onChange={(e) => onChange('fame', e.target.value)} className="text-lg">
-          {FAME_LEVELS.map((f) => (
-            <option key={f.id} value={f.id}>{f.label}</option>
-          ))}
-        </Select>
-      </Field>
-      {/* The short line is the level's own blurb rather than a fixed
-          sentence — it is the only place the difference between the levels is
-          stated, so it has to change with the Select above it. */}
-      <SettingHelp className="mb-2" more={SETTING_HELP.fame.more}>
-        {getFame(fame).blurb}
-      </SettingHelp>
-      {blind && (
-        <Banner tone="warning" className="mb-5">
-          {/* Which of the two causes it is decides whether a re-import helps
-              at all, so the copy has to name it rather than always
-              recommending one. */}
-          ⚠️ {hasAnyFameData(poolEntries)
-            ? `Only some of these characters have popularity data, so “${fameLabel}”
-               would be judging the whole table on a handful of them.`
-            : `No popularity data on these lists, so “${fameLabel}” has nothing to
-               go on.`}
-          {' '}The deal falls back to picking a lead. Popularity arrived after these lists
-          were imported — open 🔗 and re-import the shows marked “Missing details” to fill
-          it in.
-        </Banner>
-      )}
-      {tooTight && (
-        <Banner tone="warning" className="mb-5">
-          ⚠️ Only {famous} character{famous === 1 ? '' : 's'} {famous === 1 ? 'is' : 'are'}{' '}
-          well known enough for “{fameLabel}”, so rounds will start repeating.
-          Try a broader setting, or import more lists.
-        </Banner>
-      )}
-
-      <Checkbox
-        label="🃏 Card check before the clues"
+        label="Card check before the clues"
         checked={allowRedeal}
         onChange={(e) => onChange('allowRedeal', e.target.checked)}
         className="mb-2"
@@ -112,7 +67,7 @@ export default function AniFakeSettings({ values, onChange, poolEntries, local, 
       {local ? (
         <>
           <Checkbox
-            label="🗣️ Talk it out"
+            label="Talk it out"
             checked={talkMode}
             onChange={(e) => onChange('talkMode', e.target.checked)}
             className="mb-2"
@@ -125,6 +80,61 @@ export default function AniFakeSettings({ values, onChange, poolEntries, local, 
         <p className="mt-4 text-sm text-fg-subtle">
           You&apos;re the host — your settings apply to everyone.
         </p>
+      )}
+
+      {/* Which characters can be dealt — set once at most tables. Clue rounds,
+          the card check and talk mode stay up front. */}
+      <MoreSettings>
+        <Checkbox
+          label="Shared characters only"
+          checked={sharedOnly}
+          onChange={(e) => onChange('sharedOnly', e.target.checked)}
+          className="mb-2"
+        />
+        <SettingHelp indent className="mb-5" more={SETTING_HELP.sharedOnly.more}>
+          {SETTING_HELP.sharedOnly.short}
+        </SettingHelp>
+
+        {/* htmlFor/id: Field draws a <label> but only ties it to the control
+            when told which one, and an untied select reads as "combo box". */}
+        <Field label="How well known" htmlFor="anifake-fame">
+          <Select id="anifake-fame" value={fame} onChange={(e) => onChange('fame', e.target.value)} className="text-lg">
+            {FAME_LEVELS.map((f) => (
+              <option key={f.id} value={f.id}>{f.label}</option>
+            ))}
+          </Select>
+        </Field>
+        {/* The short line is the level's own blurb rather than a fixed
+            sentence — it is the only place the difference between the levels is
+            stated, so it has to change with the Select above it. */}
+        <SettingHelp className="mb-2" more={SETTING_HELP.fame.more}>
+          {getFame(fame).blurb}
+        </SettingHelp>
+      </MoreSettings>
+
+      {/* After the fold, never inside it: a warning about a folded-away
+          setting would be a problem with no visible cause. */}
+      {blind && (
+        <Banner tone="warning" className="mt-4">
+          {/* Which of the two causes it is decides whether a re-import helps
+              at all, so the copy has to name it rather than always
+              recommending one. */}
+          {hasAnyFameData(poolEntries)
+            ? `Only some of these characters have popularity data, so “${fameLabel}”
+               would be judging the whole table on a handful of them.`
+            : `No popularity data on these lists, so “${fameLabel}” has nothing to
+               go on.`}
+          {' '}The deal falls back to picking a lead. Popularity arrived after these lists
+          were imported — open the link button beside a player and re-import the shows
+          marked “Missing details” to fill it in.
+        </Banner>
+      )}
+      {tooTight && (
+        <Banner tone="warning" className="mt-4">
+          Only {famous} character{famous === 1 ? '' : 's'} {famous === 1 ? 'is' : 'are'}{' '}
+          well known enough for “{fameLabel}”, so rounds will start repeating.
+          Try a broader setting, or import more lists.
+        </Banner>
       )}
 
       <SettingsFooter values={values} defaults={DEFAULT_PREFS} onReset={onReset} />

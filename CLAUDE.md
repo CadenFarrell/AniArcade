@@ -58,6 +58,41 @@ exits. Write scenarios against the hook's return value, the way `OnlineGame.jsx`
 it. Never `await` an `act()` that might not resolve: it holds every React update in the
 process.
 
+Playtest bots (`playtest/`, also `/playtest`) play every game, start to results, through
+the real screens:
+
+```bash
+npm run playtest                                   # local, jsdom, every game × 20 seeds (~4 min)
+npm run playtest -- --game anitag --seed 7 --debug # replay one run exactly (--debug screens: dump each screen)
+npm run playtest -- --layer online                 # devices in one room on the emulator (reuses a running one)
+npm run playtest -- --layer browser                # Playwright: phone + desktop, axe, layout, drag, online
+npm run playtest:all                               # all three, then the report
+```
+
+Each run writes `playtest-report/` (gitignored): `summary.md`, `index.html`, screenshots,
+and a replay command per failure. Three things to know before touching it:
+
+- **One bot brain, every layer.** `core/snapshot.js` reads a screen into
+  `{ heading, text, controls }` (it must stay self-contained — Playwright ships its source
+  into the page), `core/driver.js` plays one shared screen (local), `core/table.js` plays
+  one screen per device (online), and `strategies/<id>.js` say what to press. Strategies
+  are screen-driven, so one file serves jsdom, Chrome and online. A new game needs one, or
+  its playtest fails on purpose.
+- **A seed is a replay.** The bot's choices, the game's `Math.random` and (locally) a fake
+  clock all come from it, and every app module is re-evaluated per run — module state
+  leaking between seeds once made AniRank deal different cards in a sweep than alone.
+  Online runs replay the table, not the network timing.
+- **"stuck", "no-progress" and "loop" usually mean the STRATEGY no longer matches a
+  screen** — a renamed button, a new step. Replay with `--debug screens` and check
+  whether the game offered a way forward before calling it a game bug. Crashes, console
+  errors, `NaN`/`undefined` on screen and devices disagreeing on a result are the game.
+
+`playtest/fixtures/profiles.json` is cut from `seedProfiles.js` with pack stats filled in
+(`npx vite-node playtest/fixtures/build.js` regenerates it); AniTune runs against a canned
+AnimeThemes (`fakes/`). The browser layer builds to `dist-playtest*` and serves on
+4198/4199 (the next free pair when those are taken; `--workers 1` if memory is short) —
+never `dist`, never 5173.
+
 Firebase (online rooms only):
 
 ```bash
@@ -92,23 +127,31 @@ one your rules were deployed to.
 ### Hub and game registration
 
 `src/hub/registry.js` is the entire arcade menu. A game is a folder under `src/games/`
-whose `index.js` default-exports a descriptor (`{ id, title, blurb, icon, accent,
+whose `index.js` default-exports a descriptor (`{ id, title, kana, blurb, accent,
 available, Component }`) plus one line added to that array. `Component` receives a single
 `onExit` prop and owns everything from there.
 
 **`Component` is always `lazyGame(() => import('./<Game>Game'))`, never a static import.**
 Everything else on the descriptor is the menu and stays eager; the game's code downloads on
-demand, so the hub paints after ~83 KB gzipped instead of the whole arcade's ~300 KB. A new
+demand, so the hub paints after ~66 KB gzipped instead of the whole arcade's ~300 KB. A new
 game that imports its component statically pulls itself — and anything only it uses — back
 into the hub's startup bundle, and nothing fails to say so. The mechanics (idle preload,
 the loading screen, the reload-not-reset error) are in `src/hub/CLAUDE.md`.
 
-Each game's top component (`<Game>Game.jsx`) is just a local/online mode picker; the
-online button is disabled unless `firebaseEnabled`. It delegates to
-`LocalGame.jsx` or `OnlineGame.jsx`, each of which is a thin view-router holding a `view`
-string and rendering dumb screens from `components/`.
+Each game's top component (`<Game>Game.jsx`) is just a local/online mode picker: it holds
+`mode` and renders `shared/components/ModePicker.jsx` with its own descriptor (imported from
+`./index`) and tagline. **Build a new game's picker from that component, not from another
+game's file** — the seven were hand-copied once and differed only in colour and tagline.
+ModePicker is the game's cover page: the hub tile opened — game-ink block, split ANI / WORD
+title, and the same character the tile showed (`shared/context/tileCharacterContext.js`,
+provided by `HubScreen` around the active game; null when a game is mounted alone, which
+draws a bare panel). Its two mode cards are named "Play on this device" / "Play online"
+because HubScreen.test and the playtest bots find them by those words; online is disabled
+unless `firebaseEnabled`. The picker delegates to `LocalGame.jsx` or `OnlineGame.jsx`, each
+of which is a thin view-router holding a `view` string and rendering dumb screens from
+`components/`.
 
-Tile sizing, icon geometry (`gameIcons.js`), the blurb's two homes and `ArcadeMark` are in
+Tile sizing, the tile characters, the blurb's two homes and `ArcadeMark` are in
 `src/hub/CLAUDE.md`.
 
 ### rules.js — the central invariant
@@ -156,11 +199,63 @@ departure-reconciliation effect: noticing *that* someone left is generic, decidi
 their absence broke is not.
 
 **The lobby screen follows the same split.** `shared/components/Lobby.jsx` draws what every
-`OnlineLobby` drew identically — `RoomCode`, `PlayerRoster` (with the game's own row badge as
+`OnlineLobby` drew identically — `RoomCode`, `PlayerRoster` (with the game's own badge as
 `badgeFor`, omitted where nothing reads a list), `LobbyImport` and the guest's `HostWaitCard`
-— and each lobby keeps its wordmark, settings, Start gates and Start. The six hand-copied
-rosters had already split two ways on how a departed player looks; build a new lobby from
-these pieces rather than from another game's file.
+— and each lobby keeps its settings, Start gates and Start. The six hand-copied rosters had
+already split two ways on how a departed player looks; build a new lobby from these pieces
+rather than from another game's file.
+
+**Every setup screen and lobby is the same frame: `shared/components/SetupLayout.jsx`.** A
+slim banner in the game's colour (`GameBanner`; `aside` carries the lobby's `RoomCode` or
+AniGuess's leaderboard button), players on the left and settings on the right (stacked on a
+phone), and a `StartBar` pinned to the bottom of the viewport with one status line — what is
+ready, or the first thing that is not. It replaced fourteen single columns with Start at the
+very bottom, below the fold on every phone, its reason for being disabled somewhere above
+it. A screen supplies `left`, `right` and `start`; the warnings stay in its own `left`.
+Players are character-select slots (`shared/components/PlayerSlots.jsx`): `LocalRoster` for
+local setup, `PlayerRoster` for a lobby, each wearing a portrait from that player's own list.
+**`portraitsFor` shares portraits out across the table** — each player gets their
+best-known character nobody seated before them is already wearing — because friends' lists
+overlap and two slots in one face read as one person seated twice. The slots keep the old
+controls' accessible names ("Add player", "Remove <name>", "Import <name>'s list"), which the
+playtest bots and the tests find them by; keep them when touching the slots.
+
+**Every results screen is the other end of that frame: `shared/components/Results.jsx`.** The
+banner turned round (the screen's title — "Final Scores", "Reveal" — is the page's first
+heading and the game's name shrinks to a line above it; the playtest strategies tell a results
+screen by that heading, so keep each game's), a **`Splash`** panel for whoever the screen is
+about, **`Standings`** with a face on every row, the game's own recap below, and the replay
+pinned in the same `StartBar`. The splash is the winner on a final screen (`utils/podium.js`'s
+`splitPodium`: a tie shares the panel, a table of one is "Finished", not "Winner"), the round's
+best on a stop between rounds (AniGuess's `RoundEnd`, AniTag's — which is now a whole screen,
+not a card inside the session's), the fake on AniFake's reveal, and the best board on AniRank's.
+`ResultsLayout` takes the table in **seat order** and shares portraits with `portraitsFor`, so
+a winner wears the face their setup slot did; `shared/components/Portrait.jsx` draws it in both.
+The stamp's `stamp-in` is a from-state animation, so reduced motion leaves it simply stamped.
+
+**The in-round screens are built from a handful of shared pieces too, and the faces are the
+thread through all of them.** `shared/components/TablePortraits.jsx` shares the table's
+portraits out once (`portraitsFor`, seat order) for everything past setup — `RoomShell`
+provides it online and each `LocalGame` locally — and `usePlayerPortrait(player)`
+(`context/tablePortraitsContext.js`) looks a face up by id, so a player wears the same
+character in the turn strip, on the handoff, on the results screen and in their setup slot.
+On top of it:
+
+| piece | is | used by |
+| --- | --- | --- |
+| `Handoff` | pass the device: the next player's portrait panel, name slab, the game's own button words | every local pass screen; AniGuess's look-away |
+| `PlayerRow` | the table as a row of faces, NOW (purple, whose-turn) on the active one, score and a status mark under each | AniGuess `TurnTracker`, AniQuiz `Scoreboard`, AniTag `SeatStrip`, AniTune's scores, AniFake's clue order |
+| `RoundHeader` | the round's heading in display caps, an ink tab ("Turn 3", "Song 2/10"), a hint, the clock inside it | every round screen with a heading of its own |
+| `ResultImpact` | a right/wrong landing: speed lines and a ✓/✗ block for 750ms, plus its sound | AniGuess's guesses, AniTune / AniQuiz reveals, AniTag's turn end |
+| `SpeechBubble` | a question or a name as a manga balloon | AniGuess's question, AniTag's name under judgement |
+
+`ResultImpact` follows the sound rule exactly — online it fires only for THIS player's result
+and plays the sound itself, so the frame and the sound cannot disagree — and it is
+aria-hidden and pointer-events-none: decoration over a screen that already says the result,
+never a layer that eats a tap. Two things to keep when touching any of them: the headings
+and button words are what the playtest bots read ("<name>'s Turn", "Clues", "I'm X — show
+me", "Accuse <name>"), and a dimmed player dims their FACE, never the text, which axe flags
+under 4.5:1.
 
 All games share one `rooms/{code}` namespace — codes are unique across the whole app, not
 per game, so a new game cannot assume it has the code space to itself. A code is claimed by
@@ -420,6 +515,18 @@ The weight was the other half of the problem. Helper copy had drifted to three t
 across the games (`text-base text-white/50`, `text-sm text-white/50`, `text-sm
 text-white/30`), and with no consistent signal for "this is the secondary line" the volume
 read as noise instead of hierarchy. Everything routes through here now, at two weights only.
+
+**The options most tables never change fold under "More settings"**
+(`shared/components/MoreSettings.jsx`), inside the card they belong to: AniTune's clip and
+pool details, AniGuess's randomizer and points, AniFake's pool and fame, AniTag's names-per-
+round and own categories, AniQuiz's extras, timer and category switches. AniRank and AniWave
+fold nothing — their cards were already short. Two rules: **a warning never goes inside a
+fold** (a banner about a folded-away setting is a problem with no visible cause, so banners
+sit after it), and the open state is one arcade-wide key, `aniarcade_more_settings`, for
+`aniarcade_setting_detail`'s reasons (it belongs to no game; not in `PRESERVED_KEYS`). Folded
+controls are `hidden`, so a test or bot that changes one has to open the fold first —
+`openMoreSettings(user)` in `shared/testing/arcade.jsx`, which opens only closed folds,
+because the remembered state carries from one test to the next.
 
 **`DetailToggle` goes on a card only when that card has something to reveal**, and on every
 such card rather than once per screen — two of them a few hundred pixels apart is mild
@@ -825,110 +932,184 @@ is how a rate-limit fix ends up applied to two callers out of three.
   property path is the expensive part), and is POSTed to because the query outgrows a URL.
 
 With no `.env.local`, `firebaseEnabled` is false, `ensureInitialized()` is never called, and
-local play touches no **third-party** network at all. Keep that property intact. The one
-request local play does make is the fact pack under `/facts/` — a static file the app serves
-itself, in the same class as its own JS bundle. `hub/HubScreen.test.jsx` pins exactly that
-line: its `fetch` stub serves `/facts/` from `public/` and fails every other URL.
+local play touches no **third-party** network at all. Keep that property intact. What local
+play does request is all same-origin static files, in the same class as its own JS bundle:
+the fact pack under `/facts/`, the fonts, the prints under `/art/`, and the UI sounds under
+`/sounds/` (fetched at idle, and only where Web Audio exists — see
+`shared/services/sound.js`). The one third-party load is the player's OWN data: character
+portraits from an imported list, as `<img>` tags from AniList's CDN — on the hub tiles and in
+every game's `Avatar`, and only for someone who imported one. `hub/HubScreen.test.jsx` pins the network half of that: its
+`fetch` stub serves `/facts/` from `public/` and fails every other URL, and jsdom has no Web
+Audio, so the sound engine never asks.
 
 ### Styling
 
 Tailwind v4 with all design tokens in the `@theme` block of `src/index.css` — restyling
 means editing values there, not sweeping components. Each accent has a fixed semantic job
-(pink = primary/guessing, purple = secondary/whose-turn, lime = yes/correct/ready,
-red = no/wrong/destructive); don't pick them by vibe at the call site. The `btn-pop` /
-`focus-pop` utilities carry the press-down physics. UI primitives are imported from the
-`src/shared/ui` barrel; solid buttons use `text-ink`, not white, for AA contrast.
+(pink = primary/guessing/brand, purple = secondary/whose-turn, lime = yes/correct/ready,
+red = no/wrong/destructive, amber = warnings/scores/timer, blue = asking); don't pick them by
+vibe at the call site. The `btn-pop` / `focus-pop` utilities carry the press-down physics.
+UI primitives are imported from the `src/shared/ui` barrel.
 
-**The look is an arcade cabinet: near-black ground, neon accents, glow layered ON TOP of
-the press-down physics rather than instead of them.** The canvas is `#05050c` and the three
-surfaces sit only 1.07:1 apart, because neon only reads as *emission* against something
-close to off — the previous dark-navy canvas made bright fills look like paint. Surfaces
-separate by hairline and glow, not by luminance, so they never compete with the accents.
+**The look is a manga page: warm paper, black ink, one red.** It replaced a neon arcade
+cabinet (near-black canvas, glow halos) because the cabinet read as generated and generic;
+the references were two manga landing pages. Canvas `#efebe2`, three surfaces 1.12 / 1.24:1
+apart, ink `#141414` for every border and hard shadow. **Every token name survived the
+swap** — roles, not values, are what call sites name — which is how ~500 call sites changed
+colour without being edited. The tokens, shared primitives and shell went first; the hub,
+setup screens, results and in-round screens followed, each onto a shared frame (below), and
+the game sounds with them.
 
-**`--glow` is a contract between the call site and the utility, and it only ever travels
-one way.** `btn-pop`, `sticker` and `neon-text` paint a halo in `var(--glow, transparent)`;
-they never choose the colour, because only the caller knows the fill, and a halo in a
-different colour from its block reads as a rendering fault rather than as light. Variants
-set it alongside their `bg-` token (`Button.jsx`, `Wordmark.jsx`, `HubScreen.jsx`'s
-`ACCENTS`) and it must always match. The `transparent` default is load-bearing: a control
-that sets no glow renders the pre-neon look instead of a black smear, which is why adding
-glow to 500 components was not a prerequisite for shipping it on six.
+**The accent contract INVERTED with the canvas, and it is the one non-obvious rule here.**
+On paper no colour can be both readable text on the page (luminance below ~0.15) and a
+fill under ink text (above ~0.20). So every solid fill is a DARK print ink and carries
+**`text-paper`**, and the same ink reads as text on the page — the way the references set
+black ORDER NOW and white-on-red logos. Each accent's comment carries both ratios (text on
+`surface-2`, the darkest surface; paper text on the fill), and both must be re-checked
+together. Two consequences:
 
-Three places deliberately stay unlit, and each is a restraint decision rather than an
-oversight. **Disabled buttons** reset `--glow` inside `btn-pop` itself, or the halo would
-survive the grey fill and advertise a control nobody can press. **Badges** never glow —
-there can be six in a row, and a lit label repeated six times stops reading as emphasis.
-**Unavailable hub tiles** drop the glow with the same reasoning that already greyscales
-their marquee: without it, the one game nobody can play would be the only lit cabinet.
+- `text-ink` now means *ink-coloured text*, which is right only on a LIGHT fill — a white
+  chip, or a knocked-back tint. `anirank/utils/tierTone.js` is the worked example: solid
+  rungs take `text-paper`, the /45 tints over paper are mid-tone and take `text-ink`.
+- `pink` is vermilion (`#b4300f`) and `red` is crimson (`#931229`) — two reds, separated by
+  hue. So a right/wrong is never colour alone: rows use `shared/ui/Mark.jsx` (a stamped ✓/✗
+  with its word) and a result landing uses `ResultImpact`'s ✓/✗ block. A board or panel is
+  ruled in INK, never in a game's red accent — AniQuiz's crimson is hub identity only, and
+  a board ruled in it read as a board of mistakes.
 
-**The CRT layers are static on purpose.** `crt-vignette` and `crt-grain` are a radial
-darkening plus an inline-SVG turbulence, both fixed, with no animation at all. Scanlines and
-flicker were considered and turned down: a full-screen animated overlay is a permanent
-compositing cost on every screen in the app, and thin repeating lines alias badly at
-fractional device pixel ratios, which is most laptops. Because nothing here moves, there is
-nothing for `prefers-reduced-motion` to disable — only the glow pools animate, and `blob`
-was already covered. `neon-text` is a `text-shadow` and not a `filter: drop-shadow` for the
-same class of reason: the filter forces its own compositing layer, which on a long list of
-glowing labels is a measurable scroll cost for an effect nobody can point at.
+`Button`'s `primary` is **ink**, not pink: a page whose every main action is red has no red
+left for the one thing that should stand out. `secondary` is the outline of the same block.
+
+**The glow is gone, and `--glow` with it.** Light needs a dark room; on paper a coloured blur
+reads as a printing fault. `btn-pop` kept its physics exactly — the ink shadow is what the
+press travels into. Where glow carried meaning it was replaced, not dropped: `TimerBar`'s last
+five seconds take a paper `hatch` (a texture change, which also survives colour-blindness),
+and the "lit" leader / perfect-board numerals are inked in amber, the score colour.
+
+**Print textures are static, gradient-or-inline-SVG utilities** — `paper-grain`,
+`plus-grid`, `halftone` (`--tone`, `--tone-size`), `speed-lines` (`--lines`), `hatch`
+(`--hatch`), `slash` (`--slash`). No requests, nothing to 404, nothing that moves, so nothing
+for reduced motion to stop. Colour comes from the custom property with an ink default.
+
+**Motion is three things, all FROM-state animations so reduced motion leaves the finished
+picture:** `screen-in` on `Screen`'s root (every view renders its own Screen, so every view
+change in every game page-turns with no router involved — clip-path and opacity only, NEVER
+transform, because a transformed ancestor becomes the containing block for `fixed`
+descendants and a modal mounted mid-animation would jump); the hub's `PanelWipe` between
+title → hub → game (timers in `hub/useWipe.js`, not `animationend`, which jsdom never fires
+and a backgrounded tab can freeze; a press during a wipe is ignored, so tests must wait for
+`[data-wipe]` to clear); and `attract-blink` on PRESS START.
+
+**Type:** Oswald (display, condensed caps), Archivo (body), and Dela Gothic One as
+`--font-kana` — **decoration only**, always through `<Kana>` (aria-hidden, `lang="ja"`), and
+the file is a cut holding only the katakana block + べ を 中 選. Every string comes from
+`shared/ui/kanaText.js` or a game descriptor's `kana`, and
+`kanaText.test.js` pins them against the cut, because a missing glyph silently falls back mid-word. **The module is
+`kanaText.js`, not `kana.js`:** beside `Kana.jsx` on a case-insensitive filesystem, Vite
+resolved `./Kana` to the `.js` and every `<Kana>` crashed. `font-synthesis-weight: none` on
+`body` stops kana inheriting a faux bold.
+
+**Art is public-domain ukiyo-e, never generated — except the hub tiles, which are the
+player's own characters.** The title, hero and credits use three Met Open Access prints
+(Hokusai, Kuniyoshi, Hiroshige), grayscale WebP in `public/art/`, each processed once — the
+record of source, licence and processing is `shared/ui/credits.js`, which also feeds the
+hub's Credits dialog and the title screen's credit line, and `credits.test.js` checks each
+file exists and is CC0. The tiles draw fresh greyscale portraits from the main profile's
+imported list every visit (`hub/tileCharacters.js`; see `src/hub/CLAUDE.md`), so every
+player's board is theirs — they are the player's data, not shipped assets. **The red is never
+in a file:** a CSS sun disc sits behind the print and the print is `mix-blend-multiply`'d over
+it, so ink lines stay black and only the paper turns red. Keep every shipped asset CC0 or OFL;
+a new one under any other licence needs a decision, not just an entry.
+
+**The shell:**
+
+- `shared/components/TopBar.jsx` is the strip across every screen, mounted once by
+  `HubScreen` (which knows the open game's title). Things a GAME owns arrive through two
+  **slots** (`shared/context/topBarContext.js`) by portal: `HubButton` into the left,
+  `RoomShell`'s room code + Leave into the right — minus the code in the lobby, whose
+  banner draws the big `RoomCode` (each game's lobby branch passes `codeInPage`), so the one
+  screen never shows the code twice. With no bar (a game mounted alone in a test) both fall
+  back to placing themselves. `Screen`'s `pt-20` is what clears the bar's
+  `h-14`.
+- `shared/components/RoomShell.jsx` replaced the `shell()` hand-copied into all seven
+  `OnlineGame.jsx` files (which had drifted: only AniTag showed the code on phones and capped
+  the disconnect banners). A game's `shell` is now one line around it.
+- `hub/TitleScreen.jsx` once per browser session (`hub/titleSeen.js`, sessionStorage, so a
+  refresh mid-game skips it). PRESS START is also the user gesture the sound engine needs.
+  `renderArcade` marks it seen unless passed `{ showTitle: true }`.
+- Sound: `shared/services/sound.js` (Web Audio; bytes prefetched at idle, the context created
+  inside the first gesture, every failure is silence) and `SoundProvider` for the mute switch
+  (`aniarcade_sound_muted`, not in `PRESERVED_KEYS`). `Button` takes `sound` (`'tap'`
+  default, `null` for none), `GhostButton` and `HubButton` play `back`, `Modal` plays `open`
+  (its `sound` prop, `null` where the moment already made one).
+  The files are Kenney CC0, converted to MP3 because Safari's Vorbis support is not worth
+  betting a click on.
+- **Game sounds come in two kinds, and which kind a moment is decides how it is wired.** A
+  moment that IS a press — a Yes/No ruling, a buzz, a local guess — plays through the
+  button (`sound="yes"`, or `sound={null}` plus `playSound` in the handler when the result
+  is only known inside it). A moment that ARRIVES — a verdict over the network, a reveal, a
+  turn coming round, a clock running down — goes through `shared/hooks/useSoundCue.js`:
+  `useSoundCue(name, key)` plays once per new key (so re-renders and StrictMode never
+  replay it) through `playCue`, which never creates the AudioContext — a context made
+  outside a gesture starts suspended, so a cue on a freshly reloaded tab is silent until
+  the first tap. `useCountdownCue` is the last five seconds' tick and the `timeup` buzzer,
+  in `TimerBar` and AniGuess's own clock. **Online, each phone sounds its OWN result**
+  (`myId`/`playerId` decides `correct` vs `wrong`; anyone else's result is the plain
+  `reveal`), and shared moments — a reveal, the results stamp, a buzz — sound everywhere.
+  On the one local device the table's result plays. `sound.test.js` checks every name
+  has its file.
+
+**No emoji, anywhere on screen — `shared/ui/icons.js` is the arcade's one icon set.** ~450
+platform emoji were the last thing on the page drawn by somebody else: every OS paints them in
+its own glossy colours, so on black ink they were the one part that looked pasted in. Most
+were simply DELETED — they decorated a label that already said the same thing ("🎮 Start
+Game") — and an icon survives only where it carries something the words do not: yes/no
+marks, a player's status in a row (locked in, out, waiting, buzzed), lives, a host's crown,
+the fake's mask, icon-only buttons. `<Icon name>` (24px ink, round strokes) sizes to the
+surrounding text and is the one place `currentColor` is allowed — an inline icon is part of
+the text it sits in, so it follows that text through every button variant. It is
+decorative unless given a `label`. Places are `<PlaceMark place>` (a numbered medal, with
+the digit as text), lives are AniTune's `Lives`, and `Banner` draws its tone's mark itself,
+so no call site prefixes a "⚠️". `icons.test.js` checks every `<Icon name="…">` in `src`
+exists and fails on any emoji on a rendered (non-comment) line; the playtest strategies find
+buttons by label, so a label change there needs a strategy change too.
 
 **Neutral colour is a ROLE, never an opacity, and `white/N` must not come back.** The
 canvas, surfaces and accents were always tokens, but every dim text line, hairline and
 translucent fill was a hardcoded `white/N` utility — ~510 of them at **fifteen** different
-opacity steps, plus 16 `black/N` scrims. Two separate problems, and the token layer in
-`@theme` fixes both:
+opacity steps, plus 16 `black/N` scrims. That the canvas could go from black to paper as a
+value edit is the proof the ramp was worth it: a `white/N` literal would have been white on
+paper, and so would the 229 `text-white` literals the paper pass had to sweep to
+`text-fg-strong` by hand. Don't write `text-white` either.
 
-- **A `white/N` literal is hardcoded to a dark canvas.** It inverts wrong the moment
-  `--color-canvas` lightens, and no token swap can catch it: the theme block looks correct
-  and the screens are unreadable. This is the reason the ramp exists at all.
-- **Fifteen steps is drift, not a system** — there were three separate treatments for
-  helper text alone, which is the problem `SettingHelp.jsx` was built to solve, reappearing
-  one layer down.
+**There are FOUR text levels and that is a ceiling, not a preference.** The ramp is ink at
+graded alpha; on `surface-2` 4.5:1 puts the floor at 0.62, so there is only so much room
+between it and solid ink. The ramp used to have six and the bottom two were simply illegal;
+`fg-faint` was **folded into `fg-subtle`** because the alpha both needed in order to pass was
+the same number — they were never two roles. Three roles sit below that floor on purpose:
+`fg-icon` (glyph buttons, a UI affordance held to 3.0:1), `fg-disabled` (WCAG exempts
+disabled controls) and `fg-ghost` (`aria-hidden` markers). Collapsing any of those into
+`fg-subtle` silently re-couples them to an obligation they don't owe. If a shade seems
+missing, the question is never "which opacity" but **which role**. Scrims stayed ink through
+the canvas swap — a wash tints the page, a scrim hides what is under it, and hiding is
+darkening on any ground — and text on a scrim is `text-paper`.
 
-The names encode a **contrast obligation**, and that is what let the AA repair land as a
-value edit when the canvas was finalised rather than a re-classification of 169 call sites.
+`public/favicon.svg` is hand-synced to `--color-pop-pink` / `--color-ink` / `--color-paper`
+because a file in `public/` cannot see the theme — a palette change that skips it leaves the
+tab icon on the old colours silently.
 
-**There are FOUR text levels and that is a ceiling, not a preference.** On a near-black
-ground 4.5:1 puts a hard floor at ~0.46 alpha, so there is only so much room between it and
-plain white. The ramp used to have six and the bottom two were simply illegal; `fg-faint`
-(2.69:1) was **folded into `fg-subtle`** because the alpha both of them needed in order to
-pass turned out to be the same number — which means they were never two roles to begin
-with. Three roles sit near that floor and are exempt on purpose: `fg-icon` (glyph buttons,
-a UI affordance held to 3.0:1), `fg-disabled` (WCAG exempts disabled controls) and
-`fg-ghost` (`aria-hidden` markers). Collapsing any of those into `fg-subtle` silently
-re-couples them to an obligation they don't owe.
-
-So: if a shade seems missing, the question is never "which opacity" but **which role**, and
-whether it must clear 4.5:1 (text), 3.0:1 (icons and UI affordances), or nothing (disabled,
-decorative). Nothing dimmer than `fg-subtle` may carry text a user has to read. Scrims are
-`black`-based and separate from the `wash` scale for a related reason — a wash tints the
-canvas, a scrim hides what is behind it, so a lighter canvas inverts one and probably not
-the other.
-
-**Every accent value carries its two measured ratios in a comment, and both must be
-re-checked together.** An accent has to clear 4.5:1 as small text on `--color-surface` *and*
-4.5:1 with `text-ink` on top of it as a solid fill; the second is the one that gets
-forgotten, and it is why `pop-purple` is brighter than Tailwind's purple-500. `public/favicon.svg`
-is hand-synced to `--color-pop-pink` / `--color-ink` because a file in `public/` cannot see
-the theme — a palette change that skips it leaves the tab icon on the old colours silently.
-
-
-**`field-lit` is a second focus signal and must never become the only one.** A form control
-is a dark block on a dark ground whose ink border is very nearly the canvas, so focus cannot
-be signalled by a border-colour change — which is the exact bug `focus-pop` exists to fix,
-reappearing at the component level. `field-lit` takes the primary accent on the border and
-lifts a halo behind it, and it is applied **alongside** `focus-pop`, never instead of it: the
-white ring is what a forced-colours or high-contrast user actually gets, while a colour
-change on its own is a colour-only affordance. It fires on `:focus`, not `:focus-visible`,
-because a field that lights only for keyboard users leaves every pointer user on an unlit
-form. `NumberInput` applies it **only when the value is valid** — it sets `border-color` on
-`:focus-within`, so on an invalid stepper it would repaint the red error border pink at
+**`field-lit` is a second focus signal and must never become the only one.** Every field
+already has an ink border, so focus cannot be a border alone. `field-lit` takes the primary
+accent on the border plus a hard underline, and it is applied **alongside** `focus-pop`,
+never instead of it: the ink ring is what a forced-colours or high-contrast user actually
+gets. It fires on `:focus`, not `:focus-visible`, because a field that lights only for
+keyboard users leaves every pointer user on an unlit form. `NumberInput` applies it **only
+when the value is valid** — on an invalid stepper it would repaint the red error border at
 exactly the moment the user is looking at it.
 
-**Modals blur what is behind them because dimming is no longer enough.** A dark panel on a
-dark scrim over a near-black canvas is three nearly identical greys stacked up, and the
-dialog stops reading as being in front of anything. `backdrop-blur-sm` restores the depth
-the luminance no longer supplies, and the panel takes `border-line-loud` rather than the
-card default for the same reason.
+**Modals blur what is behind them** — an ink scrim over a busy page leaves the page's own ink
+lines showing through as noise behind the panel — and the panel takes a 3px rule and a
+deeper shadow, the one panel that has to look lifted off the page.
 
 **Viewport heights are `dvh`, not `vh`.** `vh` on mobile browsers measures the viewport
 *without* the retracting URL bar, so a centred screen paints a bar-height too low and then

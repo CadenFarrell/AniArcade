@@ -1,4 +1,4 @@
-import { Avatar, Card } from '../../../shared/ui';
+import { Avatar, Card, Icon } from '../../../shared/ui';
 
 // What one player was dealt. Rendered on its own screen locally (behind the
 // pass-the-device gate in SecretReveal) and inline above the clue log online,
@@ -45,7 +45,7 @@ export default function SecretCard({ card, compact = false }) {
   if (card.isFake) {
     return (
       <Card padding={compact ? 'sm' : 'lg'} className="border-pop-red text-center">
-        <div className={compact ? 'text-3xl' : 'text-6xl'}>🕵️</div>
+        <div className={`text-pop-red ${compact ? 'text-3xl' : 'text-6xl'}`}><Icon name="mask" /></div>
         <p className="mt-2 font-display text-2xl font-extrabold text-pop-red">
           You are the fake
         </p>
@@ -59,7 +59,7 @@ export default function SecretCard({ card, compact = false }) {
             <p className="font-display text-xs font-extrabold uppercase tracking-widest text-fg-subtle">
               Your only hint
             </p>
-            <p className="mt-1 font-display text-3xl font-extrabold text-white">
+            <p className="mt-1 font-display text-3xl font-extrabold text-fg-strong">
               {card.hint}
             </p>
           </div>
@@ -98,7 +98,7 @@ export default function SecretCard({ card, compact = false }) {
           <p className="font-display text-xs font-extrabold uppercase tracking-widest text-pop-teal">
             Your character
           </p>
-          <p className="truncate font-display text-2xl font-extrabold text-white">
+          <p className="truncate font-display text-2xl font-extrabold text-fg-strong">
             {character.name}
           </p>
           <p className="truncate text-fg-helper">{character.series}</p>

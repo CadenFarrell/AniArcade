@@ -62,14 +62,14 @@ export default function RoomSetup({ room, onBack, tone = 'purple', stat = () => 
       <Backdrop />
       <Screen onBack={onBack}>
         <Wordmark tone={tone} size="md" level={2} className="mb-8">
-          🌐 Play Online
+          Play Online
         </Wordmark>
 
         {/* Connection-level problems (sign-in failure, a saved room that
             vanished). Dismissible — the join form below still works. */}
         {room.error && (
           <Banner tone="danger" onDismiss={room.dismissError} className="mb-5">
-            ⚠️ {room.error}
+            {room.error}
           </Banner>
         )}
 
@@ -80,7 +80,7 @@ export default function RoomSetup({ room, onBack, tone = 'purple', stat = () => 
               list you bring to every online game.
             </p>
             <Button variant="primary" size="lg" fullWidth onClick={() => setShowPicker(true)}>
-              👤 Choose profile
+              Choose profile
             </Button>
           </Card>
         )}
@@ -105,7 +105,7 @@ export default function RoomSetup({ room, onBack, tone = 'purple', stat = () => 
               onClick={handleCreate}
               disabled={busy}
             >
-              {busy ? 'Creating…' : '➕ Create Room'}
+              {busy ? 'Creating…' : 'Create Room'}
             </Button>
 
             <div className="flex gap-3">
@@ -143,7 +143,7 @@ export default function RoomSetup({ room, onBack, tone = 'purple', stat = () => 
             onClose={() => setShowPicker(false)}
             // No ListManager route from inside a game — the import dialog is
             // the one that matters here, and it is already wired up below.
-            // Select first: the row you tapped ✏️ on is not necessarily the
+            // Select first: the row whose pencil you tapped is not necessarily the
             // active one, and importing into someone else's profile is worse
             // than useless.
             onEditList={(id) => { selectProfile(id); setShowPicker(false); setShowImport(true); }}

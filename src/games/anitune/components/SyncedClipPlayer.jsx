@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { Button } from '../../../shared/ui';
+import { Button, Icon } from '../../../shared/ui';
+import ClipDeck from './ClipDeck';
 
 // The online clip player. Where ClipPlayer just plays a random snippet on its
 // one device, this coordinates every device onto the SAME snippet at the SAME
@@ -212,32 +213,28 @@ export default function SyncedClipPlayer({
   const pct = Math.min(100, (elapsed / seconds) * 100);
 
   return (
-    <div className="w-full">
-      <div className="mb-4 h-4 w-full overflow-hidden rounded-pop-sm border-2 border-ink bg-surface-2">
-        <div
-          className="h-full bg-pop-blue transition-[width] duration-100"
-          style={{ width: `${revealed ? 100 : pct}%` }}
-        />
-      </div>
+    <ClipDeck pct={revealed ? 100 : pct} playing={state === 'playing'}>
 
       {state === 'loading' && (
-        <p className="py-4 text-center text-lg text-fg-subtle">Loading clip…</p>
+        <p className="py-2 text-lg">Loading clip…</p>
       )}
 
       {state === 'error' && (
-        <p className="py-4 text-center text-lg text-pop-red">
-          Couldn&apos;t play this clip — reveal and skip to the next one.
+        <p className="py-2 text-lg">
+          <Icon name="warning" /> Couldn&apos;t play this clip — reveal and skip to the next one.
         </p>
       )}
 
       {state === 'gate' && (
-        <Button variant="primary" size="lg" fullWidth onClick={handleReady}>
-          🎧 Tap when ready
+        // Secondary (paper) rather than primary: an ink button on the ink deck
+        // would be an outline in the dark.
+        <Button variant="secondary" size="lg" fullWidth onClick={handleReady}>
+          Tap when ready
         </Button>
       )}
 
       {state === 'armed' && (
-        <p className="py-4 text-center text-lg text-fg-body">
+        <p className="py-2 text-lg">
           {clipStartAt == null
             ? 'Waiting for everyone…'
             : `Get ready… ${countdown > 0 ? countdown : ''}`}
@@ -245,20 +242,20 @@ export default function SyncedClipPlayer({
       )}
 
       {state === 'playing' && !revealed && (
-        <p className="py-4 text-center text-lg text-fg-body">🎵 Listen…</p>
+        <p className="py-2 font-display text-lg font-bold uppercase tracking-[0.3em]">Listen…</p>
       )}
 
       {state === 'blocked' && (
         <Button variant="neutral" size="lg" fullWidth onClick={replay}>
-          ▶ Play clip
+          Play clip
         </Button>
       )}
 
       {state === 'done' && !revealed && (
         <Button variant="neutral" size="lg" fullWidth onClick={replay}>
-          🔁 Replay clip
+          Replay clip
         </Button>
       )}
-    </div>
+    </ClipDeck>
   );
 }

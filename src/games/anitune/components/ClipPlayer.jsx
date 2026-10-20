@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { Button } from '../../../shared/ui';
+import { Button, Icon } from '../../../shared/ui';
+import ClipDeck from './ClipDeck';
 
 // Plays a fixed-length snippet from a random offset.
 //
@@ -201,33 +202,27 @@ export default function ClipPlayer({
   const pct = Math.min(100, (elapsed / seconds) * 100);
 
   return (
-    <div className="w-full">
-      <div className="mb-4 h-4 w-full overflow-hidden rounded-pop-sm border-2 border-ink bg-surface-2">
-        <div
-          className="h-full bg-pop-blue transition-[width] duration-100"
-          style={{ width: `${revealed ? 100 : pct}%` }}
-        />
-      </div>
+    <ClipDeck pct={revealed ? 100 : pct} playing={state === 'playing'}>
 
       {state === 'loading' && (
-        <p className="py-4 text-center text-lg text-fg-subtle">Loading clip…</p>
+        <p className="py-2 text-lg">Loading clip…</p>
       )}
 
       {state === 'error' && (
-        <p className="py-4 text-center text-lg text-pop-red">
-          Couldn&apos;t play this clip — skip to the next one.
+        <p className="py-2 text-lg">
+          <Icon name="warning" /> Couldn&apos;t play this clip — skip to the next one.
         </p>
       )}
 
       {state === 'playing' && !revealed && (
-        <p className="py-4 text-center text-lg text-fg-body">🎵 Listen…</p>
+        <p className="py-2 font-display text-lg font-bold uppercase tracking-[0.3em]">Listen…</p>
       )}
 
       {(state === 'ready' || state === 'done') && (
         <Button variant="neutral" size="lg" fullWidth onClick={replay}>
-          {state === 'done' ? '🔁 Replay clip' : '▶ Play clip'}
+          {state === 'done' ? 'Replay clip' : 'Play clip'}
         </Button>
       )}
-    </div>
+    </ClipDeck>
   );
 }

@@ -2,12 +2,12 @@ import { GhostButton } from '../ui';
 import { arePrefsDefault } from '../utils/gamePrefs';
 
 /**
- * The bottom row of a game's ⚙️ Settings card: what happens to these options,
+ * The bottom row of a game's Settings card: what happens to these options,
  * plus the escape hatch for the ones already remembered.
  *
  * The sentence renders unconditionally, and that is the whole point of it. These
  * options save when Start is pressed and at no other moment — leaving the screen
- * by the "🏠 Hub" button discards the change, and on a screen where Start is still
+ * by the "Hub" button discards the change, and on a screen where Start is still
  * gated by the roster or the pool they cannot be saved at all. Nothing said so,
  * and the first person to use the feature hit exactly that: set something, went
  * back to the hub, came in again, found it off.

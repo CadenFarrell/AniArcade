@@ -5,6 +5,7 @@ import AniFakeResults from './components/AniFakeResults';
 import { eligibleCharacters } from './utils/pool';
 import { applyRoundScores, minPool, seating } from './rules';
 import { HubButton } from '../../shared/ui';
+import TablePortraits from '../../shared/components/TablePortraits';
 
 // Single-device pass-and-play. A thin view-router, the same shape as
 // src/games/anirank/LocalGame.jsx: it holds a `view` string and hands the work
@@ -54,7 +55,7 @@ export default function LocalGame({ onExit, onBack }) {
     setView('results');
   }, []);
 
-  // Every local screen sits under one fixed "🏠 Hub" button rather than carrying
+  // Every local screen sits under one fixed "Hub" button rather than carrying
   // its own way out, so the exit never moves between views. Rendering it here
   // rather than per screen is what gives the pass-and-play screens inside
   // LocalRound — SecretReveal, CardCheck, VoteScreen, StealScreen and the two
@@ -106,13 +107,17 @@ export default function LocalGame({ onExit, onBack }) {
     return <AniFakeSetup onStart={start} error={error} onBack={onBack} />;
   };
 
+  // Faces shared out once for the whole table (see TablePortraits), so the turn
+  // strip, the pass-the-device panel and the results all match the setup slots.
   return (
-    <>
-      <HubButton
-        onClick={onExit}
-        confirm={view === 'round' ? 'Return to the hub? The round will be lost.' : null}
-      />
-      {body()}
-    </>
+    <TablePortraits players={game?.players}>
+      <>
+        <HubButton
+          onClick={onExit}
+          confirm={view === 'round' ? 'Return to the hub? The round will be lost.' : null}
+        />
+        {body()}
+      </>
+    </TablePortraits>
   );
 }

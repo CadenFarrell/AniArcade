@@ -5,7 +5,7 @@ import { lazy } from 'react';
 // Every game used to be imported eagerly by hub/registry.js, so the menu could
 // not paint until all seven games — and Firebase, dnd-kit and every screen they
 // own — had downloaded and parsed: one ~1 MB file before the first tile. A
-// game's descriptor still carries its title, blurb, icon and accent eagerly,
+// game's descriptor still carries its title, blurb, kana and accent eagerly,
 // because that is the menu; only `Component` defers.
 //
 // `preload()` is the other half. HubScreen calls it for every game once the

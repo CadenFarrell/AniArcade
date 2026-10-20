@@ -7,6 +7,7 @@ import { browseCards, poolNoun, rankCards } from '../utils/cards';
 import ClueCard from './ClueCard';
 import Dial from './Dial';
 import SpectrumPicker from './SpectrumPicker';
+import RoundHeader from '../../../shared/components/RoundHeader';
 
 // The psychic's turn: choose the spectrum, then say something about the target.
 //
@@ -60,10 +61,7 @@ export default function PsychicView({
   const [placement, setPlacement] = useState(null);
 
   const header = (
-    <div className="mb-6 flex items-center justify-between gap-3">
-      <h2 className="font-display text-2xl font-extrabold text-white">You're the psychic</h2>
-      <Badge tone="purple">Round {roundNumber}/{totalRounds}</Badge>
-    </div>
+    <RoundHeader title="You're the psychic" tag={`Round ${roundNumber}/${totalRounds}`} />
   );
 
   if (!spectrum) {
@@ -183,7 +181,7 @@ export default function PsychicView({
                         <>
                           <Avatar src={c.imageUrl} alt="" size="sm" />
                           <span className="min-w-0">
-                            <span className="block truncate font-semibold text-white">
+                            <span className="block truncate font-semibold text-fg-strong">
                               {c.title}
                             </span>
                             {c.subtitle && (

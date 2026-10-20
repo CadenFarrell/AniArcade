@@ -23,7 +23,7 @@ export default function GuessInput({
   questions,
   masked = false,
   placeholder = 'Which anime is this?',
-  submitLabel = 'Guess 🎯',
+  submitLabel = 'Guess',
   skipLabel,
   disabled = false,
   onSubmit,
@@ -54,7 +54,7 @@ export default function GuessInput({
         optionKey={(s) => s.title}
         renderOption={(s) => (
           <div className="min-w-0">
-            <p className="truncate text-base font-bold text-white">{s.title}</p>
+            <p className="truncate text-base font-bold text-fg-strong">{s.title}</p>
             {s.alt && s.alt !== s.title && (
               <p className="truncate text-sm text-fg-subtle">{s.alt}</p>
             )}

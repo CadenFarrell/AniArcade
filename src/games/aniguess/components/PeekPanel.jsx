@@ -4,7 +4,7 @@ import { Button, Modal } from '../../../shared/ui';
 // "Peek at my anime list", once per round. Button plus modal, identical in the
 // local and online game screens. Neither copy could be dismissed with Escape;
 // going through <Modal> fixes that for both.
-export default function PeekPanel({ peekList, hasPeeked, onPeek }) {
+export default function PeekPanel({ peekList, hasPeeked, onPeek, className = 'mb-5' }) {
   const [open, setOpen] = useState(false);
 
   const handlePeek = () => {
@@ -17,18 +17,18 @@ export default function PeekPanel({ peekList, hasPeeked, onPeek }) {
       <Button
         variant={hasPeeked ? 'neutral' : 'secondary'}
         fullWidth
-        className="mb-5"
+        className={className}
         onClick={handlePeek}
         disabled={hasPeeked}
       >
         {hasPeeked
-          ? '📋 Already peeked this round'
-          : '📋 Peek at my anime list (once per round)'}
+          ? 'Already peeked this round'
+          : 'Peek at my anime list (once per round)'}
       </Button>
 
       {open && (
         <Modal onClose={() => setOpen(false)}>
-          <h3 className="font-display text-2xl font-extrabold text-white">📋 Your Anime List</h3>
+          <h3 className="font-display text-2xl font-extrabold text-fg-strong">Your Anime List</h3>
           <p className="mb-5 text-base text-fg-helper">Titles only — no characters!</p>
           {peekList.length === 0 ? (
             <p className="text-lg text-fg-helper">No shared anime found.</p>

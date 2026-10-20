@@ -1,4 +1,4 @@
-// Surface panel. Replaces `bg-wash-soft border border-line rounded-2xl p-6`
+// A printed panel. Replaces `bg-wash-soft border border-line rounded-2xl p-6`
 // and, with `title`, the repeated
 // `text-fg-body text-sm font-bold uppercase tracking-wider` section heading.
 
@@ -29,7 +29,9 @@ export default function Card({
         // The margin moves onto the wrapper so the h3 keeps its own spacing when
         // there is no action, leaving the title-only path byte-identical.
         <div className="mb-3 flex items-center justify-between gap-3">
-          <h3 className="font-display text-sm font-extrabold uppercase tracking-widest text-fg-helper">
+          {/* A caption box, the way a manga panel labels itself: an ink tab
+              with paper type, rather than grey small caps that read as body. */}
+          <h3 className="bg-ink px-2 py-0.5 font-display text-xs font-bold uppercase tracking-[0.18em] text-paper">
             {title}
           </h3>
           {action}

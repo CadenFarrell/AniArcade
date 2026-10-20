@@ -47,7 +47,7 @@ export default function LocalSession({
     if (readyFor !== state.psychicId) {
       return (
         <PassScreen
-          name={nameOf(state.psychicId)}
+          player={players.find((p) => p.id === state.psychicId)}
           note={state.mode === 'readroom'
             ? "You're the psychic — everyone else, look away while you answer."
             : "You're the psychic this round — everyone else, look away."}
@@ -88,7 +88,7 @@ export default function LocalSession({
     if (readyFor !== hotSeatId) {
       return (
         <PassScreen
-          name={nameOf(hotSeatId)}
+          player={players.find((p) => p.id === hotSeatId)}
           note={note}
           cta="I've got it"
           onReady={() => { setReadyFor(hotSeatId); setDraft(null); }}

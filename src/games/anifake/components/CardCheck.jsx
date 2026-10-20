@@ -34,7 +34,7 @@ export default function CardCheck({
       <Backdrop />
       <Screen center>
         <Wordmark tone="teal" size="md" level={2} className="mb-6">
-          🃏 Your card
+          Your card
         </Wordmark>
 
         <div className="mb-6 w-full">
@@ -43,7 +43,7 @@ export default function CardCheck({
 
         {phase === 'redealing' ? (
           <p className="text-center text-lg text-fg-body">
-            🔁 Dealing a new character…
+            Dealing a new character…
           </p>
         ) : waiting ? (
           <>
@@ -59,7 +59,7 @@ export default function CardCheck({
         ) : (
           <>
             <Button variant="primary" size="xl" fullWidth onClick={onConfirm}>
-              👍 I&apos;m good — start the clues
+              I&apos;m good — start the clues
             </Button>
             {dealsLeft > 0 && (blindFake ? (
               // Only this player ever sees it — every device renders its own card
@@ -78,7 +78,7 @@ export default function CardCheck({
                     visible thing on the screen. `neutral` at `lg` keeps the
                     hierarchy honest: confirming is still plainly the main tap. */}
                 <Button variant="neutral" size="lg" fullWidth className="mt-3" onClick={onRedeal}>
-                  🔁 Deal again — I can&apos;t work with this
+                  Deal again — I can&apos;t work with this
                 </Button>
                 {/* "Nobody is told" is true; "nobody can tell" would not be. At
                     three players a confirmer who sees a re-deal happen knows one

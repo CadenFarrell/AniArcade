@@ -80,7 +80,7 @@ export default function RoomCompare({ players, tierLists, cardsFor, onBack }) {
 
       {entrants.length < 2 ? (
         <Banner tone="warning" className="mb-4">
-          ⚠️ Two lists are needed to compare. Only {entrants.length} has been sent.
+          Two lists are needed to compare. Only {entrants.length} has been sent.
         </Banner>
       ) : (
         <Card padding="lg" className="mb-6">
@@ -101,7 +101,7 @@ export default function RoomCompare({ players, tierLists, cardsFor, onBack }) {
                     <th
                       key={p.id}
                       scope="col"
-                      className="max-w-24 truncate p-2 font-display text-sm font-extrabold text-white"
+                      className="max-w-24 truncate p-2 font-display text-sm font-extrabold text-fg-strong"
                     >
                       {p.name}
                     </th>
@@ -113,7 +113,7 @@ export default function RoomCompare({ players, tierLists, cardsFor, onBack }) {
                   <tr key={row.id}>
                     <th
                       scope="row"
-                      className="max-w-24 truncate p-2 text-left font-display text-sm font-extrabold text-white"
+                      className="max-w-24 truncate p-2 text-left font-display text-sm font-extrabold text-fg-strong"
                     >
                       {row.name}
                     </th>
@@ -143,7 +143,7 @@ export default function RoomCompare({ players, tierLists, cardsFor, onBack }) {
                               ${value == null
                           ? 'cursor-not-allowed text-fg-disabled'
                           : active
-                            ? 'bg-pop-amber text-ink'
+                            ? 'bg-pop-amber text-paper'
                             : 'text-pop-amber hover:bg-wash'}`}
                           >
                             {value == null ? '–' : `${value}%`}
@@ -164,14 +164,14 @@ export default function RoomCompare({ players, tierLists, cardsFor, onBack }) {
 
       {pair && !selected && (
         <Banner tone="warning" className="mb-4">
-          ⚠️ {playerA?.name} ranked {tierLists[pair.a]?.items} and {playerB?.name} ranked{' '}
+          {playerA?.name} ranked {tierLists[pair.a]?.items} and {playerB?.name} ranked{' '}
           {tierLists[pair.b]?.items}, so those two lists have nothing in common to compare.
         </Banner>
       )}
 
       {selected && selected.comparisons === 0 && (
         <Banner tone="warning" className="mb-4">
-          ⚠️ {playerA?.name} and {playerB?.name} share {selected.shared}{' '}
+          {playerA?.name} and {playerB?.name} share {selected.shared}{' '}
           {selected.shared === 1 ? 'entry' : 'entries'} — not enough overlap to compare.
         </Banner>
       )}

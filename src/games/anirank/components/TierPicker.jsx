@@ -2,7 +2,18 @@ import { useState } from 'react';
 import { AXES } from '../axes';
 import { MAX_LIST_NAME_LEN } from '../tiers';
 import {
-  Badge, Banner, Button, Card, CardRow, Field, GhostButton, Input, Modal, Screen, Wordmark,
+  Badge,
+  Banner,
+  Button,
+  Card,
+  CardRow,
+  Field,
+  GhostButton,
+  Icon,
+  Input,
+  Modal,
+  Screen,
+  Wordmark,
 } from '../../../shared/ui';
 
 // Every tier list saved on this device, grouped by whose it is.
@@ -36,7 +47,7 @@ export default function TierPicker({
           Tier lists
         </Wordmark>
 
-        {saveError && <Banner tone="danger" className="mb-4">⚠️ {saveError}</Banner>}
+        {saveError && <Banner tone="danger" className="mb-4">{saveError}</Banner>}
 
         <p className="mb-6 text-center text-base text-fg-helper">
           {poolCounts.shows} shows · {poolCounts.characters} characters to draw from
@@ -58,7 +69,7 @@ export default function TierPicker({
                     onClick={() => onOpen(player.id, list.id)}
                     className="focus-pop min-w-0 flex-1 rounded-pop-sm py-1 text-left hover:bg-wash-soft"
                   >
-                    <span className="block truncate font-display text-lg font-extrabold text-white">
+                    <span className="block truncate font-display text-lg font-extrabold text-fg-strong">
                       {list.name || 'Untitled list'}
                     </span>
                     <span className="block truncate text-sm text-fg-helper">
@@ -78,9 +89,9 @@ export default function TierPicker({
                     onClick={() => setConfirmDelete({ profileId: player.id, list })}
                     aria-label={`Delete ${list.name}`}
                     className="focus-pop grid h-11 w-11 flex-shrink-0 place-items-center rounded-pop-sm
-                      text-lg font-black text-pop-red hover:text-white"
+                      text-lg font-black text-pop-red hover:text-fg-strong"
                   >
-                    ✕
+                    <Icon name="cross" />
                   </button>
                 </CardRow>
               ))}
@@ -110,7 +121,7 @@ export default function TierPicker({
           disabled={total < 2}
           onClick={onCompare}
         >
-          ⚖️ Compare two lists
+          Compare two lists
         </Button>
         {total < 2 && (
           <p className="mt-3 text-center text-sm text-fg-subtle">
@@ -132,7 +143,7 @@ export default function TierPicker({
       {/* A tier list is an hour of sorting. It does not get a bare ✕. */}
       {confirmDelete && (
         <Modal onClose={() => setConfirmDelete(null)} width="sm">
-          <h2 className="mb-3 font-display text-2xl font-black text-white">
+          <h2 className="mb-3 font-display text-2xl font-black text-fg-strong">
             Delete “{confirmDelete.list.name || 'Untitled list'}”?
           </h2>
           <p className="mb-6 text-base text-fg-body">This cannot be undone.</p>
@@ -164,7 +175,7 @@ function NewListModal({ player, axis, defaultFormat, onCreate, onClose }) {
 
   return (
     <Modal onClose={onClose} width="sm">
-      <h2 className="mb-4 font-display text-2xl font-black text-white">
+      <h2 className="mb-4 font-display text-2xl font-black text-fg-strong">
         New list for {player.name}
       </h2>
 
@@ -187,13 +198,13 @@ function NewListModal({ player, axis, defaultFormat, onCreate, onClose }) {
         <FormatButton
           active={format === 'tiers'}
           onClick={() => setFormat('tiers')}
-          title="📋 Tiers"
+          title="Tiers"
           hint="S to D rows. Everything in a row is equally good — no order inside it."
         />
         <FormatButton
           active={format === 'ranked'}
           onClick={() => setFormat('ranked')}
-          title="🔢 Full ranking"
+          title="Full ranking"
           hint="One strict order, 1 to N. Every card gets its own place."
         />
       </div>
@@ -231,7 +242,7 @@ function FormatButton({ active, onClick, title, hint }) {
       className={`focus-pop rounded-pop-sm border-2 px-3 py-2.5 text-left transition-colors
         ${active ? 'border-pop-amber bg-pop-amber/20' : 'border-line bg-surface-2/40 hover:border-line-loud'}`}
     >
-      <span className="block font-display text-base font-extrabold text-white">{title}</span>
+      <span className="block font-display text-base font-extrabold text-fg-strong">{title}</span>
       <span className="block text-sm text-fg-helper">{hint}</span>
     </button>
   );

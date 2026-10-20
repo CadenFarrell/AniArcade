@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { filterAnimeList } from '../utils/characterPool';
-import { Avatar, Button, GhostButton, Input } from '../../../shared/ui';
+import { Avatar, Button, GhostButton, Icon, Input } from '../../../shared/ui';
 
 // Expandable anime list for hand-picking a character. Local assignment and
 // online assignment had near-identical copies of this — the only real
@@ -25,7 +25,7 @@ export default function AnimeBrowser({
     <>
       <div className="mb-5 flex items-center gap-4">
         <GhostButton onClick={onBack}>← Back</GhostButton>
-        <h4 className="font-display text-2xl font-extrabold text-white">
+        <h4 className="font-display text-2xl font-extrabold text-fg-strong">
           {guesserName}&apos;s Characters
         </h4>
         {sharedShowsOnly && (
@@ -64,7 +64,7 @@ export default function AnimeBrowser({
               the chevron and stops being a button rather than sitting there as
               a control that visibly does nothing. */}
           {searching ? (
-            <div className="w-full rounded-pop-sm border-2 border-line-strong bg-surface px-5 py-4 text-left text-lg text-white">
+            <div className="w-full rounded-pop-sm border-2 border-line-strong bg-surface px-5 py-4 text-left text-lg text-fg-strong">
               {anime.title}
               <span className="ml-2 font-sans font-normal text-fg-subtle">
                 ({anime.characters.length})
@@ -73,9 +73,10 @@ export default function AnimeBrowser({
           ) : (
             <button
               onClick={() => setExpandedAnime(expandedAnime === anime.id ? null : anime.id)}
-              className="btn-pop focus-pop w-full border-line-strong bg-surface px-5 py-4 text-left text-lg text-white"
+              className="btn-pop focus-pop w-full border-line-strong bg-surface px-5 py-4 text-left text-lg text-fg-strong"
             >
-              {expandedAnime === anime.id ? '▼' : '▶'} {anime.title}
+              <Icon name="chevron" className={`mr-1 transition-transform ${expandedAnime === anime.id ? 'rotate-90' : ''}`} />
+              {anime.title}
               <span className="ml-2 font-sans font-normal text-fg-subtle">
                 ({anime.characters.length})
               </span>
@@ -88,7 +89,7 @@ export default function AnimeBrowser({
                 <div key={char.id} className="card-pop flex items-center gap-4 p-4">
                   <Avatar src={char.imageUrl} alt={char.name} size="md" />
                   <div className="min-w-0 flex-1 text-left">
-                    <p className="truncate font-display text-lg font-extrabold text-white">
+                    <p className="truncate font-display text-lg font-extrabold text-fg-strong">
                       {char.name}
                     </p>
                     <p className="text-base text-fg-helper">
@@ -104,7 +105,9 @@ export default function AnimeBrowser({
                     className="flex-shrink-0"
                     onClick={() => onSelect({ ...char, series: anime.title })}
                   >
-                    {actionLabel}
+                    {/* One per character, so it names whom: a cast of "Pick,
+                        Pick, Pick" tells a screen reader nothing. */}
+                    {actionLabel}<span className="sr-only"> {char.name}</span>
                   </Button>
                 </div>
               ))}

@@ -7,19 +7,19 @@ import { RACE, SIMULTANEOUS, LIVES } from './rules';
 export const MODES = [
   {
     id: RACE,
-    icon: '🔔',
+    icon: 'bell', // a name from shared/ui/icons.js
     label: 'Race',
     blurb: 'First correct answer takes the point. Miss and you’re out for that song.',
   },
   {
     id: SIMULTANEOUS,
-    icon: '🤫',
+    icon: 'pencil',
     label: 'Everyone guesses',
     blurb: 'Everyone answers the same clip. Everyone who gets it right scores.',
   },
   {
     id: LIVES,
-    icon: '💀',
+    icon: 'heart',
     label: 'Last one standing',
     blurb: 'Everyone answers, and a miss costs a life. Outlast the table.',
   },
