@@ -81,8 +81,16 @@ function makeSeat({ game, name, profile, prefs, isHost, user, errors }) {
     aniarcade_active_profile: profile.id,
     aniarcade_game_prefs: { [game.id]: prefs },
   });
-  const container = document.body.appendChild(document.createElement('div'));
-  container.id = label;
+  // A fresh container per page load. Testing Library caches its React root by
+  // container and keeps it after unmount(), so rendering a reload into the
+  // same element reused a dead root ("Cannot update an unmounted root") —
+  // which failed any game's run that drew a host reload.
+  const freshContainer = () => {
+    const el = document.body.appendChild(document.createElement('div'));
+    el.id = label;
+    return el;
+  };
+  let container = freshContainer();
   let view = null;
 
   async function mount() {
@@ -137,6 +145,8 @@ function makeSeat({ game, name, profile, prefs, isHost, user, errors }) {
       },
       async reload() {
         view?.unmount();
+        container.remove();
+        container = freshContainer();
         await mount();
         await settle();
       },

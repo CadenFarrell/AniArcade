@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { ref, onValue, update, get, set, runTransaction } from 'firebase/database';
-import { getFirebaseDb, ensureSignedIn } from '../services/firebase';
+import { getFirebaseAuth, getFirebaseDb, ensureSignedIn } from '../services/firebase';
 import { storage } from '../services/storage';
 import { usePresence } from './usePresence';
 import { GRACE_MS, rosterSnapshot, nextHostId } from '../utils/presence';
@@ -12,6 +12,20 @@ function generateRoomCode() {
   let code = '';
   for (let i = 0; i < 5; i++) code += CODE_CHARS[Math.floor(Math.random() * CODE_CHARS.length)];
   return code;
+}
+
+// A refusal from the rules. Firebase reports it as code PERMISSION_DENIED on
+// some calls and only in the message on others.
+const isPermissionDenied = (e) => /permission/i.test(`${e?.code ?? ''} ${e?.message ?? ''}`);
+
+// Forces a fresh ID token. The database connection re-authenticates whenever
+// the token changes, which is the point: see joinRoom.
+async function refreshAuthToken() {
+  try {
+    await getFirebaseAuth()?.currentUser?.getIdToken(true);
+  } catch {
+    // Offline or signed out: the retry fails the same way and says so.
+  }
 }
 
 function readPath(obj, path) {
@@ -269,7 +283,7 @@ export function useRoomCore({
     return code;
   }, [uid, rememberRoom, bestEffort]);
 
-  const joinRoom = useCallback(async (rawCode, localProfile) => {
+  const joinOnce = useCallback(async (rawCode, localProfile) => {
     const myUid = uid ?? await ensureSignedIn();
     if (myUid !== uid) setUid(myUid);
 
@@ -318,6 +332,25 @@ export function useRoomCore({
     setRoomCode(code);
     setMyPlayerId(playerId);
   }, [uid, rememberRoom, bestEffort, playersPath]);
+
+  // A join refused by the rules gets one retry on a fresh token. Found by the
+  // AniTurf playtest: with three guests joining at once, one device could hold
+  // a signed-in user while its database connection still evaluated as signed
+  // out — its very first read (`createdAt`, readable by anyone signed in) came
+  // back "Permission denied", and so did every press of Join after it, because
+  // nothing made the connection pick up the token. A forced token refresh is
+  // what makes the database re-authenticate. Every step of a join is safe to
+  // repeat (memberUids and claims accept the same value again, the roster
+  // write is a transaction), so retrying the whole of it is too.
+  const joinRoom = useCallback(async (rawCode, localProfile) => {
+    try {
+      return await joinOnce(rawCode, localProfile);
+    } catch (e) {
+      if (!isPermissionDenied(e)) throw e;
+      await refreshAuthToken();
+      return joinOnce(rawCode, localProfile);
+    }
+  }, [joinOnce]);
 
   // Tell the room on the way out — but never let a slow network trap someone in
   // a room they've asked to leave, so the local exit doesn't wait on the write.
