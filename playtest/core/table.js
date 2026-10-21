@@ -175,7 +175,11 @@ export async function playTable({
         // Bounded: one hung await (a click on a node mid-unmount) used to hold
         // the whole table past its budget and past vitest's own timeout, after
         // which the loop kept playing against a torn-down document.
-        await withTimeout(seat.adapter.perform(action), 20_000, `${action.why} on ${seat.name}`);
+        // A deliberate wait gets its own length on top, capped where the online
+        // adapter caps it: AniGuess's "let the timer run out" sleeps 31.5s, and
+        // a flat 20s guard reported every one of those as a hang.
+        const guardMs = 20_000 + Math.min(action.wait ?? 0, 30_000);
+        await withTimeout(seat.adapter.perform(action), guardMs, `${action.why} on ${seat.name}`);
       } catch (e) {
         soft({ kind: 'action-error', severity: 'warn', message: `${action.why}: ${e.message}` }, screen, seat.name);
       }
