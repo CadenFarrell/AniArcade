@@ -122,9 +122,20 @@ export default function ProfilePicker({
             onClick={() => setFaceFor(profiles[row.id])}
             aria-label={`Choose ${row.name}'s character`}
             title="Choose character"
-            className="focus-pop relative isolate h-12 w-12 flex-shrink-0 overflow-hidden border-2 border-ink bg-surface-2"
+            className="focus-pop group relative h-12 w-12 flex-shrink-0"
           >
-            <Portrait portrait={portraitFor(profiles[row.id])} name={row.name} initialClass="text-xl" />
+            {/* The frame clips the picture; the badge sits outside it, on the
+                corner, so a bare face does not read as a plain avatar. */}
+            <span className="absolute inset-0 isolate overflow-hidden border-2 border-ink bg-surface-2">
+              <Portrait portrait={portraitFor(profiles[row.id])} name={row.name} initialClass="text-xl" />
+            </span>
+            <span
+              aria-hidden="true"
+              className="absolute -right-1.5 -bottom-1.5 grid h-5 w-5 place-items-center border border-paper bg-ink
+                text-[11px] text-paper group-hover:bg-pop-pink"
+            >
+              <Icon name="pencil" />
+            </span>
           </button>
         )}
         <button
