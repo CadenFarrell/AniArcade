@@ -152,7 +152,7 @@ export default function OnlineGame({ onBack, onExit }) {
     return shell(
       <>
         <Backdrop />
-        <Screen width="md">
+        <Screen width="md" className={mineToGive ? 'pb-48!' : ''}>
           {impact}
           {banner}
           {mineToGive ? (

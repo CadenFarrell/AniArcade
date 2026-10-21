@@ -81,7 +81,12 @@ own screen. A claim is pick-then-Claim, so a stray tap on a phone highlights rat
 scorches. **The guessing screen puts the board straight under its heading and pins Claim / End
 turn, with the clue, in a `StartBar`** — with the team rows and clue bubble above the board, a
 phone had the board ~680px down and Claim ~1,200px down, so every claim meant scrolling twice.
-The team rows sit under the board now, on every screen. Text on a team header sits on a solid
+The team rows sit under the board now, on every screen, and the clue form (word, squares, Give
+the clue) is pinned the same way, its refusal reason the bar's status line. A square the team
+cannot reach this turn takes a dashed rule — a shape, since without portraits a lighter border
+was the only difference. Wherever a key is shown, a legend under the board says what the ring,
+the skull and NEW mean. The board is `max-w-md`: at `max-w-xl` it ran past an 800px laptop
+window. Text on a team header sits on a solid
 patch of the team's ink, never straight on its texture (the stripes took it to ~3.4:1, and axe
 cannot measure text over a background image). Teams have their own tokens (`team-red`, `team-blue` — not pop-red/pop-blue, which
 mean wrong and asking) and each also carries a texture (hatch / screentone) and letter, so a
@@ -91,6 +96,13 @@ Locally the impact frame sits at one fixed place in `LocalRound`'s tree across e
 the claim that ends a turn is followed straight away by the next handoff, and a fresh
 `ResultImpact` per screen would replay the last result whenever the screen changed. Online,
 each phone stamps its own team's results and hears the other team's as `reveal`.
+
+**The results reveal both keys** (`publishKey`, `TurfBoard`'s `reveal`): each team's footing as an
+outlined letter, each planted trap as a skull in its ink — where the routes really ran is the
+recap a table argues over. Locally `LocalRound` hands the keys over with the game; online each
+clue-giver's phone publishes its own once the phase is `over` (only the owner can read it — the
+`publishCard` pattern), and a team whose clue-giver has left stays unrevealed, which the screen
+says only for a giver who has actually gone, since a reveal lands a moment after it opens.
 
 Words the playtest strategy (`playtest/strategies/aniturf.js`) and `AniTurfGame.test.jsx`
 press: "I'm <name> — show me", "Trap …", "Plant traps (n/n)", "Got it", the "Clue" textbox,

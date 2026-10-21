@@ -277,6 +277,24 @@ describe('ending', () => {
   });
 });
 
+describe('publishKey', () => {
+  it('reveals a key only once the game is over, once per team', () => {
+    const live = game();
+    expect(rules.publishKey(live, 'red', { footing: [1, 2], traps: [7] }).patch).toEqual({});
+    const over = { ...live, phase: 'over' };
+    const { patch } = rules.publishKey(over, 'red', { footing: [1, 2], traps: [7] });
+    expect(patch.reveal).toEqual({ red: { footing: [1, 2], traps: [7] } });
+    const both = { ...over, ...patch, ...rules.publishKey({ ...over, ...patch }, 'blue', { footing: [3] }).patch };
+    expect(both.reveal.blue).toEqual({ footing: [3], traps: [] });
+    expect(rules.publishKey(both, 'red', { footing: [9] }).patch).toEqual({});
+  });
+
+  it('survives RTDB dropping an empty trap list', () => {
+    const g = rules.normalizeGame({ reveal: { red: { footing: { 0: 4, 1: 9 } } } });
+    expect(g.reveal).toEqual({ red: { footing: [4, 9], traps: [] } });
+  });
+});
+
 describe('teams', () => {
   it('alternates seats and needs two a side', () => {
     const teams = rules.assignTeams(['a', 'b', 'c', 'd', 'e']);

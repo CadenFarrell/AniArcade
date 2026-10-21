@@ -598,6 +598,18 @@ export function promoteGiver(game, team, activeIds) {
   };
 }
 
+/**
+ * Once the game is over a key is a secret no more: each team's clue-giver
+ * publishes theirs — footing and the traps they planted — so the results can
+ * show where both routes really ran. Online only the owner can (secrets/ is
+ * read-gated), so each publishes its own, AniFake's publishCard pattern; a
+ * team whose clue-giver has gone simply stays unrevealed.
+ */
+export function publishKey(game, team, { footing, traps = [] }) {
+  if (game.phase !== 'over' || game.reveal?.[team]) return { patch: {} };
+  return { patch: { reveal: { ...(game.reveal ?? {}), [team]: { footing: [...footing], traps: [...traps] } } } };
+}
+
 /** Banks a finished game: every player on the winning team scores a win. */
 export function applyWin(totals, game) {
   const next = { ...totals };
@@ -655,6 +667,10 @@ export function normalizeGame(raw) {
     winBy: raw.winBy ?? null,
     loser: raw.loser ?? null,
     pending: raw.pending ? { ...raw.pending, footing: Boolean(raw.pending.footing) } : null,
+    reveal: raw.reveal ? Object.fromEntries(TEAMS.filter((t) => raw.reveal[t]).map((t) => [t, {
+      footing: toArray(raw.reveal[t].footing),
+      traps: toArray(raw.reveal[t].traps),
+    }])) : null,
     seq: raw.seq ?? 0,
   };
 }

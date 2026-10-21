@@ -59,7 +59,15 @@ export default function AniTurfResults({
           return team ? <Badge tone={TEAM_STYLE[team].tone}>{TEAM_STYLE[team].name}</Badge> : null;
         }}
       />
-      <TurfBoard board={game.board} marks={game.marks} />
+      <TurfBoard board={game.board} marks={game.marks} reveal={game.reveal} />
+      {/* Online a key is revealed by its own clue-giver's phone; one who left
+          took theirs with them. Only said for a giver who HAS left — a reveal
+          lands a moment after the screen opens. */}
+      {['red', 'blue'].filter((t) => !game.reveal?.[t] && departedIds.includes(game.clueGivers[t])).map((t) => (
+        <p key={t} className="-mt-3 mb-5 text-center text-sm text-fg-helper">
+          {TEAM_STYLE[t].name}&apos;s key isn&apos;t shown — its clue-giver is no longer here to reveal it.
+        </p>
+      ))}
       <ClueLog game={game} players={players} />
     </ResultsLayout>
   );

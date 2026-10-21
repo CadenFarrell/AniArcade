@@ -118,6 +118,9 @@ describe('AniTurf online', () => {
       if (game(devs).phase === 'guess') await guesserOf(devs, team).act((r) => r.stop());
     }
     await until(() => devs.every((d) => d.r.game.phase === 'over'), { what: 'game over' });
+    // Each clue-giver's phone publishes its own key once it is over.
+    await until(() => devs.every((d) => d.r.game.reveal?.red && d.r.game.reveal?.blue), { what: 'both keys revealed' });
+    expect(devs[1].r.game.reveal.red.footing).toEqual(keyOf('red'));
     const g = game(devs);
     expect(['connect', 'cut']).toContain(g.winBy);
     if (g.winBy === 'connect') expect(rules.connected(g.marks, g.winner)).toBe(true);

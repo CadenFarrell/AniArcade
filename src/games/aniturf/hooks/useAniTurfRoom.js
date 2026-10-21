@@ -239,7 +239,16 @@ export function useAniTurfRoom() {
   // claim on its sequence number — since the view stays 'play' for the whole
   // game and useRoomCore only re-arms one-shots on a view change.
   useEffect(() => {
-    if (!roomCode || !game || !amGiver || state?.view !== 'play' || game.phase === 'over') return;
+    if (!roomCode || !game || !amGiver) return;
+    // Game over: my key is a secret no more, and the results show both. Only I
+    // can publish it — nobody else can read it — so I do, once.
+    if (game.phase === 'over') {
+      if (key && !game.reveal?.[myTeam]) {
+        once(`reveal:${roundNumber}:${myTeam}`, () => applyGame((g) => rules.publishKey(g, myTeam, key)));
+      }
+      return;
+    }
+    if (state?.view !== 'play') return;
     const stamp = game.keyStamp[myTeam];
 
     // Deal my own key. A fresh one at the start; a rebuilt one, agreeing with

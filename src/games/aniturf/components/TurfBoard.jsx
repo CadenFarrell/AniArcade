@@ -16,18 +16,30 @@ import { TEAM_STYLE } from './teamStyle';
 // ONLY on that clue-giver's own screen. Locally that means between a handoff
 // and its "hide"; online, on their own phone.
 //
+// `reveal` ({ red?, blue? }, each `{ footing, traps }`) is the results
+// screen's: both keys, once the game is over and they are secrets no more.
+// A team's footing is an outlined chip in its ink (a claim is a SOLID one), a
+// trap it planted a skull in its ink.
+//
 // A claimed square takes its team's ink AND texture AND letter, rubble is
 // greyed with a ✗ (a miss) or a skull (a sprung trap), and each square's
 // accessible name says all of it, so nothing on the board is colour alone.
 export default function TurfBoard({
   board, marks, mode = 'view', canPick, selected = null, onSelect, keyView = null,
-  planted = null, onTogglePlant, className = '',
+  planted = null, onTogglePlant, reveal = null, className = '',
 }) {
   const footing = keyView ? new Set(keyView.footing ?? []) : null;
   const fresh = new Set(keyView?.fresh ?? []);
   const traps = new Set(planted ?? keyView?.traps ?? []);
+  const shown = ['red', 'blue'].map((team) => ({
+    team,
+    footing: new Set(reveal?.[team]?.footing ?? []),
+    traps: new Set(reveal?.[team]?.traps ?? []),
+  }));
   return (
-    <div className={`mx-auto mb-5 w-full max-w-xl ${className}`}>
+    // max-w-md: at max-w-xl the board ran ~710px tall and past the bottom of an
+    // 800px laptop window. A phone is narrower than either, so it is unchanged.
+    <div className={`mx-auto mb-5 w-full max-w-md ${className}`}>
       <div className="grid grid-cols-[0.6rem_minmax(0,1fr)_0.6rem] grid-rows-[0.6rem_auto_0.6rem] gap-1.5">
         <span />
         <Rail team="blue" />
@@ -47,6 +59,7 @@ export default function TurfBoard({
                 footing={footing?.has(i) ?? false}
                 fresh={fresh.has(i)}
                 trapped={traps.has(i)}
+                revealed={reveal ? shown.map((s) => ({ team: s.team, footing: s.footing.has(i), trap: s.traps.has(i) })) : null}
                 onPress={() => (mode === 'plant' ? onTogglePlant?.(i) : onSelect?.(i))}
               />
             </li>
@@ -61,6 +74,30 @@ export default function TurfBoard({
         <span><strong className={TEAM_STYLE.red.text}>Red</strong> crosses left to right</span>
         <span><strong className={TEAM_STYLE.blue.text}>Blue</strong> crosses top to bottom</span>
       </p>
+      {/* What the marks on a key mean, wherever a key is shown: the skull went
+          unexplained on the clue-giver's screen. */}
+      {keyView && (
+        <p className="mt-1 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-xs text-fg-helper">
+          <span className="flex items-center gap-1">
+            <span aria-hidden="true" className={`grid h-4 w-4 place-items-center border-2 border-ink text-[9px] text-paper ${TEAM_STYLE[keyView.team].fill}`}>
+              <Icon name="check" />
+            </span>
+            Ringed: your footing
+          </span>
+          <span className="flex items-center gap-1">
+            <span aria-hidden="true" className="grid h-4 w-4 place-items-center border-2 border-ink bg-ink text-[9px] text-paper">
+              <Icon name="skull" />
+            </span>
+            Your traps
+          </span>
+          {fresh.size > 0 && <span>NEW: your detour</span>}
+        </p>
+      )}
+      {reveal && (
+        <p className="mt-1 text-center text-xs text-fg-helper">
+          Outlined letters: each team&apos;s footing. Skulls: the traps each team planted.
+        </p>
+      )}
     </div>
   );
 }
@@ -70,7 +107,7 @@ function Rail({ team }) {
   return <span aria-hidden="true" className={`block border-2 border-ink ${s.fill} ${s.texture}`} />;
 }
 
-function describe(ch, mark, { footing, trapped, fresh }) {
+function describe(ch, mark, { footing, trapped, fresh, revealed }) {
   const parts = [ch.name];
   if (mark === 'red' || mark === 'blue') parts.push(`claimed by ${TEAM_STYLE[mark].name}`);
   else if (mark === 'miss') parts.push('scorched');
@@ -79,21 +116,26 @@ function describe(ch, mark, { footing, trapped, fresh }) {
     if (footing) parts.push(fresh ? 'your footing, new' : 'your footing');
     if (trapped) parts.push('trap planted');
   }
+  for (const r of revealed ?? []) {
+    if (r.footing) parts.push(`${TEAM_STYLE[r.team].name}'s footing`);
+    if (r.trap && mark !== 'trap') parts.push(`${TEAM_STYLE[r.team].name}'s trap`);
+  }
   return parts.join(', ');
 }
 
-function Cell({ ch, mark, mode, pickable, plantable, selected, keyTeam, footing, fresh, trapped, onPress }) {
+function Cell({ ch, mark, mode, pickable, plantable, selected, keyTeam, footing, fresh, trapped, revealed, onPress }) {
   const claimed = mark === 'red' || mark === 'blue' ? TEAM_STYLE[mark] : null;
   const rubble = mark === 'miss' || mark === 'trap';
   const keyed = keyTeam && mark == null;
   const interactive = pickable || plantable;
-  const label = describe(ch, mark, { footing: keyed && footing, trapped: mark == null && trapped, fresh });
+  const label = describe(ch, mark, { footing: keyed && footing, trapped: mark == null && trapped, fresh, revealed });
 
-  // An open square the team cannot reach this turn takes a softer rule, so the
-  // ones it can reach read as the pressable blocks they are.
+  // An open square the team cannot reach this turn takes a DASHED soft rule:
+  // a shape, not just a lighter line, since without portraits the weight of
+  // the border was the only difference and it read as barely one.
   const unreachable = mode === 'pick' && !pickable && mark == null;
   const frame = `relative flex w-full flex-col overflow-hidden border-2 bg-surface text-left
-    ${unreachable ? 'border-line-loud' : 'border-ink'}
+    ${unreachable ? 'border-dashed border-line-loud' : 'border-ink'}
     ${selected ? 'ring-3 ring-ink ring-offset-2 ring-offset-canvas' : ''}
     ${interactive ? 'btn-pop focus-pop cursor-pointer shadow-pop-sm' : ''}`;
 
@@ -150,6 +192,24 @@ function Cell({ ch, mark, mode, pickable, plantable, selected, keyTeam, footing,
               uppercase leading-tight tracking-wider text-fg-strong"
           >
             New
+          </span>
+        )}
+        {revealed && (
+          <span aria-hidden="true" className="absolute right-1 bottom-1 flex gap-0.5">
+            {revealed.filter((r) => r.footing).map((r) => (
+              <span
+                key={`f-${r.team}`}
+                className={`grid h-5 w-5 place-items-center border-2 bg-surface font-display text-[10px] font-bold
+                  leading-none ${TEAM_STYLE[r.team].border} ${TEAM_STYLE[r.team].text}`}
+              >
+                {TEAM_STYLE[r.team].letter}
+              </span>
+            ))}
+            {revealed.filter((r) => r.trap && mark !== 'trap').map((r) => (
+              <span key={`t-${r.team}`} className={`grid h-5 w-5 place-items-center border-2 border-ink text-[10px] text-paper ${TEAM_STYLE[r.team].fill}`}>
+                <Icon name="skull" />
+              </span>
+            ))}
           </span>
         )}
         {mark == null && trapped && (

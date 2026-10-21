@@ -70,7 +70,7 @@ export default function LocalRound({ setup, players, onFinish }) {
         return handoff(step, team, `Everyone else, look away — ${TEAM_NAMES[team]}'s key is about to show.`);
       }
       return (
-        <Screen width="md">
+        <Screen width="md" className="pb-48!">
           <ClueTurn
             key={step}
             game={game}
@@ -96,7 +96,22 @@ export default function LocalRound({ setup, players, onFinish }) {
               : `${s.name} crossed the board ${s.goal}.`}
           />
           <TurfBoard board={game.board} marks={game.marks} />
-          <Button variant="primary" size="lg" fullWidth onClick={() => onFinish(game)}>See results</Button>
+          {/* Both keys go to the results with the game — they are secrets
+              no more, and where the routes really ran is the recap. */}
+          <Button
+            variant="primary"
+            size="lg"
+            fullWidth
+            onClick={() => onFinish({
+              ...game,
+              reveal: {
+                red: { footing: keys.red, traps: planted.red },
+                blue: { footing: keys.blue, traps: planted.blue },
+              },
+            })}
+          >
+            See results
+          </Button>
         </Screen>
       );
     }

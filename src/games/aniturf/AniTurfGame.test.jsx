@@ -132,6 +132,10 @@ describe('AniTurf, played locally', { timeout: 60000 }, () => {
     expect(seen).toContain('claim');
     expect(screen.getByRole('region', { name: /^winner:/i })).toBeTruthy();
     expect(screen.getByText(/takes the turf/i)).toBeTruthy();
+    // Both keys are revealed on the final board.
+    const squares = screen.getAllByRole('img').map((el) => el.getAttribute('aria-label') ?? '');
+    expect(squares.some((l) => /Red's footing/.test(l))).toBe(true);
+    expect(squares.some((l) => /Blue's footing/.test(l))).toBe(true);
 
     // Play again: the same teams, the crown on each team's next seat.
     await user.click(screen.getByRole('button', { name: /^play again$/i }));
