@@ -6,6 +6,7 @@ import SeatStrip from './SeatStrip';
 import CategoryPeek from './CategoryPeek';
 import RoundHeader from '../../../shared/components/RoundHeader';
 import SpeechBubble from '../../../shared/components/SpeechBubble';
+import PlayerFace from '../../../shared/components/PlayerFace';
 
 /**
  * One go, on whatever device is looking at it.
@@ -386,7 +387,8 @@ function LastPlayed({ entry, nameFor, myPlayerId }) {
       className={`mb-5 flex flex-wrap items-center gap-x-2 gap-y-1.5 rounded-pop-sm px-3 py-2
         ${missed ? 'bg-pop-red/10' : 'bg-wash-soft'}`}
     >
-      <span className="text-base text-fg-body">
+      <span className="flex items-center gap-2 text-base text-fg-body">
+        <PlayerFace player={{ id: entry.playerId, name: who }} size="sm" />
         {who} {missed ? 'guessed' : 'named'}
       </span>
       <span className="min-w-0 font-display text-base font-extrabold text-fg-strong">

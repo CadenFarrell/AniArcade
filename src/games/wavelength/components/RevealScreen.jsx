@@ -3,6 +3,7 @@ import { Badge, Banner, Button, Card, CardRow, GhostButton, Screen } from '../..
 import { useSoundCue } from '../../../shared/hooks/useSoundCue';
 import ClueCard from './ClueCard';
 import Dial from './Dial';
+import PlayerFace from '../../../shared/components/PlayerFace';
 
 // Where the target band and every dial finally sit on the same track.
 //
@@ -126,6 +127,7 @@ export default function RevealScreen({
   mode = 'text', isFinalRound, onNext, onResults, waitingFor = null, onQuit = null, seats = null,
 }) {
   const nameOf = (id) => players.find((p) => p.id === id)?.name ?? id;
+  const playerOf = (id) => players.find((p) => p.id === id) ?? { id, name: nameOf(id) };
 
   // The target coming out is a moment the whole table shares, so every phone
   // sounds it — a sting rather than right/wrong, since a dial is scored by
@@ -197,6 +199,7 @@ export default function RevealScreen({
         <Card title="This round" padding="sm" className="mb-6">
           {explain.map((r, i) => (
             <CardRow key={r.playerId}>
+              <PlayerFace player={playerOf(r.playerId)} />
               <span className="min-w-0 flex-1 truncate font-display text-lg font-extrabold text-fg-strong">
                 {nameOf(r.playerId)}
               </span>
@@ -215,10 +218,14 @@ export default function RevealScreen({
           ))}
           {psychic && (
             <CardRow>
-              <span className="min-w-0 flex-1 truncate font-display text-lg font-extrabold text-fg-strong">
+              <PlayerFace player={psychic} />
+              {/* The name keeps its room and the note gives way: with a face
+                  in the row, a phone cut the psychic down to "Cad…" while the
+                  note beside it stayed whole. */}
+              <span className="min-w-0 max-w-[45%] flex-shrink-0 truncate font-display text-lg font-extrabold text-fg-strong">
                 {psychic.name}
               </span>
-              <span className="text-sm text-fg-helper">psychic — average of the dials</span>
+              <span className="min-w-0 flex-1 truncate text-right text-sm text-fg-helper">psychic — average of the dials</span>
               <ScoreBadge
                 points={roundScores[psychic.id] ?? 0}
                 delayMs={260 + explain.length * 110}

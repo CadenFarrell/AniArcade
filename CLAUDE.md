@@ -257,6 +257,11 @@ On top of it:
 | `RoundHeader` | the round's heading in display caps, an ink tab ("Turn 3", "Song 2/10"), a hint, the clock inside it | every round screen with a heading of its own |
 | `ResultImpact` | a right/wrong landing: speed lines and a ✓/✗ block for 750ms, plus its sound | AniGuess's guesses, AniTune / AniQuiz reveals, AniTag's turn end |
 | `SpeechBubble` | a question or a name as a manga balloon | AniGuess's question, AniTag's name under judgement |
+| `PlayerFace` | one player's face at row size, beside (never instead of) their name, found by id | the rows of reveals and logs: AniQuiz's and AniTune's answer rows, AniWave's "This round", AniTag's round summary, name trails and last play, AniFake's clue log, AniRank's compare grid and publish list |
+
+`PlayerFace` goes on **rows only**, by decision: not inside a running sentence ("Liam got
+it!" — busy), and never beside a character card (AniGuess's who-is-who), where a player's
+face — itself a character — reads as part of the answer.
 
 `ResultImpact` follows the sound rule exactly — online it fires only for THIS player's result
 and plays the sound itself, so the frame and the sound cannot disagree — and it is

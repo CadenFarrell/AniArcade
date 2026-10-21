@@ -4,6 +4,7 @@ import { Badge, Button, Card } from '../../../shared/ui';
 import { KANA } from '../../../shared/ui/kanaText';
 import { getCategory } from '../categories';
 import descriptor from '../index';
+import PlayerFace from '../../../shared/components/PlayerFace';
 
 /**
  * Everyone's round, side by side, at the end of one.
@@ -100,9 +101,10 @@ export default function RoundEnd({
           return (
             <div
               key={row.playerId}
-              className="grid grid-cols-[1fr_auto_3rem] items-center gap-3 border-b border-line
+              className="grid grid-cols-[auto_1fr_auto_3rem] items-center gap-3 border-b border-line
                 py-3 last:border-0"
             >
+              <PlayerFace player={players.find((p) => p.id === row.playerId) ?? { id: row.playerId, name: nameOf(row.playerId) }} />
               <div className="min-w-0">
                 <p className="truncate font-display text-lg font-extrabold text-fg-strong">
                   {nameOf(row.playerId)}

@@ -5,6 +5,7 @@ import { Avatar, Badge, Button, Card, CardRow, Icon } from '../../../shared/ui';
 import Lives from './Lives';
 import { useSoundCue } from '../../../shared/hooks/useSoundCue';
 import ResultImpact from '../../../shared/components/ResultImpact';
+import PlayerFace from '../../../shared/components/PlayerFace';
 
 // The answer card plus the round leaderboard for this question.
 //
@@ -147,6 +148,7 @@ export default function QuestionReveal({
             <span className={`w-6 flex-shrink-0 text-lg ${answer?.correct ? 'text-pop-lime' : 'text-pop-red'}`}>
               <Icon name={answer?.correct ? 'check' : 'cross'} label={answer?.correct ? 'Right' : 'Wrong'} />
             </span>
+            <PlayerFace player={p} />
             <span className="min-w-0 flex-1">
               <span className="block truncate font-display font-extrabold text-fg-strong">
                 {p.name}

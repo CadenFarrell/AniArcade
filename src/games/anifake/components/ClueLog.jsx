@@ -1,4 +1,5 @@
 import { cluesByLap } from '../rules';
+import PlayerFace from '../../../shared/components/PlayerFace';
 
 // The clue log, grouped by round. Used by both ClueRound and VoteScreen so the
 // two can't drift — they rendered byte-identical chip markup from separate
@@ -38,6 +39,7 @@ export default function ClueLog({ clues = [], players = [] }) {
                   key={`${lap}-${clue.by}-${i}`}
                   className="rounded-pop-sm border-2 border-line-strong bg-surface-2 px-3 py-2"
                 >
+                  <PlayerFace player={speaker ?? { id: clue.by, name: clue.by }} size="sm" className="mr-1.5 -mt-0.5" />
                   {speaker?.seat && (
                     <span className="mr-1.5 font-display text-xs font-extrabold text-pop-teal">
                       {speaker.seat}

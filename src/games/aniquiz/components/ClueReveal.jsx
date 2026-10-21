@@ -1,6 +1,7 @@
 import { Card, CardRow, Mark } from '../../../shared/ui';
 import { useSoundCue } from '../../../shared/hooks/useSoundCue';
 import ResultImpact from '../../../shared/components/ResultImpact';
+import PlayerFace from '../../../shared/components/PlayerFace';
 
 // How many "also accepted" names to print before summarising the rest. A
 // "name a main character" clue can accept a dozen, and the point of the list
@@ -64,6 +65,7 @@ export default function ClueReveal({ clue, players, answers, required = null, my
               <span className="w-20 flex-shrink-0">
                 {a ? <Mark yes={a.correct} label={a.correct ? 'right' : 'wrong'} /> : <span className="text-fg-subtle">—</span>}
               </span>
+              <PlayerFace player={p} />
               <span className="min-w-0 flex-1">
                 <span className="block truncate font-display font-extrabold text-fg-strong">{p.name}</span>
                 <span className="block truncate text-sm text-fg-helper">

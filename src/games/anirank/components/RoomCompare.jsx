@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { compareLists } from '../tiers';
 import CompareResult from './CompareResult';
 import { Badge, Banner, Button, Card, Screen, Wordmark } from '../../../shared/ui';
+import PlayerFace from '../../../shared/components/PlayerFace';
 
 // Everyone's published list against everyone else's.
 //
@@ -101,9 +102,13 @@ export default function RoomCompare({ players, tierLists, cardsFor, onBack }) {
                     <th
                       key={p.id}
                       scope="col"
-                      className="max-w-24 truncate p-2 font-display text-sm font-extrabold text-fg-strong"
+                      className="max-w-24 p-2 font-display text-sm font-extrabold text-fg-strong"
                     >
-                      {p.name}
+                      {/* Face over name: a column header is narrow. */}
+                      <span className="flex flex-col items-center gap-1">
+                        <PlayerFace player={p} size="sm" />
+                        <span className="block max-w-full truncate">{p.name}</span>
+                      </span>
                     </th>
                   ))}
                 </tr>
@@ -113,9 +118,12 @@ export default function RoomCompare({ players, tierLists, cardsFor, onBack }) {
                   <tr key={row.id}>
                     <th
                       scope="row"
-                      className="max-w-24 truncate p-2 text-left font-display text-sm font-extrabold text-fg-strong"
+                      className="max-w-32 p-2 text-left font-display text-sm font-extrabold text-fg-strong"
                     >
-                      {row.name}
+                      <span className="flex items-center gap-2">
+                        <PlayerFace player={row} size="sm" />
+                        <span className="min-w-0 truncate">{row.name}</span>
+                      </span>
                     </th>
                     {entrants.map((col) => {
                       if (row.id === col.id) {

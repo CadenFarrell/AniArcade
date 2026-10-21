@@ -16,6 +16,7 @@ import {
   Select,
   Wordmark,
 } from '../../../shared/ui';
+import PlayerFace from '../../../shared/components/PlayerFace';
 
 // Pick one of my saved lists and send it to the room.
 //
@@ -85,6 +86,7 @@ export default function TierPublish({ room, onCompare }) {
           const gone = !activeIds.includes(p.id);
           return (
             <CardRow key={p.id} className={gone ? 'opacity-40' : ''}>
+              <PlayerFace player={p} />
               <span className="min-w-0 flex-1 truncate text-fg-strong">
                 {p.id === room.hostId && <><Icon name="crown" label="Host" className="text-pop-amber" />{' '}</>}
                 {p.name}

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Badge, Card } from '../../../shared/ui';
 import TrailList from './TrailList';
+import PlayerFace from '../../../shared/components/PlayerFace';
 
 /**
  * Every trail in the round, grouped by whose it is.
@@ -66,6 +67,7 @@ export default function TrailBoard({
               onClick={() => setOpen(isOpen ? null : row.playerId)}
               className="focus-pop flex w-full items-center gap-3 rounded-pop-sm py-2 text-left"
             >
+              <PlayerFace player={{ id: row.playerId, name: row.name }} size="sm" />
               <span className="min-w-0 flex-1 truncate font-display text-sm font-extrabold
                 uppercase tracking-widest text-fg-body"
               >
