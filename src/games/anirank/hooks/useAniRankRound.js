@@ -76,6 +76,8 @@ export function useAniRankRound(players, deck, options = {}) {
     axis,
     // How many of the table are still to place this card — the "3 of 4" line.
     placedThisItem: playerIds.length - pending.length,
+    // And who, for the row of faces (RankSeats).
+    pendingIds: pending,
     finished: rules.roundFinished(state, playerIds),
     scores: useMemo(
       () => rules.finalScores(state, playerIds, { opinion, scoring }),

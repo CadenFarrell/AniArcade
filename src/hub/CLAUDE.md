@@ -107,7 +107,7 @@ the blurb out of the button's accessible name.
 `ArcadeMark` is `public/favicon.svg` brought into the app — the logo had lived only in the
 tab. It stands on the title screen now (the hub's masthead is the top bar's brand plus the
 hero). It is a **wide** plaque and that is not a styling whim: a ball on a stem over a base is
-a person, the exact glyph the profile control wears, so it needs the buttons beside it to
+a person, the exact glyph the profile control wears (until a list gives it the player's chosen face), so it needs the buttons beside it to
 read as a control panel — and squeezed into a 64px square a ball plus two dots collapse into
 a face instead.
 

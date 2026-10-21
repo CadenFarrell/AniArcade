@@ -40,7 +40,7 @@ import RoundHeader from '../../../shared/components/RoundHeader';
 // has, and for the same reason it is stated out loud there.
 export default function PsychicView({
   mode = 'text', target, hand = [], cards = [], cardPool = 'characters',
-  excludeId = null, roundNumber, totalRounds, onSubmit,
+  excludeId = null, roundNumber, totalRounds, onSubmit, seats = null,
 }) {
   const [spectrum, setSpectrum] = useState(null);
   const [clue, setClue] = useState('');
@@ -60,8 +60,12 @@ export default function PsychicView({
   // readroom only: the psychic's own dial, which becomes the answer key.
   const [placement, setPlacement] = useState(null);
 
+  // `seats` is the table's row of faces (WaveSeats), built by the router.
   const header = (
-    <RoundHeader title="You're the psychic" tag={`Round ${roundNumber}/${totalRounds}`} />
+    <>
+      <RoundHeader title="You're the psychic" tag={`Round ${roundNumber}/${totalRounds}`} />
+      {seats}
+    </>
   );
 
   if (!spectrum) {

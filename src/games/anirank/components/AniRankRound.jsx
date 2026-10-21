@@ -4,6 +4,7 @@ import RankBoard, { CardTray, CurrentItem, LockInButton } from './RankBoard';
 import { isOpinion, promptFor } from '../axes';
 import { Backdrop, GhostButton, Screen } from '../../../shared/ui';
 import RoundHeader from '../../../shared/components/RoundHeader';
+import RankSeats from './RankSeats';
 
 // Local round orchestration: hands the pure round hook to the board, and calls
 // onFinish once the round is over.
@@ -13,7 +14,7 @@ import RoundHeader from '../../../shared/components/RoundHeader';
 // returning to setup instead of the hub; leaving the game is now LocalGame's
 // one fixed Hub button, over every local view.
 export default function AniRankRound({
-  players, deck, axis: axisSpec, subjectId, scoring, blind, onFinish, onQuit,
+  players, deck, axis: axisSpec, subjectId, scoring, blind, totalScores, onFinish, onQuit,
 }) {
   const round = useAniRankRound(players, deck, { axis: axisSpec, subjectId, scoring, blind });
   const { finished, state, scores, axis, open } = round;
@@ -86,6 +87,15 @@ export default function AniRankRound({
           hint={isSubject
             ? `Your turn, ${subject?.name ?? ''} — rank these honestly. Everyone else is guessing at you.`
             : promptFor(axis, subject?.name ?? 'they')}
+        />
+
+        <RankSeats
+          players={players}
+          pendingIds={round.pendingIds}
+          activeId={placerId}
+          subjectId={isOpinion(axis) ? subjectId : null}
+          open={open}
+          scores={scoring ? totalScores ?? {} : null}
         />
 
         {open

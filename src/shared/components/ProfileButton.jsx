@@ -1,5 +1,7 @@
+import { portraitFor } from '../utils/portrait';
 import { countCharacters } from '../utils/profileStats';
 import { Icon } from '../ui';
+import Portrait from './Portrait';
 
 // Who you are, at the right end of the hub's top bar.
 //
@@ -47,6 +49,10 @@ export default function ProfileButton({ profile, onOpen }) {
   // The counts live in the picker — the pill only has room for the one fact
   // that changes what you should do next, which is "this list is empty".
   const empty = countCharacters(profile) === 0;
+  // The face you wear in every game (portrait.js: the one you chose, else your
+  // best-known), so the bar shows who you are the way every seat does. A list
+  // with no pictured character keeps the drawn person instead.
+  const face = portraitFor(profile);
 
   return (
     <button
@@ -57,7 +63,17 @@ export default function ProfileButton({ profile, onOpen }) {
         px-3 font-display text-sm font-bold uppercase tracking-wider text-fg-strong
         transition-colors hover:bg-ink hover:text-paper"
     >
-      <PersonGlyph className="stroke-ink transition-colors group-hover:stroke-paper" />
+      {face ? (
+        <span
+          aria-hidden="true"
+          className="relative isolate -ml-1.5 block h-7 w-7 flex-shrink-0 overflow-hidden border-2 border-ink
+            bg-surface-2 transition-colors group-hover:border-paper"
+        >
+          <Portrait portrait={face} name={profile.name} initialClass="text-sm" />
+        </span>
+      ) : (
+        <PersonGlyph className="stroke-ink transition-colors group-hover:stroke-paper" />
+      )}
       {/* Capped so a long name can never push the brand off a phone's bar. */}
       <span className="max-w-[32vw] truncate sm:max-w-[12rem]">{profile.name}</span>
       {empty && <Icon name="warning" className="text-pop-amber group-hover:text-paper" />}

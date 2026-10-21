@@ -35,7 +35,7 @@ import RoundHeader from '../../../shared/components/RoundHeader';
 // touching it still scores nothing, so the other half of that promise stands.
 export default function GuessView({
   spectrum, clue, card = null, mode = 'text', value, onChange, onLock, who, timer = null,
-  waitingFor = null, psychicName = null,
+  waitingFor = null, psychicName = null, seats = null,
 }) {
   const [touched, setTouched] = useState(Number.isFinite(value));
   const placed = touched && Number.isFinite(value);
@@ -58,6 +58,9 @@ export default function GuessView({
           <TimerBar secondsLeft={timer.secondsLeft} fraction={timer.fraction} label="Time to dial" />
         )}
       </RoundHeader>
+
+      {/* The table's row of faces (WaveSeats), built by the router. */}
+      {seats}
 
       <Card padding="lg" className="mb-6 text-center">
         <p className="font-display text-sm font-extrabold uppercase tracking-widest text-fg-helper">

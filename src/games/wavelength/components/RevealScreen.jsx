@@ -123,7 +123,7 @@ function ScoreBadge({ points, delayMs }) {
 // Leave button in the shell, which has to clean up a seat this cannot.
 export default function RevealScreen({
   spectrum, target, explain, players, psychic, roundScores, abandoned, card = null,
-  mode = 'text', isFinalRound, onNext, onResults, waitingFor = null, onQuit = null,
+  mode = 'text', isFinalRound, onNext, onResults, waitingFor = null, onQuit = null, seats = null,
 }) {
   const nameOf = (id) => players.find((p) => p.id === id)?.name ?? id;
 
@@ -148,6 +148,10 @@ export default function RevealScreen({
       <h2 className="mb-6 font-display text-2xl font-extrabold text-fg-strong">
         {abandoned ? 'Round abandoned' : 'Reveal'}
       </h2>
+
+      {/* The table's row of faces (WaveSeats), totals already including this
+          round — built by the router. */}
+      {seats}
 
       {abandoned && (
         <Banner tone="warning" className="mb-6">

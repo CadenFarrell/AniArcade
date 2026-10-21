@@ -253,7 +253,7 @@ On top of it:
 | piece | is | used by |
 | --- | --- | --- |
 | `Handoff` | pass the device: the next player's portrait panel, name slab, the game's own button words | every local pass screen; AniGuess's look-away |
-| `PlayerRow` | the table as a row of faces, NOW (purple, whose-turn) on the active one, score and a status mark under each | AniGuess `TurnTracker`, AniQuiz `Scoreboard`, AniTag `SeatStrip`, AniTune's scores, AniFake's clue order |
+| `PlayerRow` | the table as a row of faces, NOW (purple, whose-turn) on the active one, score and a status mark under each | AniGuess `TurnTracker`, AniQuiz `Scoreboard`, AniTag `SeatStrip`, AniTune's scores, AniFake's clue order, AniRank `RankSeats` (✓ placed / locked in, the subject), AniWave `WaveSeats` (the psychic, ✓ dial in — never where; on its online waiting screens too) |
 | `RoundHeader` | the round's heading in display caps, an ink tab ("Turn 3", "Song 2/10"), a hint, the clock inside it | every round screen with a heading of its own |
 | `ResultImpact` | a right/wrong landing: speed lines and a ✓/✗ block for 750ms, plus its sound | AniGuess's guesses, AniTune / AniQuiz reveals, AniTag's turn end |
 | `SpeechBubble` | a question or a name as a manga balloon | AniGuess's question, AniTag's name under judgement |

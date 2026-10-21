@@ -5,6 +5,7 @@ import OnlineLobby from './components/OnlineLobby';
 import PsychicView from './components/PsychicView';
 import GuessView from './components/GuessView';
 import RevealScreen from './components/RevealScreen';
+import WaveSeats from './components/WaveSeats';
 import WavelengthResults from './components/WavelengthResults';
 import WaitingScreen from '../../shared/components/WaitingScreen';
 import RoomShell from '../../shared/components/RoomShell';
@@ -150,6 +151,20 @@ export default function OnlineGame({ onBack, onExit }) {
 
   if (room.view === 'round' && room.game) {
     const { game } = room;
+    // The table's row of faces on every screen of the round, the waiting ones
+    // included: NOW on the psychic while they clue (online nobody takes turns
+    // to dial), and in the guess phase a ✓ for each dial that is in.
+    const seats = (activeId, pendingIds = null) => (
+      <WaveSeats
+        players={room.players}
+        psychicId={game.psychicId}
+        activeId={activeId}
+        pendingIds={pendingIds}
+        youId={room.myPlayerId}
+        scores={room.totalScores}
+        departedIds={room.departedIds ?? []}
+      />
+    );
 
     if (game.phase === 'clue') {
       if (!room.iAmPsychic) {
@@ -160,6 +175,7 @@ export default function OnlineGame({ onBack, onExit }) {
               ? "They're deciding where their card belongs…"
               : "They're looking at the target and thinking of a clue…"}
           >
+            {seats(game.psychicId)}
             {abandonButton}
           </WaitingScreen>
         );
@@ -183,6 +199,7 @@ export default function OnlineGame({ onBack, onExit }) {
           excludeId={game.excludeSpectrumId}
           roundNumber={room.roundNumber}
           totalRounds={room.totalRounds}
+          seats={seats(game.psychicId)}
           onSubmit={room.submitClue}
         />
       );
@@ -195,6 +212,7 @@ export default function OnlineGame({ onBack, onExit }) {
             title="Your clue is out"
             subtitle={waitingOn ? `Still dialling: ${waitingOn}` : 'Everyone has dialled…'}
           >
+            {seats(null, room.pending)}
             {/* Only while somebody is still out: once the last dial lands the
                 reveal is already on its way, and a button that races it would
                 do nothing on the happy path and confuse on every other. */}
@@ -209,6 +227,7 @@ export default function OnlineGame({ onBack, onExit }) {
             title="Dial locked in"
             subtitle={waitingOn ? `Waiting on: ${waitingOn}` : 'Revealing…'}
           >
+            {seats(null, room.pending)}
             {/* The host is a guesser this round, so the only ending they can
                 reach from here is the one that needs no target. */}
             {waitingOn ? abandonButton : null}
@@ -225,6 +244,7 @@ export default function OnlineGame({ onBack, onExit }) {
           value={draft}
           timer={room.timer}
           waitingFor={room.pending.length > 1 ? `${room.pending.length} still to guess` : null}
+          seats={seats(null, room.pending)}
           onChange={setDraft}
           // Leaves the draft alone, so the dial does not blink back to "—"
           // while the write is in flight. The round-number reset owns clearing it.
@@ -245,6 +265,7 @@ export default function OnlineGame({ onBack, onExit }) {
         roundScores={room.roundScores}
         abandoned={game.abandoned}
         isFinalRound={room.isFinalRound}
+        seats={seats(null)}
         // Only the host advances the room. Everyone else reads the same screen
         // with the buttons replaced by a line saying who they are waiting on —
         // rendered here rather than inside RevealScreen so that screen stays the

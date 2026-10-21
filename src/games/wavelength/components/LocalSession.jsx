@@ -4,6 +4,7 @@ import PassScreen from './PassScreen';
 import PsychicView from './PsychicView';
 import GuessView from './GuessView';
 import RevealScreen from './RevealScreen';
+import WaveSeats from './WaveSeats';
 
 // One whole local session: every round, the hand-offs between them, and the
 // scores that accumulate across them.
@@ -43,6 +44,18 @@ export default function LocalSession({
 
   const nameOf = (id) => players.find((p) => p.id === id)?.name ?? id;
 
+  // The table's row of faces, the same on all three screens bar the NOW and
+  // the ✓s. Only ever drawn on a screen the device's holder may see whole.
+  const seats = (activeId, pendingIds = null) => (
+    <WaveSeats
+      players={players}
+      psychicId={state.psychicId}
+      activeId={activeId}
+      pendingIds={pendingIds}
+      scores={totalScores}
+    />
+  );
+
   if (state.phase === 'clue') {
     if (readyFor !== state.psychicId) {
       return (
@@ -66,6 +79,7 @@ export default function LocalSession({
         excludeId={excludeSpectrumId}
         roundNumber={roundNumber}
         totalRounds={totalRounds}
+        seats={seats(state.psychicId)}
         onSubmit={(payload) => { submitClue(payload); setReadyFor(null); }}
       />
     );
@@ -105,6 +119,7 @@ export default function LocalSession({
         who={nameOf(hotSeatId)}
         value={draft}
         waitingFor={pending.length > 1 ? `${pending.length - 1} still to guess` : 'last guess'}
+        seats={seats(hotSeatId, pending)}
         onChange={setDraft}
         onLock={() => {
           placeDial(hotSeatId, draft);
@@ -127,6 +142,7 @@ export default function LocalSession({
       roundScores={roundScores}
       abandoned={state.abandoned}
       isFinalRound={isFinalRound}
+      seats={seats(null)}
       onNext={() => { nextRound(); setReadyFor(null); setDraft(null); }}
       // Totals are banked by the hook's own effect the moment a round reveals,
       // so by the time this button exists they already include this round.

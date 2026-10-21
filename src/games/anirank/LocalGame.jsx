@@ -103,6 +103,7 @@ export default function LocalGame({ onExit, onBack }) {
           subjectId={game.subjectId}
           scoring={game.scoring}
           blind={game.blind}
+          totalScores={totalScores}
           onFinish={handleFinish}
           onQuit={() => { setGame(null); setView('setup'); }}
         />

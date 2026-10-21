@@ -379,6 +379,8 @@ export function useAniRankRoom() {
         (id) => players.find((p) => p.id === id)?.name ?? id
       )
       : [],
+    // The same, as ids, for the row of faces (RankSeats).
+    pendingIds: game ? rules.pendingPlacers(game, core.activeIds) : [],
     activePlayers: core.activePlayers,
     activeIds: core.activeIds,
     departedIds: core.departedIds,

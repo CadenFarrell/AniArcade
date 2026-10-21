@@ -10,6 +10,7 @@ import userEvent from '@testing-library/user-event';
 import { useEffect, useState } from 'react';
 import { LocalRoster } from './PlayerSlots';
 import ProfilePicker from './ProfilePicker';
+import ProfileButton from './ProfileButton';
 import { PlayerRoster } from './Lobby';
 import { useRepublishProfile } from '../hooks/useRepublishProfile';
 import { renderArcade, seedProfiles } from '../testing/arcade';
@@ -166,5 +167,20 @@ describe('choosing a character in an online lobby', () => {
     expect(stored('ann').portraitKey).toBe('power');
     expect(room.updateMyProfile).toHaveBeenCalledTimes(1);
     expect(room.updateMyProfile.mock.calls[0][0]).toMatchObject({ id: 'ann', portraitKey: 'power' });
+  });
+});
+
+describe('the profile button', () => {
+  it("wears the profile's chosen face", () => {
+    renderArcade(<ProfileButton profile={{ ...ann, portraitKey: 'power' }} onOpen={() => {}} />);
+    const button = screen.getByRole('button', { name: /Profile: Ann/ });
+    expect(button.querySelector('img')?.getAttribute('src')).toBe('https://img.test/Power.jpg');
+  });
+
+  it('keeps the drawn person for a list with no pictures', () => {
+    renderArcade(<ProfileButton profile={{ id: 'x', name: 'X', animeList: [] }} onOpen={() => {}} />);
+    const button = screen.getByRole('button', { name: /Profile: X/ });
+    expect(button.querySelector('img')).toBeNull();
+    expect(button.querySelector('svg')).toBeTruthy();
   });
 });

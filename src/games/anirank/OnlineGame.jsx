@@ -6,10 +6,11 @@ import OnlineLobby from './components/OnlineLobby';
 import RoomTiers from './RoomTiers';
 import AniRankResults from './components/AniRankResults';
 import RankBoard, { CardTray, CurrentItem, LockInButton, WaitingOn } from './components/RankBoard';
+import RankSeats from './components/RankSeats';
 import { isOpinion, promptFor } from './axes';
 import WaitingScreen from '../../shared/components/WaitingScreen';
 import RoomShell from '../../shared/components/RoomShell';
-import { Backdrop, Badge, GhostButton, HubButton, Icon, Screen } from '../../shared/ui';
+import { Backdrop, GhostButton, HubButton, Icon, Screen } from '../../shared/ui';
 
 // The online view-router. Same shape as src/games/anitune/OnlineGame.jsx: a
 // shell() wraps every in-room screen with the room code, a way out and the
@@ -98,23 +99,18 @@ export default function OnlineGame({ onBack, onExit }) {
       <>
         <Backdrop />
         <Screen width="md">
-          <div className="mb-6 flex flex-wrap justify-center gap-2">
-            {room.players.map((p) => {
-              const gone = room.departedIds.includes(p.id);
-              const waiting = room.pendingNames.includes(p.name);
-              return (
-                <Badge
-                  key={p.id}
-                  tone={waiting ? 'neutral' : 'lime'}
-                  className={gone ? 'opacity-40' : ''}
-                >
-                  {p.name}{p.id === room.myPlayerId ? ' (you)' : ''}
-                  {!waiting && !gone && <>{' '}<Icon name="check" label="ready" /></>}
-                  {gone && ' · left'}
-                </Badge>
-              );
-            })}
-          </div>
+          {/* The table as faces, like every other game's round: who is still
+              placing, who has locked in, who left (dimmed). No NOW — online
+              everyone places at once. */}
+          <RankSeats
+            players={room.players}
+            pendingIds={room.pendingIds}
+            youId={room.myPlayerId}
+            subjectId={isOpinion(room.axis) ? room.subjectId : null}
+            open={open}
+            scores={room.scoring ? room.totalScores : null}
+            departedIds={room.departedIds}
+          />
 
           {open
             ? !committed && (
