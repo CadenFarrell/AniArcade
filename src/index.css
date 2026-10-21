@@ -132,6 +132,14 @@
      so a game wearing one of those would fight the meaning on its own screens.
      Do not give this one a semantic role later; add another decorative token. */
   --color-pop-teal: #126b66; /* AniFake                   4.80 / 5.96 */
+  --color-pop-plum: #7b2a5c; /* AniTurf                   6.85 / 8.50 */
+
+  /* AniTurf's two teams. Their own role, not pop-red and pop-blue: those mean
+     wrong and asking, and a claimed square is neither. Kept a hue apart from
+     the vermilion brand and the crimson wrong, and never colour alone on the
+     board — every claim also carries its team's texture and letter. */
+  --color-team-red: #a8261b; /* Red team                  5.39 / 6.69 */
+  --color-team-blue: #1a4a94; /* Blue team                6.51 / 8.07 */
 
   /* -------------------------------------------------------------------------
      The neutral ramp: ink at graded opacity over the paper. This replaced

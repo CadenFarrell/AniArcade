@@ -10,6 +10,7 @@ export const ACCENT_BG = {
   blue: 'bg-pop-blue',
   teal: 'bg-pop-teal',
   red: 'bg-pop-red',
+  plum: 'bg-pop-plum',
 };
 
 export const accentBg = (accent) => ACCENT_BG[accent] ?? ACCENT_BG.pink;

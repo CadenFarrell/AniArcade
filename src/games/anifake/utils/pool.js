@@ -17,60 +17,11 @@
 // stamps a `value` from axis.valueFor, drops anything without one, and breaks
 // ties by that value. Nothing here ranks anything, so serving both would mean
 // parameterizing three things to gain one caller.
-import { characterNameKey, normalizeCharacter } from '../../../shared/utils/character';
+import { characterOwners } from '../../../shared/utils/characterPool';
 import { DEFAULT_FAME_ID, getFame } from '../fame';
 
-// Which of two copies of the same character to keep. The highest favourites
-// count is the one mergeCharacterEdges already settled on across seasons, and a
-// copy with a portrait beats one without, since the card is mostly the
-// portrait. Applied BOTH within one profile and across profiles — two players
-// can hold the same character at different import vintages, and picking by
-// favourites alone there would let a portrait-less copy win.
-//
-// Genres rank above favourites for the same reason they are on the entry at
-// all: the two shapes stored data comes in (an AniList `genres` array, the
-// singular `genre` of an older hand-made character) mean one player's copy of a character can carry
-// genres while another's carries none, and the copy with none deals the fake a
-// blank.
-function preferred(existing, candidate) {
-  if (!existing) return candidate;
-  if (!existing.imageUrl && candidate.imageUrl) return candidate;
-  if (existing.imageUrl && !candidate.imageUrl) return existing;
-  if (!existing.genres.length && candidate.genres.length) return candidate;
-  if (existing.genres.length && !candidate.genres.length) return existing;
-  return (candidate.favourites ?? 0) > (existing.favourites ?? 0) ? candidate : existing;
-}
-
-// One entry per character, keyed by folded name so the same person listed under
-// three season titles is one card — the same identity rule AniGuess and AniRank
-// use, and the reason ids are not used (AniList ids and the Date.now() ids
-// ListManager's old hand-made entries carry share no id space).
-//
-// That folded name is also what `id` holds, which is what makes it the key
-// rules.deriveTruth groups published cards by. There is no board to index into
-// anymore, so the name IS the identity end to end.
-function collapseCharacters(animeList) {
-  const byName = new Map();
-  for (const anime of animeList || []) {
-    for (const raw of anime.characters || []) {
-      // normalizeCharacter first, so a hand-made singular `genre` string is
-      // already an array by the time anything here reads it.
-      const char = normalizeCharacter(raw);
-      const key = characterNameKey(char?.name);
-      if (!key) continue;
-      byName.set(key, preferred(byName.get(key), {
-        id: key,
-        name: char.name,
-        series: anime.title || '',
-        imageUrl: char.imageUrl || '',
-        role: char.role || '',
-        favourites: char.favourites ?? 0,
-        genres: char.genres ?? [],
-      }));
-    }
-  }
-  return byName;
-}
+// Which duplicate of a character wins and how one list collapses to one entry
+// per person live in shared/utils/characterPool.js, shared with AniTurf's board.
 
 /**
  * The characters eligible for a round.
@@ -83,17 +34,7 @@ function collapseCharacters(animeList) {
 export function eligibleCharacters(players, { sharedOnly = true } = {}) {
   if (!players?.length) return [];
 
-  const counts = new Map(); // key -> { entry, owners }
-  for (const player of players) {
-    for (const [key, entry] of collapseCharacters(player.animeList)) {
-      if (!counts.has(key)) counts.set(key, { entry, owners: new Set() });
-      const slot = counts.get(key);
-      slot.owners.add(player.id);
-      slot.entry = preferred(slot.entry, entry);
-    }
-  }
-
-  return [...counts.values()]
+  return characterOwners(players)
     .filter((c) => !sharedOnly || c.owners.size === players.length)
     .map((c) => c.entry);
 }

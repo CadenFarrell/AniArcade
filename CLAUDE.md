@@ -171,8 +171,9 @@ network.
 
 **Per-game design notes live beside each game and load only when Claude works in that folder:**
 `src/games/anirank/CLAUDE.md` (board direction, Kendall-tau scoring, the pool toggle, tier
-lists), `src/games/wavelength/CLAUDE.md` (AniWave), `src/games/categories/CLAUDE.md` (AniTag)
-and `src/games/aniquiz/CLAUDE.md` (AniQuiz). Read the relevant one before changing a game's
+lists), `src/games/wavelength/CLAUDE.md` (AniWave), `src/games/categories/CLAUDE.md` (AniTag),
+`src/games/aniquiz/CLAUDE.md` (AniQuiz) and `src/games/aniturf/CLAUDE.md` (AniTurf: crossing
+goals, the winding-route footing and its detours, the two-device claim). Read the relevant one before changing a game's
 behaviour from shared code, where it will not load on its own.
 
 ### Online rooms (Firebase Realtime Database)
@@ -253,11 +254,11 @@ On top of it:
 | piece | is | used by |
 | --- | --- | --- |
 | `Handoff` | pass the device: the next player's portrait panel, name slab, the game's own button words | every local pass screen; AniGuess's look-away |
-| `PlayerRow` | the table as a row of faces, NOW (purple, whose-turn) on the active one, score and a status mark under each | AniGuess `TurnTracker`, AniQuiz `Scoreboard`, AniTag `SeatStrip`, AniTune's scores, AniFake's clue order, AniRank `RankSeats` (✓ placed / locked in, the subject), AniWave `WaveSeats` (the psychic, ✓ dial in — never where; on its online waiting screens too) |
+| `PlayerRow` | the table as a row of faces, NOW (purple, whose-turn) on the active one, score and a status mark under each | AniGuess `TurnTracker`, AniQuiz `Scoreboard`, AniTag `SeatStrip`, AniTune's scores, AniFake's clue order, AniRank `RankSeats` (✓ placed / locked in, the subject), AniWave `WaveSeats` (the psychic, ✓ dial in — never where; on its online waiting screens too), AniTurf `TeamStrip` (one row per team, the clue-giver crowned) |
 | `RoundHeader` | the round's heading in display caps, an ink tab ("Turn 3", "Song 2/10"), a hint, the clock inside it | every round screen with a heading of its own |
-| `ResultImpact` | a right/wrong landing: speed lines and a ✓/✗ block for 750ms, plus its sound | AniGuess's guesses, AniTune / AniQuiz reveals, AniTag's turn end |
-| `SpeechBubble` | a question or a name as a manga balloon | AniGuess's question, AniTag's name under judgement |
-| `PlayerFace` | one player's face at row size, beside (never instead of) their name, found by id | the rows of reveals and logs: AniQuiz's and AniTune's answer rows, AniWave's "This round", AniTag's round summary, name trails and last play, AniFake's clue log, AniRank's compare grid and publish list |
+| `ResultImpact` | a right/wrong landing: speed lines and a ✓/✗ block for 750ms, plus its sound | AniGuess's guesses, AniTune / AniQuiz reveals, AniTag's turn end, AniTurf's claims |
+| `SpeechBubble` | a question or a name as a manga balloon | AniGuess's question, AniTag's name under judgement, AniTurf's clue |
+| `PlayerFace` | one player's face at row size, beside (never instead of) their name, found by id | the rows of reveals and logs: AniQuiz's and AniTune's answer rows, AniWave's "This round", AniTag's round summary, name trails and last play, AniFake's clue log, AniRank's compare grid and publish list, AniTurf's teams card and clue log |
 
 `PlayerFace` goes on **rows only**, by decision: not inside a running sentence ("Liam got
 it!" — busy), and never beside a character card (AniGuess's who-is-who), where a player's
@@ -302,10 +303,18 @@ There are two such nodes, and they are mirror images — pick by who must not se
 
 `secrets/` is read by AniFake (the dealt card), AniWave (the hidden target, plus
 `readroom`'s dealt card — see `src/games/wavelength/CLAUDE.md` for why the freshness check
-is on the stamp rather than on the target) and AniTag in `chosen` mode (the clause you picked). Write is any member,
+is on the stamp rather than on the target), AniTag in `chosen` mode (the clause you picked) and
+AniTurf (each team's key and traps, in its clue-giver's node). Write is any member,
 not the host, because "the host" is a `state/` value the rules cannot cheaply check, and a
-room's members are already trusted with everything in `state/`. AniTag is the one case where
-the writer is the *owner* — nobody else could, since nobody else may read it.
+room's members are already trusted with everything in `state/`. AniTag and AniTurf are the
+cases where the writer is the *owner* — nobody else could, since nobody else may read it.
+
+**AniTurf goes one step further: the owner also DEALS it.** Each clue-giver's own device makes
+its team's key, so no device ever holds a key it was not dealt — not even the host's, for an
+instant, as AniFake's does. The price is that only that device can answer for the key, so a
+claim is resolved across two devices (the claiming team's clue-giver says footing-or-not, the
+other's says trapped-or-not), and a key-dealing effect must wait for the first `secrets/`
+snapshot or it deals over the real key on every refresh. See `src/games/aniturf/CLAUDE.md`.
 
 `assignments/` is read by AniGuess (the character you are guessing) and AniTag in `dealt` mode
 (the category you are guessing).

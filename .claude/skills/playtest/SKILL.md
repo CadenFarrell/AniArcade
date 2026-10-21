@@ -1,6 +1,6 @@
 ---
 name: playtest
-description: Playtest AniArcade's games — run the bot layers (local jsdom, online on the emulator, real Chrome), read the report, replay failures by seed, review the screenshots, and write up bugs plus UX, clarity and fun notes. Use when asked to playtest, smoke-test the games, or check how a game plays or looks. Optional args, a game id (aniguess, anitune, anirank, anifake, aniwave, anitag, aniquiz) and/or a layer (local, online, browser, all).
+description: Playtest AniArcade's games — run the bot layers (local jsdom, online on the emulator, real Chrome), read the report, replay failures by seed, review the screenshots, and write up bugs plus UX, clarity and fun notes. Use when asked to playtest, smoke-test the games, or check how a game plays or looks. Optional args, a game id (aniguess, anitune, anirank, anifake, aniwave, anitag, aniquiz, aniturf) and/or a layer (local, online, browser, all).
 ---
 
 # /playtest

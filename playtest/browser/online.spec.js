@@ -34,7 +34,9 @@ for (const { game, seed, chaos } of cases) {
     test.skip(!(await emulatorUp()), 'no Firebase emulator on 127.0.0.1:9000');
     const strategy = strategies[game.id];
     const scenario = scenarioFor(game, strategy, seed, { layer: 'online' });
-    const n = Math.max(3, Math.min(strategy.players[1], 3));
+    // Three browsers, unless the game cannot start with three: AniTurf's two
+    // teams of two need four (its strategy's `onlinePlayers`).
+    const n = Math.max(3, strategy.onlinePlayers?.[0] ?? 0, Math.min(strategy.players[1], 3));
     for (const p of FIXTURE_PROFILES) if (scenario.names.length < n && !scenario.names.includes(p.name)) scenario.names.push(p.name);
     scenario.names = scenario.names.slice(0, n);
     scenario.chaos = chaos;
