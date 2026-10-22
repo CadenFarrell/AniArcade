@@ -9,6 +9,7 @@ import { Badge, Banner, Button, Card, Icon, PlaceMark } from '../../../shared/ui
 import { KANA } from '../../../shared/ui/kanaText';
 import { useSoundCue } from '../../../shared/hooks/useSoundCue';
 import descriptor from '../index';
+import { useRecordResult } from '../../../shared/hooks/useRecordResult';
 
 // The reveal. Shows the answer key once, then each player's board against it —
 // on a fact axis the `value` is deliberately never rendered before this screen.
@@ -76,6 +77,12 @@ export default function AniRankResults({
     detail: details[winners[0].id],
     names: winners.map((p) => p.name),
   } : null;
+
+  // Into each seated profile's history (utils/history.js): the best board of
+  // the round wins it, as the headline says. An unscored round is still a
+  // round played. No places — the round's own order is concordant pairs, which
+  // nobody would recognise later as a placing.
+  useRecordResult(descriptor.id, players, scored ? winners.map((p) => p.id) : []);
 
   // The order coming out. A scored round's splash stamps with its own thud; an
   // unscored one has no splash, so it gets the plain reveal instead of silence.

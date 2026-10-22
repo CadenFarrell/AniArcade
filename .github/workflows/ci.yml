@@ -1,0 +1,24 @@
+# Lint, the unit suite and a production build on every push and pull request.
+# No .env.local here, so firebaseEnabled is false — the build every unit test is
+# written for, and the one that touches no network. The online smoke suite and
+# the playtest bots stay manual (`npm run test:smoke`, `npm run playtest`): they
+# need the Firebase emulator, Playwright browsers and minutes of wall clock.
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build

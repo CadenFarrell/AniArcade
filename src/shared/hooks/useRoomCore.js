@@ -1,9 +1,11 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { ref, onValue, update, get, set, runTransaction } from 'firebase/database';
+import {
+  ref, onValue, update, get, set, remove, runTransaction, query, orderByKey, endAt, limitToFirst,
+} from 'firebase/database';
 import { getFirebaseAuth, getFirebaseDb, ensureSignedIn } from '../services/firebase';
 import { storage } from '../services/storage';
 import { usePresence } from './usePresence';
-import { GRACE_MS, rosterSnapshot, nextHostId } from '../utils/presence';
+import { GRACE_MS, rosterSnapshot, nextHostId, isLastToLeave } from '../utils/presence';
 
 const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no ambiguous 0/O/1/I
 const EMPTY_PLAYERS = []; // stable identity so the roster memo doesn't churn
@@ -12,6 +14,62 @@ function generateRoomCode() {
   let code = '';
   for (let i = 0; i < 5; i++) code += CODE_CHARS[Math.floor(Math.random() * CODE_CHARS.length)];
   return code;
+}
+
+// How long a room may sit before anyone may delete it. Mirrors the 86400000 in
+// database.rules.json — the rules are what enforce it; this only aims the query.
+export const ROOM_TTL_MS = 24 * 60 * 60 * 1000;
+// The sweep asks for rooms a little older than the rules demand, so a device
+// whose server-offset reading is a few seconds out cannot ask for one the rules
+// still count as fresh — a query reaching past the gate is refused outright.
+const SWEEP_MARGIN_MS = 5 * 60 * 1000;
+const SWEEP_BATCH = 20;
+
+// Rooms are deleted two ways, and neither needs a server of our own (the
+// project stays on the free tier, so no Cloud Functions):
+//
+// - The last player to press Leave deletes the room on their way out
+//   (leaveRoom, below).
+// - Every other room — a tab closed mid-game, a table that wandered off — is
+//   swept by the next device to create a room anywhere, once it is a day old.
+//   Nothing can list rooms/ (a read there would cascade into every room's
+//   secrets/), so createRoom also writes an index entry, and the index's rules
+//   allow exactly one query: entries older than a day. Live codes stay
+//   unlistable.
+//
+// The index entry is `roomIndex/{createdAt}_{code} → code`, keyed by the time
+// as a 13-digit string, and that shape is forced. The obvious one —
+// `roomIndex/{code} → createdAt`, queried orderByValue().endAt(cutoff) — cannot
+// be gated: measured on the emulator, a rule comparing `query.endAt` (or
+// `startAt`) to any NUMBER is refused, `query.endAt > 0` included. Compared as
+// STRINGS it works, and equal-length digit strings sort the way the numbers do
+// (until the year 2286), so the key carries the time and the query orders by
+// key. The rules also check the key against rooms/{code}/createdAt, so nobody
+// can file a live room as a stale one to get it swept.
+//
+// Each room used to live forever, holding a full copy of every player's
+// profile, lists and all; on the free tier's 1 GB that only ever grew.
+const indexKey = (createdAt, code) => `${createdAt}_${code}`;
+
+async function deleteRoom(db, code, key = null) {
+  // The leaver does not know when its room was made; anyone signed in may read
+  // that, and the index entry is named by it.
+  const entry = key ?? indexKey((await get(ref(db, `rooms/${code}/createdAt`))).val(), code);
+  // The room first: the index entry's delete rule asks that the room be gone.
+  await remove(ref(db, `rooms/${code}`));
+  await remove(ref(db, `roomIndex/${entry}`));
+}
+
+async function sweepStaleRooms(db, serverNow) {
+  const cutoff = String(serverNow - ROOM_TTL_MS - SWEEP_MARGIN_MS);
+  const snap = await get(query(ref(db, 'roomIndex'), orderByKey(), endAt(cutoff), limitToFirst(SWEEP_BATCH)));
+  const entries = Object.entries(snap.val() ?? {});
+  // One at a time, and each on its own: a room someone else swept a moment ago
+  // fails its delete, which must not stop the rest.
+  for (const [key, code] of entries) {
+    try { await deleteRoom(db, code, key); } catch { /* raced, or already gone */ }
+  }
+  return entries.length;
 }
 
 // A refusal from the rules. Firebase reports it as code PERMISSION_DENIED on
@@ -249,15 +307,27 @@ export function useRoomCore({
 
     const db = getFirebaseDb();
     let code = null;
+    let createdAt = null;
     for (let attempt = 0; attempt < 6 && !code; attempt++) {
       const candidate = generateRoomCode();
+      // Server time, because the rules age a room against the server's `now`:
+      // a phone whose clock runs a day fast would otherwise mint rooms the sweep
+      // is allowed to take at once.
+      const stamp = Date.now() + serverOffsetRef.current;
       const result = await runTransaction(ref(db, `rooms/${candidate}/createdAt`), (current) => {
         if (current !== null) return; // abort — code already taken
-        return Date.now();
+        return stamp;
       });
-      if (result.committed) code = candidate;
+      if (result.committed) {
+        code = candidate;
+        createdAt = result.snapshot.val();
+      }
     }
     if (!code) throw new Error('Could not create a room — please try again.');
+    // Its own write after the claim, never in one batch with it: the index
+    // rule checks the key against rooms/{code}/createdAt, and a batch is
+    // judged against the tree as it stood before the batch.
+    await bestEffort(set(ref(db, `roomIndex/${indexKey(createdAt, code)}`), code));
 
     // Firebase evaluates each path's rule in a multi-location update() against
     // the pre-update tree, not the merged result — so writing memberUids and
@@ -280,6 +350,9 @@ export function useRoomCore({
     rememberRoom(code, playerId);
     setRoomCode(code);
     setMyPlayerId(playerId);
+    // Not awaited: tidying up other people's dead rooms must never hold up
+    // this one opening.
+    sweepStaleRooms(db, Date.now() + serverOffsetRef.current).catch(() => {});
     return code;
   }, [uid, rememberRoom, bestEffort]);
 
@@ -354,11 +427,20 @@ export function useRoomCore({
 
   // Tell the room on the way out — but never let a slow network trap someone in
   // a room they've asked to leave, so the local exit doesn't wait on the write.
+  //
+  // The last one out deletes the room — after the presence write, so nothing is
+  // still writing into it, and after exitRoom, so this device's own
+  // subscription is already gone and doesn't report the deletion as "That room
+  // no longer exists". "Last" counts only players who pressed Leave
+  // (isLastToLeave): a crashed one may still refresh back in.
   const leaveRoom = useCallback(() => {
+    const code = roomCode;
+    const last = code != null && myPlayerId != null && isLastToLeave(rosterRef.current.statuses, myPlayerId);
     const written = markLeft();
     exitRoom();
-    return written;
-  }, [markLeft, exitRoom]);
+    if (!last) return written;
+    return written.then(() => deleteRoom(getFirebaseDb(), code)).catch(() => {});
+  }, [roomCode, myPlayerId, markLeft, exitRoom]);
 
   // Republishes this device's profile into the room — used when a player
   // imports their AniList from the lobby after already joining. Transactional

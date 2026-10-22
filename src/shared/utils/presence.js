@@ -90,3 +90,12 @@ export function nextHostId(players, statuses) {
   const dropping = players.find((p) => statuses[p.id] === 'dropping');
   return dropping ? dropping.id : null;
 }
+
+// Whether `myId` leaving empties the room for good, so its device may delete it.
+// Only a deliberate Leave counts as gone here: a player who is 'gone' or
+// 'dropping' crashed or lost signal, and a refresh still brings them back into
+// the room — deleting it under them would turn a dead battery into "That room
+// no longer exists". Those rooms are left to the stale-room sweep instead.
+export function isLastToLeave(statuses, myId) {
+  return Object.entries(statuses).every(([id, status]) => id === myId || status === 'left');
+}

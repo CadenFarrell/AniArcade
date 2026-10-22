@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useInvite } from '../context/inviteContext';
 import { useTileCharacter } from '../context/tileCharacterContext';
 import { firebaseEnabled } from '../services/firebase';
 import { playSound } from '../services/sound';
@@ -24,6 +25,17 @@ import { Backdrop, HubButton, Icon, Kana, Screen } from '../ui';
 export default function ModePicker({ game, tagline, onLocal, onOnline, onExit }) {
   const character = useTileCharacter();
   const [broken, setBroken] = useState(null);
+  const invite = useInvite();
+
+  // Opened from an invite link: the choice is already made, so go straight on
+  // to the online screen (RoomSetup joins from there). Once only — `routed` is
+  // what lets Back from that screen land here rather than bounce forward again.
+  // Without Firebase the link just opens the cover; online is disabled anyway.
+  useEffect(() => {
+    if (!invite?.code || invite.routed || !firebaseEnabled) return;
+    invite.markRouted();
+    onOnline();
+  }, [invite, onOnline]);
   const shown = character && character.imageUrl !== broken ? character : null;
   const title = splitTitle(game.title);
   const ink = accentBg(game.accent);

@@ -157,6 +157,32 @@ describe('hub', () => {
     expect([...document.querySelectorAll('img')].map((i) => i.getAttribute('src'))).toContain(src);
   });
 
+  // shared/utils/inviteLink.js. On this unconfigured build the link can only
+  // open the cover — RoomSetup.test.jsx covers the join itself.
+  it('opens an invite link’s game past the title screen, and takes the invite off the address bar', async () => {
+    const game = games[games.length - 1];
+    window.history.replaceState(null, '', `/?game=${game.id}&join=ABCDE&ref=chat`);
+    try {
+      renderArcade(<HubScreen />, { showTitle: true });
+      await screen.findByRole('button', { name: /play on this device/i });
+      expect(screen.getByRole('heading', { level: 1, name: game.title })).toBeTruthy();
+      expect(window.location.search).toBe('?ref=chat');
+      expect(sessionStorage.getItem('aniarcade_title_seen')).toBe('1');
+    } finally {
+      window.history.replaceState(null, '', '/');
+    }
+  });
+
+  it('ignores an invite to a game this build does not have', () => {
+    window.history.replaceState(null, '', '/?game=pacman&join=ABCDE');
+    try {
+      renderArcade(<HubScreen />);
+      for (const game of games) expect(tileFor(game)).toBeTruthy();
+    } finally {
+      window.history.replaceState(null, '', '/');
+    }
+  });
+
   it('leaves the tiles bare with no profile, and fills only what a small list can', () => {
     renderArcade(<HubScreen />);
     expect(tilePortraits().every((s) => s === null)).toBe(true);

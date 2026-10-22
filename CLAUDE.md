@@ -33,6 +33,12 @@ npx vitest run src/games/aniguess/rules.test.js # one file
 npx vitest run -t "advances the turn"           # one test by name
 ```
 
+CI (`.github/workflows/ci.yml`) runs `npm run lint`, `npm test` and `npm run build` on every
+push and pull request, on Linux. That makes the filesystem **case-sensitive** there, unlike
+this Windows checkout, so an import whose casing is off passes here and fails in CI (the
+`kanaText.js` story below is the same trap the other way round). Smoke and playtest stay
+manual.
+
 The vitest config lives in the `test` block of `vite.config.js`. Its `include` is
 `src/**/*.test.{js,jsx}` under a default `environment: 'node'`: a `.test.js` is a pure
 module, and a `.test.jsx` is a component test that must open with a
@@ -466,6 +472,64 @@ The room a device is in is remembered in localStorage under a per-game key
 (`<game>_online_room` — per-game so two games' saved rooms can't clobber each other), so a
 refresh rejoins instead of landing on the join screen. Firebase persists the anonymous uid,
 so the membership rules still pass.
+
+**Rooms are deleted, two ways, with no server of our own** (`useRoomCore.js`; the project
+stays on the free Spark tier). Each room holds a full copy of every player's profile, so
+before this they piled up in the 1 GB forever.
+
+- **The last one out deletes it.** `leaveRoom` removes `rooms/{code}` when every *other*
+  player's status is `left` (`isLastToLeave` in `utils/presence.js`). A player who is only
+  `gone` or `dropping` crashed rather than left and may still refresh back in, so their room
+  is kept. The delete goes after the presence write and after `exitRoom`, so the leaver's own
+  subscription never reports "That room no longer exists".
+- **The next create sweeps anything a day old.** Nothing may list `rooms/` (a read there
+  cascades into every room's `secrets/`), so `createRoom` also writes
+  `roomIndex/{createdAt}_{code} → code`, and the index's rules allow exactly one query: keys
+  older than a day, `orderByKey().endAt(...)`. **The key carries the time as a 13-digit
+  string because the rules cannot gate a number**: measured on the emulator, any rule
+  comparing `query.endAt`/`startAt` to a number is refused (`query.endAt > 0` included), while
+  string comparison works and equal-length digit strings sort like the numbers. The rules
+  also check the key against `rooms/{code}/createdAt`, so a live room cannot be filed as a
+  stale one to get it swept, and live codes stay unlistable. `createdAt` is stamped in
+  SERVER time (`serverOffsetRef`), since the rules age it against the server's `now`.
+
+`rooms/$code/.write` allows a DELETE only — by a member, or by anyone once the room is a day
+old. Any member deleting the room is a wider permission than before, taken knowingly: any
+member could already wipe `state/`. A presence `onDisconnect` that fires into a deleted room
+is refused (the `state/` rule needs `memberUids`, which went with the room), so it cannot
+leave a stub behind. Rooms created before the index existed have no entry and were removed
+once by hand after the rules deploy. `smoke/cleanup.smoke.test.js` covers all of it.
+
+**Invite links** (`shared/utils/inviteLink.js`): `/?game=<id>&join=<CODE>`. The game rides
+along because codes are app-wide and a room does not record its game. `HubScreen` reads it
+once, strips it with `replaceState` (so a refresh does not rejoin), skips the title screen and
+opens that game; `shared/context/inviteContext.js` carries it in — and also carries the open
+game's id, which is what the lobby's **Share invite** button (`Lobby.jsx`'s `RoomCode`;
+`navigator.share`, else the clipboard) builds a link from. `ModePicker` routes straight to
+online once (`routed`, so Back to the cover does not bounce forward), and `RoomSetup` joins
+once there is a profile and `room.uid` is set — the point at which `useRoomCore` has already
+restored any saved room, which then wins; leaving it brings the invite back. With no profile
+it opens the picker first.
+
+### Play history
+
+Every finished game is a line in `aniarcade_history` (`{ [profileId]: Entry[] }`, newest
+last, capped at 200 per profile; `shared/utils/history.js` is the pure, tested half). Each
+game's FINAL results screen calls `useRecordResult(gameId, players, winnerIds, { places,
+scores })` once — never a between-rounds `RoundEnd`, which would count a game several times.
+A tie at the top is a win for each; a table of one is never a win; `winnerIds = []` is a game
+nobody won (an unscored AniRank round) and `null` records nothing (an AniFake round with no
+fake). AniTurf and AniFake record a side's win: the whole winning team, or the fake (walking
+or a correct steal) against everyone else.
+
+**Whose line it is comes from `HistoryScopeContext`.** `RoomShell` provides `{ onlyId:
+myPlayerId }`, so online each device records only its own player; locally there is no scope
+and every seated profile is recorded, since they are all on this device. **A results screen
+can mount twice for one game** (a refresh, AniGuess's leaderboard → list → back), so the same
+fingerprint (game, table, winners, places, running totals) within 30 minutes is dropped.
+There is no provider: the one reader, the hub's `RecordStrip`, mounts with the menu, and the
+menu is never on screen while a game writes. The key is in `PRESERVED_KEYS` — it is the
+player's and cannot be rebuilt.
 
 ### Presence and the departed-player problem
 

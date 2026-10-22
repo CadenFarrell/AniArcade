@@ -117,6 +117,24 @@ repeats the tile's game-ink block and split title at banner size (the accent cla
 `shared/ui/accents.js` and the split is `shared/utils/splitTitle.js`, shared by both so they
 cannot drift). Change one, check the other.
 
+## Under the board: the record strip
+
+`RecordStrip.jsx` is the main profile's play history (see "Play history" in the root
+CLAUDE.md): games and wins, a chip per game in that game's ink — the tile bar's colour, so
+the chips sort the way the board does — and the last five games. It sits BELOW the board,
+never above it, for the hero's reason: the hub's height belongs to the games. It reads
+storage once per mount, which is enough because the menu branch unmounts while a game is
+open, so returning from a game is a fresh read. It shows the main profile only, though every
+seated profile is recorded; a friend sees theirs on a device where they are the main profile.
+
+## Invite links skip the front door
+
+An invite link (`shared/utils/inviteLink.js`) opens its game with no title screen and no
+menu: `HubScreen` seeds `titleSeen` and `gameId` from it in their initializers, marks the
+title seen for the session, and takes the invite off the address bar. The wipe does not run
+for it — there is nothing on screen to wipe from. `backToMenu` drops any invite still
+pending. A link to a game this build does not have opens the plain hub.
+
 ## Title, hero and wipe
 
 **`TitleScreen` shows once per browser session** (`titleSeen.js`, sessionStorage): right on

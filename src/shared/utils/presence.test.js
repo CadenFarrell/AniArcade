@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
-  GRACE_MS, playerStatus, isPresent, graceRemainingMs, rosterSnapshot, nextHostId,
+  GRACE_MS, playerStatus, isPresent, graceRemainingMs, rosterSnapshot, nextHostId, isLastToLeave,
 } from './presence';
 
 const NOW = 1_700_000_000_000;
@@ -134,5 +134,21 @@ describe('nextHostId', () => {
   it('returns null when the room has emptied out', () => {
     expect(nextHostId(players, { ana: 'left', ben: 'gone', cleo: 'gone' })).toBe(null);
     expect(nextHostId([], {})).toBe(null);
+  });
+});
+
+describe('isLastToLeave', () => {
+  it('is true when everyone else pressed Leave, or nobody else is here', () => {
+    expect(isLastToLeave({ ana: 'active', ben: 'left', cleo: 'left' }, 'ana')).toBe(true);
+    expect(isLastToLeave({ ana: 'active' }, 'ana')).toBe(true);
+  });
+
+  it('is false while anyone else is still here', () => {
+    expect(isLastToLeave({ ana: 'active', ben: 'active' }, 'ana')).toBe(false);
+    expect(isLastToLeave({ ana: 'active', ben: 'dropping' }, 'ana')).toBe(false);
+  });
+
+  it('keeps the room for a player who crashed rather than left — a refresh brings them back', () => {
+    expect(isLastToLeave({ ana: 'active', ben: 'left', cleo: 'gone' }, 'ana')).toBe(false);
   });
 });

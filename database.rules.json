@@ -1,7 +1,14 @@
 {
   "rules": {
+    "roomIndex": {
+      ".read": "auth != null && query.orderByKey == true && query.endAt <= (now - 86400000) + ''",
+      "$key": {
+        ".write": "auth != null && ((!data.exists() && $key === root.child('rooms/'+newData.val()+'/createdAt').val() + '_' + newData.val()) || (!newData.exists() && (!root.child('rooms/'+data.val()).exists() || $key < (now - 86400000) + '')))"
+      }
+    },
     "rooms": {
       "$code": {
+        ".write": "auth != null && !newData.exists() && (root.child('rooms/'+$code+'/memberUids/'+auth.uid).exists() || data.child('createdAt').val() < now - 86400000)",
         "createdAt": {
           ".read": "auth != null",
           ".write": "auth != null && !data.exists()"

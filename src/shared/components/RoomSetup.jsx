@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useInvite } from '../context/inviteContext';
 import { useProfileStore } from '../context/profileContext';
 import ListImport from './ListImport';
 import OnlineIdentityCard from './OnlineIdentityCard';
@@ -26,9 +27,15 @@ import {
 // empty duplicate profiles. The profile itself is shared by every game.
 export default function RoomSetup({ room, onBack, tone = 'purple', stat = () => null }) {
   const { activeProfile: profile, saveProfile, selectProfile } = useProfileStore();
-  const [codeInput, setCodeInput] = useState('');
+  // An invite link's code (shared/utils/inviteLink.js), typed in for the player.
+  const invite = useInvite();
+  const inviteCode = invite?.code ?? null;
+  const [codeInput, setCodeInput] = useState(() => inviteCode ?? '');
   const [showImport, setShowImport] = useState(false);
-  const [showPicker, setShowPicker] = useState(false);
+  // With an invite but no profile, the profile is the one thing between this
+  // player and the room, so ask for it at once rather than leave them to find
+  // the button.
+  const [showPicker, setShowPicker] = useState(() => inviteCode != null && !profile);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
@@ -44,18 +51,36 @@ export default function RoomSetup({ room, onBack, tone = 'purple', stat = () => 
     }
   };
 
-  const handleJoin = async () => {
-    if (!codeInput.trim()) return;
+  const joinCode = async (code) => {
     setBusy(true);
     setError('');
     try {
-      await room.joinRoom(codeInput, profile);
+      await room.joinRoom(code, profile);
     } catch (e) {
       setError(e.message);
     } finally {
       setBusy(false);
     }
   };
+
+  const handleJoin = () => {
+    if (codeInput.trim()) joinCode(codeInput);
+  };
+
+  // An invite joins by itself, once there is somebody to join as. It waits for
+  // `room.uid` because that is when useRoomCore has decided about a SAVED room:
+  // restoring one sets the code in the same step, and a device already sitting
+  // in a room stays there (leaving it brings this screen back, and the invite
+  // with it). Consumed before the attempt, so a refused join — a full room, a
+  // dead code — shows its error once instead of retrying on every render.
+  useEffect(() => {
+    if (!inviteCode || !profile || !room.uid || room.roomCode) return;
+    invite.consume();
+    joinCode(inviteCode);
+    // joinCode is a fresh closure each render; the guards above are what keep
+    // this to one attempt.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [inviteCode, profile, room.uid, room.roomCode]);
 
   return (
     <>

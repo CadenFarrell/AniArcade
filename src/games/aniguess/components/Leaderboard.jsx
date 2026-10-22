@@ -5,6 +5,8 @@ import { Button } from '../../../shared/ui';
 import { computeRankedPlayers } from '../../../shared/utils/ranking';
 import { splitPodium } from '../../../shared/utils/podium';
 import descriptor from '../index';
+import { useRecordResult } from '../../../shared/hooks/useRecordResult';
+import { fromRanked } from '../../../shared/utils/history';
 
 // `departedIds` is online-only: anyone who left mid-session keeps the points
 // they earned and stays in the standings, dimmed and tagged, so the result
@@ -21,6 +23,8 @@ export default function Leaderboard({
     [players, totalScores]
   );
   const { winners, rest, stamp, kana } = splitPodium(ranked);
+  // The finished game, into each seated profile's history (utils/history.js).
+  useRecordResult(descriptor.id, players, winners.map((p) => p.id), fromRanked(ranked));
 
   // A tie below first is said in words beside the place mark: two "2"s in a
   // column otherwise read as a typo.

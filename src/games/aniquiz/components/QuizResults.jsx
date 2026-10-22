@@ -4,6 +4,8 @@ import { Button } from '../../../shared/ui';
 import { splitPodium } from '../../../shared/utils/podium';
 import { standings } from '../rules';
 import descriptor from '../index';
+import { useRecordResult } from '../../../shared/hooks/useRecordResult';
+import { fromRanked } from '../../../shared/utils/history';
 
 // Scores can be negative — a lost wager is the only way — so they are printed
 // signed rather than assumed positive.
@@ -14,6 +16,8 @@ const signed = (n) => (n < 0 ? `−${Math.abs(n).toLocaleString()}` : n.toLocale
 export default function QuizResults({ players, scores, departedIds = [], onPlayAgain, onBack, againLabel = 'Play again' }) {
   const ranked = standings(players, scores);
   const { winners, rest, stamp, kana } = splitPodium(ranked);
+  // The finished game, into each seated profile's history (utils/history.js).
+  useRecordResult(descriptor.id, players, winners.map((p) => p.id), fromRanked(ranked));
   const top = winners[0]?.total ?? 0;
 
   return (

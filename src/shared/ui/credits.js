@@ -21,6 +21,14 @@
 // grayscale, a 1.2px blur to drop the scanned paper fibre (it was most of the
 // bytes and none of the picture), autocontrast, a light unsharp, then WebP.
 // The red on screen is never in the file — the sun disc and slashes are CSS.
+//
+// Two derived files, not entries here because they credit nothing new:
+// public/og.png, the link preview, is the rooftop print laid over the sun disc
+// beside the wordmark in Oswald, Archivo and the kana cut — the hub hero's
+// trick, rendered once to 1200×630 with Playwright from a scratch page; and
+// public/icons/, favicon.svg rendered on paper at the manifest's sizes (the
+// maskable one inside the 80% safe zone). Redo both by hand if either source
+// changes.
 export const ART = {
   wave: {
     src: '/art/great-wave.webp',

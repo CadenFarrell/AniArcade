@@ -6,6 +6,7 @@ import { StartBar } from '../../../shared/components/SetupLayout';
 import { Avatar, Badge, Banner, Button, Card, Icon } from '../../../shared/ui';
 import { KANA } from '../../../shared/ui/kanaText';
 import descriptor from '../index';
+import { useRecordResult } from '../../../shared/hooks/useRecordResult';
 
 /**
  * One ballot, grouped by who was ACCUSED rather than by who voted.
@@ -125,6 +126,17 @@ export default function AniFakeResults({
   const showDecoy = scored && mode.id === 'decoy';
 
   const wasCaught = caught === fakeId;
+
+  // Into each seated profile's history (utils/history.js) as a side's win: the
+  // fake wins by walking or by stealing the card back after being caught (the
+  // steal is the fake's way back, so landing it is their round), the rest of
+  // the table wins by catching them. A round with no fake has no outcome.
+  const fakeWon = !wasCaught || stoleIt;
+  useRecordResult(
+    descriptor.id,
+    players,
+    scored ? (fakeWon ? [fakeId] : players.filter((p) => p.id !== fakeId).map((p) => p.id)) : null,
+  );
 
   // The round's verdict, said once — in the splash for a scored round, and as
   // the status line beside the way on.

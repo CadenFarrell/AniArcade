@@ -8,6 +8,7 @@ import ClueLog from './ClueLog';
 import TurfBoard from './TurfBoard';
 import { TEAM_STYLE } from './teamStyle';
 import descriptor from '../index';
+import { useRecordResult } from '../../../shared/hooks/useRecordResult';
 
 // How the game was won, in the splash: a route across, a team cut off, or a
 // team with nobody left to guess (online only).
@@ -28,6 +29,13 @@ export default function AniTurfResults({
   const s = TEAM_STYLE[game.winner];
   const winners = players.filter((p) => game.teams[game.winner]?.includes(p.id));
   const ranked = computeRankedPlayers(players, totalScores);
+  // Into each seated profile's history (utils/history.js): the whole winning
+  // team won, everyone else came second. The standings above count wins across
+  // the session, so they are not this game's places.
+  const winnerIds = winners.map((p) => p.id);
+  useRecordResult(descriptor.id, players, winnerIds, {
+    places: Object.fromEntries(players.map((p) => [p.id, winnerIds.includes(p.id) ? 1 : 2])),
+  });
   return (
     <ResultsLayout
       game={descriptor}

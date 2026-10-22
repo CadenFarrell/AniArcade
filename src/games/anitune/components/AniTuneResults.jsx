@@ -7,6 +7,8 @@ import { StartBar } from '../../../shared/components/SetupLayout';
 import { splitPodium } from '../../../shared/utils/podium';
 import { Avatar, Badge, Button, Card, CardRow, Icon } from '../../../shared/ui';
 import descriptor from '../index';
+import { useRecordResult } from '../../../shared/hooks/useRecordResult';
+import { fromRanked } from '../../../shared/utils/history';
 
 // `departedIds` is online-only: anyone who left mid-match keeps the score they
 // had, ranked alongside everyone else, but is dimmed and tagged so the standings
@@ -51,6 +53,9 @@ export default function AniTuneResults({
   // Lives has no ties at the top — survival orders everyone — and the one left
   // standing is what the mode is about, so the stamp says so.
   const stamp = lastManStanding && ranked.length > 1 ? 'Survivor' : podium.stamp;
+  // The finished game, into each seated profile's history (utils/history.js).
+  // In Lives the survivor is the one in first place, so the podium already says it.
+  useRecordResult(descriptor.id, players, winners.map((p) => p.id), fromRanked(ranked));
 
   const livesBadge = (p) => {
     const out = eliminated.includes(p.id);

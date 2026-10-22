@@ -4,6 +4,8 @@ import { Button } from '../../../shared/ui';
 import { computeRankedPlayers } from '../../../shared/utils/ranking';
 import { splitPodium } from '../../../shared/utils/podium';
 import descriptor from '../index';
+import { useRecordResult } from '../../../shared/hooks/useRecordResult';
+import { fromRanked } from '../../../shared/utils/history';
 
 // End of session. computeRankedPlayers handles the tie rule (two players tied
 // for 2nd are both 2nd, and the next is 3rd) so this screen never does its own
@@ -14,6 +16,8 @@ export default function WavelengthResults({
 }) {
   const ranked = computeRankedPlayers(players, totalScores);
   const { winners, rest, stamp, kana } = splitPodium(ranked);
+  // The finished game, into each seated profile's history (utils/history.js).
+  useRecordResult(descriptor.id, players, winners.map((p) => p.id), fromRanked(ranked));
   const top = winners[0]?.total ?? 0;
 
   return (

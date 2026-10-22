@@ -1,5 +1,7 @@
 import { useState } from 'react';
+import { useInvite } from '../context/inviteContext';
 import { useProfileStore } from '../context/profileContext';
+import { buildInviteUrl } from '../utils/inviteLink';
 import ListImport from './ListImport';
 import { canRefreshList } from '../services/listSources';
 import { PlayerSlot, PlayerSlots } from './PlayerSlots';
@@ -32,6 +34,54 @@ export function RoomCode({ code }) {
       >
         {code}
       </span>
+      <ShareInvite code={code} />
+    </div>
+  );
+}
+
+/**
+ * The code as a link (shared/utils/inviteLink.js): tapping it opens this game and joins
+ * this room, no typing. The phone's own share sheet where there is one — that
+ * is where the group chat is — and the clipboard everywhere else.
+ *
+ * Renders nothing without the hub's InviteContext (a game mounted alone has no
+ * game id to build a link to) or with neither way to hand a link on.
+ */
+function ShareInvite({ code }) {
+  const invite = useInvite();
+  const [note, setNote] = useState('');
+  const canShare = typeof navigator !== 'undefined' && typeof navigator.share === 'function';
+  const canCopy = typeof navigator !== 'undefined' && !!navigator.clipboard?.writeText;
+  if (!invite?.gameId || (!canShare && !canCopy)) return null;
+
+  const share = async () => {
+    const url = buildInviteUrl(window.location.href, invite.gameId, code);
+    if (canShare) {
+      try {
+        await navigator.share({ title: 'Join my AniArcade room', text: `Room ${code}`, url });
+        return;
+      } catch (e) {
+        // Closing the sheet is a choice, not a failure. Anything else falls
+        // through to the clipboard.
+        if (e?.name === 'AbortError') return;
+      }
+    }
+    try {
+      await navigator.clipboard.writeText(url);
+      setNote('Link copied');
+    } catch {
+      setNote('Could not copy — share the code instead');
+    }
+  };
+
+  return (
+    <div className="mt-2 flex flex-col items-start gap-1 sm:items-end">
+      <Button variant="secondary" size="sm" onClick={share}>
+        <Icon name="link" /> Share invite
+      </Button>
+      {/* Announced, because the press changes nothing else on screen. Full
+          paper, the code label's reason. */}
+      <p role="status" className="min-h-4 text-xs font-bold">{note}</p>
     </div>
   );
 }

@@ -1,8 +1,10 @@
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense, useEffect, useMemo, useState } from 'react';
 import { games } from './registry';
 import CreditsModal from './CreditsModal';
 import GameLoading from './GameLoading';
+import { readInvite, stripInvite } from '../shared/utils/inviteLink';
 import PanelWipe from './PanelWipe';
+import RecordStrip from './RecordStrip';
 import TitleScreen from './TitleScreen';
 import { drawTileCharacters } from './tileCharacters';
 import { splitTitle } from '../shared/utils/splitTitle';
@@ -15,6 +17,7 @@ import ProfileButton from '../shared/components/ProfileButton';
 import ProfilePicker from '../shared/components/ProfilePicker';
 import TopBar from '../shared/components/TopBar';
 import { useProfileStore } from '../shared/context/profileContext';
+import { InviteContext } from '../shared/context/inviteContext';
 import { TileCharacterContext } from '../shared/context/tileCharacterContext';
 import { playSound } from '../shared/services/sound';
 import { preloadGames } from '../shared/utils/lazyGame';
@@ -242,11 +245,16 @@ function Hero() {
 // frame: the title screen in front of it, the top bar around everything after,
 // and the wipe between them.
 export default function HubScreen() {
-  const [titleSeen, setTitleSeen] = useState(readTitleSeen);
+  // An invite link (shared/utils/inviteLink.js) opens its game straight away: no title
+  // screen, no menu — the person tapping a link in a group chat wants the
+  // room, and the code is already in hand. Read once, here; the effect below
+  // takes it off the address bar.
+  const [invite, setInvite] = useState(() => readInvite(window.location.search, GAME_IDS));
+  const [titleSeen, setTitleSeen] = useState(() => invite != null || readTitleSeen());
   // gameId, not activeId — `activeId` in a profile-aware file means the main
   // profile everywhere else, and two different "active"s in one component is
   // how you end up passing the wrong one.
-  const [gameId, setGameId] = useState(null);
+  const [gameId, setGameId] = useState(() => invite?.gameId ?? null);
   const [showPicker, setShowPicker] = useState(false);
   const [showCredits, setShowCredits] = useState(false);
   // Which profile's anime list is open, or null for the menu. ListManager is a
@@ -278,16 +286,37 @@ export default function HubScreen() {
   // exactly the idle time this wants.
   useEffect(() => preloadGames(games), []);
 
+  // Off the address bar once read, so a refresh mid-game does not join the room
+  // a second time. replaceState, not a navigation: nothing reloads. Skipping
+  // the title is remembered too, so that refresh lands on the hub as any other
+  // would. `invite` is the first render's on purpose: this runs once.
+  useEffect(() => {
+    const stripped = stripInvite(window.location.href);
+    if (stripped) window.history.replaceState(window.history.state, '', stripped);
+    if (titleSeen) markTitleSeen();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const openGame = (id) => {
     playSound('select');
     wipe(() => setGameId(id));
   };
   const backToMenu = () => wipe(() => {
     setGameId(null);
+    setInvite(null);
     setTiles(drawTileCharacters(activeProfile, GAME_IDS));
   });
 
   const active = games.find((g) => g.id === gameId);
+  // See shared/context/inviteContext.js. Provided for every open game, invite
+  // or not, because the lobby's Share button needs the game's id either way.
+  const inviteValue = useMemo(() => (active ? {
+    gameId: active.id,
+    code: invite?.gameId === active.id ? invite.code : null,
+    routed: invite?.routed ?? false,
+    markRouted: () => setInvite((i) => (i ? { ...i, routed: true } : i)),
+    consume: () => setInvite(null),
+  } : null), [active, invite]);
   let content;
 
   if (!titleSeen) {
@@ -317,7 +346,9 @@ export default function HubScreen() {
           <Suspense fallback={<GameLoading title={active.title} kana={active.kana} accent={active.accent} />}>
             {/* The tapped tile's character, for the game's cover page. */}
             <TileCharacterContext.Provider value={tiles[active.id] ?? null}>
-              <Game onExit={backToMenu} />
+              <InviteContext.Provider value={inviteValue}>
+                <Game onExit={backToMenu} />
+              </InviteContext.Provider>
             </TileCharacterContext.Provider>
           </Suspense>
         </ErrorBoundary>
@@ -379,6 +410,10 @@ export default function HubScreen() {
               <GameCard key={game.id} game={game} character={tiles[game.id]} captioned={captioned} onPick={openGame} />
             ))}
           </div>
+
+          {/* Below the board, never above it: the hub's height is spent on
+              games first (see src/hub/CLAUDE.md). */}
+          <RecordStrip profile={activeProfile} games={games} />
 
           <p className="mt-8 flex flex-wrap items-center justify-center gap-x-2 text-xs text-fg-subtle">
             <span>Characters from your own list · prints from the Met · sounds by Kenney.</span>

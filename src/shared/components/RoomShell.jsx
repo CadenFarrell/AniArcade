@@ -1,4 +1,6 @@
+import { useMemo } from 'react';
 import { createPortal } from 'react-dom';
+import { HistoryScopeContext } from '../context/historyScopeContext';
 import { useTopBar } from '../context/topBarContext';
 import { Banner, HubButton } from '../ui';
 import TablePortraits from './TablePortraits';
@@ -14,8 +16,10 @@ import TablePortraits from './TablePortraits';
 // screen's own header). Both fixes are the behaviour here, for every game.
 //
 // What it puts where:
-// - HubButton — leaving to the hub leaves the room. The room itself survives,
-//   so rejoining with the same name and code picks the game back up.
+// - HubButton — leaving to the hub leaves the room. The room itself survives
+//   while anyone else is still in it, so rejoining with the same name and code
+//   picks the game back up; the last one out deletes it (useRoomCore's
+//   leaveRoom).
 // - The room code and Leave go into the top bar's right slot. Leave stays in
 //   the room's flow (back to the join screen); Hub leaves the game entirely.
 //   `codeInPage` drops the bar's code while the screen draws its own: the
@@ -25,9 +29,11 @@ import TablePortraits from './TablePortraits';
 // - The banners sit just under the bar, centred, over the screen.
 export default function RoomShell({ room, onExit, codeInPage = false, children }) {
   const bar = useTopBar();
+  // Results are recorded on each player's own device (useRecordResult).
+  const historyScope = useMemo(() => ({ onlyId: room.myPlayerId ?? null }), [room.myPlayerId]);
 
   const handleLeave = () => {
-    if (!window.confirm('Leave this room? You can rejoin with the same name and room code.')) return;
+    if (!window.confirm('Leave this room? You can rejoin with the same name and room code while anyone is still in it.')) return;
     room.leaveRoom();
   };
 
@@ -63,7 +69,7 @@ export default function RoomShell({ room, onExit, codeInPage = false, children }
     <div className="relative">
       <HubButton
         onClick={handleExitToHub}
-        confirm="Leave this room and return to the hub? You can rejoin with the same name and room code."
+        confirm="Leave this room and return to the hub? You can rejoin with the same name and room code while anyone is still in it."
       />
       {bar
         ? bar.right && createPortal(roomControls, bar.right)
@@ -97,9 +103,11 @@ export default function RoomShell({ room, onExit, codeInPage = false, children }
       {/* The table's faces for every in-room screen — turn strip, results — in
           the room's own seat order (useRoomCore's roster; AniGuess keeps its
           roster under gameSession). The lobby's slots share out their own. */}
-      <TablePortraits players={room.players ?? room.gameSession?.players}>
-        {children}
-      </TablePortraits>
+      <HistoryScopeContext.Provider value={historyScope}>
+        <TablePortraits players={room.players ?? room.gameSession?.players}>
+          {children}
+        </TablePortraits>
+      </HistoryScopeContext.Provider>
     </div>
   );
 }

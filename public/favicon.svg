@@ -1,11 +1,13 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48" fill="none">
   <!-- AniArcade. A joystick on a vermilion seal: the same ink border and flat
-       offset shadow as every button in the app (--shadow-pop is a hard drop, not
+       offset shadow as every button in the app (shadow-pop is a hard drop, not
        a blur), so the tab icon reads as part of the UI kit.
-       Colours are the --color-pop-pink / --color-ink / --color-paper tokens from
-       src/index.css, hand-synced: a file in public/ cannot see the theme, so a
-       palette change has to be repeated here or the tab icon silently keeps the
-       old colours. -->
+       Colours are the pop-pink / ink / paper colour tokens from src/index.css,
+       hand-synced: a file in public/ cannot see the theme, so a palette change
+       has to be repeated here or the tab icon silently keeps the old colours.
+       No double hyphen anywhere in a comment here: XML forbids it, and the
+       custom-property names this used to quote made the whole file fail to
+       parse as an image (found rendering the app icons from it). -->
 
   <!-- Hard shadow. Drawn first and inset horizontally so it only peeks out
        below the tile, the way shadow-pop does. -->
