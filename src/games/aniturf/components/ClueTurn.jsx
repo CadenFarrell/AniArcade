@@ -1,6 +1,6 @@
 import RoundHeader from '../../../shared/components/RoundHeader';
 import { Banner } from '../../../shared/ui';
-import { TEAM_NAMES } from '../rules';
+import { TEAM_NAMES, clueLimit } from '../rules';
 import ClueForm from './ClueForm';
 import TurfBoard from './TurfBoard';
 
@@ -30,7 +30,7 @@ export default function ClueTurn({ game, team, footing, traps, detour = null, on
         </Banner>
       )}
       <TurfBoard board={game.board} marks={game.marks} keyView={{ team, footing, traps, fresh }} />
-      <ClueForm board={game.board} onSubmit={onClue} disabled={busy} />
+      <ClueForm board={game.board} onSubmit={onClue} disabled={busy} max={clueLimit(game)} />
     </>
   );
 }

@@ -44,6 +44,22 @@ not seen; the new squares are marked NEW), and nobody else is: a public "Blue wa
 Red it had just taken a Blue square. One move can only ever cut one team — a claim or a scorch
 hurts the other side, a sprung trap hurts the mover — so "both cut" never happens.
 
+**Moving first is paid back by the opening clue, which allows one claim** (`clueLimit`,
+`OPENING_CLUE`); both teams plant the same number of traps. The keys themselves are even —
+Blue's is Red's generator transposed, and a gap in route length decided nothing (the shorter
+route won 49–52% at every gap) because games turn on the crossroads. Who moves first did. A
+simulation copying the real generator, 20,000 games a setting, perfect and 60–75% guessing:
+
+| rule | first team wins |
+| --- | --- |
+| nothing (traps off, so no extra trap either) | 54–59% |
+| second team plants one extra trap (the old rule) | 46–48% — overshot |
+| opening clue capped at one claim, equal traps | 48–51%, traps on or off |
+
+"Opening" means no clue in the log yet, not an empty log: a clue-giver handing over during
+planting logs first. `ClueForm` takes the limit as `max` and its status line says why, or a
+stepper stuck at 1 reads as broken.
+
 ## Online: nobody deals a key but its owner
 
 Each key is known to one person and hidden from everyone else, the owner's own guessers

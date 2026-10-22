@@ -165,8 +165,24 @@ describe('a turn', () => {
     expect(g.phase).toBe('clue');
   });
 
-  it('opens guessing on a valid clue from the team on turn only', () => {
+  it('caps the opening clue at one claim, and only the opening one', () => {
     const g = { ...game(), phase: 'clue', clue: null, claimsLeft: 0 };
+    expect(rules.clueLimit(g)).toBe(rules.OPENING_CLUE);
+    expect(rules.giveClue(g, 'red', 'ninja', 2).patch).toEqual({});
+    const opened = { ...g, ...rules.giveClue(g, 'red', 'ninja', 1).patch };
+    expect(opened.claimsLeft).toBe(1);
+    // The second team's first clue is not the opening: the log holds one.
+    const blue = { ...opened, phase: 'clue', turn: 'blue', clue: null };
+    expect(rules.clueLimit(blue)).toBe(rules.MAX_CLUE);
+    expect(rules.giveClue(blue, 'blue', 'pirate', 9).patch.claimsLeft).toBe(9);
+    // A hand-over logged during planting is not a clue.
+    const migrated = { ...g, log: [{ kind: 'migrate', team: 'blue' }] };
+    expect(rules.clueLimit(migrated)).toBe(rules.OPENING_CLUE);
+  });
+
+  it('opens guessing on a valid clue from the team on turn only', () => {
+    // Past the opening clue, so the number is the clue's own.
+    const g = { ...game(), phase: 'clue', clue: null, claimsLeft: 0, log: [{ kind: 'clue', team: 'blue', word: 'x', number: 1 }] };
     expect(rules.giveClue(g, 'blue', 'ninja', 2).patch).toEqual({});
     expect(rules.giveClue(g, 'red', 'two words', 2).patch).toEqual({});
     expect(rules.giveClue(g, 'red', 'ninja', 0).patch).toEqual({});
@@ -319,9 +335,9 @@ describe('teams', () => {
     expect(rules.rotateGivers(teams, { red: 'e', blue: 'b' })).toEqual({ red: 'a', blue: 'd' });
   });
 
-  it('gives the second team one extra trap, and none when traps are off', () => {
+  it('gives both teams the same traps, and none when traps are off', () => {
     expect(rules.trapsFor(2, 'red', 'red')).toBe(2);
-    expect(rules.trapsFor(2, 'blue', 'red')).toBe(3);
+    expect(rules.trapsFor(2, 'blue', 'red')).toBe(2);
     expect(rules.trapsFor(0, 'blue', 'red')).toBe(0);
   });
 });

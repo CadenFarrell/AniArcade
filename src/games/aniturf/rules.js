@@ -32,6 +32,10 @@ export const DECOYS = 2;
 export const MIN_TEAM = 2; // a clue-giver and at least one guesser
 export const MIN_PLAYERS = MIN_TEAM * 2;
 export const MAX_CLUE = 9;
+// The game's opening clue allows one claim, whatever its number would say.
+// Moving first is a real head start — the first team reaches the crossroads
+// first — and this is what pays it back (see clueLimit).
+export const OPENING_CLUE = 1;
 export const MAX_TRAPS = 3;
 export const MAX_CLUE_LENGTH = 24;
 
@@ -347,10 +351,16 @@ export function rotateGivers(teams, givers) {
 /** Who moves first: a coin flip, seeded by whatever `rng` the caller has. */
 export const pickStartTeam = (rng = Math.random) => TEAMS[Math.floor(rng() * TEAMS.length)];
 
-/** How many traps a team plants: the setting, plus one for moving second. */
+/**
+ * How many traps a team plants: the setting, the same for both. The second
+ * team used to plant one extra to make up for moving first, and it measured
+ * wrong both ways — it overshot (the first team won ~47%) and, with traps off,
+ * paid back nothing at all (~55–59%). The opening clue's cap does that job now
+ * (clueLimit). `team` and `startTeam` stay in the signature for its callers.
+ */
+// eslint-disable-next-line no-unused-vars
 export function trapsFor(traps, team, startTeam) {
-  if (!traps) return 0;
-  return traps + (team === startTeam ? 0 : 1);
+  return traps || 0;
 }
 
 // --- clues ------------------------------------------------------------------
@@ -425,11 +435,23 @@ export function plant(game, team) {
   };
 }
 
+/**
+ * The most a clue may be for right now: OPENING_CLUE for the game's very first
+ * clue, MAX_CLUE after it. Simulated over 20,000 games a setting, the first
+ * team won 54–59% with nothing to offset the head start; capping its opening
+ * clue at one claim brought that to 48–51% with traps on or off. "First" means
+ * no clue in the log yet, not an empty log: a clue-giver handing over during
+ * planting logs before anyone has clued.
+ */
+export function clueLimit(game) {
+  return (game?.log ?? []).some((e) => e.kind === 'clue') ? MAX_CLUE : OPENING_CLUE;
+}
+
 export function giveClue(game, team, word, number, by = null) {
   if (game.phase !== 'clue' || game.turn !== team) return { patch: {} };
   if (!validClue(word, game.board).ok) return { patch: {} };
   const n = Number(number);
-  if (!Number.isInteger(n) || n < 1 || n > MAX_CLUE) return { patch: {} };
+  if (!Number.isInteger(n) || n < 1 || n > clueLimit(game)) return { patch: {} };
   const clue = { team, word: String(word).trim(), number: n, by: by ?? null };
   return {
     patch: {

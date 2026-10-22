@@ -22,9 +22,12 @@ async function claim(devs, team, cell) {
   return game(devs).log.at(-1);
 }
 
+// Clamped to rules.clueLimit: the game's opening clue allows one claim, and a
+// number over it is refused outright.
 async function clue(devs, number = 9) {
   const team = game(devs).turn;
-  await giverOf(devs, team).act((r) => r.giveClue(`zeta${game(devs).log.length}`, number));
+  const n = Math.min(number, rules.clueLimit(game(devs)));
+  await giverOf(devs, team).act((r) => r.giveClue(`zeta${game(devs).log.length}`, n));
   await until(() => devs.every((d) => d.r.game.phase === 'guess'), { what: 'guessing open' });
   return team;
 }
@@ -73,14 +76,19 @@ describe('AniTurf online', () => {
     // And no key is anywhere in the shared state.
     expect(JSON.stringify(game(devs))).not.toMatch(/footing"\s*:\s*\[/);
 
-    // A hit: footing, on the team's edge, untrapped.
+    // A hit: footing, on the team's edge, untrapped. It is the opening clue,
+    // so that one claim is the turn.
     let team = await clue(devs);
+    expect(game(devs).claimsLeft).toBe(1);
     const hitCell = keyOf(team).find((i) => rules.onEdge(team, i) && !planted[rules.other(team)].includes(i)
       && rules.canClaim(game(devs), team, i));
     expect((await claim(devs, team, hitCell)).kind).toBe('claim');
     expect(game(devs).marks[hitCell]).toBe(team);
+    await until(() => devs.every((d) => d.r.game.phase === 'clue' && d.r.game.turn === rules.other(team)), { what: 'opening turn over' });
 
-    // A miss: an edge square that is not footing — scorched, turn over.
+    // A miss, by the other team: an edge square that is not footing — scorched,
+    // turn over.
+    team = await clue(devs);
     const missCell = [...Array(25).keys()].find((i) => rules.canClaim(game(devs), team, i) && !keyOf(team).includes(i));
     expect((await claim(devs, team, missCell)).kind).toBe('miss');
     expect(game(devs).marks[missCell]).toBe('miss');

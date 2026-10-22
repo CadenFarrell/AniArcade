@@ -48,7 +48,7 @@ export default function AniTurfSettings({ values, onChange, onReset, host = fals
         </Field>
         <SettingHelp
           className="mb-2"
-          more="A trap springs only on the other team's footing: the square is scorched and that team loses its newest claim. Each clue-giver plants theirs before the first clue, without seeing the other key — the team that moves second plants one extra."
+          more="A trap springs only on the other team's footing: the square is scorched and that team loses its newest claim. Each clue-giver plants theirs before the first clue, without seeing the other key. Both teams plant the same number: the head start of moving first is paid back by the opening clue, which allows one claim."
         >
           {traps ? 'Planted against the other team before the first clue.' : 'No traps — only misses and blocked routes.'}
         </SettingHelp>

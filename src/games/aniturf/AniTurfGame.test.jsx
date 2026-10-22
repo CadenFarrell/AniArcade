@@ -124,10 +124,10 @@ describe('AniTurf, played locally', { timeout: 60000 }, () => {
     await user.click(start);
 
     const seen = await playToResults(user);
-    // Both clue-givers saw their key and planted: one trap for the first team,
-    // two for the second.
+    // Both clue-givers saw their key and planted one trap each: the same for
+    // both teams, since the opening clue's cap pays back moving first.
     expect(seen.filter((s) => s === 'plant')).toHaveLength(2);
-    expect(seen.filter((s) => s === 'trap')).toHaveLength(3);
+    expect(seen.filter((s) => s === 'trap')).toHaveLength(2);
     expect(seen).toContain('clue');
     expect(seen).toContain('claim');
     expect(screen.getByRole('region', { name: /^winner:/i })).toBeTruthy();
