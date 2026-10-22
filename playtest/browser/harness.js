@@ -192,10 +192,19 @@ export function auditor(page, { game, project, seen }) {
     // caught halfway through its hover fade read as ink on amber at 1.98:1,
     // which is a colour no resting screen ever paints. Infinite animations
     // (PRESS START's blink) cannot finish and are left alone.
-    await page.evaluate(() => {
+    //
+    // Finishing once was not enough: the pointer stays wherever the last click
+    // left it, and the full-page screenshot resizes the page under it, so a hub
+    // tile that slid beneath it started a NEW hover fade while axe measured —
+    // AniRank's caption at 3.61:1 on a run after the fix. So park the pointer
+    // off the page first, and settle again after the screenshot.
+    const settle = () => page.evaluate(() => {
       for (const a of document.getAnimations()) { try { a.finish(); } catch { /* infinite */ } }
     }).catch(() => {});
+    await page.mouse.move(-1, -1).catch(() => {});
+    await settle();
     await page.screenshot({ path: `${REPORT_DIR}/${file}`, fullPage: true }).catch(() => {});
+    await settle();
     (record.shots ??= []).push(file);
     for (const f of await page.evaluate(measureLayout).catch(() => [])) {
       record.findings.push({ ...f, severity: f.kind === 'overflow-x' || f.kind === 'offscreen' ? 'warn' : 'info', screen, shot: file });
