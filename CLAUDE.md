@@ -28,7 +28,7 @@ npm run generate:facts # regenerate the fact pack in public/facts/ (Node script)
 CI (`.github/workflows/ci.yml`) runs `npm run lint`, `npm test` and `npm run build` on every
 push and pull request, on Linux. That makes the filesystem **case-sensitive** there, unlike
 this Windows checkout, so an import whose casing is off passes here and fails in CI (the
-`kanaText.js` story in `.claude/rules/styling.md` is the same trap the other way round). Smoke and playtest stay
+`kanaText.js` story in `.claude/rules/styling-assets.md` is the same trap the other way round). Smoke and playtest stay
 manual.
 
 `npm test` is vitest (config in `vite.config.js`'s `test` block): a `.test.js` is a pure module,
@@ -279,7 +279,8 @@ vibe at the call site. The `btn-pop` / `focus-pop` utilities carry the press-dow
 UI primitives are imported from the `src/shared/ui` barrel.
 
 The core, which every screen edit must keep (the full design system, and why, is in
-`.claude/rules/styling.md`, which loads with any `.jsx`/`.css` file):
+`.claude/rules/styling.md`, which loads with any `.jsx`/`.css` file; textures, type, art,
+the shell and sound are in `.claude/rules/styling-assets.md`):
 
 - On paper every solid fill is a dark ink carrying `text-paper`; `text-ink` is right only on
   a light fill. A right/wrong is never colour alone (`Mark`, `ResultImpact`).

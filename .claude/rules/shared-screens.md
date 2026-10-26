@@ -1,71 +1,71 @@
 ---
 paths:
-  - "src/shared/components/**"
-  - "src/games/**/components/**"
-  - "src/games/**/LocalGame.jsx"
-  - "src/games/**/OnlineGame.jsx"
+  - "src/shared/components/SetupLayout.jsx"
+  - "src/shared/components/Lobby.jsx"
+  - "src/shared/components/PlayerSlots.jsx"
+  - "src/shared/components/PortraitPicker.jsx"
+  - "src/shared/components/Portrait.jsx"
+  - "src/shared/components/Results.jsx"
+  - "src/shared/components/TablePortraits.jsx"
+  - "src/shared/components/Handoff.jsx"
+  - "src/shared/components/PlayerRow.jsx"
+  - "src/shared/components/RoundHeader.jsx"
+  - "src/shared/components/ResultImpact.jsx"
+  - "src/shared/components/SpeechBubble.jsx"
+  - "src/shared/components/PlayerFace.jsx"
   - "src/shared/context/tablePortraitsContext.js"
   - "src/shared/utils/portrait.js"
   - "src/shared/utils/podium.js"
+  - "src/games/**/components/*Setup.jsx"
+  - "src/games/**/components/*Lobby.jsx"
+  - "src/games/**/components/*Results.jsx"
+  - "src/games/**/LocalGame.jsx"
+  - "src/games/**/OnlineGame.jsx"
   - "playtest/strategies/**"
 ---
 
 # Shared screens: setup, lobby, in-round and results
 
-Moved from the root `CLAUDE.md` so it loads only when Claude works on the files above. The
-cross-game architecture it builds on is still there.
+Build a new screen from these pieces, never from another game's file — every hand-copied set
+(rosters, setup columns, shells) drifted. Their headings and button words are what the
+playtest bots and tests find things by; keep them when touching any of them.
 
-**The lobby screen follows the same split.** `shared/components/Lobby.jsx` draws what every
-`OnlineLobby` drew identically — `RoomCode`, `PlayerRoster` (with the game's own badge as
-`badgeFor`, omitted where nothing reads a list), `LobbyImport` and the guest's `HostWaitCard`
-— and each lobby keeps its settings, Start gates and Start. The six hand-copied rosters had
-already split two ways on how a departed player looks; build a new lobby from these pieces
-rather than from another game's file.
+**Every setup screen and lobby is `SetupLayout.jsx`:** a `GameBanner` in the game's colour
+(`aside` carries the lobby's `RoomCode` or AniGuess's leaderboard button), players left and
+settings right (stacked on a phone), and a `StartBar` pinned to the viewport bottom with one
+status line — what is ready, or the first thing that is not. A screen supplies `left`,
+`right` and `start`; its warnings stay in its own `left`. `Lobby.jsx` draws what every lobby
+shares (`RoomCode`, `PlayerRoster` with the game's `badgeFor` — omitted where nothing reads a
+list — `LobbyImport`, the guest's `HostWaitCard`); each lobby keeps its settings, gates and Start.
 
-**Every setup screen and lobby is the same frame: `shared/components/SetupLayout.jsx`.** A
-slim banner in the game's colour (`GameBanner`; `aside` carries the lobby's `RoomCode` or
-AniGuess's leaderboard button), players on the left and settings on the right (stacked on a
-phone), and a `StartBar` pinned to the bottom of the viewport with one status line — what is
-ready, or the first thing that is not. It replaced fourteen single columns with Start at the
-very bottom, below the fold on every phone, its reason for being disabled somewhere above
-it. A screen supplies `left`, `right` and `start`; the warnings stay in its own `left`.
-Players are character-select slots (`shared/components/PlayerSlots.jsx`): `LocalRoster` for
-local setup, `PlayerRoster` for a lobby, each wearing a portrait from that player's own list.
-**`portraitsFor` shares portraits out across the table** — each player gets their
-best-known character nobody seated before them is already wearing — because friends' lists
-overlap and two slots in one face read as one person seated twice. **A player can choose the
-face instead** (`PortraitPicker.jsx`, from the slot's portrait — any seat locally, only your
-own in a lobby — or a row of the hub's profile list): one `portraitKey` (a `characterNameKey`)
-on the PROFILE, so it is the same in every game and travels into a room with the profile
-(`profileFingerprint` counts it, which is why AniTag's lobby now republishes too). A choice
-beats an automatic face; two players choosing one character leaves it with whoever sat first,
-and the other's slot says "Taken by <name>". A local setup screen must swap the updated
-profile into its seated copies (`LocalRoster`'s `onUpdate`), because those copies are what
-Start hands the game. Clearing it back to Automatic deletes the key — RTDB rejects a write
-carrying `undefined`. The slots keep the old
-controls' accessible names ("Add player", "Remove <name>", "Import <name>'s list"), which the
-playtest bots and the tests find them by; keep them when touching the slots.
+**Players are character-select slots** (`PlayerSlots.jsx`: `LocalRoster` locally,
+`PlayerRoster` in a lobby). `portraitsFor` gives each player their best-known character that
+nobody seated before them already wears — friends' lists overlap, and two slots in one face
+read as one person seated twice. A player can choose the face (`PortraitPicker.jsx`, from the
+slot — any seat locally, only your own online — or the hub's profile list): one `portraitKey`
+(a `characterNameKey`) on the PROFILE, so it is the same in every game and travels into rooms
+(`profileFingerprint` counts it). A choice beats an automatic face; two players choosing one
+character leaves it with whoever sat first, and the other slot says "Taken by <name>".
 
-**Every results screen is the other end of that frame: `shared/components/Results.jsx`.** The
-banner turned round (the screen's title — "Final Scores", "Reveal" — is the page's first
-heading and the game's name shrinks to a line above it; the playtest strategies tell a results
-screen by that heading, so keep each game's), a **`Splash`** panel for whoever the screen is
-about, **`Standings`** with a face on every row, the game's own recap below, and the replay
-pinned in the same `StartBar`. The splash is the winner on a final screen (`utils/podium.js`'s
-`splitPodium`: a tie shares the panel, a table of one is "Finished", not "Winner"), the round's
-best on a stop between rounds (AniGuess's `RoundEnd`, AniTag's — which is now a whole screen,
-not a card inside the session's), the fake on AniFake's reveal, and the best board on AniRank's.
-`ResultsLayout` takes the table in **seat order** and shares portraits with `portraitsFor`, so
-a winner wears the face their setup slot did; `shared/components/Portrait.jsx` draws it in both.
-The stamp's `stamp-in` is a from-state animation, so reduced motion leaves it simply stamped.
+- A local setup screen must swap the updated profile into its seated copies (`LocalRoster`'s
+  `onUpdate`): those copies are what Start hands the game.
+- Clearing back to Automatic DELETES the key — RTDB rejects a write carrying `undefined`.
+- The slots keep the accessible names "Add player", "Remove <name>", "Import <name>'s list".
 
-**The in-round screens are built from a handful of shared pieces too, and the faces are the
-thread through all of them.** `shared/components/TablePortraits.jsx` shares the table's
-portraits out once (`portraitsFor`, seat order) for everything past setup — `RoomShell`
-provides it online and each `LocalGame` locally — and `usePlayerPortrait(player)`
-(`context/tablePortraitsContext.js`) looks a face up by id, so a player wears the same
-character in the turn strip, on the handoff, on the results screen and in their setup slot.
-On top of it:
+**Every results screen is `Results.jsx`:** the screen's title ("Final Scores", "Reveal") is the
+first heading with the game's name a line above it — the playtest strategies tell a results
+screen by that heading — then a `Splash`, `Standings` with a face on every row, the game's
+recap, and the replay in the same `StartBar`. The splash is the winner on a final screen
+(`podium.js`'s `splitPodium`: a tie shares it, a table of one is "Finished", not "Winner"),
+the round's best between rounds (AniGuess's `RoundEnd`, AniTag's round screen), the fake on
+AniFake's reveal, the best board on AniRank's. `ResultsLayout` takes the table in SEAT order
+and shares portraits with `portraitsFor`, so a winner wears their setup slot's face
+(`Portrait.jsx` draws both). The stamp's `stamp-in` is from-state, so reduced motion leaves it
+stamped.
+
+**In-round, the faces are the thread.** `TablePortraits.jsx` shares portraits once (seat
+order) for everything past setup — `RoomShell` provides it online, each `LocalGame` locally —
+and `usePlayerPortrait(player)` looks one up by id, so a player wears one character everywhere.
 
 | piece | is |
 | --- | --- |
@@ -76,14 +76,11 @@ On top of it:
 | `SpeechBubble` | a question or a name as a manga balloon |
 | `PlayerFace` | one player's face at row size, beside (never instead of) their name, found by id |
 
-`PlayerFace` goes on **rows only**, by decision: not inside a running sentence ("Liam got
-it!" — busy), and never beside a character card (AniGuess's who-is-who), where a player's
-face — itself a character — reads as part of the answer.
-
-`ResultImpact` follows the sound rule exactly — online it fires only for THIS player's result
-and plays the sound itself, so the frame and the sound cannot disagree — and it is
-aria-hidden and pointer-events-none: decoration over a screen that already says the result,
-never a layer that eats a tap. Two things to keep when touching any of them: the headings
-and button words are what the playtest bots read ("<name>'s Turn", "Clues", "I'm X — show
-me", "Accuse <name>"), and a dimmed player dims their FACE, never the text, which axe flags
-under 4.5:1.
+- `PlayerFace` goes on rows only: never inside a sentence ("Liam got it!" — busy), never
+  beside a character card (AniGuess's who-is-who), where a face — itself a character — reads
+  as part of the answer.
+- `ResultImpact` fires online only for THIS player's result and plays the sound itself, so
+  frame and sound cannot disagree. It is aria-hidden and pointer-events-none: decoration over a
+  screen that already says the result, never a layer that eats a tap.
+- The bots read "<name>'s Turn", "Clues", "I'm X — show me", "Accuse <name>". A dimmed player
+  dims their FACE, never the text, which axe flags under 4.5:1.
