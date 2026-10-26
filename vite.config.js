@@ -29,5 +29,12 @@ export default defineConfig(({ mode }) => ({
   test: {
     environment: 'node',
     include: ['src/**/*.test.{js,jsx}'],
+    // Vitest's default is one worker per core minus one: 13 on the 14-thread
+    // dev machine, each its own Node process with its own jsdom. That run
+    // peaked at ~3 GB and left 0.26 GB of 16 GB free, enough for Claude Code to
+    // kill idle background shells. Measured 2026-10-26: 4 workers ran the
+    // suite in 45s against the default's 41s and left 1.4 GB free; 6 took 52s
+    // because the workers fought for memory. CI's runners have 4 cores anyway.
+    maxWorkers: 4,
   },
 }))

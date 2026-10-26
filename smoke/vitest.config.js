@@ -18,5 +18,11 @@ export default defineConfig({
     // One file per game in parallel; rooms never collide, since every device
     // is its own uid and every room claims a fresh code.
     fileParallelism: true,
+    // …but four at a time, not all twelve. Each file is a jsdom holding a
+    // Firebase app per simulated device, and twelve at once beside the
+    // emulator's JVM left 0.04 GB of a 16 GB machine free (2026-10-26). Four:
+    // 147s against 97s, peak ~2 GB against ~3.1. The files mostly sit out
+    // GRACE_MS, which is why the slowdown is far less than threefold.
+    maxWorkers: 4,
   },
 });

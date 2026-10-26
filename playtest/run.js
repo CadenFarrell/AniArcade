@@ -7,7 +7,7 @@
 //   npm run playtest -- --debug                       log every action (--debug screens: and each screen)
 //   npm run playtest -- --layer online                emulator bots (starts the emulator itself)
 //   npm run playtest -- --layer browser               Playwright: phone + desktop, the drag check, online in Chrome
-//   npm run playtest -- --layer browser --workers 1   …in less memory
+//   npm run playtest -- --layer browser --workers 1   …in less memory (automatic under 4 GB free)
 //   npm run playtest -- --layer all                   local, online, browser, then the report
 //
 // Flags rather than env vars because env-var prefixes (`PLAYTEST_GAME=x npm …`)
@@ -18,6 +18,7 @@
 // every layer, from whatever per-game JSON is on disk.
 import { spawnSync } from 'node:child_process';
 import net from 'node:net';
+import os from 'node:os';
 import { buildReport } from './report.js';
 
 const args = process.argv.slice(2);
@@ -77,9 +78,22 @@ const freePair = async (from) => {
   }
   return from;
 };
+// Below this much free RAM the browser layer runs one Chrome, not two. Each
+// worker is a Chrome (an online test is three contexts in it), beside two
+// preview servers and the emulator's JVM — and on a 16 GB machine already
+// holding a dev browser and a second Claude session, two workers starved it
+// badly enough that Claude Code killed idle background shells (the dev server)
+// to stay alive. Checked once, at the start: the layer's own Chromes are what
+// would drain it afterwards. An explicit --workers or PLAYTEST_WORKERS wins.
+const LOW_MEMORY_BYTES = 4 * 1024 ** 3;
 const browser = async () => {
   if (flag('runs')) env.PLAYTEST_BROWSER_RUNS = flag('runs');
   if (flag('workers')) env.PLAYTEST_WORKERS = flag('workers');
+  if (!env.PLAYTEST_WORKERS && os.freemem() < LOW_MEMORY_BYTES) {
+    env.PLAYTEST_WORKERS = '1';
+    console.log(`Only ${(os.freemem() / 1024 ** 3).toFixed(1)} GB of RAM free; running 1 browser worker instead of 2 `
+      + '(--workers 2 to override).');
+  }
   const port = await freePair(4199);
   if (port !== 4199) console.log(`Port 4198/4199 is in use; serving the playtest builds on ${port - 1}/${port}.`);
   env.PLAYTEST_PORT = String(port);

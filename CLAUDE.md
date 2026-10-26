@@ -96,7 +96,9 @@ and a replay command per failure. Three things to know before touching it:
 `playtest/fixtures/profiles.json` is cut from `seedProfiles.js` with pack stats filled in
 (`npx vite-node playtest/fixtures/build.js` regenerates it); AniTune runs against a canned
 AnimeThemes (`fakes/`). The browser layer builds to `dist-playtest*` and serves on
-4198/4199 (the next free pair when those are taken; `--workers 1` if memory is short) —
+4198/4199 (the next free pair when those are taken; `run.js` drops to `--workers 1` by
+itself under 4 GB free RAM, and `vite.config.js` and `smoke/vitest.config.js` cap Vitest at 4
+workers — the defaults, one per core, ran this 16 GB machine dry) —
 never `dist`, never 5173.
 
 Firebase (online rooms only):
