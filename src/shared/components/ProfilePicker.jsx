@@ -1,9 +1,7 @@
 import { useState } from 'react';
-import { useCloudSave } from '../context/cloudSaveContext';
 import { useProfileStore } from '../context/profileContext';
 import { portraitFor } from '../utils/portrait';
 import { summarizeProfiles } from '../utils/profileStats';
-import BackupPanel from './BackupPanel';
 import ListImport from './ListImport';
 import Portrait from './Portrait';
 import PortraitPicker from './PortraitPicker';
@@ -26,9 +24,6 @@ import { Badge, Button, Icon, Input, Label, Modal } from '../ui';
 // and a warning pill, and then became a name box followed by the import, where
 // the name typed first had nothing to do with the username typed second. A
 // profile with no list is still one link away, for a guest with no tracker.
-//
-// The backup code ('main' mode only) sits at the foot: it is device-level, like
-// delete, and 'add' is about who is on the couch, not about this device.
 //
 // Two modes over one list, because the underlying question differs:
 //
@@ -222,7 +217,6 @@ export default function ProfilePicker({
     return (
       <ListImport
         profile={null}
-        offerBackup={!adding}
         // Closing comes back here: nothing was created, so there is still a
         // choice to make.
         onClose={() => setImporting(false)}
@@ -331,25 +325,6 @@ export default function ProfilePicker({
           </button>
         </div>
       )}
-
-      {!adding && (
-        <BackupSection />
-      )}
     </Modal>
-  );
-}
-
-// A section, not just the panel: in a build with no Firebase the panel renders
-// nothing, and its heading must go with it.
-function BackupSection() {
-  const cloud = useCloudSave();
-  if (!cloud.available) return null;
-  return (
-    <div className="mt-6 border-t-2 border-line pt-5">
-      <p className="mb-2 font-display text-xs font-bold uppercase tracking-widest text-fg-subtle">
-        Your other devices
-      </p>
-      <BackupPanel />
-    </div>
   );
 }

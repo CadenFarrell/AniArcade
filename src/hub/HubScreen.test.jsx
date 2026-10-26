@@ -23,9 +23,6 @@ vi.mock('../shared/services/firebase', () => ({
   getFirebaseDb: () => { throw new Error('firebase touched in a local-only test'); },
   ensureSignedIn: () => { throw new Error('firebase touched in a local-only test'); },
 }));
-// The backup code reads the same flag from here, without the SDK (see
-// firebaseConfig.js), so it is forced off the same way.
-vi.mock('../shared/services/firebaseConfig', () => ({ firebaseEnabled: false, firebaseConfig: {} }));
 
 const CRASH = /something went wrong/i;
 
@@ -122,8 +119,6 @@ describe('hub', () => {
     const user = userEvent.setup();
     renderArcade(<HubScreen />);
     expect(screen.getByRole('heading', { name: 'Welcome to AniArcade' })).toBeTruthy();
-    // No Firebase in this build, so no backup code to offer.
-    expect(screen.queryByLabelText('Have a backup code?')).toBeNull();
 
     await user.click(screen.getByRole('button', { name: 'Not now' }));
     expect(screen.queryByRole('heading', { name: 'Welcome to AniArcade' })).toBeNull();

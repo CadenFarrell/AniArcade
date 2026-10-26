@@ -4,7 +4,6 @@ import './index.css'
 import HubScreen from './hub/HubScreen.jsx'
 import ErrorBoundary from './shared/components/ErrorBoundary.jsx'
 import ProfileProvider from './shared/context/ProfileProvider.jsx'
-import CloudSaveProvider from './shared/context/CloudSaveProvider.jsx'
 import HelpDetailProvider from './shared/context/HelpDetailProvider.jsx'
 import SoundProvider from './shared/context/SoundProvider.jsx'
 import { registerServiceWorker } from './shared/services/serviceWorker.js'
@@ -15,18 +14,14 @@ createRoot(document.getElementById('root')).render(
       {/* Inside the boundary, so a corrupt saved profile shows the error screen
           rather than a blank page. */}
       <ProfileProvider>
-        {/* Inside ProfileProvider: a sync that brings profiles from another
-            device hands them to the store. */}
-        <CloudSaveProvider>
-          {/* At the root rather than per screen: whether the settings cards show
-              their long-form reasoning is one arcade-wide preference, so every
-              game's setup screen and online lobby has to read the same copy of it. */}
-          <HelpDetailProvider>
-            <SoundProvider>
-              <HubScreen />
-            </SoundProvider>
-          </HelpDetailProvider>
-        </CloudSaveProvider>
+        {/* At the root rather than per screen: whether the settings cards show
+            their long-form reasoning is one arcade-wide preference, so every
+            game's setup screen and online lobby has to read the same copy of it. */}
+        <HelpDetailProvider>
+          <SoundProvider>
+            <HubScreen />
+          </SoundProvider>
+        </HelpDetailProvider>
       </ProfileProvider>
     </ErrorBoundary>
   </StrictMode>,

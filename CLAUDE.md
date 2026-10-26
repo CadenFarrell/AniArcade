@@ -206,7 +206,7 @@ here is simply not there at read time:
 
 | entry | stored fields |
 | --- | --- |
-| anime | `id`, `title`, `characters`, plus the `STAT_KEYS` in `profileMerge.js` (`coverImageUrl`, `startDate`, `episodes`, `averageScore`, `popularity`) |
+| anime | `id`, `title`, `characters`, plus the `STAT_KEYS` in `profileMerge.js` (`coverImageUrl`, `startDate`, `episodes`, `averageScore`, `popularity`, `format`, `studio`, `source`, `season`, `seasonYear`, `duration`) |
 | character | `id`, `name`, `role`, `gender`, `imageUrl`, `description`, `favourites`, `genres` |
 
 The stats are **absent, not null,** on profiles imported before them, and a character's
@@ -216,12 +216,6 @@ lobby that reads a list calls `useRepublishProfile`. Identity is by folded name,
 (`characterNameKey`, `profileIdFromName`), so no screen gets a "type your name" box and
 nothing on a list is typed in by hand. The two layers, the room copy, auto-seating and why
 ids do not line up: `.claude/rules/profiles.md`.
-
-### Backup codes
-
-A backup code (16 chars, `saves/{code}`, one JSON string) keeps every profile and the history
-in step across devices with no sign-in; Firebase loads only on a device that has one. The
-merge, the sync and the rules: `.claude/rules/cloud-save.md`.
 
 ### List sources: any tracker, one profile shape
 

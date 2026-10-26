@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
+import { Suspense, useEffect, useMemo, useState } from 'react';
 import { games } from './registry';
 import CreditsModal from './CreditsModal';
 import GameLoading from './GameLoading';
@@ -19,16 +19,14 @@ import ListManager from '../shared/components/ListManager';
 import ProfileButton from '../shared/components/ProfileButton';
 import ProfilePicker from '../shared/components/ProfilePicker';
 import TopBar from '../shared/components/TopBar';
-import { useCloudSave } from '../shared/context/cloudSaveContext';
 import { useProfileStore } from '../shared/context/profileContext';
 import { InviteContext } from '../shared/context/inviteContext';
 import { TileCharacterContext } from '../shared/context/tileCharacterContext';
 import { CoverGameContext } from '../shared/context/coverGameContext';
 import { useWakeLock } from '../shared/hooks/useWakeLock';
 import { playSound } from '../shared/services/sound';
-import { readRestore, stripRestore } from '../shared/utils/cloudSave';
 import { preloadGames } from '../shared/utils/lazyGame';
-import { Backdrop, Badge, Banner, GhostButton, HubButton, Kana, Screen } from '../shared/ui';
+import { Backdrop, Badge, GhostButton, HubButton, Kana, Screen } from '../shared/ui';
 import { accentBg } from '../shared/ui/accents';
 import { ART } from '../shared/ui/credits';
 import { KANA } from '../shared/ui/kanaText';
@@ -247,26 +245,6 @@ function Hero() {
   );
 }
 
-// What a restore came to, as the hub's banner says it.
-function restoreSummary(result) {
-  if (result.status === 'ok') {
-    return {
-      tone: 'success',
-      text: result.restored > 0
-        ? `Backup restored — ${result.restored} profile${result.restored === 1 ? '' : 's'} added. This device now stays in step with it.`
-        : 'Backup restored. This device now stays in step with it.',
-    };
-  }
-  return {
-    tone: 'danger',
-    text: {
-      invalid: 'That backup link is broken — check the code in your profiles on the other device.',
-      'not-found': 'There’s no backup under that link’s code.',
-      offline: 'You’re offline, so the backup couldn’t be restored. Open the link again once you’re connected.',
-    }[result.status] ?? 'Couldn’t reach the backup. Open the link again in a moment.',
-  };
-}
-
 // Top-level menu. Picks a game from the registry and hands it the whole screen;
 // each game gets an onExit callback to come back here. Also the arcade's only
 // frame: the title screen in front of it, the top bar around everything after,
@@ -277,10 +255,7 @@ export default function HubScreen() {
   // room, and the code is already in hand. Read once, here; the effect below
   // takes it off the address bar.
   const [invite, setInvite] = useState(() => readInvite(window.location.search, GAME_IDS));
-  // A backup link (shared/utils/cloudSave.js) skips the title the same way: the
-  // player opened it to get their profiles onto this device, not to be greeted.
-  const [restoreCode] = useState(() => readRestore(window.location.search));
-  const [titleSeen, setTitleSeen] = useState(() => invite != null || restoreCode != null || readTitleSeen());
+  const [titleSeen, setTitleSeen] = useState(() => invite != null || readTitleSeen());
   // gameId, not activeId — `activeId` in a profile-aware file means the main
   // profile everywhere else, and two different "active"s in one component is
   // how you end up passing the wrong one.
@@ -296,15 +271,11 @@ export default function HubScreen() {
   // the menu. A full view for ListManager's reason.
   const [recordOf, setRecordOf] = useState(null);
   const { profiles, activeProfile, saveProfile } = useProfileStore();
-  const cloud = useCloudSave();
   const { wipe, wipeId } = useWipe();
-  // What a restore link or the welcome's code did: { tone, text }, shown over
-  // the board until dismissed.
-  const [restoreNote, setRestoreNote] = useState(null);
   // The first-visit welcome (WelcomeModal.jsx): only on a device with no
-  // profiles, never over an invite or a restore link (each already knows what
-  // the player came for), and once answered, never again.
-  const [welcomeDone, setWelcomeDone] = useState(() => readWelcomeSeen() || invite != null || restoreCode != null);
+  // profiles, never over an invite (it already knows what the player came
+  // for), and once answered, never again.
+  const [welcomeDone, setWelcomeDone] = useState(() => readWelcomeSeen() || invite != null);
   const showWelcome = !welcomeDone && Object.keys(profiles).length === 0;
 
   // The tile characters: drawn once per visit to the menu, and again whenever
@@ -334,21 +305,9 @@ export default function HubScreen() {
   // the title is remembered too, so that refresh lands on the hub as any other
   // would. `invite` is the first render's on purpose: this runs once.
   useEffect(() => {
-    const noInvite = stripInvite(window.location.href) ?? window.location.href;
-    const stripped = stripRestore(noInvite) ?? noInvite;
-    if (stripped !== window.location.href) window.history.replaceState(window.history.state, '', stripped);
+    const stripped = stripInvite(window.location.href);
+    if (stripped) window.history.replaceState(window.history.state, '', stripped);
     if (titleSeen) markTitleSeen();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // A backup link restores once. The ref, not the effect's deps, is what makes
-  // it once: StrictMode runs every effect twice, and a second restore would
-  // report "0 profiles added" over the first one's real count.
-  const restoredRef = useRef(false);
-  useEffect(() => {
-    if (!restoreCode || !cloud.available || restoredRef.current) return;
-    restoredRef.current = true;
-    cloud.restore(restoreCode).then((result) => setRestoreNote(restoreSummary(result)));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -466,12 +425,6 @@ export default function HubScreen() {
 
           {/* The only thing left of the old full-width profile card. It points at
               the bar once and then never appears again. */}
-          {restoreNote && (
-            <Banner tone={restoreNote.tone} onDismiss={() => setRestoreNote(null)} className="mb-5">
-              {restoreNote.text}
-            </Banner>
-          )}
-
           {!activeProfile && (
             <p className="mb-5 text-sm text-fg-body">
               No profile yet — press <span className="font-bold">Set profile</span> up top to bring
@@ -497,9 +450,6 @@ export default function HubScreen() {
           {/* Below the board, never above it: the hub's height is spent on
               games first (see src/hub/CLAUDE.md). */}
           <RecordStrip
-            // A sync that brought games from another device rewrote the
-            // history the strip read on mount; a new key reads it again.
-            key={cloud.version}
             profile={activeProfile}
             games={games}
             onOpen={() => setRecordOf({ id: activeProfile.id, from: 'hub' })}
@@ -529,10 +479,7 @@ export default function HubScreen() {
         )}
         {showCredits && <CreditsModal onClose={() => setShowCredits(false)} />}
         {showWelcome && !showPicker && (
-          <WelcomeModal
-            onClose={() => setWelcomeDone(true)}
-            onRestored={(result) => setRestoreNote(restoreSummary(result))}
-          />
+          <WelcomeModal onClose={() => setWelcomeDone(true)} />
         )}
       </TopBar>
     );

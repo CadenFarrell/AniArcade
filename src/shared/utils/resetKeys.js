@@ -24,13 +24,7 @@
 // Play history (`aniarcade_history`, utils/history.js) is kept for the same
 // reason: it is the player's, it cannot be rebuilt at all, and its reader
 // normalizes every line, so a bad one costs that line rather than the hub.
-//
-// The backup link (`aniarcade_cloud_save`, services/cloudSave.js) holds the
-// backup code. Clearing it would not lose the backup, but nobody keeps the code
-// written down, so it would lose the way back to it.
-export const PRESERVED_KEYS = [
-  'aniguess_profiles', 'aniarcade_active_profile', 'aniarcade_history', 'aniarcade_cloud_save',
-];
+export const PRESERVED_KEYS = ['aniguess_profiles', 'aniarcade_active_profile', 'aniarcade_history'];
 
 /**
  * The keys to remove, given every key currently in storage.

@@ -1,7 +1,6 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { Banner } from '../ui';
 import { useProfile } from '../hooks/useProfile';
-import { notifyLocalChange, recordDeletion } from '../services/cloudSave';
 import { resolveActiveProfileId } from '../utils/profileStats';
 import { ProfileContext } from './profileContext';
 
@@ -57,7 +56,6 @@ export default function ProfileProvider({ children }) {
     // still the right thing to show for the rest of this session, and dropping
     // it here would lose the data twice over.
     commitProfiles({ ...profilesRef.current, [profile.id]: profile });
-    notifyLocalChange();
     return persisted;
   }, [persistProfile, commitProfiles]);
 
@@ -72,7 +70,6 @@ export default function ProfileProvider({ children }) {
     const stamped = { ...profile, lastUsedAt: Date.now() };
     persistProfile(stamped);
     commitProfiles({ ...profilesRef.current, [id]: stamped });
-    notifyLocalChange();
   }, [persistActiveId, persistProfile, commitProfiles]);
 
   // Load-or-create *without* touching who is active. The pass-and-play setup
@@ -81,7 +78,6 @@ export default function ProfileProvider({ children }) {
   const ensureProfile = useCallback((name) => {
     const { profile, isNew } = loadOrCreateProfile(name);
     commitProfiles({ ...profilesRef.current, [profile.id]: profile });
-    if (isNew) notifyLocalChange();
     return { profile, isNew };
   }, [loadOrCreateProfile, commitProfiles]);
 
@@ -95,15 +91,11 @@ export default function ProfileProvider({ children }) {
     commitProfiles({ ...profilesRef.current, [stamped.id]: stamped });
     setActiveId(stamped.id);
     persistActiveId(stamped.id);
-    notifyLocalChange();
     return { profile: stamped, isNew };
   }, [loadOrCreateProfile, persistProfile, persistActiveId, commitProfiles]);
 
   const removeProfile = useCallback((id) => {
     purgeProfile(id);
-    // Before the change goes out, so the sync it triggers carries the marker
-    // that stops another device's copy of this profile coming back.
-    recordDeletion(id);
     const next = { ...profilesRef.current };
     delete next[id];
     // Re-resolve rather than clearing: deleting whoever was active should land
@@ -112,21 +104,7 @@ export default function ProfileProvider({ children }) {
     commitProfiles(next);
     setActiveId(nextActive);
     persistActiveId(nextActive);
-    notifyLocalChange();
   }, [purgeProfile, activeId, persistActiveId, commitProfiles]);
-
-  // A backup sync (context/CloudSaveProvider.jsx) rewrote storage underneath
-  // this provider: take the map and the main profile from storage again. The
-  // ONE write in the app that does not come through here, and it has to be —
-  // the merge reads and writes storage in a single tick so that an edit made
-  // while the download was in flight cannot be lost (services/cloudSave.js).
-  const reloadFromStorage = useCallback(() => {
-    const next = getAllProfiles();
-    commitProfiles(next);
-    const nextActive = resolveActiveProfileId(next, getActiveProfileId());
-    setActiveId(nextActive);
-    persistActiveId(nextActive);
-  }, [getAllProfiles, getActiveProfileId, persistActiveId, commitProfiles]);
 
   const value = useMemo(() => ({
     profiles,
@@ -137,8 +115,7 @@ export default function ProfileProvider({ children }) {
     ensureProfile,
     saveProfile,
     removeProfile,
-    reloadFromStorage,
-  }), [profiles, activeId, selectProfile, createProfile, ensureProfile, saveProfile, removeProfile, reloadFromStorage]);
+  }), [profiles, activeId, selectProfile, createProfile, ensureProfile, saveProfile, removeProfile]);
 
   return (
     <ProfileContext.Provider value={value}>

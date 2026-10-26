@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import BackupPanel from '../shared/components/BackupPanel';
 import ListImport from '../shared/components/ListImport';
 import { useProfileStore } from '../shared/context/profileContext';
 import { Button, Modal } from '../shared/ui';
@@ -9,9 +8,9 @@ import { markWelcomeSeen } from './welcomeSeen';
 // this device has no profiles at all: the arcade is built from your anime list,
 // so the list is the first step, and the setup used to be a hint pointing at
 // the top bar, a picker, a name box and then the import. Here it is one press
-// to the import (which names the profile after the account), or a backup code
-// for someone who has played on another device.
-export default function WelcomeModal({ onClose, onRestored }) {
+// to the import, which names the profile after the account. A player who has
+// played on another device just imports the same list again.
+export default function WelcomeModal({ onClose }) {
   const { saveProfile, selectProfile } = useProfileStore();
   const [importing, setImporting] = useState(false);
 
@@ -25,7 +24,6 @@ export default function WelcomeModal({ onClose, onRestored }) {
     return (
       <ListImport
         profile={null}
-        offerBackup
         onClose={() => setImporting(false)}
         onImported={(merged) => {
           saveProfile(merged);
@@ -46,11 +44,6 @@ export default function WelcomeModal({ onClose, onRestored }) {
       <Button variant="primary" size="lg" fullWidth onClick={() => setImporting(true)}>
         Bring my anime list
       </Button>
-      <BackupPanel
-        showEnable={false}
-        className="mt-6 border-t-2 border-line pt-5"
-        onRestored={(result) => { close(); onRestored?.(result); }}
-      />
       <button
         type="button"
         onClick={close}

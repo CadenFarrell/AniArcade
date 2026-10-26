@@ -15,6 +15,7 @@ paths:
   - "src/shared/utils/character.js"
   - "src/shared/utils/franchise.js"
   - "src/shared/utils/autoSeat.js"
+  - "src/shared/services/storage.js"
 ---
 
 # Profiles and identity
@@ -84,3 +85,10 @@ friend there costs a Remove tap every visit. The key rebuilds on Start, so it is
 
 Nothing on a list is typed by hand — AniList search or an import, and the one edit is deleting a
 whole show (`.claude/rules/list-import.md`).
+
+**Getting a profile onto another device is importing the same list there.** Backup codes
+(`saves/{code}`, a cross-device sync with no sign-in) were built and removed: nobody keeps a
+code, and a re-import already rebuilds everything a profile holds except its play history.
+`requestPersistentStorage` (`services/storage.js`) asks the browser to keep the site's data
+(Safari otherwise wipes it after seven days unvisited), from inside an import's Done, because
+Firefox asks the player, and only from a gesture.

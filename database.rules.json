@@ -6,22 +6,6 @@
         ".write": "auth != null && ((!data.exists() && $key === root.child('rooms/'+newData.val()+'/createdAt').val() + '_' + newData.val()) || (!newData.exists() && (!root.child('rooms/'+data.val()).exists() || $key < (now - 86400000) + '')))"
       }
     },
-    "saves": {
-      "$code": {
-        ".read": "auth != null && $code.matches(/^[A-HJ-NP-Z2-9]{16}$/)",
-        ".write": "auth != null && $code.matches(/^[A-HJ-NP-Z2-9]{16}$/)",
-        ".validate": "newData.hasChildren(['data', 'updatedAt'])",
-        "data": {
-          ".validate": "newData.isString() && newData.val().length < 5000000"
-        },
-        "updatedAt": {
-          ".validate": "newData.val() === now"
-        },
-        "$other": {
-          ".validate": false
-        }
-      }
-    },
     "rooms": {
       "$code": {
         ".write": "auth != null && !newData.exists() && (root.child('rooms/'+$code+'/memberUids/'+auth.uid).exists() || data.child('createdAt').val() < now - 86400000)",

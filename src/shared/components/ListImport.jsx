@@ -1,5 +1,4 @@
 import { useContext, useState, useMemo, useEffect, useRef } from 'react';
-import { useCloudSave } from '../context/cloudSaveContext';
 import { ProfileContext } from '../context/profileContext';
 import { buildImportedAnime } from '../services/importGroups';
 import { fetchListEntries, LIST_SITES, malProxyEnabled, siteLabel } from '../services/listSources';
@@ -13,7 +12,6 @@ import {
   mergeImportedAnilistIds,
 } from '../utils/profileMerge';
 import { Badge, Button, Card, Checkbox, Icon, Input, Label, Modal, NumberInput } from '../ui';
-import BackupPanel from './BackupPanel';
 
 const MAL_EXPORT_URL = 'https://myanimelist.net/panel.php?go=export';
 
@@ -39,19 +37,12 @@ const USERNAME_COPY = {
 // (the near-miss ProfilePicker exists to catch), so this can never mint a
 // second "Sam". Nothing is created until Done: cancelling a first import leaves
 // no empty profile behind. The caller saves what onImported hands it.
-//
-// `offerBackup` puts the backup code on the done step — the one moment a new
-// player has something worth carrying to another device and is looking.
-export default function ListImport({ profile, onClose, onImported, autoRefresh = false, offerBackup = false }) {
+export default function ListImport({ profile, onClose, onImported, autoRefresh = false }) {
   const [step, setStep] = useState('username'); // username | loading-list | list | importing | done | error
   const creating = !profile;
   // Soft, not useProfileStore: this dialog is also mounted alone in its tests,
   // and only the creating path needs the saved profiles.
   const savedProfiles = useContext(ProfileContext)?.profiles ?? {};
-  const cloud = useCloudSave();
-  // Read once: a player whose backup is already on is not offered it again, and
-  // one who turns it on from the done step should see the code it made.
-  const [backupWasOn] = useState(() => Boolean(cloud.code));
   // Where this profile imported from last time. Prefilled so a re-import is one
   // tap. Re-importing is the common case, not the rare one: the page cache in
   // anilist.js is in-memory only, so every refresh means paying the full
@@ -664,12 +655,6 @@ export default function ListImport({ profile, onClose, onImported, autoRefresh =
               </>
             )}
           </p>
-          {offerBackup && !backupWasOn && (
-            <div className="mb-6 rounded-pop-sm border-2 border-line p-4 text-left">
-              <p className="mb-2 font-display font-extrabold text-fg-strong">Playing on another device too?</p>
-              <BackupPanel showRestore={false} />
-            </div>
-          )}
           <Button variant="success" size="lg" fullWidth onClick={finishImport}>Done</Button>
         </div>
       )}
