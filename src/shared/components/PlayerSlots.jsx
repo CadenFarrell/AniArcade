@@ -156,10 +156,11 @@ const showsBadge = (p) => {
 
 /**
  * A local setup screen's whole roster: every seated player as a slot, then the
- * Add player seat. The same in five games (main profile seated, the picker adds
- * the rest of the couch, a link button imports into a seated player, a cross
- * removes them), so it is one component rather than five copies of the row
- * markup that used to drift.
+ * Add player seat. The same in five games (main profile seated — the games that
+ * need a crowd seat the couch too, hooks/useAutoSeat.js — the picker adds the
+ * rest, a link button imports into a seated player, a cross removes them), so
+ * it is one component rather than five copies of the row markup that used to
+ * drift.
  *
  * `onImport` is optional — AniTag reads nobody's list, so it offers no import
  * and passes `badgeFor={null}` for no list badge either.

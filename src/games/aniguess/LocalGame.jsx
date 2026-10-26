@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { useProfileStore } from '../../shared/context/profileContext';
+import { useAutoSeat } from '../../shared/hooks/useAutoSeat';
+import { MIN_PLAYERS } from './rules';
 import ListManager from '../../shared/components/ListManager';
 import PlayerSetup from './components/PlayerSetup';
 import CharacterAssignment from './components/CharacterAssignment';
@@ -17,12 +18,13 @@ function App({ onExit, onBack }) {
   const [view, setView] = useState('setup');
   const [listManagerProfile, setListManagerProfile] = useState(null);
   const [listManagerOrigin, setListManagerOrigin] = useState('setup');
-  // The hub's profile joins the game already seated — this is pass-and-play, so
-  // the name box below stays for everyone else on the couch. Reading it in the
-  // initializer is safe: ProfileProvider resolves the active profile from
-  // localStorage synchronously, so it is present on the very first render.
-  const { activeProfile } = useProfileStore();
-  const [setupPlayers, setSetupPlayers] = useState(() => activeProfile ? [activeProfile] : []);
+  // The hub's profile joins the game already seated, and so does the rest of
+  // the couch: last game's table, else enough to start (shared/utils/autoSeat.js).
+  // Reading it in the initializer is safe: ProfileProvider resolves the
+  // profiles from localStorage synchronously, so they are there on the very
+  // first render.
+  const { seat, remember } = useAutoSeat('aniguess', MIN_PLAYERS);
+  const [setupPlayers, setSetupPlayers] = useState(seat);
   const { clearSession } = useGameSession();
 
   const {
@@ -91,7 +93,7 @@ function App({ onExit, onBack }) {
         )}
 
         {view === 'setup' && (
-          <PlayerSetup onStartGame={handleStartGame} onGoToList={handleGoToList} players={setupPlayers} onPlayersChange={setSetupPlayers} onBack={onBack} />
+          <PlayerSetup onStartGame={(start) => { remember(start.players); handleStartGame(start); }} onGoToList={handleGoToList} players={setupPlayers} onPlayersChange={setSetupPlayers} onBack={onBack} />
         )}
 
         {view === 'listManager' && (
@@ -206,7 +208,7 @@ function App({ onExit, onBack }) {
               setGameSession(null);
               // Back to the same starting state as a fresh visit, not to an empty
               // roster — otherwise "Play Again" quietly un-seats you.
-              setSetupPlayers(activeProfile ? [activeProfile] : []);
+              setSetupPlayers(seat());
               setView('setup');
             }}
             onEditLists={() => {

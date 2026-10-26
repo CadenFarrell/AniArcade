@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useProfileStore } from '../../../shared/context/profileContext';
 import ProfilePicker from '../../../shared/components/ProfilePicker';
+import { useAutoSeat } from '../../../shared/hooks/useAutoSeat';
 import { useGamePrefs } from '../../../shared/hooks/useGamePrefs';
 import { LocalRoster } from '../../../shared/components/PlayerSlots';
 import SetupLayout, { StartBar } from '../../../shared/components/SetupLayout';
@@ -25,11 +26,14 @@ import descriptor from '../index';
 // THE SETTINGS CARD LIVES IN AniTagSettings, shared with the online lobby, for
 // the reason stated there: it was the same hundred lines in both files.
 export default function AniTagSetup({ onStart, onBack }) {
-  const { activeId, activeProfile } = useProfileStore();
+  const { activeId } = useProfileStore();
   const { prefs, savePrefs, resetPrefs } = useGamePrefs('anitag', DEFAULT_PREFS);
   const { categories, saveCategory, deleteCategory } = useCustomCategories();
 
-  const [players, setPlayers] = useState(() => (activeProfile ? [activeProfile] : []));
+  // The couch is seated already: last game's table, else enough to start — see
+  // shared/utils/autoSeat.js.
+  const { seat, remember } = useAutoSeat('anitag', MIN_PLAYERS);
+  const [players, setPlayers] = useState(seat);
   const [showPicker, setShowPicker] = useState(false);
   // One object rather than five useStates, matching the lobby — see there.
   const [settings, setSettings] = useState(() => ({
@@ -48,6 +52,7 @@ export default function AniTagSetup({ onStart, onBack }) {
     // Only the keys this screen owns. writePrefs merges a partial, so anything
     // only the lobby offers survives untouched — see prefs.js.
     savePrefs(settings);
+    remember(players);
     onStart({
       players,
       ...settings,

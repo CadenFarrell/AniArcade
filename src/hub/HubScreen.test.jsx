@@ -239,3 +239,47 @@ describe.each(games.map((g) => [g.title, g]))('%s', (_title, game) => {
     expect(errors).toEqual([]);
   });
 });
+
+// shared/utils/autoSeat.js: a game that needs a crowd seats the couch; a game
+// that plays solo seats only the main profile.
+describe('auto-seating', () => {
+  const byId = (id) => games.find((g) => g.id === id);
+  const seats = () => screen.getAllByRole('button', { name: /^remove /i }).length;
+  const openLocal = async (user, game) => {
+    await user.click(await findTile(game));
+    await user.click(await screen.findByRole('button', { name: /play on this device/i }));
+  };
+
+  it('seats the three AniFake needs, and only you in AniRank', async () => {
+    seedProfiles([makeProfile('Caden'), makeProfile('Ayu'), makeProfile('Mio'), makeProfile('Ren')]);
+    const user = userEvent.setup();
+    renderArcade(<HubScreen />);
+
+    await openLocal(user, byId('anifake'));
+    expect(seats()).toBe(3);
+    await user.click(await findHub());
+    await openLocal(user, byId('anirank'));
+    expect(seats()).toBe(1);
+    expect(errors).toEqual([]);
+  });
+
+  it('seats everyone there is when the device has fewer than the game needs', async () => {
+    seedProfiles([makeProfile('Caden'), makeProfile('Ayu')]);
+    const user = userEvent.setup();
+    renderArcade(<HubScreen />);
+
+    await openLocal(user, byId('aniturf'));
+    expect(seats()).toBe(2);
+  });
+
+  it('restores the table this device last started the game with', async () => {
+    seedProfiles([makeProfile('Caden'), makeProfile('Ayu'), makeProfile('Mio'), makeProfile('Ren')]);
+    localStorage.setItem('aniarcade_last_tables', JSON.stringify({ anitag: ['caden', 'ren', 'mio', 'ayu'] }));
+    const user = userEvent.setup();
+    renderArcade(<HubScreen />);
+
+    await openLocal(user, byId('anitag'));
+    expect(screen.getAllByRole('button', { name: /^remove /i }).map((b) => b.getAttribute('aria-label')))
+      .toEqual(['Remove Caden', 'Remove Ren', 'Remove Mio', 'Remove Ayu']);
+  });
+});

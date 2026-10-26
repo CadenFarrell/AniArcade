@@ -106,6 +106,9 @@ describe('AniTurf, played locally', { timeout: 60000 }, () => {
     const user = userEvent.setup();
     renderArcade(<AniTurfGame onExit={() => {}} />);
     await user.click(screen.getByRole('button', { name: /play on this device/i }));
+    // The four profiles on this device are seated already (shared/utils/autoSeat.js).
+    expect(screen.getAllByRole('button', { name: /^remove /i })).toHaveLength(4);
+    await user.click(screen.getByRole('button', { name: /^remove dee$/i }));
     expect(screen.getByRole('button', { name: /start game/i }).disabled).toBe(true);
     expect(screen.getByText(/needs 4 players/i)).toBeTruthy();
   });

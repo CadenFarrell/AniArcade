@@ -766,6 +766,17 @@ folded names (`profileIdFromName` in `shared/utils/profileStats.js`), so a typo 
 new empty profile indistinguishable from a lost AniList import. That bug is the reason
 the picker exists.
 
+**The games that need a crowd seat the couch too** (`shared/hooks/useAutoSeat.js` over the
+pure `utils/autoSeat.js`): AniGuess, AniTag, AniFake, AniWave and AniTurf open with the
+table this device last *started* that game with (`aniarcade_last_tables`, `{ [gameId]:
+profileId[] }`, written on local Start only), and failing that, enough profiles to reach
+the game's `MIN_PLAYERS` — whoever the main profile most recently played with (history
+lines name people, and a folded name *is* a profile id), then the picker's order. AniRank,
+AniTune and AniQuiz play solo and still seat only the main profile, because there a seated
+friend is a guess that costs a Remove tap every visit. The key rebuilds on the next Start,
+so it is not in `PRESERVED_KEYS`. The playtest bots read the seat count off the screen for
+this reason (`generic.js`), not from how many players they picked.
+
 Identity is deliberately not id-based, and the reasons are non-obvious:
 
 - `characterNameKey` (`shared/utils/character.js`) identifies a character by name with

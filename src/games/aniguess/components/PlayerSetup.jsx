@@ -9,6 +9,7 @@ import ProfilePicker from '../../../shared/components/ProfilePicker';
 import SetupLayout, { StartBar } from '../../../shared/components/SetupLayout';
 import AniGuessSettings from './AniGuessSettings';
 import { DEFAULT_PREFS } from '../prefs';
+import { MIN_PLAYERS } from '../rules';
 import descriptor from '../index';
 import { Badge, Banner, Button, CardRow, Icon, Modal } from '../../../shared/ui';
 import {
@@ -115,9 +116,9 @@ export default function PlayerSetup({ onStartGame, onGoToList, players, onPlayer
     players.some((other, j) => i !== j &&
       p.animeList.some(a => other.animeList.some(o => normalizeTitle(o.title) === normalizeTitle(a.title))))
   );
-  const canStart = players.length >= 2 && allHaveChars && (!sharedShowsOnly || hasSharedAnime);
+  const canStart = players.length >= MIN_PLAYERS && allHaveChars && (!sharedShowsOnly || hasSharedAnime);
 
-  const status = players.length < 2 ? 'Add at least 2 players to start.'
+  const status = players.length < MIN_PLAYERS ? `Add at least ${MIN_PLAYERS} players to start.`
     : !allHaveChars ? 'Every player needs at least one character.'
       : sharedShowsOnly && !hasSharedAnime ? 'No two players share a show.'
         : `${players.length} players · drag to set the turn order`;
@@ -167,7 +168,7 @@ export default function PlayerSetup({ onStartGame, onGoToList, players, onPlayer
               </SortableContext>
             </DndContext>
 
-            {players.length >= 2 && sharedShowsOnly && !hasSharedAnime && (
+            {players.length >= MIN_PLAYERS && sharedShowsOnly && !hasSharedAnime && (
               <Banner tone="warning" className="mb-5">
                 No two players share an anime title — uncheck &quot;Shared shows
                 only&quot; or add matching titles.

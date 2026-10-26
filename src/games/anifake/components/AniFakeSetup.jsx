@@ -4,6 +4,7 @@ import ListImport from '../../../shared/components/ListImport';
 import { LocalRoster } from '../../../shared/components/PlayerSlots';
 import ProfilePicker from '../../../shared/components/ProfilePicker';
 import SetupLayout, { StartBar } from '../../../shared/components/SetupLayout';
+import { useAutoSeat } from '../../../shared/hooks/useAutoSeat';
 import { useGamePrefs } from '../../../shared/hooks/useGamePrefs';
 import { usePackBackfill } from '../../../shared/hooks/usePackBackfill';
 import ModePicker from './ModePicker';
@@ -15,11 +16,13 @@ import { minPool, MIN_PLAYERS } from '../rules';
 import descriptor from '../index';
 import { Banner, Button } from '../../../shared/ui';
 
-// Local setup. Same shape as AniRankSetup — your main profile is already
-// seated, the picker adds the rest of the couch, and nobody types a name.
+// Local setup. Same shape as AniRankSetup, except that the couch is seated
+// already — last game's table, else the three it takes to start (see
+// shared/utils/autoSeat.js). The picker adds anyone else, and nobody types a name.
 export default function AniFakeSetup({ onStart, error, onBack }) {
-  const { activeId, activeProfile, saveProfile } = useProfileStore();
-  const [players, setPlayers] = useState(() => (activeProfile ? [activeProfile] : []));
+  const { activeId, saveProfile } = useProfileStore();
+  const { seat, remember } = useAutoSeat('anifake', MIN_PLAYERS);
+  const [players, setPlayers] = useState(seat);
   // A list imported before the stats existed is repaired from the fact pack,
   // and the seated copy follows it the way it follows an import.
   usePackBackfill((p) => setPlayers((prev) => prev.map((x) => (x.id === p.id ? p : x))));
@@ -141,6 +144,7 @@ export default function AniFakeSetup({ onStart, error, onBack }) {
               size="lg"
               onClick={() => {
                 savePrefs(settings);
+                remember(players);
                 onStart({ players, ...settings });
               }}
               disabled={!canStart}

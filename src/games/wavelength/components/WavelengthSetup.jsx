@@ -4,6 +4,7 @@ import ListImport from '../../../shared/components/ListImport';
 import { LocalRoster } from '../../../shared/components/PlayerSlots';
 import ProfilePicker from '../../../shared/components/ProfilePicker';
 import SetupLayout, { StartBar } from '../../../shared/components/SetupLayout';
+import { useAutoSeat } from '../../../shared/hooks/useAutoSeat';
 import { useGamePrefs } from '../../../shared/hooks/useGamePrefs';
 import { Banner, Button } from '../../../shared/ui';
 import ClueModePicker from './ClueModePicker';
@@ -27,10 +28,13 @@ import descriptor from '../index';
 // button all appear only once a mode that deals cards is selected, so the
 // default path is unchanged.
 export default function WavelengthSetup({ onStart, onBack }) {
-  const { activeId, activeProfile, saveProfile } = useProfileStore();
+  const { activeId, saveProfile } = useProfileStore();
   const { prefs, savePrefs, resetPrefs } = useGamePrefs('aniwave', DEFAULT_PREFS);
 
-  const [players, setPlayers] = useState(() => (activeProfile ? [activeProfile] : []));
+  // The couch is seated already: last game's table, else enough to start — see
+  // shared/utils/autoSeat.js.
+  const { seat, remember } = useAutoSeat('aniwave', MIN_PLAYERS);
+  const [players, setPlayers] = useState(seat);
   const [showPicker, setShowPicker] = useState(false);
   const [importTarget, setImportTarget] = useState(null);
   // Only the keys this screen owns — the timer is online-only. writePrefs merges
@@ -79,6 +83,7 @@ export default function WavelengthSetup({ onStart, onBack }) {
 
   const start = () => {
     savePrefs(settings);
+    remember(players);
     onStart({ players, rounds, mode: clueMode, cardPool, sharedOnly });
   };
 

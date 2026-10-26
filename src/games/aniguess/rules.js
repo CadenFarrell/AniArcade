@@ -7,6 +7,9 @@
 // in whatever slice of the state bundle they need and apply the returned
 // patch/values however their persistence layer works.
 
+// One guesser and one asker at the least — a table of one has nobody to answer.
+export const MIN_PLAYERS = 2;
+
 export function startGame(session) {
   return {
     gameSession: session,

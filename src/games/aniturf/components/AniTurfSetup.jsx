@@ -4,6 +4,7 @@ import ListImport from '../../../shared/components/ListImport';
 import { LocalRoster } from '../../../shared/components/PlayerSlots';
 import ProfilePicker from '../../../shared/components/ProfilePicker';
 import SetupLayout, { StartBar } from '../../../shared/components/SetupLayout';
+import { useAutoSeat } from '../../../shared/hooks/useAutoSeat';
 import { useGamePrefs } from '../../../shared/hooks/useGamePrefs';
 import { Banner, Button } from '../../../shared/ui';
 import AniTurfSettings from './AniTurfSettings';
@@ -22,8 +23,11 @@ import { TAGLINE } from './copy';
 // `initial` is what Play again's "Change teams" hands back, so the teams and
 // crowns a table already arranged survive a trip back to this screen.
 export default function AniTurfSetup({ onStart, onBack, error, initial = null }) {
-  const { activeId, activeProfile, saveProfile } = useProfileStore();
-  const [players, setPlayers] = useState(() => initial?.players ?? (activeProfile ? [activeProfile] : []));
+  const { activeId, saveProfile } = useProfileStore();
+  // A fresh setup seats the couch already — last game's table, else the four it
+  // takes to start (shared/utils/autoSeat.js); splitTeams evens them out.
+  const { seat, remember } = useAutoSeat('aniturf', MIN_PLAYERS);
+  const [players, setPlayers] = useState(() => initial?.players ?? seat());
   const [chosenTeam, setChosenTeam] = useState(() => initial?.chosenTeam ?? {});
   const [chosenGiver, setChosenGiver] = useState(() => initial?.clueGivers ?? {});
   const [showPicker, setShowPicker] = useState(false);
@@ -108,6 +112,7 @@ export default function AniTurfSetup({ onStart, onBack, error, initial = null })
               disabled={!canStart}
               onClick={() => {
                 savePrefs(settings);
+                remember(players);
                 onStart({ players, teams, clueGivers: givers, chosenTeam, ...settings });
               }}
             >

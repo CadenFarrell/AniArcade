@@ -155,6 +155,11 @@ export function arcadeAction(snap, ctx) {
   if (find(snap, /^\W*resume/i)) return null;
 
   if (memory.phase === 'setup') {
+    // Re-read off the screen rather than trusted from the count of picks: the
+    // games that need a crowd seat the couch before the bot touches anything
+    // (shared/hooks/useAutoSeat.js), and a counter that started at 1 would keep
+    // opening the picker for players already sitting there.
+    if (ctx.seated != null) memory.seated = ctx.seated;
     const add = find(snap, /^add player/i);
     if (add && seatedCount(memory) < scenario.names.length) return click(add, 'add player');
   }
