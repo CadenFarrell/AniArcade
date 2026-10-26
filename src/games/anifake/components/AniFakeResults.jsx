@@ -35,16 +35,22 @@ function Ballot({ votes = {}, counts = {}, caught, fakeId, players, departedIds 
       {accused.map((id) => {
         const n = counts[id];
         const isCaught = id === caught;
+        // A player who left is said in words and a quieter text role, never an
+        // opacity over the row: that took the names to 2.34:1 (axe). Only the
+        // bar, which is not text, still fades.
+        const left = departedIds.includes(id);
         return (
-          <div key={id} className={departedIds.includes(id) ? 'opacity-40' : ''}>
+          <div key={id}>
             <div className="flex items-center gap-2">
               <span className="w-6 flex-shrink-0 text-center font-display text-sm
                 font-extrabold text-fg-subtle">
                 {playerOf(id)?.seat ?? '–'}
               </span>
-              <span className="min-w-0 flex-1 truncate font-display text-lg font-extrabold text-fg-strong">
+              <span className={`min-w-0 flex-1 truncate font-display text-lg font-extrabold
+                ${left ? 'text-fg-subtle' : 'text-fg-strong'}`}>
                 {id === fakeId && <><Icon name="mask" label="The fake" className="text-pop-red" />{' '}</>}
                 {nameOf(id)}
+                {left && <span className="ml-2 text-xs font-bold uppercase tracking-wide">(left)</span>}
               </span>
               <Badge tone={isCaught ? 'red' : 'neutral'}>
                 {n} {n === 1 ? 'vote' : 'votes'}
@@ -53,7 +59,7 @@ function Ballot({ votes = {}, counts = {}, caught, fakeId, players, departedIds 
             {/* The bar is the tally made readable at a glance — red only for the
                 one the ballot landed on, so a tie shows two neutral bars of
                 equal length and says "nobody" without needing a caption. */}
-            <div className="mt-1.5 ml-8 h-2 overflow-hidden rounded-pop-sm bg-wash">
+            <div className={`mt-1.5 ml-8 h-2 overflow-hidden rounded-pop-sm bg-wash ${left ? 'opacity-40' : ''}`}>
               <div
                 className={`h-full rounded-pop-sm ${isCaught ? 'bg-pop-red' : 'bg-wash-mid'}`}
                 style={{ width: `${(n / cast) * 100}%` }}

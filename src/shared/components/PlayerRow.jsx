@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react';
 import { usePlayerPortrait } from '../context/tablePortraitsContext';
 import Portrait from './Portrait';
 
@@ -22,9 +23,18 @@ import Portrait from './Portrait';
 export default function PlayerRow({
   players, activeId = null, youId = null, score, status, dimIds = [], label = 'Players', className = '',
 }) {
+  const [rowRef, scrolls] = useScrolls(Boolean(players?.length));
   if (!players?.length) return null;
   return (
-    <div className={`mb-6 overflow-x-auto pb-1 ${className}`}>
+    // While the row scrolls it is a focusable region, so a keyboard can scroll
+    // it too (axe: scrollable-region-focusable, on AniWave's six-seat reveal).
+    // Only while it scrolls: a row that fits would be a tab stop that does
+    // nothing.
+    <div
+      ref={rowRef}
+      {...(scrolls && { tabIndex: 0, role: 'region', 'aria-label': label })}
+      className={`mb-6 overflow-x-auto pb-1 focus-pop ${className}`}
+    >
       {/* Sized so five players fit a 390px phone without scrolling; from a
           sixth on, the row scrolls sideways rather than wrapping into two. */}
       <ol aria-label={label} className="mx-auto flex w-max items-end gap-2 px-1 pt-3 sm:gap-3">
@@ -42,6 +52,28 @@ export default function PlayerRow({
       </ol>
     </div>
   );
+}
+
+// Whether the row is wider than its box. Both the box and the row are watched:
+// the box resizes with the window, the row with who is seated and who is up (the
+// active seat is drawn larger). jsdom has no ResizeObserver, so there it
+// measures once — and jsdom lays nothing out, so it never scrolls. `present`
+// re-runs it when an empty table (no row drawn) fills.
+function useScrolls(present) {
+  const ref = useRef(null);
+  const [on, setOn] = useState(false);
+  useEffect(() => {
+    const box = ref.current;
+    if (!box) return undefined;
+    const measure = () => setOn(box.scrollWidth > box.clientWidth);
+    measure();
+    if (typeof ResizeObserver === 'undefined') return undefined;
+    const ro = new ResizeObserver(measure);
+    ro.observe(box);
+    if (box.firstElementChild) ro.observe(box.firstElementChild);
+    return () => ro.disconnect();
+  }, [present]);
+  return [ref, on];
 }
 
 function Seat({ player, active, you, dim, score, status }) {

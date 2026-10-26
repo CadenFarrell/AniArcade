@@ -1,18 +1,27 @@
 # AniArcade
 
-Anime games you play with friends. One hub, a growing set of games, all built on
-[AniList](https://anilist.co) data so the anime and characters come from real lists —
-including your own.
+Party games built from your anime list. Import your list from AniList, MyAnimeList or Kitsu
+(or upload a MyAnimeList export file), and every game deals from the shows and characters
+you've actually watched. Play pass-and-play on one phone, or each on your own device in an
+online room. Once it has loaded, it also works offline as an installable app.
+
+Play it at **https://aniguess-a08f7.web.app/**.
 
 ## Games
 
 | Game | What it is |
 | --- | --- |
-| 🎭 **AniGuess** | You're assigned an anime character and have to work out who you are by asking the table yes/no questions. Local pass-and-play or online rooms. |
-| 🎵 **AniTune** | Guess the anime from the sound of its opening or ending. |
+| **AniGuess** | Guess the anime character you were assigned by asking yes/no questions. |
+| **AniTune** | Guess the anime from the sound of its opening or ending. |
+| **AniRank** | Ten cards, one board. Rank them on facts, or on how someone else would. |
+| **AniFake** | Everyone knows the character. One of you is faking it: find the fake. |
+| **AniWave** | One of you knows where the target is. Say the right words. No list needed. |
+| **AniTag** | Everyone picks a secret category. Name things until you work out somebody else's. No list needed. |
+| **AniQuiz** | A trivia board built from the credits of the shows you've watched. Bet big on the Daily Double. |
+| **AniTurf** | Two teams race to claim a route across a board of characters, led by one-word clues. |
 
-Each game lives in its own folder under `src/games/` and is registered with a single
-line in `src/hub/registry.js` — that list is the entire hub menu.
+Every game has a local mode and an online mode, and every finished game goes into each
+player's play record.
 
 ## Running it
 
@@ -21,48 +30,65 @@ npm install
 npm run dev
 ```
 
-Other scripts:
+Local play needs nothing else. Online rooms need Firebase: copy `.env.local.example` to
+`.env.local` and fill in your Firebase web-app config (Realtime Database + anonymous auth).
+With no `.env.local`, online play is switched off and local play makes no third-party
+requests.
 
-| Script | Does |
+To develop online play without touching a real project, run the emulators:
+
+```bash
+npx firebase emulators:start --only database,auth --project demo-aniguess
+```
+
+When pointing `.env.local` at the emulator, `VITE_FIREBASE_DATABASE_URL` must use the
+`-default-rtdb` suffixed namespace, or you get a database without your rules.
+`firebase-tools` is a dev dependency, so run it as `npx firebase`, not a bare `firebase`.
+
+## Commands
+
+| Command | Does |
 | --- | --- |
 | `npm run dev` | Vite dev server with HMR |
 | `npm run build` | Production build into `dist/` |
 | `npm run preview` | Serve the built `dist/` locally |
-| `npm run lint` | ESLint over the project |
-| `npm run generate` | Rebuild `seedProfiles.js` from AniList (see below) |
+| `npm run lint` | ESLint |
+| `npm test` | Unit and component tests (vitest) |
+| `npm run test:smoke` | Online hooks against the Firebase emulator (starts and stops it) |
+| `npm run playtest` | Bots play every game start to finish in jsdom (`--game <id> --seed <n>` replays one run) |
+| `npm run playtest -- --layer online` | The same, with one device per player in a room on the emulator |
+| `npm run playtest -- --layer browser` | Playwright on phone and desktop sizes, with axe and layout checks |
+| `npm run playtest:all` | All three layers, then the report in `playtest-report/` |
+| `npm run generate` | Regenerate `seedProfiles.js` from AniList |
+| `npm run generate:facts` | Regenerate the fact pack in `public/facts/` |
+| `npm run generate:casts` | Regenerate the cast pack in `public/casts/` (a few minutes) |
 
-## Configuration
+CI runs lint, tests and the build on every push and pull request.
 
-Copy `.env.local.example` to `.env.local` and fill in your Firebase web-app config.
-Firebase backs the online rooms (Realtime Database + anonymous auth); everything else
-runs client-side.
-
-To develop without touching the real project, the example file documents running
-against the emulators:
+Deploying:
 
 ```bash
-firebase emulators:start --only database,auth --project demo-aniguess
+npx firebase deploy --only database   # database.rules.json
+npm run build && npx firebase deploy --only hosting
 ```
 
-Database rules live in `database.rules.json`.
+## Generated files
 
-## Seed profiles
-
-`generateProfiles.js` queries AniList and writes `seedProfiles.js`, a bundled snapshot
-of characters used to populate games without hitting the API at play time. Regenerate
-with `npm run generate`. `seedProfiles.js` is generated — don't edit it by hand.
+Don't edit these by hand. Regenerate them with the commands above: `seedProfiles.js`,
+`public/facts/pack-*.json` and `public/casts/`. The hand-edited inputs beside them are
+`animeCatalog.js` (the show list both generators read) and `facts/overrides.json`.
 
 ## Layout
 
 ```
 src/
-  hub/          the arcade menu — HubScreen + the game registry
-  games/
-    aniguess/   character 20-questions (local + online)
-    anitune/    opening/ending quiz
-  shared/       UI kit, AniList + Firebase services, hooks used by every game
-  index.css     design tokens — colours, radii, shadows, fonts
+  hub/          the arcade menu; registry.js is the whole list of games
+  games/<game>/ one folder per game: rules.js (pure logic), local and online hooks, screens
+  shared/       UI kit, AniList and Firebase services, hooks used by every game
+  index.css     design tokens (colours, type, textures)
+playtest/       the bot players
+smoke/          online tests against the emulator
+workers/        the MyAnimeList proxy (Cloudflare Worker)
 ```
 
-Restyling should mean editing the `@theme` block in `src/index.css`, not sweeping
-through components.
+`CLAUDE.md` holds the architecture and the reasoning behind it.

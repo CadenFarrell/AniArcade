@@ -369,7 +369,10 @@ export default function GameScreen({
           button, so an Escape or backdrop click would drop the turn's result. */}
       {turnOver && (
         // No dialog sound: the wrong guess or the clock already made one.
-        <Modal dismissible={false} bare width="md" sound={null} className="text-center">
+        // On the panel, not `bare`: bare left this ink text straight on the
+        // scrim (2.78:1, axe), a holdover from the dark canvas, where bare
+        // text was white.
+        <Modal dismissible={false} width="md" sound={null} className="text-center">
           <div className={`mb-6 text-8xl ${turnOver.reason === 'timer' ? 'text-pop-amber' : 'text-pop-red'}`}>
             <Icon name={turnOver.reason === 'timer' ? 'clock' : 'cross'} />
           </div>
