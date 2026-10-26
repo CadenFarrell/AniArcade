@@ -19,6 +19,7 @@ Play it at **https://aniguess-a08f7.web.app/**.
 | **AniTag** | Everyone picks a secret category. Name things until you work out somebody else's. No list needed. |
 | **AniQuiz** | A trivia board built from the credits of the shows you've watched. Bet big on the Daily Double. |
 | **AniTurf** | Two teams race to claim a route across a board of characters, led by one-word clues. |
+| **AniPeek** | A face hides under sixteen tiles. Bid how few you need to name them, then prove it. |
 
 Every game has a local mode and an online mode, and every finished game goes into each
 player's play record.
