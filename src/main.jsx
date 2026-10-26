@@ -6,6 +6,7 @@ import ErrorBoundary from './shared/components/ErrorBoundary.jsx'
 import ProfileProvider from './shared/context/ProfileProvider.jsx'
 import HelpDetailProvider from './shared/context/HelpDetailProvider.jsx'
 import SoundProvider from './shared/context/SoundProvider.jsx'
+import { registerServiceWorker } from './shared/services/serviceWorker.js'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
@@ -25,3 +26,5 @@ createRoot(document.getElementById('root')).render(
     </ErrorBoundary>
   </StrictMode>,
 )
+
+registerServiceWorker()

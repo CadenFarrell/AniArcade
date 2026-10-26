@@ -527,9 +527,20 @@ myPlayerId }`, so online each device records only its own player; locally there 
 and every seated profile is recorded, since they are all on this device. **A results screen
 can mount twice for one game** (a refresh, AniGuess's leaderboard → list → back), so the same
 fingerprint (game, table, winners, places, running totals) within 30 minutes is dropped.
-There is no provider: the one reader, the hub's `RecordStrip`, mounts with the menu, and the
-menu is never on screen while a game writes. The key is in `PRESERVED_KEYS` — it is the
-player's and cannot be rebuilt.
+There is no provider: the readers, the hub's `RecordStrip` and `RecordScreen`, mount with the
+menu, and the menu is never on screen while a game writes. The key is in `PRESERVED_KEYS` — it
+is the player's and cannot be rebuilt.
+
+**Each line also carries everyone else's result** (`others: [{ name, place, won }]`), which is
+what the record screen's head-to-head counts. It arrived after the first lines were written,
+so it is ABSENT on those: they count as games together with no winner between the two of you,
+never as a guess at one. `recordDetail`'s `compare` ranks by places where both have one, else a
+win over a loss (AniFake places nobody), and two unplaced losers are no result at all — not a
+tie, which is something you played for. Friends group by `profileIdFromName` of the name, the
+fold a profile id already is, so the same person met locally and online is one row. The
+screen opens from the strip (the main profile) and from every row of the profile picker,
+because every profile seated at a local game on this device has a record; see
+`src/hub/CLAUDE.md`.
 
 ### Presence and the departed-player problem
 
@@ -545,6 +556,12 @@ This matters because every readiness gate ("everyone is ready", "everyone has an
 Rules functions therefore take `skipIds` or an already-filtered *active* roster, and there
 are dedicated escape hatches (`skipDepartedTurn`, `releaseBuzz`, `revealNow`,
 `nextHostId` for host migration). Preserve this when adding room logic.
+
+The commonest departure is not a closed tab but a phone that locked itself mid-round, which
+drops the connection exactly as one does. `shared/hooks/useWakeLock.js` keeps the screen on
+for as long as any game is open — one call in `HubScreen`, lobby and local play included — and
+asks again each time the page comes back, since the browser releases it on every hide. Every
+failure is silence; a browser without the API simply dims as before.
 
 ### Game settings
 
@@ -1008,10 +1025,10 @@ key, and sharing it is exactly the point.
 
 `facts/overrides.json` is applied **after** generation, so a regeneration can never clobber a
 hand-made correction, and a `null` value there *suppresses* a fact the source got wrong.
-`generateFacts.js` imports `anilistClient.js` directly rather than hand-rolling a throttle —
-that module is plain fetch and timers and is Node-safe despite its "for the browser" header.
-`generateProfiles.js` keeps its own 600ms copy only because it predates it, and a third copy
-is how a rate-limit fix ends up applied to two callers out of three.
+`generateFacts.js` and `generateProfiles.js` import `anilistClient.js` directly rather than
+hand-rolling a throttle — that module is plain fetch and timers and is Node-safe despite its
+"for the browser" header. `generateProfiles.js` carried its own 600ms copy until it was folded
+in, and a copy is how a rate-limit fix ends up applied to two callers out of three.
 
 ### External APIs
 
@@ -1045,6 +1062,44 @@ portraits from an imported list, as `<img>` tags from AniList's CDN — on the h
 every game's `Avatar`, and only for someone who imported one. `hub/HubScreen.test.jsx` pins the network half of that: its
 `fetch` stub serves `/facts/` from `public/` and fails every other URL, and jsdom has no Web
 Audio, so the sound engine never asks.
+
+### Offline: the service worker
+
+Because local play only ever asks its own origin for anything, all of it can be stored, and
+is: a production build carries `/sw.js` (`sw/serviceWorker.template.js`, written into the
+build by `sw/plugin.js` at `writeBundle`), and once a phone has opened the arcade with signal
+it opens, and plays locally, with none. What is stored is decided by
+`shared/utils/precache.js` over the finished build: every chunk (a game opened offline must
+already be there), the page, the fact pack `index.json` names and no other, fonts, prints,
+sounds and icons — about 3.5 MB, not `og.png`. The version hashes every stored file's bytes,
+because `public/` names are not content-hashed and a re-encoded sound must still ship.
+
+- **It never touches another origin.** Firebase, AniList, AnimeThemes, the MAL proxy and
+  portraits go straight to the network, so online play is exactly as live as before and the
+  property above holds. "Play online" is disabled on the cover page while `navigator.onLine`
+  is false (`useOnline`), and an invite link waits on the cover until signal returns.
+- **Updates are quiet.** A new build installs and takes over at once, but a page already open
+  keeps running what it loaded — its lazily loaded chunks still come from the previous build's
+  cache, which activation keeps (newest two, never more). The next load is the new build. Page
+  loads are network-first with a 3s wait, so a deploy reaches the next load and a dead
+  connection still opens.
+- **Never cache an HTML answer to a file request.** Hosting rewrites a missing file to
+  `index.html` with a 200; stored under an old chunk's name it would break every later load.
+- **It answers only for what it stored, and `/assets/` chunks.** Everything else passes
+  through, because a preview build on `localhost:5173` registers the worker on the same origin
+  the dev server uses, and a worker caching whatever it saw would freeze `/src` modules
+  across every edit. Dev page loads are still network-first, so they stay live; Application →
+  Service workers → Unregister in DevTools clears it entirely.
+- **Lookups ignore `Vary`.** The precache stores plain requests, the page asks for module
+  scripts with an `Origin` header, and a `Vary: Origin` answer (vite preview's) made every
+  stored file a miss — the page loaded offline and then failed every script on it.
+- `firebase.json` serves `/sw.js` `no-cache` (JSON has no comments, so the reason lives here),
+  and `registerServiceWorker` registers only in a production bundle, after `load`, and never
+  under Data Saver — the same people `preloadGames` already spares the download.
+- The playtest bots run with `serviceWorkers: 'block'` (a worker's fetches go around
+  Playwright's routing); `playtest/browser/offline.spec.js` is the one project that allows it,
+  and checks a phone with no signal can open the arcade and set up AniQuiz, the game with the
+  most fetched on demand.
 
 ### Styling
 

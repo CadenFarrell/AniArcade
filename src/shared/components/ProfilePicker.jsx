@@ -45,6 +45,10 @@ export default function ProfilePicker({
   onPick,
   onClose,
   onEditList,
+  // 'main' mode only: open this profile's play record (the hub's RecordScreen).
+  // Any profile, not just the main one — every profile seated at a local game
+  // on this device is recorded, so a friend's record lives here too.
+  onOpenRecord,
 }) {
   const {
     profiles, activeId, selectProfile, createProfile, ensureProfile, saveProfile, removeProfile,
@@ -163,6 +167,21 @@ export default function ProfilePicker({
 
         {!adding && (
           <>
+            {/* A bare glyph like delete's rather than a block like edit's: the
+                row already holds a face and two controls, and on a phone a
+                third block squeezed the name to a couple of letters. */}
+            {onOpenRecord && (
+              <button
+                type="button"
+                onClick={() => onOpenRecord(row.id)}
+                aria-label={`${row.name}'s record`}
+                title="Play record"
+                className="focus-pop grid h-11 w-11 flex-shrink-0 place-items-center rounded-pop-sm text-fg-icon
+                  hover:text-fg-strong"
+              >
+                <Icon name="trophy" />
+              </button>
+            )}
             <Button
               variant="neutral"
               size="sm"

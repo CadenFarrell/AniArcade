@@ -147,6 +147,14 @@ export function pageAdapter(page, { errors, prefix }) {
       else if (a.select) await loc(id).selectOption(a.value, opts).catch(() => {});
       else if (a.wait) await page.waitForTimeout(Math.min(a.wait, 3000));
       await page.waitForTimeout(60);
+      // Let the hub's panel wipe (useWipe.js) finish before the next snapshot.
+      // The screen being left stays mounted under the wipe until its midpoint,
+      // so a snapshot taken during one reads the OLD screen and presses its
+      // button again, into a wipe that ignores presses on purpose — every
+      // report's "Press start" and hub-tile click-refused. Waiting before the
+      // click instead does not help: by the time the wipe clears, the button it
+      // was aimed at is gone. HubScreen.test's afterWipe is the same wait.
+      await page.locator('[data-wipe]').waitFor({ state: 'detached', timeout: 1500 }).catch(() => {});
     },
     async reload() { await page.reload(); await page.waitForTimeout(200); },
     async exitToHub() {

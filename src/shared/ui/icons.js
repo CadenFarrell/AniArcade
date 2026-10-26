@@ -150,6 +150,12 @@ export const ICONS = {
       { fillRule: 'evenodd' },
     ),
   ],
+  // a profile's play record (the profile picker's row button): a solid cup on a
+  // stem and base, with stroked handles so it does not read as a goblet
+  trophy: [
+    f('M7 3.5h10v6a5 5 0 0 1-10 0zM10.75 14.25h2.5V18h-2.5zM7.5 18h9v2.5h-9z'),
+    s('M7 5.5H4v1.5a3.5 3.5 0 0 0 3.5 3.5M17 5.5h3v1.5a3.5 3.5 0 0 1-3.5 3.5', 2),
+  ],
   // the manga impact burst — a hit, a celebration, a Daily Double, a crash
   burst: [
     f('M12 1.5l2.4 5.6 5.7-2.6-2.2 5.9 5.6 2.1-5.6 2.4 2.6 5.7-5.9-2.2L12 22.5l-2.4-5.6-5.7 2.6 2.2-5.9L.5 11.5l5.6-2.4-2.6-5.7 5.9 2.2z'),

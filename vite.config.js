@@ -1,11 +1,14 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
+import { serviceWorker } from './sw/plugin.js'
 
 export default defineConfig(({ mode }) => ({
   plugins: [
     react(),
     tailwindcss(),
+    // dist/sw.js, for offline local play: see sw/serviceWorker.template.js.
+    serviceWorker(),
   ],
   // The playtest bots write reports and builds while a dev server may be up;
   // none of it is source, and a watched write would reload the open app.

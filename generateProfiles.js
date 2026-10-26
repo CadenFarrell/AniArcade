@@ -3,12 +3,12 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { filterAndMapCharacterEdges } from './src/shared/utils/anilistFormat.js';
+import { anilistRequest } from './src/shared/services/anilistClient.js';
 import { ANIME_CATALOG } from './animeCatalog.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CACHE_DIR = path.join(__dirname, '.anilist-cache');
 const OUTPUT    = path.join(__dirname, 'seedProfiles.js');
-const DELAY_MS  = 600;
 const MIN_SUPPORTING_FAVOURITES = 100;
 
 const QUERY = `
@@ -36,49 +36,25 @@ query ($id: Int, $page: Int) {
 const cacheRead  = f => { try { const p = path.join(CACHE_DIR, f); return fs.existsSync(p) ? JSON.parse(fs.readFileSync(p, 'utf8')) : null; } catch { return null; } };
 const cacheWrite = (f, d) => { fs.mkdirSync(CACHE_DIR, { recursive: true }); fs.writeFileSync(path.join(CACHE_DIR, f), JSON.stringify(d)); };
 
-// ── Rate-limited GraphQL fetch ────────────────────────────────────────────────
-let lastFetch = 0;
+// ── GraphQL fetch ─────────────────────────────────────────────────────────────
+// Through anilistClient.js, the one throttle every AniList caller shares — it
+// paces from the X-RateLimit-* headers AniList actually sends, backs off on
+// 429, and sets the Referer whose absence AniList answers with a fake outage.
+// This file used to carry its own 600ms copy of all three, the third copy that
+// client's header warned about.
 async function anilistPage(id, page) {
   const cacheFile = `anime-${id}-p${page}.json`;
   const hit = cacheRead(cacheFile);
   if (hit) return hit;
 
-  const wait = DELAY_MS - (Date.now() - lastFetch);
-  if (wait > 0) await new Promise(r => setTimeout(r, wait));
-  lastFetch = Date.now();
-
-  for (let attempt = 1; attempt <= 3; attempt++) {
-    let res;
-    try {
-      res = await fetch('https://graphql.anilist.co', {
-        method: 'POST',
-        // Referer is required or AniList 403s with a message that reads like an
-        // outage — see the REFERER note in src/shared/services/anilistClient.js.
-        // Applied here as well as there deliberately: this file's fetch is the
-        // "two callers out of three" that client warns about, and a fix that
-        // reached only one of them is exactly the failure it predicts.
-        headers: {
-          'Content-Type': 'application/json',
-          Referer: 'https://aniguess-a08f7.web.app/',
-        },
-        body: JSON.stringify({ query: QUERY, variables: { id, page } }),
-      });
-    } catch (err) {
-      if (attempt === 3) throw err;
-      await new Promise(r => setTimeout(r, 2000));
-      continue;
-    }
-    if (res.status === 429) {
-      console.log(`  ⏳ Rate-limited — pausing 60s…`);
-      await new Promise(r => setTimeout(r, 60000));
-      continue;
-    }
-    if (!res.ok) { console.warn(`  ⚠️  ${id} → HTTP ${res.status}`); return null; }
-    const data = (await res.json()).data?.Media ?? null;
+  try {
+    const data = (await anilistRequest(QUERY, { id, page }))?.Media ?? null;
     if (data) cacheWrite(cacheFile, data);
     return data;
+  } catch (err) {
+    console.warn(`  ⚠️  ${id} → ${err.message}`);
+    return null;
   }
-  return null;
 }
 
 async function anilist(id) {

@@ -4,6 +4,7 @@ import CreditsModal from './CreditsModal';
 import GameLoading from './GameLoading';
 import { readInvite, stripInvite } from '../shared/utils/inviteLink';
 import PanelWipe from './PanelWipe';
+import RecordScreen from './RecordScreen';
 import RecordStrip from './RecordStrip';
 import TitleScreen from './TitleScreen';
 import { drawTileCharacters } from './tileCharacters';
@@ -19,6 +20,7 @@ import TopBar from '../shared/components/TopBar';
 import { useProfileStore } from '../shared/context/profileContext';
 import { InviteContext } from '../shared/context/inviteContext';
 import { TileCharacterContext } from '../shared/context/tileCharacterContext';
+import { useWakeLock } from '../shared/hooks/useWakeLock';
 import { playSound } from '../shared/services/sound';
 import { preloadGames } from '../shared/utils/lazyGame';
 import { Backdrop, Badge, GhostButton, HubButton, Kana, Screen } from '../shared/ui';
@@ -261,6 +263,10 @@ export default function HubScreen() {
   // full-height page rather than a dialog, so it gets its own hub view instead
   // of living inside ProfilePicker.
   const [editingListId, setEditingListId] = useState(null);
+  // Whose play record is open, and which way back leads: { id, from } where
+  // `from` is 'hub' (the record strip) or 'picker' (a row's trophy). Null for
+  // the menu. A full view for ListManager's reason.
+  const [recordOf, setRecordOf] = useState(null);
   const { profiles, activeProfile, saveProfile } = useProfileStore();
   const { wipe, wipeId } = useWipe();
 
@@ -308,6 +314,10 @@ export default function HubScreen() {
   });
 
   const active = games.find((g) => g.id === gameId);
+  // The screen stays on while a game is open: one call here covers every game,
+  // local and online. See useWakeLock.js for why a dimmed phone is a dropped
+  // player, not just a dark screen.
+  useWakeLock(Boolean(active));
   // See shared/context/inviteContext.js. Provided for every open game, invite
   // or not, because the lobby's Share button needs the game's id either way.
   const inviteValue = useMemo(() => (active ? {
@@ -352,6 +362,21 @@ export default function HubScreen() {
             </TileCharacterContext.Provider>
           </Suspense>
         </ErrorBoundary>
+      </TopBar>
+    );
+  } else if (recordOf && profiles[recordOf.id]) {
+    const fromPicker = recordOf.from === 'picker';
+    content = (
+      <TopBar>
+        <Backdrop />
+        <HubButton onClick={() => setRecordOf(null)} />
+        <RecordScreen
+          key={recordOf.id}
+          profile={profiles[recordOf.id]}
+          games={games}
+          backLabel={fromPicker ? '← Profiles' : '← Hub'}
+          onBack={() => { setRecordOf(null); if (fromPicker) setShowPicker(true); }}
+        />
       </TopBar>
     );
   } else if (editingListId) {
@@ -413,7 +438,11 @@ export default function HubScreen() {
 
           {/* Below the board, never above it: the hub's height is spent on
               games first (see src/hub/CLAUDE.md). */}
-          <RecordStrip profile={activeProfile} games={games} />
+          <RecordStrip
+            profile={activeProfile}
+            games={games}
+            onOpen={() => setRecordOf({ id: activeProfile.id, from: 'hub' })}
+          />
 
           <p className="mt-8 flex flex-wrap items-center justify-center gap-x-2 text-xs text-fg-subtle">
             <span>Characters from your own list · prints from the Met · sounds by Kenney.</span>
@@ -434,6 +463,7 @@ export default function HubScreen() {
           <ProfilePicker
             onClose={() => setShowPicker(false)}
             onEditList={(id) => { setShowPicker(false); setEditingListId(id); }}
+            onOpenRecord={(id) => { setShowPicker(false); setRecordOf({ id, from: 'picker' }); }}
           />
         )}
         {showCredits && <CreditsModal onClose={() => setShowCredits(false)} />}

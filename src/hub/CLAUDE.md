@@ -124,8 +124,16 @@ CLAUDE.md): games and wins, a chip per game in that game's ink — the tile bar'
 the chips sort the way the board does — and the last five games. It sits BELOW the board,
 never above it, for the hero's reason: the hub's height belongs to the games. It reads
 storage once per mount, which is enough because the menu branch unmounts while a game is
-open, so returning from a game is a fresh read. It shows the main profile only, though every
-seated profile is recorded; a friend sees theirs on a device where they are the main profile.
+open, so returning from a game is a fresh read. It shows the main profile only.
+
+**`RecordScreen.jsx` is the whole record**, a full hub view like ListManager's (`recordOf` in
+`HubScreen`, `{ id, from }`): totals, streaks, a card per game in its ink, head-to-head, and
+every game, 20 at a time. It opens from the strip's "See full record" and from a trophy on
+every profile-picker row — any profile, because every profile seated at a local game here is
+recorded — and its back step returns where it came from ("← Hub" or "← Profiles"). The
+strip's rows and the log's are one component, `RecordLine.jsx`. The trophy is a bare glyph like
+delete's rather than a block like edit's: a third block squeezed the name to a few letters on a
+phone. The playtest fallback denies both ways in.
 
 ## Invite links skip the front door
 
@@ -175,8 +183,11 @@ game's accent, so it reads as the tile opening.
 and Back — never Reset, which would clear saved rooms, tier lists and settings to fix a
 dropped connection. The failure that will actually happen is a tab left open across a
 deploy: chunk filenames are content-hashed, so the old ones are gone, and hosting's
-catch-all rewrite answers them with `index.html`. A reload fetches the new names. The failed
-promise is forgotten rather than memoized, so Back and a second tap genuinely retry.
+catch-all rewrite answers them with `index.html`. A reload fetches the new names. A phone
+with the service worker (root CLAUDE.md, "Offline") is spared this — the previous build's
+chunks stay in its cache for the page still running it — but everyone else is not, so the
+screen stays. The failed promise is forgotten rather than memoized, so Back and a second tap
+genuinely retry.
 
 `HubScreen.test.jsx` preloads every game in `beforeAll`. The first import of a game under
 vitest transforms its whole folder, which can outlast `findBy`'s one-second wait on a cold

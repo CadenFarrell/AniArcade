@@ -4,10 +4,10 @@
 // and backs off on 429 using Retry-After / X-RateLimit-Reset.
 //
 // Despite "for the browser" above, this module is plain fetch plus timers and is
-// Node-safe — generateFacts.js imports it directly. Do that rather than copying
-// the throttle: generateProfiles.js has its own 600ms version only because it
-// predates this file, and a third copy is how a rate-limit fix ends up applied
-// to two callers out of three.
+// Node-safe — generateFacts.js and generateProfiles.js both import it directly.
+// Do that rather than copying the throttle: generateProfiles.js carried its own
+// 600ms version until it was folded in here, and a copy is how a rate-limit fix
+// ends up applied to two callers out of three.
 //
 // Two Node caveats bite, not one. animethemesClient.js's User-Agent bot filter
 // is a different API; AniList has its own, on Referer — see REFERER below.

@@ -46,8 +46,10 @@ const DENY_START = [
   'all-time leaderboard', 'close', 'sound on', 'sound off', 'credits', 'back to lobby',
 ];
 // A name ending in a disclosure triangle opens or closes a panel and never
-// moves a game on; pressed at random it is the commonest way to look busy.
-const DENY_ANYWHERE = [/add .* to this game/i, /^take .* out of/i, /import .*'s list/i, /[▸▾]$/];
+// moves a game on; pressed at random it is the commonest way to look busy. And
+// the record screen's two ways in (the hub strip, a profile row's trophy) lead
+// off to a page with no game on it.
+const DENY_ANYWHERE = [/add .* to this game/i, /^take .* out of/i, /import .*'s list/i, /[▸▾]$/, /^see full record$/i, /'s record$/i];
 const lead = /^[^\p{L}\p{N}←✕×ⓘ]+/u;
 
 export const DENY = {

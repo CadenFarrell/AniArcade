@@ -36,6 +36,16 @@ export default defineConfig([
     files: ['playtest/**/*.{js,jsx}'],
     languageOptions: { globals: { ...globals.node, ...globals.browser } },
   },
+  // The offline worker's template is a service worker (caches, clients, self);
+  // its build plugin beside it runs in Node.
+  {
+    files: ['sw/serviceWorker.template.js'],
+    languageOptions: { globals: globals.serviceworker },
+  },
+  {
+    files: ['sw/plugin.js'],
+    languageOptions: { globals: globals.node },
+  },
   // The MAL proxy runs on Cloudflare Workers: fetch, Response and caches are
   // service-worker globals there, not browser ones.
   {

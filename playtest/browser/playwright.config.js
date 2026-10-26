@@ -49,7 +49,12 @@ export default defineConfig({
   // workers beside the two preview servers ran a 16 GB machine out of memory.
   workers: Number(process.env.PLAYTEST_WORKERS) || 2,
   reporter: [['list']],
-  use: { trace: 'retain-on-failure', launchOptions },
+  // No service worker for the bots: the production build registers one
+  // (shared/services/serviceWorker.js), and a worker would answer requests
+  // around routeNetwork — Playwright's routing does not see a worker's fetches
+  // — and spend each context ~3.5 MB filling its cache. offline.spec.js is the
+  // one project that turns it back on, because the worker is what it tests.
+  use: { trace: 'retain-on-failure', launchOptions, serviceWorkers: 'block' },
   projects: [
     { name: 'phone', testMatch: /local\.spec\.js/, use: { ...devices['Pixel 7'], baseURL: LOCAL } },
     { name: 'desktop', testMatch: /local\.spec\.js/, use: { viewport: { width: 1280, height: 800 }, baseURL: LOCAL } },
@@ -57,6 +62,7 @@ export default defineConfig({
     // from a card below the fold.
     { name: 'drag', testMatch: /drag\.spec\.js/, use: { viewport: { width: 1280, height: 1800 }, baseURL: LOCAL } },
     { name: 'online', testMatch: /online\.spec\.js/, use: { viewport: { width: 414, height: 860 }, baseURL: EMU } },
+    { name: 'offline', testMatch: /offline\.spec\.js/, use: { ...devices['Pixel 7'], baseURL: LOCAL, serviceWorkers: 'allow' } },
   ],
   webServer: [
     {
