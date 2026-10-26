@@ -10,10 +10,54 @@ paths:
   - "src/shared/hooks/useGamePrefs.js"
 ---
 
-# Settings cards
+# Game settings and settings cards
 
 Moved from the root `CLAUDE.md` so it loads only when Claude works on the files above. The
 cross-game architecture it builds on is still there.
+
+## Game settings
+
+Every game's remembered options live in `games/<game>/prefs.js` as a single `DEFAULT_PREFS`
+literal, read through `shared/hooks/useGamePrefs.js` and stored in **one** arcade-wide key
+(`aniarcade_game_prefs`, a `{ [gameId]: {...} }` map) — unlike the per-game keys that hold
+state one game owns (`<game>_online_room`, `anirank_custom_prompts`).
+
+`DEFAULT_PREFS` **is the schema**, not just a fallback: `mergePrefs` drops unknown keys and
+type-mismatched values against it. Two consequences that are easy to get wrong:
+
+- **`writePrefs` merges a partial**, and that is load-bearing rather than tidy. Setup screens
+  and online lobbies are near-twins but not identical (AniFake's lobby has no talk mode), and
+  a lobby that replaced the slice would wipe the options only local play can reach.
+- **Adding a key changes behaviour for existing players**, because `mergePrefs` fills missing
+  keys from the defaults on the next read. A new option defaulted to "on" reaches everyone
+  who never opens the settings card — usually what you want, but decide it rather than
+  discover it.
+
+**Every game's settings card is one component rendered by both screens** —
+`AniGuessSettings`, `AniFakeSettings`, `AniRankSettings`, `AniTuneSettings`,
+`AniTagSettings`, `WavelengthSettings` and AniQuiz's `QuizSettings`, each beside its game's
+setup screen. They were hand-kept copies first, and every pair had drifted somewhere
+(AniWave's reset link sat inside the card online and under Start locally; AniGuess's two
+screens listed the same options in different orders). A local-only or online-only option is a prop on the card (`local`,
+`online`), never a second copy of it. Each card reports changes as one `onChange(key, value)`
+because the lobby's settings object *is* what leaves the host's device, and a setter per prop
+puts the drift back one level down.
+
+Adding an option means: the key in `prefs.js`; the control in the game's settings card; the
+key in **both** screens' settings object, seeded from `prefs` (the lobby's object is what
+reaches `startGame`, so a key missing there never leaves the host's device); and — only if
+the *rules* act on it — a copy onto the round node in the room hook with a `!== false`-style
+back-compat default in `normalizeGame`. AniRank keeps separate `useState`s, because an axis
+change resets `blind` and the state has to live beside the axis it is coupled to. An option
+that only decides which screen renders (`talkMode`) or how a pool is drawn (`sharedOnly`,
+`fame`) stays out of round state.
+
+Anything derived from a pref that is worth testing belongs in a `.js` module, which is why
+`prefs.js` and `fame.js` are separate files from the screens that read them. A component test
+*could* reach it through the screen now (see `.claude/rules/testing.md`), but only by mounting that whole
+screen under jsdom just to check one derived value. A pure `.test.js` checks it directly.
+
+## Settings cards
 
 **A setting's note comes in two tiers, and `shared/components/SettingHelp.jsx` is the only
 place either one is styled.** Every setup screen and lobby used to hand-place a `<p

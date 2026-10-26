@@ -56,7 +56,7 @@ rather than discover it.
 
 **Neither mode required a `database.rules.json` change**, because both read-gated nodes were
 already deployed. Which one a clause belongs in is decided by *who must not see it*, and AniTag is
-now the worked example on **both** rows of that table — see the node table in the root `CLAUDE.md`'s Online rooms section. Reaching for the
+now the worked example on **both** rows of that table — see the node table in `.claude/rules/online-rooms.md`. Reaching for the
 wrong one is silent: a `chosen` clause in `assignments/` is readable by everyone it is hidden
 from, and a `dealt` one in `secrets/` is readable by precisely the one player the mode is built
 around keeping in the dark.
