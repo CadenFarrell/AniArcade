@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "deny": [
+      "Read(./seedProfiles.js)",
+      "Read(./public/facts/pack-*.json)",
+      "Read(./package-lock.json)",
+      "Read(./.anilist-cache/**)",
+      "Read(./.facts-cache/**)"
+    ]
+  }
+}

@@ -1,0 +1,8 @@
+# Read by ripgrep, which is what Claude Code's Grep and Glob run on: a repo-wide search skips
+# these generated blobs instead of returning thousands of matching lines from them. Naming one
+# by its exact path still searches it. .gitignore already covers the caches and dist folders.
+# Root CLAUDE.md's "Generated files" table says what each one is.
+seedProfiles.js
+public/facts/pack-*.json
+package-lock.json
+playtest/fixtures/profiles.json
