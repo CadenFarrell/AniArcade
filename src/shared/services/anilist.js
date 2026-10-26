@@ -1,5 +1,11 @@
-import { anilistRequest } from './anilistClient';
-import { toListEntry } from '../utils/anilistFormat';
+// Explicit .js extensions: generateCasts.js imports this file under plain Node
+// for the batch query and the live page fetch, so the pack it writes and the
+// pages an import fetches cannot drift apart.
+import { anilistRequest } from './anilistClient.js';
+import { toListEntry } from '../utils/anilistFormat.js';
+import { pageCasts } from '../utils/castPaging.js';
+import { loadPackPages } from './castPack.js';
+import { readCachedPages, writeCachedPages } from './castCache.js';
 
 // Every field a list entry is built from (see anilistFormat.js toListEntry).
 // One string for both queries below, so an AniList list and a list hydrated
@@ -42,15 +48,18 @@ query ($userName: String, $type: MediaType, $statusIn: [MediaListStatus]) {
 // the perPage we request, so the page size is fixed.
 const CHAR_PER_PAGE = 25;
 
-// How many shows to pack into a single aliased request. AniList's query
-// complexity cap (500) comfortably allows 20 Media(characters perPage:25)
-// aliases in one query; 15 leaves headroom for heavier shows.
-const BATCH_SIZE = 15;
+// How many shows to pack into a single aliased request. Measured 2026-10-26:
+// each alias costs 18 against AniList's complexity cap of 500 (30 aliases came
+// back "Max query complexity should be 500 but got 540"), so 27 is the most one
+// query can carry. It was 15 by guesswork, which cost nearly twice the
+// requests. fetchLiveChunk halves a batch AniList still refuses, so a change on
+// their end costs requests, not the import.
+const BATCH_SIZE = 27;
 
 // Builds one aliased GraphQL query fetching page `page` of characters for
 // several media ids at once (aliases m0..mN). ids are AniList integers, coerced
 // with Number() so they are safe to inline into the query string.
-function buildBatchCharacterQuery(ids, page) {
+export function buildBatchCharacterQuery(ids, page) {
   const aliases = ids.map((id, i) => `m${i}: Media(id: ${Number(id)}, type: ANIME) {
     genres
     characters(sort: [ROLE, FAVOURITES_DESC], perPage: ${CHAR_PER_PAGE}, page: ${page}) {
@@ -64,64 +73,110 @@ function buildBatchCharacterQuery(ids, page) {
   return `query { ${aliases.join('\n')} }`;
 }
 
-// Given the edges of a single page, returns true once no later page can hold a
-// wanted character. Results are MAIN-first, then FAVOURITES_DESC within each
-// role, so once a SUPPORTING entry below the threshold appears (or any
-// SUPPORTING appears in mainOnly mode) everything after is guaranteed unwanted.
-function reachedCutoff(pageEdges, { mainOnly, minSupportingFavourites }) {
-  if (mainOnly) return pageEdges.some((e) => e.role !== 'MAIN');
-  return pageEdges.some((e) => e.role !== 'MAIN' && (e.node.favourites ?? 0) < minSupportingFavourites);
+const isComplexityError = (err) => /complexity/i.test(err?.message ?? '');
+
+async function fetchLiveChunk(ids, page, signal) {
+  let data;
+  try {
+    data = await anilistRequest(buildBatchCharacterQuery(ids, page), {}, { signal });
+  } catch (err) {
+    if (ids.length < 2 || !isComplexityError(err)) throw err;
+    const half = Math.ceil(ids.length / 2);
+    const [a, b] = await Promise.all([
+      fetchLiveChunk(ids.slice(0, half), page, signal),
+      fetchLiveChunk(ids.slice(half), page, signal),
+    ]);
+    return new Map([...a, ...b]);
+  }
+  return new Map(ids.map((id, j) => {
+    const media = data?.[`m${j}`];
+    return [id, {
+      genres: media?.genres ?? [],
+      edges: media?.characters?.edges ?? [],
+      hasNextPage: media?.characters?.pageInfo?.hasNextPage ?? false,
+    }];
+  }));
 }
 
-// Caches raw character pages by `${id}:${page}`. Stored data is unfiltered, so
-// it is reused regardless of the caller's favourites/mainOnly settings (those
-// only affect client-side filtering, not what we fetch). In-memory only —
-// cleared on reload — which sidesteps the storage-quota risk of persisting
-// hundreds of KB of character data.
+/**
+ * Page `page` of characters for many ids, straight from AniList: aliased
+ * batches of `batchSize`, all requested at once — anilistClient.js decides how
+ * many are actually in flight. onBatch(Map) fires as each batch lands. Returns
+ * Map<id, { genres, edges, hasNextPage }>, raw and unfiltered.
+ */
+export async function fetchCharacterPagesLive(ids, page, { signal, batchSize = BATCH_SIZE, onBatch } = {}) {
+  const out = new Map();
+  const chunks = [];
+  for (let i = 0; i < ids.length; i += batchSize) chunks.push(ids.slice(i, i + batchSize));
+  await Promise.all(chunks.map(async (chunk) => {
+    const got = await fetchLiveChunk(chunk, page, signal);
+    for (const [id, result] of got) out.set(id, result);
+    onBatch?.(got);
+  }));
+  return out;
+}
+
+// Raw character pages by `${id}:${page}`, for this session. Stored data is
+// unfiltered, so it is reused regardless of the caller's favourites/mainOnly
+// settings (those only affect client-side filtering, not what we fetch).
+//
+// The first of three layers, checked in order: this, then the device's cache
+// of pages it fetched live (services/castCache.js, IndexedDB, 30 days), then
+// the network. The cast pack (services/castPack.js) is copied INTO this one
+// before an import pages anything, so it is served as a hit like any other.
 const pageCache = new Map();
 
-// Resolves page `page` of characters for many ids, serving cache hits for free
-// and batching the misses into aliased requests of at most `batchSize`. Invokes
-// onBatch(Map<id, pageResult>) after each resolution (cache hits up front, then
-// once per network round-trip) so callers can advance a progress bar
-// incrementally. Returns Map<id, { genres, edges, hasNextPage }>.
+// Resolves page `page` of characters for many ids, serving hits from the cache
+// layers for free and fetching the misses live. Invokes onBatch(Map<id,
+// pageResult>) after each resolution (every hit up front, then once per
+// network round-trip) so callers can advance a progress bar incrementally.
+// Returns Map<id, { genres, edges, hasNextPage }>.
 async function fetchCharacterPage(ids, page, { signal, batchSize, onBatch }) {
   const out = new Map();
-  const misses = [];
+  let misses = [];
   for (const id of ids) {
     const cached = pageCache.get(`${id}:${page}`);
     if (cached) out.set(id, cached);
     else misses.push(id);
   }
-  if (out.size > 0) onBatch?.(new Map(out));
 
-  for (let i = 0; i < misses.length; i += batchSize) {
-    const chunk = misses.slice(i, i + batchSize);
-    const data = await anilistRequest(buildBatchCharacterQuery(chunk, page), {}, { signal });
-    const batchOut = new Map();
-    chunk.forEach((id, j) => {
-      const media = data?.[`m${j}`];
-      const result = {
-        genres: media?.genres ?? [],
-        edges: media?.characters?.edges ?? [],
-        hasNextPage: media?.characters?.pageInfo?.hasNextPage ?? false,
-      };
-      pageCache.set(`${id}:${page}`, result);
-      batchOut.set(id, result);
-      out.set(id, result);
+  if (misses.length) {
+    const stored = await readCachedPages(misses.map((id) => `${id}:${page}`));
+    misses = misses.filter((id) => {
+      const hit = stored.get(`${id}:${page}`);
+      if (!hit) return true;
+      pageCache.set(`${id}:${page}`, hit);
+      out.set(id, hit);
+      return false;
     });
-    onBatch?.(batchOut);
   }
+  if (out.size > 0) onBatch?.(new Map(out));
+  if (!misses.length) return out;
+
+  const fetched = new Map();
+  await fetchCharacterPagesLive(misses, page, {
+    signal,
+    batchSize,
+    onBatch: (got) => {
+      for (const [id, result] of got) {
+        pageCache.set(`${id}:${page}`, result);
+        fetched.set(`${id}:${page}`, result);
+        out.set(id, result);
+      }
+      onBatch?.(got);
+    },
+  });
+  writeCachedPages(fetched);
   return out;
 }
 
 // Fetches a public AniList user's anime list. Throws a friendly error if the
 // username doesn't exist (AniList returns a GraphQL error, not a null result,
 // for an unknown user).
-export async function fetchUserAnimeList(username, { statusIn = ['COMPLETED'] } = {}) {
+export async function fetchUserAnimeList(username, { statusIn = ['COMPLETED'], signal } = {}) {
   let data;
   try {
-    data = await anilistRequest(LIST_QUERY, { userName: username, type: 'ANIME', statusIn });
+    data = await anilistRequest(LIST_QUERY, { userName: username, type: 'ANIME', statusIn }, { signal });
   } catch (err) {
     if (/not found/i.test(err.message)) {
       throw new Error(`AniList user "${username}" not found.`);
@@ -161,80 +216,41 @@ export async function searchAnime(query, { signal } = {}) {
   return (data?.Page?.media ?? []).map((media) => toListEntry(media, null));
 }
 
-// Fetches characters for many anime at once. Rather than one throttled request
-// per show (the AniList API allows only ~30 req/min, so a serial loop is slow),
-// this fetches page 1 of every show in a few aliased batch requests, then
-// paginates only the rare character-heavy shows whose first page didn't reach
-// the cutoff. Returns Map<id, { genres, edges }> — edges accumulated across
+// Fetches characters for many anime at once. Rather than one request per show
+// (the AniList API allows only 30 a minute), this fetches page 1 of every show
+// in a few aliased batch requests, then pages further only where a later page
+// could still change the cast an import keeps — utils/castPaging.js owns that
+// decision. Returns Map<id, { genres, edges }> — edges accumulated across
 // pages and still unfiltered (callers apply filterAndMapCharacterEdges).
 //
-// onProgress(resolvedCount) reports how many shows are fully done (page 1 for
-// most; a few pages only for very character-heavy shows).
+// `groups` is the franchises, as arrays of member ids, and `max` the per-show
+// cap the caller will apply across each one's merged cast; together they let
+// paging stop at the cap. Without them every id is its own show, uncapped.
+//
+// onProgress(n) reports how many groups are fully done.
 export async function fetchManyAnimeCharacters(ids, {
   signal,
   minSupportingFavourites = 100,
   mainOnly = false,
   batchSize = BATCH_SIZE,
   maxPages = 12,
+  groups,
+  max = Infinity,
   onProgress,
 } = {}) {
-  const cutoffOpts = { mainOnly, minSupportingFavourites };
-  // id -> { genres, edges, hasNextPage, lastPageEdges, done }
-  const state = new Map();
+  const groupList = groups ?? ids.map((id) => [id]);
 
-  const settle = (s) => {
-    s.done = !s.hasNextPage || reachedCutoff(s.lastPageEdges, cutoffOpts);
-  };
-  const reportProgress = () => {
-    let done = 0;
-    for (const s of state.values()) if (s.done) done++;
-    onProgress?.(done);
-  };
-
-  // Phase 1: page 1 for every show, integrated incrementally so the progress
-  // bar advances after each batch request rather than only at the end.
-  await fetchCharacterPage(ids, 1, {
-    signal,
-    batchSize,
-    onBatch: (batch) => {
-      for (const [id, r] of batch) {
-        const s = { genres: r.genres, edges: [...r.edges], hasNextPage: r.hasNextPage, lastPageEdges: r.edges };
-        settle(s);
-        state.set(id, s);
-      }
-      reportProgress();
-    },
-  });
-
-  // Any id AniList didn't return (e.g. an invalid id) won't be in state yet —
-  // record it as an empty, finished result so callers still get an entry.
-  for (const id of ids) {
-    if (!state.has(id)) state.set(id, { genres: [], edges: [], hasNextPage: false, lastPageEdges: [], done: true });
-  }
-  reportProgress();
-
-  // Phase 2: paginate the stragglers, batched per page level across all shows
-  // still active at that page.
-  let page = 2;
-  while (page <= maxPages) {
-    const active = ids.filter((id) => !state.get(id).done);
-    if (active.length === 0) break;
-    const pageData = await fetchCharacterPage(active, page, { signal, batchSize });
-    for (const id of active) {
-      const r = pageData.get(id) ?? { edges: [], hasNextPage: false };
-      const s = state.get(id);
-      s.edges.push(...r.edges);
-      s.hasNextPage = r.hasNextPage;
-      s.lastPageEdges = r.edges;
-      settle(s);
-    }
-    reportProgress();
-    page++;
+  // The pack's pages become hits before anything is asked for, so page 1 of a
+  // popular list resolves without a single AniList request.
+  for (const [key, page] of await loadPackPages(groupList.flat())) {
+    if (!pageCache.has(key)) pageCache.set(key, page);
   }
 
-  const result = new Map();
-  for (const [id, s] of state) result.set(id, { genres: s.genres, edges: s.edges });
-  return result;
+  return pageCasts(
+    groupList,
+    (pageIds, page, { onBatch }) => fetchCharacterPage(pageIds, page, { signal, batchSize, onBatch }),
+    { minSupportingFavourites, mainOnly, max, maxPages, onProgress },
+  );
 }
 
 // How many ids one hydrate request asks for. AniList's Page caps perPage at 50,
@@ -284,15 +300,23 @@ export async function fetchMediaByIds({ anilistIds = [], malIds = [] } = {}, { s
     ['id_in', [...new Set(anilistIds)], byAnilistId, (m) => m.id],
     ['idMal_in', [...new Set(malIds)], byMalId, (m) => m.idMal],
   ];
+  // Every chunk asked for at once; anilistClient.js paces them. Results are
+  // applied in chunk order afterwards, so which of two duplicates wins does not
+  // depend on which answer came back first.
+  const jobs = [];
   for (const [idField, ids, out, keyOf] of runs) {
     for (let i = 0; i < ids.length; i += HYDRATE_PER_PAGE) {
       const chunk = ids.slice(i, i + HYDRATE_PER_PAGE).map(Number);
-      for (const media of await hydrateChunk(idField, chunk, { signal })) {
-        const key = keyOf(media);
-        if (key == null || out.has(key)) continue;
-        out.set(key, toListEntry(media, statusOf?.(idField === 'id_in' ? 'anilist' : 'mal', key) ?? null));
-      }
+      jobs.push({ idField, out, keyOf, media: hydrateChunk(idField, chunk, { signal }) });
     }
   }
+  const settled = await Promise.all(jobs.map((job) => job.media));
+  jobs.forEach(({ idField, out, keyOf }, j) => {
+    for (const media of settled[j]) {
+      const key = keyOf(media);
+      if (key == null || out.has(key)) continue;
+      out.set(key, toListEntry(media, statusOf?.(idField === 'id_in' ? 'anilist' : 'mal', key) ?? null));
+    }
+  });
   return { byAnilistId, byMalId };
 }

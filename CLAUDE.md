@@ -23,6 +23,7 @@ as evidence the opening round was too thin.
 npm run test:smoke    # online hooks vs the Firebase emulator (starts and stops it; ~90s)
 npm run generate      # regenerate seedProfiles.js from AniList (Node script)
 npm run generate:facts # regenerate the fact pack in public/facts/ (Node script)
+npm run generate:casts # regenerate the cast pack in public/casts/ (Node script, a few minutes)
 ```
 
 CI (`.github/workflows/ci.yml`) runs `npm run lint`, `npm test` and `npm run build` on every
@@ -249,7 +250,8 @@ fold a profile keys on (`franchiseTitleKey`, `characterNameKey`). Versions, outs
 With no `.env.local`, `firebaseEnabled` is false, `ensureInitialized()` is never called, and
 local play touches no **third-party** network at all. Keep that property intact. What local
 play does request is all same-origin static files, in the same class as its own JS bundle:
-the fact pack under `/facts/`, the fonts, the prints under `/art/`, and the UI sounds under
+the fact pack under `/facts/`, the cast pack under `/casts/` (a list import's pre-fetched
+characters), the fonts, the prints under `/art/`, and the UI sounds under
 `/sounds/` (fetched at idle, and only where Web Audio exists — see
 `shared/services/sound.js`). The one third-party load is the player's OWN data: character
 portraits from an imported list, as `<img>` tags from AniList's CDN — on the hub tiles and in
@@ -286,7 +288,8 @@ the shell and sound are in `.claude/rules/styling-assets.md`):
 ### Generated files — don't read these
 
 `seedProfiles.js` (from `npm run generate`; a console seed script, not an app module),
-`public/facts/pack-*.json`, `package-lock.json`, `.anilist-cache/` and `.facts-cache/` are
+`public/facts/pack-*.json`, `public/casts/` (from `npm run generate:casts`; shape in
+`shared/utils/castPackFormat.js`), `package-lock.json`, `.anilist-cache/` and `.facts-cache/` are
 generated blobs of up to 1.7 MB with no architectural information. `.claude/settings.json`
 denies reading them and `.ignore` keeps them out of repo-wide Grep/Glob; to look up one key,
 `grep` the file by path from the shell. Never hand-edit them. For the pack's shape read

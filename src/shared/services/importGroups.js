@@ -19,8 +19,10 @@ export async function buildImportedAnime(groups, {
   mainOnly = false,
   onProgress,
 } = {}) {
-  // Characters are still fetched per AniList media id — a progress bar counts
-  // those fetches, so its total is the flattened member count.
+  // Characters are fetched per AniList media id, but paged per franchise: the
+  // groups and the cap go along so paging stops once a later page could no
+  // longer change who makes the cut (utils/castPaging.js). onProgress counts
+  // finished FRANCHISES, so a caller's total is groups.length.
   //
   // Every member of a group is fetched, including ones already covered:
   // filterAndMapCharacterEdges applies the favourites filter and the per-show
@@ -32,6 +34,8 @@ export async function buildImportedAnime(groups, {
     signal,
     minSupportingFavourites,
     mainOnly,
+    groups: groups.map((g) => g.memberIds),
+    max: MAX_CHARACTERS_PER_SHOW,
     onProgress,
   });
 

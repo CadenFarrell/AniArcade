@@ -7,7 +7,7 @@ import { defineConfig, globalIgnores } from 'eslint/config'
 export default defineConfig([
   globalIgnores(['dist', 'dist-playtest', 'dist-playtest-emu', 'playtest-report', 'seedProfiles.js', '**/.wrangler']),
   {
-    files: ['generateProfiles.js', 'generateFacts.js', 'animeCatalog.js', 'factSources/*.js'],
+    files: ['generateProfiles.js', 'generateFacts.js', 'generateCasts.js', 'animeCatalog.js', 'factSources/*.js'],
     languageOptions: { globals: globals.node },
   },
   {

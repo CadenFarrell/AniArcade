@@ -12,6 +12,7 @@
     "test:smoke": "firebase emulators:exec --only database,auth --project demo-aniguess \"vitest run --config smoke/vitest.config.js\"",
     "generate": "node generateProfiles.js",
     "generate:facts": "node generateFacts.js",
+    "generate:casts": "node generateCasts.js",
     "playtest": "node playtest/run.js",
     "playtest:online": "node playtest/run.js --layer online",
     "playtest:all": "node playtest/run.js --layer all"

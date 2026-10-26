@@ -4,5 +4,6 @@
 # Root CLAUDE.md's "Generated files" table says what each one is.
 seedProfiles.js
 public/facts/pack-*.json
+public/casts/
 package-lock.json
 playtest/fixtures/profiles.json

@@ -157,7 +157,7 @@ export async function fetchListEntries(site, input, { statusIn = [COMPLETED], si
     case 'mal': return fetchMal(input, { statusIn, signal });
     case 'kitsu': return fetchKitsu(input, { statusIn, signal });
     case 'file': return fetchFile(input, { statusIn, signal });
-    default: return { entries: await fetchUserAnimeList(input, { statusIn }), unmatched: 0 };
+    default: return { entries: await fetchUserAnimeList(input, { statusIn, signal }), unmatched: 0 };
   }
 }
 

@@ -128,12 +128,22 @@ export function preferEnglishName(name) {
   return pickEnglishAlternative(name?.alternative) ?? full;
 }
 
+// Higher roles first: a merged edge takes the best role any season gave it.
+const ROLE_RANK = { MAIN: 0, SUPPORTING: 1, BACKGROUND: 2 };
+const roleRank = (role) => ROLE_RANK[role] ?? 3;
+
 // Combines the character edges of several seasons of one show into a single
-// deduped edge list, keyed by AniList character id. A character who is MAIN in
-// any season is treated as MAIN overall (a season-2 supporting role shouldn't
-// demote a lead), and the highest favourites count across seasons is kept so
-// the SUPPORTING favourites cutoff and the maxCharacters sort stay stable.
-// Later duplicates otherwise defer to the first edge seen.
+// deduped edge list, keyed by AniList character id. A character takes the best
+// role any season gave them — MAIN in any season is MAIN overall (a season-2
+// supporting role shouldn't demote a lead), and SUPPORTING in one beats
+// BACKGROUND in another. That used to be "MAIN, else whatever came first", which
+// made the result depend on edge ORDER: a character listed BACKGROUND deep in
+// season 1 and SUPPORTING in season 2 was dropped if season 1's later pages had
+// been fetched and kept if not — and utils/castPaging.js fetches fewer pages
+// precisely so that ought not to matter (its equivalence test is what found
+// this). The highest favourites count across seasons is kept so the SUPPORTING
+// favourites cutoff and the maxCharacters sort stay stable. Later duplicates
+// otherwise defer to the first edge seen.
 export function mergeCharacterEdges(edgeGroups) {
   const byId = new Map();
   for (const edges of edgeGroups ?? []) {
@@ -145,7 +155,7 @@ export function mergeCharacterEdges(edgeGroups) {
         byId.set(id, { ...edge, node: { ...edge.node } });
         continue;
       }
-      if (edge.role === 'MAIN') existing.role = 'MAIN';
+      if (roleRank(edge.role) < roleRank(existing.role)) existing.role = edge.role;
       const favourites = edge.node.favourites ?? 0;
       if (favourites > (existing.node.favourites ?? 0)) existing.node.favourites = favourites;
     }
@@ -213,6 +223,15 @@ export function summarizeGroupStats(group) {
   return Object.fromEntries(Object.entries(stats).filter(([, v]) => v != null && v !== ''));
 }
 
+// Whether one edge is a character an import keeps: every MAIN, plus SUPPORTING
+// at or above the favourites threshold. Exported because utils/castPaging.js
+// decides when to stop paging by counting exactly these — a second copy of the
+// rule there could stop on a count this filter would not keep.
+export function isWantedCharacter(edge, { minSupportingFavourites = 100, mainOnly = false } = {}) {
+  return edge.role === 'MAIN'
+    || (!mainOnly && edge.role === 'SUPPORTING' && (edge.node?.favourites ?? 0) >= minSupportingFavourites);
+}
+
 // Filters AniList character edges down to MAIN + high-favourite SUPPORTING,
 // optionally caps the result (sorted by favourites) and maps into the shape
 // normalizeCharacter (src/shared/utils/character.js) already expects.
@@ -222,10 +241,7 @@ export function filterAndMapCharacterEdges(edges, {
   maxCharacters = Infinity,
   genres = [],
 } = {}) {
-  const filtered = edges.filter(e =>
-    e.role === 'MAIN' ||
-    (!mainOnly && e.role === 'SUPPORTING' && (e.node.favourites ?? 0) >= minSupportingFavourites)
-  );
+  const filtered = edges.filter((e) => isWantedCharacter(e, { minSupportingFavourites, mainOnly }));
 
   const capped = Number.isFinite(maxCharacters) && filtered.length > maxCharacters
     ? [...filtered].sort((a, b) => (b.node.favourites ?? 0) - (a.node.favourites ?? 0)).slice(0, maxCharacters)

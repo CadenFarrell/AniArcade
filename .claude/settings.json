@@ -3,6 +3,7 @@
     "deny": [
       "Read(./seedProfiles.js)",
       "Read(./public/facts/pack-*.json)",
+      "Read(./public/casts/**)",
       "Read(./package-lock.json)",
       "Read(./.anilist-cache/**)",
       "Read(./.facts-cache/**)"

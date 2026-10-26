@@ -44,10 +44,8 @@ export default function ListImport({ profile, onClose, onImported, autoRefresh =
   // and only the creating path needs the saved profiles.
   const savedProfiles = useContext(ProfileContext)?.profiles ?? {};
   // Where this profile imported from last time. Prefilled so a re-import is one
-  // tap. Re-importing is the common case, not the rare one: the page cache in
-  // anilist.js is in-memory only, so every refresh means paying the full
-  // ~2.2s-per-request throttle again, and nobody wants to also retype their
-  // username to do it.
+  // tap. Re-importing is the common case, not the rare one, and nobody wants to
+  // retype their username to do it.
   const source = listSourceOf(profile);
   const [site, setSite] = useState(source.site);
   const [username, setUsername] = useState(source.username);
@@ -132,10 +130,20 @@ export default function ListImport({ profile, onClose, onImported, autoRefresh =
   // file instead of only "Try Again" against a server that is down.
   const [offerFile, setOfferFile] = useState(false);
 
+  // The list fetch's own cancel. A MAL or Kitsu list is the site's fetch plus
+  // AniList lookups for every show, so it can take a while on a big list, and
+  // waiting it out was the only way back.
+  const listFetchRef = useRef(null);
+  // Closing the dialog mid-fetch stops it too, rather than leaving it spending
+  // AniList's allowance on a list nobody is waiting for.
+  useEffect(() => () => listFetchRef.current?.abort(), []);
+
   // `auto` is the one-tap refresh path: fetch the list and go straight into
   // importing whatever is new, without stopping at the checklist.
   const fetchList = async ({ auto = false } = {}) => {
     if (!ready) return;
+    const controller = new AbortController();
+    listFetchRef.current = controller;
     setStep('loading-list');
     setOfferFile(false);
     try {
@@ -143,8 +151,9 @@ export default function ListImport({ profile, onClose, onImported, autoRefresh =
       const { entries: list, unmatched: missing } = await fetchListEntries(
         usesFile ? 'file' : site,
         usesFile ? file : username.trim(),
-        { statusIn },
+        { statusIn, signal: controller.signal },
       );
+      listFetchRef.current = null;
       setUnmatched(missing);
       if (list.length === 0) {
         setErrorMessage(missing > 0
@@ -156,8 +165,9 @@ export default function ListImport({ profile, onClose, onImported, autoRefresh =
       const groups = groupIntoFranchises(list);
       // Preselect only what costs something: shows not in the profile, plus
       // franchises that gained a season. Selecting all 200 shows to discover
-      // three new ones is ~14 throttled round-trips against AniList's real
-      // ~30 req/min limit, every time. Select All is still one tap away.
+      // three new ones fetches every cast the cast pack and this device's cache
+      // do not already hold, against AniList's 30 requests a minute. Select All
+      // is still one tap away.
       const { suggested: toImport } = classifyImportGroups(base, groups);
       setAnimeOptions(groups);
       setSelected(toImport);
@@ -173,6 +183,11 @@ export default function ListImport({ profile, onClose, onImported, autoRefresh =
       // card explains why, and keeps Select All reachable.
       setStep('list');
     } catch (err) {
+      listFetchRef.current = null;
+      if (err.name === 'AbortError') {
+        setStep('username');
+        return;
+      }
       setErrorMessage(err.message);
       setOfferFile(site === 'mal' && !usesFile && Boolean(err.network));
       setStep('error');
@@ -230,9 +245,10 @@ export default function ListImport({ profile, onClose, onImported, autoRefresh =
   async function runImport(selectedGroups) {
     if (selectedGroups.length === 0) return;
 
-    // The progress bar counts per-media fetches (see buildImportedAnime), so its
-    // total is the flattened member count.
-    const total = selectedGroups.reduce((n, g) => n + g.memberIds.length, 0);
+    // The progress bar counts finished franchises (see buildImportedAnime) — the
+    // rows the player ticked, which is what "N of M shows" says. It counted
+    // seasons once, so a list of 40 shows read "112 of 140 shows".
+    const total = selectedGroups.length;
 
     const controller = new AbortController();
     setAbortController(controller);
@@ -302,6 +318,10 @@ export default function ListImport({ profile, onClose, onImported, autoRefresh =
 
   const cancelImport = () => {
     abortController?.abort();
+  };
+
+  const cancelListFetch = () => {
+    listFetchRef.current?.abort();
   };
 
   const pct = `${(progress.index / Math.max(progress.total, 1)) * 100}%`;
@@ -480,6 +500,14 @@ export default function ListImport({ profile, onClose, onImported, autoRefresh =
           </Button>
           {/* The checklist is still one tap away — needed to re-fetch a show
               whose cast has grown, or to import with different settings. */}
+          {step === 'loading-list' && (
+            <button
+              onClick={cancelListFetch}
+              className="focus-pop mt-3 w-full rounded-pop-sm text-sm text-fg-subtle hover:text-fg-strong"
+            >
+              Cancel
+            </button>
+          )}
           {canRefresh && step !== 'loading-list' && (
             <button
               onClick={() => fetchList()}

@@ -11,6 +11,8 @@ describe('precacheList', () => {
     'facts/index.json',
     'facts/pack-v5.json',
     'facts/pack-v4.json',
+    'casts/index.json',
+    'casts/v1/30.json',
     'fonts/oswald-latin.woff2',
     'sounds/tap.mp3',
     'art/great-wave.webp',
@@ -37,6 +39,10 @@ describe('precacheList', () => {
       '/manifest.webmanifest',
       '/sounds/tap.mp3',
     ]);
+  });
+
+  it('leaves the cast pack to the network', () => {
+    expect(precacheList(build, 'pack-v5.json').filter((u) => u.startsWith('/casts/'))).toEqual([]);
   });
 
   it('stores only the pack the index names', () => {

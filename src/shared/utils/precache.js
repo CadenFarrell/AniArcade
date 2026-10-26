@@ -12,11 +12,15 @@
 //                       never does, and at ~480 KB it is the largest file built
 //   facts/pack-*.json   all but the pack index.json names as current: a stale
 //                       pack left in the folder would be stored and never read
+//   casts/              the cast pack, megabytes of it, read only by a list
+//                       import — which needs AniList for the list itself, so it
+//                       never runs offline and storing casts for it would cost
+//                       every visitor the download for nothing
 //   *.map               source maps, if a build ever turns them on
 //   sw.js               the worker itself — the browser fetches it on its own
 //                       schedule, and a cached copy would pin it forever
 
-const SKIP = [/^og\.png$/, /\.map$/, /^sw\.js$/];
+const SKIP = [/^og\.png$/, /\.map$/, /^sw\.js$/, /^casts\//];
 const PACK = /^facts\/pack-[^/]+\.json$/;
 
 /**

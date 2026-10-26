@@ -10,6 +10,12 @@ paths:
   - "src/shared/utils/listImport.js"
   - "src/shared/utils/profileMerge.js"
   - "src/shared/utils/franchise.js"
+  - "src/shared/utils/castPaging.js"
+  - "src/shared/utils/castPackFormat.js"
+  - "src/shared/services/castPack.js"
+  - "src/shared/services/castCache.js"
+  - "src/shared/services/anilistClient.js"
+  - "generateCasts.js"
   - "workers/**"
 ---
 
@@ -42,6 +48,40 @@ and an AniList player would share no shows, and nothing would look broken.
   `anilistImportedIds`/`anilistImportSettings` keep their names because they are still true after
   hydration. Every Refresh gates on `canRefreshList`, so a file profile or a MAL profile with no
   proxy never offers a refresh that would only open an upload box.
+
+## Why an import is fast, and what keeps it correct
+
+An import used to be ~35 serial AniList requests 2.2s apart — a minute or two for a 300-show
+list, the slowest thing in the arcade. **Getting a profile onto another device is importing
+again** (backup codes were tried and removed: `.claude/rules/profiles.md`), so this is the path
+that has to be quick. Five pieces, each measured or tested:
+
+- **The limiter (`anilistClient.js`).** AniList's 30/minute is a FIXED window (measured
+  2026-10-26): spend it up front, four in flight, and wait only on a 429 until the
+  `X-RateLimit-Reset` it names. **CORS hides `Retry-After` from the page** (`Number(null)` was
+  0, so a 429 retried instantly) — every header goes through `headerNumber`.
+- **Batches of 27** (`BATCH_SIZE`): each alias costs 18 of the 500 complexity cap. A batch
+  AniList still refuses is halved, not fatal.
+- **Paging stops at the cap** (`utils/castPaging.js`): page 1 of every season, then deeper pages
+  only while one could still change the franchise's top 60 by favourites (the unseen-edge
+  bound against the 60th's floor). One Piece read 12 pages to keep 60; it now reads 3.
+  `castPaging.test.js` pins that the kept casts are IDENTICAL to paging everything, across
+  seeds and settings — and it found a real bug doing so: `mergeCharacterEdges` took "MAIN,
+  else first seen", so a character's survival depended on page ORDER; it now takes the best
+  role any season gave. Exact except at a favourites tie with the 60th.
+- **The cast pack** (`public/casts/`, `npm run generate:casts`, ~1500 most popular finished
+  shows): a PRE-FILLED PAGE CACHE, copied into `anilist.js`'s `pageCache` before paging, so the
+  paging and the filter cannot tell it from a live fetch, and any page it lacks is fetched live
+  — stale or missing, an import is still right, only slower. Generated at the loosest settings
+  (threshold 0, not main-only), which is deep enough for every setting. Pages are compact
+  (`utils/castPackFormat.js`: name pre-resolved through `preferEnglishName`, bio pre-trimmed
+  only where `trimDesc` is idempotent on it, CDN prefix stripped). Airing shows are left out
+  (their casts still grow). Regenerating takes minutes; a new `vN/` replaces the old. Not
+  precached by the service worker (an import needs AniList anyway).
+- **The device cache** (`services/castCache.js`): every live page in IndexedDB for 30 days,
+  never localStorage (the profiles' quota). Order: memory → pack → IndexedDB → network.
+
+The progress bar counts FRANCHISES (the ticked rows), and the list fetch has its own Cancel.
 
 ## Re-imports repair saved characters
 

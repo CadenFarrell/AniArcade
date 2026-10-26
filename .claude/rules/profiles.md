@@ -88,7 +88,8 @@ whole show (`.claude/rules/list-import.md`).
 
 **Getting a profile onto another device is importing the same list there.** Backup codes
 (`saves/{code}`, a cross-device sync with no sign-in) were built and removed: nobody keeps a
-code, and a re-import already rebuilds everything a profile holds except its play history.
+code, and a re-import already rebuilds everything a profile holds except its play history. The
+effort went into making the import fast instead (`.claude/rules/list-import.md`).
 `requestPersistentStorage` (`services/storage.js`) asks the browser to keep the site's data
 (Safari otherwise wipes it after seven days unvisited), from inside an import's Done, because
 Firefox asks the player, and only from a gesture.

@@ -14,7 +14,8 @@ A production build carries `/sw.js` (`sw/serviceWorker.template.js`, written by 
 `writeBundle`), so a phone that opened the arcade once with signal opens and plays locally with
 none. `shared/utils/precache.js` decides what is stored over the finished build: every chunk, the
 page, the fact pack `index.json` names (no other), fonts, prints, sounds and icons — about 3.5 MB,
-not `og.png`. The version hashes every stored file's bytes, because `public/` names are not
+not `og.png`, and not the cast pack (`casts/`: megabytes only an import reads, and an import
+needs AniList, so never offline). The version hashes every stored file's bytes, because `public/` names are not
 content-hashed and a re-encoded sound must still ship.
 
 - **It never touches another origin** (Firebase, AniList, AnimeThemes, the MAL proxy,
