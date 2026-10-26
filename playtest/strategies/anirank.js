@@ -93,7 +93,7 @@ export default makeStrategy({
   players: [1, 4],
   axes: {
     format: ['round', 'tiers', 'ranked'],
-    axisId: ['best', 'year', 'rated', 'popular', 'length', 'favourites', 'overrated', 'rewatch', 'fight'],
+    axisId: ['best', 'year', 'rated', 'popular', 'length', 'watchtime', 'favourites', 'overrated', 'rewatch', 'fight'],
     sharedOnly: [true, false],
     scoring: [true, false],
     blind: [true, false],

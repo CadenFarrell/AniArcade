@@ -54,7 +54,9 @@ entry is normal, never a failed load (`factsFor` falls closed on an empty key li
   (never the hub — players who never open them never fetch the pack), fills only ABSENT show
   stats, and fills character `favourites` when stored 0 too (`?? 0` makes 0 ambiguous).
   `profileFingerprint` counts both, or a repair never reaches a room. Episodes are not
-  backfilled: the pack's is one season, a profile's is summed.
+  backfilled: the pack's is one season, a profile's is summed. `duration` IS (AniRank's
+  watch-time axis), because it is per episode on both sides; the fingerprint counts it
+  separately, since it arrives on profiles that already had every other stat.
 - **`supportingIn`** (favourites ≥ 1000, four per show) sits beside `appearsIn`, which still
   means MAIN — the cast clues say "main character".
 - The catalog is the top 1000 by popularity. When a query changes, its cache files get a new

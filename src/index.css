@@ -133,6 +133,10 @@
      Do not give this one a semantic role later; add another decorative token. */
   --color-pop-teal: #126b66; /* AniFake                   4.80 / 5.96 */
   --color-pop-plum: #7b2a5c; /* AniTurf                   6.85 / 8.50 */
+  /* Slate is the one ink here with almost no hue: a pencil-grey blue, kept a
+     long way in saturation from blue (asking) and purple (whose turn), so it
+     cannot be read as either. */
+  --color-pop-slate: #3f5163; /* AniPeek                  6.21 / 7.70 */
 
   /* AniTurf's two teams. Their own role, not pop-red and pop-blue: those mean
      wrong and asking, and a claimed square is neither. Kept a hue apart from

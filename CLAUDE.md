@@ -96,7 +96,7 @@ the loading screen, the reload-not-reset error) are in `src/hub/CLAUDE.md`.
 Each game's top component (`<Game>Game.jsx`) is just a local/online mode picker: it holds
 `mode` and renders `shared/components/ModePicker.jsx` with its own descriptor (imported from
 `./index`) and tagline. **Build a new game's picker from that component, not from another
-game's file** — the seven were hand-copied once and differed only in colour and tagline.
+game's file** — the first seven were hand-copied once and differed only in colour and tagline.
 ModePicker is the game's cover page: the hub tile opened — game-ink block, split ANI / WORD
 title, and the same character the tile showed (`shared/context/tileCharacterContext.js`,
 provided by `HubScreen` around the active game; null when a game is mounted alone, which
@@ -128,8 +128,10 @@ network.
 `src/games/anirank/CLAUDE.md` (board direction, Kendall-tau scoring, the pool toggle, tier
 lists), `src/games/wavelength/CLAUDE.md` (AniWave), `src/games/categories/CLAUDE.md` (AniTag),
 `src/games/aniquiz/CLAUDE.md` (AniQuiz), `src/games/anifake/CLAUDE.md` (AniFake: the deal and
-the card check, hidden-role patterns, fame coverage) and `src/games/aniturf/CLAUDE.md` (AniTurf: crossing
-goals, the winding-route footing and its detours, the two-device claim). Read the relevant one before changing a game's
+the card check, hidden-role patterns, fame coverage), `src/games/aniturf/CLAUDE.md` (AniTurf: crossing
+goals, the winding-route footing and its detours, the two-device claim) and
+`src/games/anipeek/CLAUDE.md` (AniPeek: the bid and its score, the pool's three filters, the
+tile board, the skip). Read the relevant one before changing a game's
 behaviour from shared code, where it will not load on its own.
 
 ### Online rooms (Firebase Realtime Database)
@@ -228,8 +230,8 @@ mixed room — are in `.claude/rules/list-import.md`.
 ### Fact packs: the answers a profile cannot derive
 
 `public/facts/` serves a generated pack (`npm run generate:facts`) of answers a profile cannot
-derive. AniQuiz reads it; AniRank, AniTune and AniFake read its stats only through
-`usePackBackfill`. A missing entry is normal, never a failed load, and a pack key is the same
+derive. AniQuiz reads it, AniPeek's hint cards fall back to it, and AniRank, AniTune and
+AniFake read its stats only through `usePackBackfill`. A missing entry is normal, never a failed load, and a pack key is the same
 fold a profile keys on (`franchiseTitleKey`, `characterNameKey`). Versions, outside sources,
 `facts/overrides.json` and AniList's no-`Referer` 403 are in `.claude/rules/fact-packs.md`.
 

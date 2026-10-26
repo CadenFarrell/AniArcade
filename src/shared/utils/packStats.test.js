@@ -28,6 +28,19 @@ describe('backfillProfileFromPack', () => {
     expect(after.animeList[0]).toMatchObject({ popularity: 1065199, averageScore: 85, startDate: { year: 2013 } });
   });
 
+  it('fills a missing episode length, but never the episode count', () => {
+    const pack = indexPack({
+      version: 4,
+      shows: { 'attack on titan': { title: 'Attack on Titan', popularity: 1, averageScore: 85, startYear: 2013, episodes: 25, duration: 24 } },
+      characters: {},
+      aliases: {},
+    });
+    const before = profile([{ id: 'a', title: 'Attack on Titan', popularity: 1, averageScore: 85, startDate: { year: 2013 }, episodes: 87, characters: [] }]);
+    const { profile: after, changed } = backfillProfileFromPack(before, pack);
+    expect(changed).toBe(1);
+    expect(after.animeList[0]).toMatchObject({ duration: 24, episodes: 87 });
+  });
+
   it('never overwrites a value an import stored, including a real zero-adjacent one', () => {
     const before = profile([{ id: 'a', title: 'Attack on Titan', popularity: 5, averageScore: 40, startDate: { year: 2012, month: 4 }, characters: [] }]);
     const { profile: after, changed } = backfillProfileFromPack(before, PACK);

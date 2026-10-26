@@ -23,6 +23,7 @@
 // under it (`alsoAccepted`) so the table can see why a different answer scored.
 import { subjectKeyForShow, subjectKeyForCharacter, resolveShowKey } from '../../shared/utils/facts';
 import { shuffle } from '../../shared/utils/random';
+import { FORMAT_NOUNS, SEASON_LABELS, SOURCE_LABELS } from '../../shared/utils/mediaLabels';
 
 export const ROWS = 5;
 // Board rows, top to bottom. Row 0 is the easiest band of its column.
@@ -72,26 +73,12 @@ export function foldAnswer(kind, text) {
 
 // ── Labels ─────────────────────────────────────────────────────────────────
 
-// OTHER, and anything AniList adds later, is deliberately absent: a source the
-// game cannot name is a source it cannot ask about.
-export const SOURCE_LABELS = {
-  MANGA: 'Manga',
-  LIGHT_NOVEL: 'Light novel',
-  ORIGINAL: 'Original (no source)',
-  VISUAL_NOVEL: 'Visual novel',
-  VIDEO_GAME: 'Video game',
-};
+// Shared with AniPeek's hint cards (shared/utils/mediaLabels.js), and still
+// exported from here for this game's own callers. OTHER, and anything AniList
+// adds later, is deliberately absent: a source the game cannot name is a source
+// it cannot ask about.
+export { SOURCE_LABELS, SEASON_LABELS };
 
-export const SEASON_LABELS = { WINTER: 'Winter', SPRING: 'Spring', SUMMER: 'Summer', FALL: 'Fall' };
-
-const FORMAT_NOUNS = {
-  TV: 'TV series',
-  TV_SHORT: 'short series',
-  MOVIE: 'film',
-  ONA: 'web series',
-  OVA: 'OVA',
-  SPECIAL: 'special',
-};
 const formatNoun = (f) => FORMAT_NOUNS[f] ?? 'show';
 
 const quote = (title) => `“${title}”`;

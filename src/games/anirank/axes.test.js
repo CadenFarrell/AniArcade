@@ -49,6 +49,8 @@ describe('the axis registry', () => {
     rated: [{ averageScore: 88 }, { averageScore: 61 }],
     popular: [{ popularity: 500000 }, { popularity: 1200 }],
     length: [{ episodes: 148 }, { episodes: 12 }],
+    // A long run of short episodes beats a short run of long ones on hours.
+    watchtime: [{ episodes: 148, duration: 24 }, { episodes: 12, duration: 50 }],
     favourites: [{ favourites: 40000 }, { favourites: 300 }],
   };
 

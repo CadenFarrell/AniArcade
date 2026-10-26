@@ -58,10 +58,17 @@ export function profileFingerprint(profile) {
     // popularity mode on the unrepaired copy the room holds.
     countWithStats(profile),
     countWithFavourites(profile),
+    // `duration` arrives on its own for a profile that already had every
+    // other stat (it was stored later), so it needs its own count.
+    countWithDuration(profile),
     // The character a player chose to wear (portrait.js). Moves no count
     // either, and a face picked in the lobby must reach the other phones.
     profile.portraitKey ?? '',
   ].join('|');
+}
+
+function countWithDuration(profile) {
+  return (profile.animeList ?? []).filter((a) => a?.duration != null).length;
 }
 
 function countWithStats(profile) {

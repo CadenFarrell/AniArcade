@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { domainValues } from '../clues';
-import { rankSuggestions } from '../../../shared/utils/guessSuggest';
-import { Button, Combobox, Input } from '../../../shared/ui';
+import { ChoiceEntry, TypedEntry as SharedTypedEntry } from '../../../shared/components/AnswerEntry';
+import { Button, Input } from '../../../shared/ui';
 
 // One player's answer to one clue, in whichever style the deal was made for.
 // Owns its own draft, so the round only ever sees a submitted answer — and is
@@ -10,7 +10,8 @@ import { Button, Combobox, Input } from '../../../shared/ui';
 //
 // Multiple choice is select-then-lock rather than tap-to-submit. A clue is
 // worth up to a thousand points, and a thumb landing on the option next to the
-// one it meant should not cost that.
+// one it meant should not cost that. Both it and the typed box are the shared
+// ones (shared/components/AnswerEntry.jsx); the number box is AniQuiz's own.
 //
 // Typed answers suggest from the WHOLE domain in the pack (every studio, every
 // voice actor), never from the shows in play: suggesting only the in-play
@@ -27,48 +28,6 @@ export default function AnswerEntry({ clue, options, pack, onSubmit, disabled = 
     return <NumberEntry onSubmit={onSubmit} disabled={disabled} />;
   }
   return <TypedEntry clue={clue} pack={pack} onSubmit={onSubmit} disabled={disabled} />;
-}
-
-function ChoiceEntry({ options, onSubmit, disabled }) {
-  const [picked, setPicked] = useState(null);
-  return (
-    <div>
-      <div className="mb-4 grid gap-3 sm:grid-cols-2" role="radiogroup" aria-label="Answers">
-        {/* Lettered answer panels, quiz-show style. The pick fills with ink —
-            the arcade's "chosen" fill, the same ink as every primary button —
-            rather than a tint of the brand red, which beside a red "wrong" a
-            moment later would say two things in one colour. The letter is
-            decoration (aria-hidden); the answer text is the radio's name. */}
-        {options.map((o, i) => {
-          const on = picked === o;
-          return (
-            <button
-              key={o}
-              type="button"
-              role="radio"
-              aria-checked={on}
-              disabled={disabled}
-              onClick={() => setPicked(o)}
-              className={`btn-pop focus-pop flex items-center gap-3 rounded-pop-sm! px-3 py-3 text-left text-lg
-                disabled:opacity-40 ${on ? 'border-ink bg-ink text-paper' : 'border-ink bg-surface text-fg-strong hover:bg-surface-2'}`}
-            >
-              <span
-                aria-hidden="true"
-                className={`grid h-8 w-8 shrink-0 place-items-center border-2 font-display text-base
-                  ${on ? 'border-paper bg-paper text-ink' : 'border-ink bg-ink text-paper'}`}
-              >
-                {String.fromCharCode(65 + i)}
-              </span>
-              <span className="min-w-0 [overflow-wrap:anywhere]">{o}</span>
-            </button>
-          );
-        })}
-      </div>
-      <Button variant="primary" size="lg" fullWidth disabled={disabled || picked == null} onClick={() => onSubmit(picked)}>
-        Lock in
-      </Button>
-    </div>
-  );
 }
 
 function NumberEntry({ onSubmit, disabled }) {
@@ -98,51 +57,13 @@ function NumberEntry({ onSubmit, disabled }) {
   );
 }
 
+// rankSuggestions takes the character typeahead's shape; a studio or a title
+// is a name with no series, and ranks by the same tiers.
 function TypedEntry({ clue, pack, onSubmit, disabled }) {
-  const [text, setText] = useState('');
-  const [suggestions, setSuggestions] = useState([]);
-  // rankSuggestions takes the character typeahead's shape; a studio or a title
-  // is a name with no series, and ranks by the same tiers.
   const domainId = clue?.domain ?? null;
   const domain = useMemo(
     () => (pack && domainId ? domainValues(pack, domainId).map((name) => ({ name, series: '' })) : []),
     [pack, domainId],
   );
-
-  const update = (value) => {
-    setText(value);
-    setSuggestions(rankSuggestions(domain, value, 6));
-  };
-  const submit = () => {
-    if (!text.trim() || disabled) return;
-    setSuggestions([]);
-    onSubmit(text);
-  };
-
-  return (
-    <div>
-      <Combobox
-        value={text}
-        onChange={update}
-        suggestions={suggestions}
-        onSelect={(s) => { setText(s.name); setSuggestions([]); }}
-        onSubmit={submit}
-        optionKey={(s) => s.name}
-        renderOption={(s) => <p className="truncate text-base font-bold text-fg-strong">{s.name}</p>}
-        placeholder="Type your answer…"
-        ariaLabel="Your answer"
-        maxLength={120}
-        autoFocus
-        className="mb-3"
-      />
-      <div className="flex gap-3">
-        <Button variant="neutral" size="lg" disabled={disabled} onClick={() => { setSuggestions([]); onSubmit(''); }}>
-          Pass
-        </Button>
-        <Button variant="primary" size="lg" fullWidth disabled={disabled || !text.trim()} onClick={submit}>
-          Lock in
-        </Button>
-      </div>
-    </div>
-  );
+  return <SharedTypedEntry suggestions={domain} onSubmit={onSubmit} disabled={disabled} />;
 }

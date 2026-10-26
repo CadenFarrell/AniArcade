@@ -12,6 +12,7 @@ export const ACCENT_BG = {
   teal: 'bg-pop-teal',
   red: 'bg-pop-red',
   plum: 'bg-pop-plum',
+  slate: 'bg-pop-slate',
 };
 
 export const accentBg = (accent) => ACCENT_BG[accent] ?? ACCENT_BG.pink;
@@ -29,6 +30,7 @@ export const ACCENT_VAR = {
   teal: 'var(--color-pop-teal)',
   red: 'var(--color-pop-red)',
   plum: 'var(--color-pop-plum)',
+  slate: 'var(--color-pop-slate)',
 };
 
 export const accentVar = (accent) => ACCENT_VAR[accent] ?? ACCENT_VAR.pink;

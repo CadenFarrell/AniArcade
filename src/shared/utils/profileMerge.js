@@ -146,9 +146,9 @@ function matchesGroupIdentity(entry, identity) {
 // network" property CLAUDE.md asks callers to preserve.
 const STAT_KEYS = [
   'coverImageUrl', 'startDate', 'episodes', 'averageScore', 'popularity',
-  // Facts about the show rather than numbers to rank it by. Nothing reads these
-  // yet — they are stored now so a future quiz-style game finds its answer key
-  // already on the device. They are absent, not null, on every profile imported
+  // Facts about the show rather than numbers to rank it by: AniPeek's hint cards
+  // read studio/format/source/seasonYear (falling back to the fact pack), and
+  // AniRank's watch-time axis reads duration. They are absent, not null, on every profile imported
   // before this line existed, exactly as the five above are on profiles older
   // than them, and a re-import is the repair path for both.
   'format', 'studio', 'source', 'season', 'seasonYear', 'duration',

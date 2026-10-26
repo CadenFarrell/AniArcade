@@ -89,7 +89,10 @@ async function playToEnd(user, limit = 120) {
   return seen;
 }
 
-describe('AniQuiz, played locally', () => {
+// Whole games through the real screens and the real pack run 3-5s each on a
+// quiet machine — right at vitest's 5s default, so a busy one failed them.
+// AniTurfGame.test.jsx's allowance.
+describe('AniQuiz, played locally', { timeout: 60000 }, () => {
   it('runs a solo quick quiz with no list at all', async () => {
     seedProfiles([{ ...makeProfile('Caden'), animeList: [] }]);
     seedPrefs({ format: 'quiz', pool: 'everything', quizLength: 5, timed: false });

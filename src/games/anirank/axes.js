@@ -113,6 +113,28 @@ export const AXES = [
     valueFor: (show) => num(show?.episodes),
     format: (v) => `${v} eps`,
   },
+  {
+    id: 'watchtime',
+    kind: 'fact',
+    items: 'shows',
+    defaultBlind: true,
+    label: 'Total watch time',
+    prompt: 'Rank these shows from the most hours to watch to the fewest.',
+    topLabel: 'LONGEST',
+    bottomLabel: 'SHORTEST',
+    // Episodes × minutes per episode. Both are franchise-level and agree on
+    // what a franchise is: summarizeGroupStats SUMS episodes across seasons and
+    // takes `duration` from the canonical season, because it is per episode
+    // and a sum of it describes nothing. Their product is every season back to
+    // back. Either missing (a profile imported before `duration` was stored,
+    // and the pack had no figure to backfill) means not eligible.
+    valueFor: (show) => {
+      const eps = num(show?.episodes);
+      const mins = num(show?.duration);
+      return eps != null && mins != null && eps > 0 && mins > 0 ? eps * mins : null;
+    },
+    format: (v) => (v < 60 ? `${v} min` : `${Math.round(v / 60).toLocaleString()} h`),
+  },
 
   // ---- facts: characters --------------------------------------------------
   {

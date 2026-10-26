@@ -18,6 +18,8 @@ const TONES = {
   blue: '[--slash:var(--color-pop-blue)]',
   teal: '[--slash:var(--color-pop-teal)]',
   red: '[--slash:var(--color-pop-red)]',
+  plum: '[--slash:var(--color-pop-plum)]',
+  slate: '[--slash:var(--color-pop-slate)]',
 };
 
 const SIZES = {

@@ -27,6 +27,12 @@ function showPatch(entry, show) {
   if (entry.startDate?.year == null && show.startYear != null) {
     patch.startDate = { ...(entry.startDate ?? {}), year: show.startYear };
   }
+  // Minutes per episode, for AniRank's watch-time axis. Unlike `episodes` —
+  // never backfilled, since the pack's is one season and a profile's is the
+  // franchise summed — duration is per episode on both sides
+  // (summarizeGroupStats takes the canonical season's), so the pack's figure
+  // means what an import's would.
+  if (entry.duration == null && show.duration != null) patch.duration = show.duration;
   return patch;
 }
 

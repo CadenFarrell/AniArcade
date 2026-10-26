@@ -66,7 +66,7 @@ a file), merges into a saved profile the name folds onto, and creates nothing un
 a name, no list" is for a guest with no tracker.
 
 **Crowd games seat the couch** (`useAutoSeat.js` over `utils/autoSeat.js`): AniGuess, AniTag,
-AniFake, AniWave and AniTurf open with the table this device last STARTED that game with
+AniFake, AniWave, AniTurf and AniPeek open with the table this device last STARTED that game with
 (`aniarcade_last_tables`, written on local Start only), else enough profiles for `MIN_PLAYERS` —
 whoever the main profile last played with (history names people, and a folded name is an id),
 then the picker's order. AniRank, AniTune and AniQuiz seat only the main profile, since a guessed
