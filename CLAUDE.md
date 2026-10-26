@@ -25,14 +25,6 @@ npm run generate      # regenerate seedProfiles.js from AniList (Node script)
 npm run generate:facts # regenerate the fact pack in public/facts/ (Node script)
 ```
 
-Tests:
-
-```bash
-npx vitest                                     # watch mode
-npx vitest run src/games/aniguess/rules.test.js # one file
-npx vitest run -t "advances the turn"           # one test by name
-```
-
 CI (`.github/workflows/ci.yml`) runs `npm run lint`, `npm test` and `npm run build` on every
 push and pull request, on Linux. That makes the filesystem **case-sensitive** there, unlike
 this Windows checkout, so an import whose casing is off passes here and fails in CI (the
@@ -51,18 +43,9 @@ own bundled Vite 7, so the `mode === 'test'` esbuild JSX line in `vite.config.js
 makes JSX compile at all, and vitest loads `.env.local` (production Firebase), so a
 component test must `vi.mock('shared/services/firebase')` before anything mounts.
 
-`smoke/` is the online half, and it is kept out of `npm test` on purpose: it needs an
-emulator and sits out the 20s `GRACE_MS` again and again. It has its own
-`smoke/vitest.config.js`, and `test:smoke` wraps it in `firebase emulators:exec`, so each
-run gets a fresh database. `harness.js` mounts the game's REAL online hook once per
-simulated device with `renderHook`. Before each mount it runs `vi.resetModules` and
-`doMock`s the firebase service, giving every device its own named app and anonymous uid.
-It also gives each device in-memory storage. So the security rules see N separate
-members, and a refresh restores that one device's saved room. `crash()` is a closed tab:
-`goOffline`, so the server runs the `onDisconnect` write, then an unmount that runs no
-exits. Write scenarios against the hook's return value, the way `OnlineGame.jsx` drives
-it. Never `await` an `act()` that might not resolve: it holds every React update in the
-process.
+`smoke/` is the online half (`npm run test:smoke`), kept out of `npm test` on purpose; how
+its harness simulates one device per player is in `smoke/CLAUDE.md`. Never `await` an
+`act()` that might not resolve: it holds every React update in the process.
 
 Playtest bots (`playtest/`, also `/playtest`) play every game, start to results, through
 the real screens:
@@ -75,31 +58,11 @@ npm run playtest -- --layer browser                # Playwright: phone + desktop
 npm run playtest:all                               # all three, then the report
 ```
 
-Each run writes `playtest-report/` (gitignored): `summary.md`, `index.html`, screenshots,
-and a replay command per failure. Three things to know before touching it:
-
-- **One bot brain, every layer.** `core/snapshot.js` reads a screen into
-  `{ heading, text, controls }` (it must stay self-contained — Playwright ships its source
-  into the page), `core/driver.js` plays one shared screen (local), `core/table.js` plays
-  one screen per device (online), and `strategies/<id>.js` say what to press. Strategies
-  are screen-driven, so one file serves jsdom, Chrome and online. A new game needs one, or
-  its playtest fails on purpose.
-- **A seed is a replay.** The bot's choices, the game's `Math.random` and (locally) a fake
-  clock all come from it, and every app module is re-evaluated per run — module state
-  leaking between seeds once made AniRank deal different cards in a sweep than alone.
-  Online runs replay the table, not the network timing.
-- **"stuck", "no-progress" and "loop" usually mean the STRATEGY no longer matches a
-  screen** — a renamed button, a new step. Replay with `--debug screens` and check
-  whether the game offered a way forward before calling it a game bug. Crashes, console
-  errors, `NaN`/`undefined` on screen and devices disagreeing on a result are the game.
-
-`playtest/fixtures/profiles.json` is cut from `seedProfiles.js` with pack stats filled in
-(`npx vite-node playtest/fixtures/build.js` regenerates it); AniTune runs against a canned
-AnimeThemes (`fakes/`). The browser layer builds to `dist-playtest*` and serves on
-4198/4199 (the next free pair when those are taken; `run.js` drops to `--workers 1` by
-itself under 4 GB free RAM, and `vite.config.js` and `smoke/vitest.config.js` cap Vitest at 4
-workers — the defaults, one per core, ran this 16 GB machine dry) —
-never `dist`, never 5173.
+Each run writes `playtest-report/` (gitignored). The bots find screens and buttons by their
+words, so a renamed heading or button needs a matching change in `playtest/strategies/`, and
+a new game needs a strategy or its playtest fails on purpose. The browser layer builds to
+`dist-playtest*` and serves on 4198/4199 — never `dist`, never 5173. Internals (the shared
+bot brain, seeds as replays, reading "stuck" failures) are in `playtest/CLAUDE.md`.
 
 Firebase (online rooms only):
 
@@ -113,17 +76,7 @@ The CLI is `firebase-tools` in devDependencies, not a global install, so a bare 
 in a shell is "command not found". npm scripts are the exception — they put
 `node_modules/.bin` on the PATH, which is why `test:smoke` can call it bare.
 
-MyAnimeList proxy (MAL imports by username only — see "List sources" below):
-
-```bash
-cd workers/mal-proxy
-npx wrangler dev --port 8788            # local; needs MAL_CLIENT_ID in .dev.vars
-npx wrangler secret put MAL_CLIENT_ID   # one time, from myanimelist.net/apiconfig
-npx wrangler deploy                     # then set VITE_MAL_PROXY_URL and rebuild
-```
-
-`wrangler` is a devDependency for `firebase-tools`' reason. It runs on Cloudflare Workers'
-free tier, which takes no card — the project stays off anything billable.
+MyAnimeList proxy (`workers/mal-proxy`, wrangler) commands: `.claude/rules/list-import.md`.
 
 `.env.local` (copied from `.env.local.example`) holds the `VITE_FIREBASE_*` config. When
 pointing at the emulator, `VITE_FIREBASE_DATABASE_URL` must use the `-default-rtdb`
@@ -180,7 +133,8 @@ network.
 **Per-game design notes live beside each game and load only when Claude works in that folder:**
 `src/games/anirank/CLAUDE.md` (board direction, Kendall-tau scoring, the pool toggle, tier
 lists), `src/games/wavelength/CLAUDE.md` (AniWave), `src/games/categories/CLAUDE.md` (AniTag),
-`src/games/aniquiz/CLAUDE.md` (AniQuiz) and `src/games/aniturf/CLAUDE.md` (AniTurf: crossing
+`src/games/aniquiz/CLAUDE.md` (AniQuiz), `src/games/anifake/CLAUDE.md` (AniFake: the deal and
+the card check, hidden-role patterns, fame coverage) and `src/games/aniturf/CLAUDE.md` (AniTurf: crossing
 goals, the winding-route footing and its detours, the two-device claim). Read the relevant one before changing a game's
 behaviour from shared code, where it will not load on its own.
 
@@ -259,14 +213,14 @@ provides it online and each `LocalGame` locally — and `usePlayerPortrait(playe
 character in the turn strip, on the handoff, on the results screen and in their setup slot.
 On top of it:
 
-| piece | is | used by |
-| --- | --- | --- |
-| `Handoff` | pass the device: the next player's portrait panel, name slab, the game's own button words | every local pass screen; AniGuess's look-away |
-| `PlayerRow` | the table as a row of faces, NOW (purple, whose-turn) on the active one, score and a status mark under each | AniGuess `TurnTracker`, AniQuiz `Scoreboard`, AniTag `SeatStrip`, AniTune's scores, AniFake's clue order, AniRank `RankSeats` (✓ placed / locked in, the subject), AniWave `WaveSeats` (the psychic, ✓ dial in — never where; on its online waiting screens too), AniTurf `TeamStrip` (one row per team, the clue-giver crowned) |
-| `RoundHeader` | the round's heading in display caps, an ink tab ("Turn 3", "Song 2/10"), a hint, the clock inside it | every round screen with a heading of its own |
-| `ResultImpact` | a right/wrong landing: speed lines and a ✓/✗ block for 750ms, plus its sound | AniGuess's guesses, AniTune / AniQuiz reveals, AniTag's turn end, AniTurf's claims |
-| `SpeechBubble` | a question or a name as a manga balloon | AniGuess's question, AniTag's name under judgement, AniTurf's clue |
-| `PlayerFace` | one player's face at row size, beside (never instead of) their name, found by id | the rows of reveals and logs: AniQuiz's and AniTune's answer rows, AniWave's "This round", AniTag's round summary, name trails and last play, AniFake's clue log, AniRank's compare grid and publish list, AniTurf's teams card and clue log |
+| piece | is |
+| --- | --- |
+| `Handoff` | pass the device: the next player's portrait panel, name slab, the game's own button words |
+| `PlayerRow` | the table as a row of faces, NOW (purple, whose-turn) on the active one, score and a status mark under each |
+| `RoundHeader` | the round's heading in display caps, an ink tab ("Turn 3", "Song 2/10"), a hint, the clock inside it |
+| `ResultImpact` | a right/wrong landing: speed lines and a ✓/✗ block for 750ms, plus its sound |
+| `SpeechBubble` | a question or a name as a manga balloon |
+| `PlayerFace` | one player's face at row size, beside (never instead of) their name, found by id |
 
 `PlayerFace` goes on **rows only**, by decision: not inside a running sentence ("Liam got
 it!" — busy), and never beside a character card (AniGuess's who-is-who), where a player's
@@ -355,92 +309,17 @@ inherits:
   separate and arrive in either order, so one stamp would show the old character during the
   gap. Add a stamp, never a clear, for the same reason each time.
 - **Whoever computes the deal learns it.** There is no server, so one device — the host's —
-  holds the answer in the clear. `dealRoles` returns it and `startGame` destructures only
-  what the check phase needs, so the secret character never reaches React state or the room.
-  There are **two** exceptions, both deliberate, both bounded the same way — host device
-  only, never React state, never `state/`, cleared the moment the view leaves `check`, lost
-  entirely by an incoming host on migration — and both gated on `allowRedeal`, so a table
-  with the card check off keeps the one-function-call ceiling:
+  holds the answer in the clear; keep it out of React state and `state/`. AniFake's bounded
+  exceptions (`dealtRef`, `fakeRef`, `secretNamesRef`) are in `src/games/anifake/CLAUDE.md`.
 
-  | ref | holds | so that |
-  | --- | --- | --- |
-  | `dealtRef` | the folded names dealt this round | a re-deal can't hand back the card the table just rejected |
-  | `fakeRef` | **who the fake is** | a re-deal keeps them in the role (`dealRoles`' `pinFake`) |
-  | `secretNamesRef` | each secret in display casing | the next deal can publish the discards (see below) |
-
-  `secretNamesRef` is not a third concession: `dealtRef` already holds the same characters
-  folded, and a folded name *is* the name. It is separate only because `dealtRef` also carries
-  decoys and feeds an id comparison.
-
-  `fakeRef` is the larger concession and should be read as one: `dealtRef` holds a character
-  that in blind mode is already printed on the host's own card, while this holds a fact no
-  player is ever meant to learn. It is taken because without it the re-deal answered two
-  different things — a bad draw, and *a role you didn't want* — and since nobody is told who
-  asked, a fake could veto their way out undetectably. Every serverless alternative was
-  worse: `secrets/{playerId}` is read-gated to its owner so the host can't recover last
-  deal's fake from the room; a public seed or a `state/` field publishes it to everybody;
-  per-device role bits still leave the host deciding who gets a null character; and choosing
-  the fake only when the check ends means the fake spent the check holding the secret.
-  Moving the deal into a Cloud Function is the real fix, and it is the fix for both.
-
-**Do not hand the reveal to one device.** The obvious design makes the host publish the
-answer key at the end; it breaks when the host *is* the hidden role and breaks worse when
-they leave mid-round. AniFake instead has every device publish only *its own* card once the
-vote closes (`state/game/reveal/{playerId}`) and derives the answer from the published set —
-so nothing about the secret exists in `state/` until it is over, no device is trusted with
-more than it was dealt, and a player who left is identified by elimination rather than
-wedging the room. See `anifake/rules.js`'s `publishCard` / `deriveTruth`.
-
-**A vote nobody may be seen casting is one shared flag, not a tally.** AniFake's pre-clue
-card check lets anyone ask for a fresh character, and the fake — who in blind mode holds no
-character at all — must not be forced to bluff about a card they cannot see. So `state/`
-records only *that* someone responded (`check/responded/{playerId}`, identical for a
-confirmer and an asker) plus one owner-less `check/asked` boolean every asker writes the
-same `true` to. There is no count, no array, no per-player value: the property is that the
-information does not exist, not that no screen renders it. The hook then returns a phase
-*string* rather than `asked`, so a component cannot leak the correlation by accident. Copy
-all three parts — no per-player record, one shared latch, a derived phase at the hook
-boundary — for any hidden-role decision the room has to make collectively. Two limits worth
-stating out loud rather than papering over: a member watching raw RTDB can correlate the
-latch flipping with whoever responded just before it, and at three players a confirmer who
-sees a re-deal knows one of the other two asked. Say "nobody is *told* who asked".
-
-And note what that anonymity costs on the other side, because it is the half that got missed
-first: a control nobody can be seen using is a control nobody can be held to, so it must not
-change anything the presser has a stake in. The re-deal used to pick a new fake as well as a
-new secret, which made one anonymous button answer both "this card is unplayable" and "I
-don't want this role" — so the fake could veto their way out, undetectably, for free. Hence
-`dealRoles`' `pinFake`. Give any anonymous action the same audit: list what it changes, and
-check that none of it is something a hidden role would want changed.
-
-**The blind fake cannot ask at all, and that gate is client-side by necessity.** They hold no
-character, so there is nothing for them to fail to recognise, and a fake who pressed it could
-be asked afterwards to justify not knowing a card they never saw — the very thing the shared
-latch exists to prevent. `state/` never records who the fake is, so `rules.js` cannot enforce
-this and `respondToCheck` still accepts `asked: true` from anyone; both screens gate on
-`card.isFake` instead (only ever true in blind — the decoy fake keeps the button, since a
-missing control on a card they are never told differs would be the tell that mode forbids).
-**`pinFake` is what makes a presentational gate sufficient**: a hacked client that asks anyway
-is re-dealt and is still the fake, so defeating the check wins nothing. When a rule cannot be
-enforced where the state lives, make the thing it protects worthless instead.
-
-One consequence, recorded rather than designed around: once the fake cannot ask, "I asked for
-the re-deal" becomes a claim of innocence — and an unfalsifiable one, since several players
-can ask and the latch merely ORs them, so two people claiming it contradicts nothing. Expect
-every fake to claim it, which is why it is worth nothing.
-
-**A re-deal creates common knowledge the hidden role does not share — publish it or it is a
-free detector.** The crew all saw the discarded character; the blind fake never did. So
-"everyone name the one we threw out" catches them with certainty, costs the table nothing, and
-has nothing to do with how they played — a detector the card check *invented*, absent from any
-round with no re-deal, and one `pinFake` sharpened (before it, a re-deal re-rolled roles, so
-the new fake had often seen the discard). The fix is to stop it being secret: `dealRoles`
-stamps every card with `discarded`, the fake's included, and `SecretCard` renders it in both
-branches and in `compact`, since the clue phase is when a table would ask. Giving it away costs
-nothing — a character that is definitively *not* the answer, out of hundreds. Decoy mode cannot
-have this: its fake discarded a *different* character, so one shared list would tell them their
-card differs. That mode keeps the detector and only copy can help it. Whenever a hidden-role
-game lets state be replaced mid-round, ask what the discard proves.
+Hidden-role patterns AniFake worked out, each argued in full in `src/games/anifake/CLAUDE.md`
+— read it before building anything with a hidden role: **never hand the reveal to one
+device** (each device publishes only its own card once the vote closes and the answer is
+derived from the published set); **a vote nobody may be seen casting is one shared latch,
+not a tally**, and an anonymous control must not change anything a hidden role has a stake
+in; **when a rule cannot be enforced where the state lives, make what it protects
+worthless**; and **a re-deal creates common knowledge the hidden role lacks — publish the
+discard or it is a free detector**.
 
 **A one-shot key must name whatever it is meant to happen once per.** `useRoomCore` clears
 `reconciledRef` on a view *change*, so `once('runoff')` is latched for the life of the
@@ -607,53 +486,9 @@ Anything derived from a pref that is worth testing belongs in a `.js` module, wh
 *could* reach it through the screen now (see Commands), but only by mounting that whole
 screen under jsdom just to check one derived value. A pure `.test.js` checks it directly.
 
-**A setting's note comes in two tiers, and `shared/components/SettingHelp.jsx` is the only
-place either one is styled.** Every setup screen and lobby used to hand-place a `<p
-className="ml-10 text-base text-white/50">` holding both halves at once; four games' worth
-of that put a two-to-four line paragraph under every single-line control, so a settings card
-ran roughly three times taller in prose than in controls and read as a wall rather than as
-help. None of the copy was deleted — several paragraphs carry rules the table actually needs
-— the *why* simply stops being the first thing on screen. The split is nearly always where
-the existing paragraph already broke: its opening sentence names the behaviour and the rest
-argues for it. Pass the first as `children`, the second as `more`.
-
-The weight was the other half of the problem. Helper copy had drifted to three treatments
-across the games (`text-base text-white/50`, `text-sm text-white/50`, `text-sm
-text-white/30`), and with no consistent signal for "this is the secondary line" the volume
-read as noise instead of hierarchy. Everything routes through here now, at two weights only.
-
-**The options most tables never change fold under "More settings"**
-(`shared/components/MoreSettings.jsx`), inside the card they belong to: AniTune's clip and
-pool details, AniGuess's randomizer and points, AniFake's pool and fame, AniTag's names-per-
-round and own categories, AniQuiz's extras, timer and category switches. AniRank and AniWave
-fold nothing — their cards were already short. Two rules: **a warning never goes inside a
-fold** (a banner about a folded-away setting is a problem with no visible cause, so banners
-sit after it), and the open state is one arcade-wide key, `aniarcade_more_settings`, for
-`aniarcade_setting_detail`'s reasons (it belongs to no game; not in `PRESERVED_KEYS`). Folded
-controls are `hidden`, so a test or bot that changes one has to open the fold first —
-`openMoreSettings(user)` in `shared/testing/arcade.jsx`, which opens only closed folds,
-because the remembered state carries from one test to the next.
-
-**`DetailToggle` goes on a card only when that card has something to reveal**, and on every
-such card rather than once per screen — two of them a few hundred pixels apart is mild
-redundancy, while a card full of quietly-truncated notes whose control is somewhere above
-the fold is a feature nobody finds. AniTune's second card is every-note-one-line and so
-carries no toggle rather than an inert one.
-
-**Both halves fail soft, deliberately.** `useHelpDetail` returns `{ detail: false, setDetail:
-null }` outside a provider instead of throwing, and `DetailToggle` renders nothing at all
-there rather than a control that does nothing. This is presentation only, and its consumers
-are leaf components scattered across every game's setup screen — exactly the population most
-likely to end up in a future screen nobody remembered to wrap.
-
-AniFake and AniRank keep their copy in a `help.js` beside `prefs.js`, being long enough that
-inlining buried the controls in JSX; AniTune and AniGuess inline theirs. **The preference is
-arcade-wide and gets its own localStorage key** (`aniarcade_setting_detail`), not a slot in
-`aniarcade_game_prefs`: that map is `{ [gameId]: {...} }` and each game's `DEFAULT_PREFS`
-*is* its schema, so there is nowhere in it for a value belonging to no game. Off by default,
-which is the point of the split — the short line is what a returning player should meet. It
-is deliberately absent from `resetKeys.js`'s `PRESERVED_KEYS`: a crash reset clearing a
-cosmetic preference is the right outcome, and the default it falls back to is the quiet one.
+Setting notes, the "More settings" fold and `DetailToggle` have rules of their own —
+`shared/components/SettingHelp.jsx` is the only place a note is styled, and a warning never
+goes inside a fold. See `.claude/rules/settings-cards.md`.
 
 ### Profiles and identity
 
@@ -684,54 +519,12 @@ missing as "not eligible" and say so on screen, the way `anirank/axes.js` return
 mode shipped dealing zero cards for exactly this reason: its comment described the
 fetch shape and the code read the stored one.
 
-Character `favourites` needs more care than the show-level stats, and AniFake's
-`utils/pool.js` is the worked example. `collapseCharacters` writes `favourites ?? 0`, so
-missing and genuinely-zero are the *same value* by the time anything reads it. **An
-unmeasured character therefore reads as "nobody has heard of them" rather than "we don't
-know", and there are three coverage cases, not two:**
-
-| coverage | what a naive quantile does |
-| --- | --- |
-| none | median is 0, `fav >= 0` admits everybody — the setting does nothing |
-| **partial** | ranks the measured few, so "top 15%" becomes 15% *of the imported fifth* — the round deals the same three characters forever, and nothing looks wrong |
-| full | correct |
-
-The partial case is the dangerous one because a signal technically exists, so any
-`some(fav > 0)` check reports healthy. `fameFloor` handles all three in one place: it ranks
-**only the entries carrying a positive count**, and returns `null` both when none do and when
-fewer than `MIN_FAME_COVERAGE` of the pool do. One null, one degraded path — the fame term
-zeroes out and the role ladder runs, which is why the bias must stay a *preference* (a
-weighted score, never a filter). `hasFameSignal` is defined as `fameFloor(pool, 0) != null` so
-the screens and the pick cannot drift about what "no data" means.
-
-**A re-import only repairs a saved character because `addOrBackfillCharacter` makes it, and
-that is recent.** Until it existed the merge early-returned on any character whose folded name
-was already stored, so the fetch pulled correct data and dropped it — every field of a saved
-character was frozen at its import vintage forever, and profiles imported before `favourites`
-existed could never gain it no matter how many times you re-imported. The backfill follows
-`backfillStats`' rule (fill absent fields, never overwrite one already there, `== null` so a
-real `0` counts as an answer) and returns a NEW object, because
-`mergeAnimeIntoProfile`'s `characters: [...a.characters]` is shallow — the character objects
-are still the ones `ProfileProvider` holds in React state.
-
-Repairs are counted as `updatedChars`, apart from `addedChars`: a repair run on a list you
-already have adds nothing, and a screen reporting "+0 characters" reads as a failed import.
-`classifyImportGroups` gains a matching `'stale'` state — every member fetched, but no saved
-character carries `favourites` — so the checklist suggests exactly those shows instead of
-calling them `known` and hiding them. Key it on "**none** of the cast has it", never "any lacks
-it": a fetch returns only MAIN plus SUPPORTING above the favourites threshold, so a supporting
-character under it can never be filled and "any" would re-suggest that show forever.
-
-A secondary effect worth knowing when coverage still looks patchy after a repair: `preferred`
-only falls through to `favourites` when portrait and genres tie, so across players a
-re-imported copy can still lose to an older one.
-
-Two things the screens must then say, because neither is inferable from the pick:
-`hasAnyFameData` (ungated) separates "never fetched" from "fetched patchily" — only the second
-is worth importing for — and `famousCount` reports what the level actually leaves, since a
-level can be perfectly valid and still narrow a small shared list to two characters. Warn,
-never gate: a small famous set is a real answer to what the user asked for, and silently
-overriding a setting someone just picked is what makes one feel broken.
+Character `favourites` is written `?? 0`, so missing and genuinely-zero are the same value and
+an unmeasured character reads as "nobody has heard of them". Anything that ranks by it must
+handle none / partial / full coverage, and the partial case looks healthy — `fameFloor` in
+`anifake/utils/pool.js` is the worked example, argued in `src/games/anifake/CLAUDE.md`. A
+re-import repairs a saved character only through `addOrBackfillCharacter` (fill absent
+fields, never overwrite) — see `.claude/rules/list-import.md`.
 
 Two layers, and components must use the outer one:
 
@@ -793,255 +586,24 @@ Identity is deliberately not id-based, and the reasons are non-obvious:
   ListManager's old hand-made form); `normalizeCharacter` collapses them so consumers never
   branch.
 
-**Nothing on a list is typed in by hand any more.** ListManager used to take a free-text
-show title and a character form (name, hair colour, ability, one genre). A made-up character
-had no portrait, no `favourites` and no AniList id, so the hub tiles skipped it, AniFake's
-fame setting ranked it unknown, the fact pack could not cover it, and nobody else at the
-table could recognise it; a typed show had no cast or stats at all. Both were replaced by
-`shared/components/AnimeSearch.jsx`, which searches AniList (`searchAnime`) and adds the real
-show through `shared/services/importGroups.js`'s `buildImportedAnime` — the same cast fetch and
-filter `ListImport` runs, so a searched show and an imported one cannot differ. A cast is not
-editable either — the tracker is where a list changes, then Refresh — and the one edit left
-is **deleting a whole show**, which stays because a refresh only ever adds
-(`mergeAnimeIntoProfile` never removes): without it a show dropped on the tracker, a searched
-show added by mistake or an old hand-made entry could never leave a profile. Hand-made
-entries already saved are left in place (the `aniguess_profiles` rule) and every reader of
-their shape stays, `CharacterReveal`'s hair and ability rows included; don't add a hand-entry
-or cast-editing path back.
+Nothing on a list is typed in by hand: shows come from AniList search (`AnimeSearch.jsx`) or
+an import, and the one edit left is deleting a whole show. Don't add a hand-entry or
+cast-editing path back (why: `.claude/rules/list-import.md`).
 
 ### List sources: any tracker, one profile shape
 
-A player imports from **AniList, MyAnimeList, Kitsu, or a MAL-format export file** (which
-Kitsu, Simkl and most other trackers can write), and every game works from any one of them —
-including a room where each player used a different site. `shared/components/ListImport.jsx`
-is the one screen; `shared/services/listSources.js` the network half; `shared/utils/listImport.js`
-the pure, tested half.
-
-**The invariant: another site only ever says WHICH shows you watched. Everything else comes
-from AniList.** Each source reduces to AniList or MAL ids; `fetchMediaByIds` (`anilist.js`)
-hydrates them through AniList's `id_in` / `idMal_in` in pages of 50; and every path — the
-AniList list query included — builds its entries with the same `toListEntry`
-(`anilistFormat.js`). From there it is the unchanged import: `groupIntoFranchises`, the
-checklist, the character fetch, `mergeAnimeIntoProfile`. So a MAL player's profile is the
-same shape as an AniList player's, down to the `anilist_anime_<id>` ids AniTune's exact
-AnimeThemes lookup needs, and **no game or room hook knows sources exist.** That is what makes
-a mixed room work, and it is worth knowing why the obvious alternative fails: every
-cross-player match in the arcade is by fold (`franchiseTitleKey`, `characterNameKey`), and
-MAL's own data does not fold to AniList's — different English titles, character names
-written "Last, First", scores out of 10. Built from MAL's data, a MAL player and an AniList
-player would share no shows at all, and nothing would look broken.
-
-Shows a site lists that AniList has no entry for are **counted, not dropped silently**
-(`unmatched`), and the screen says how many — a list that comes back shorter than the one on
-the site reads as a failed import otherwise. Kitsu prefers its `anilist/anime` mapping and
-falls back to `myanimelist/anime`; an entry with neither is unmatched.
-
-**MyAnimeList's API sends no CORS headers** (measured: no `Access-Control-Allow-Origin` on
-any response, a 405 on the preflight), so no page can call it. `workers/mal-proxy` is a
-one-route Cloudflare Worker that does, with the client id as a secret, and answers with MAL
-ids and statuses only. With `VITE_MAL_PROXY_URL` unset — a fork, or before the worker is
-deployed — the MAL tab asks for the export file instead, and a proxy that cannot be reached
-offers the file from the error screen. Kitsu sends `Access-Control-Allow-Origin: *` and needs
-nothing.
-
-**Where a list came from is `listSource: { site, username? }`**, read through
-`listSourceOf`. Profiles from before it carry only `anilistUsername`, and that key is still
-read (and still written for AniList) rather than migrated — the `aniguess_profiles` rule.
-`anilistImportedIds` and `anilistImportSettings` keep their names because they are still
-true whatever the source: the ids are AniList's after hydration, and the settings drive
-AniList's character fetch. Every Refresh button gates on `canRefreshList`, so a file-based
-profile (nothing can re-read a file the player has not chosen again) and a MAL profile with
-no proxy never offer a one-tap refresh that would only open an upload box.
+AniList, MyAnimeList, Kitsu or a MAL-format file all produce the same profile shape: another
+site only says WHICH shows; everything else is hydrated from AniList, so no game or room hook
+knows sources exist. The details — and why building from MAL's own data silently breaks a
+mixed room — are in `.claude/rules/list-import.md`.
 
 ### Fact packs: the answers a profile cannot derive
 
-Every game above computes its own answer key on the device — `valueFor` reads a stored
-field, `trueOrder` sorts it, `scoreBoard` grades against it. "Who directed this" is not a
-function of anything a profile holds (see the table above for how narrow a profile actually
-is), so a quiz-style game cannot work that way: **the answer has to ship with the
-question.** `generateFacts.js` (Node, `npm run generate:facts`) writes a pack, `public/facts/`
-serves it as a static file, `shared/services/factPack.js` loads it, and
-`shared/utils/facts.js` holds every pure part of it.
-
-**The pack is populated — 680 shows, 2948 characters, 26017 facts per `index.json` (v5) — and
-AniQuiz is its main reader** (see `src/games/aniquiz/CLAUDE.md`); AniRank, AniTune and
-AniFake read its stats only through the profile backfill below. A consumer must still treat
-a missing entry as normal rather than as a failed load: most of what a player imports will not
-be among 680 shows, and `factsFor` falls closed on an empty key list for exactly that case.
-
-`pack-v2` added **`popularityRank`** (1 = AniList's most popular), stamped from the discovery
-list's own order — the `anilist-popular-p*.json` pages already in `.facts-cache/`, so adding it
-needed no fetch. It is pricing data, not clue material. A catalog show outside the top N has
-no rank, and a reader must treat that as *obscure*, never as *unknown and therefore easy*.
-v1 was deleted rather than kept beside it: nothing had ever read it.
-
-`pack-v3` pages the staff list. `MEDIA_QUERY` fetches 20 staff entries by relevance, and on
-a big production those are all directors and designers — Frieren's "Music" credit is entry 26
-— so v2 had no composer for one show in five, Demon Slayer and Spirited Away included.
-`allStaffEdges` in `factSources/anilist.js` fetches further pages only while a credit is
-missing, at the **same 20 per page** (page 2 at 25 would start at entry 26 and skip 21–25), and
-roles are matched trimmed, because some arrive as `"Music "`. Composer went from 79% to 98%
-of shows and director from 93% to 98%, with no v2 value changed. Series composition stayed at
-79%: the rest are films, or shows that credit their writer as "Script", which is a different
-credit and is deliberately not read as one. That measurement is also why no outside source
-was added then — the gaps it was meant to fill were ours (v5 added one for new fields). v2 was
-deleted: the loader fetches `index.json` with `no-store`, so nothing asks for an old pack by
-name.
-
-`pack-v4` fixed accuracy before adding anything, because the measured problems were ours again:
-
-- **Franchises are grouped by AniList relations, exactly as an import groups them.**
-  `collect` runs every media through `toListEntry` and `groupIntoFranchises` and keys the
-  group on its canonical season's title. v3 folded titles, and titles do not fold reliably:
-  a trailing hyphen split Re:Zero, a curly apostrophe split Komi, and Food Wars was six
-  subjects — so a sequel could speak for a franchise and a quiz could offer the answer's own
-  sequel as a wrong option. A top-level **`aliases`** map sends each member title's fold to
-  the canonical key, and `resolveShowKey` (`facts.js`) is the lookup; AniQuiz's
-  `buildContext` and `packStats.js` both go through it.
-- **Credits match through `STAFF_CREDITS` / `pickCredit` in `facts.js`**, each an ordered
-  pattern list, so the matching has tests. `/^director$/` had shipped One Piece, Naruto
-  Shippuden and Dragon Ball Z with no director: long-runners credit "Director (eps 1-199)". A
-  qualified credit is used only when no plain one exists, and "Animation Director", "ADR
-  Director" and "Director of Photography" never match. Staff paging goes to 15 pages, since
-  those same long-runners spent all 5 of v3's on per-episode credits.
-- **It carries the numbers an import stores** — `popularity`, `averageScore`, `startYear`
-  (plus `showFavourites`), folded by `summarizeGroupStats`, so a pack value and an imported
-  one mean the same thing. That is what `shared/utils/packStats.js` repairs old profiles
-  from: `usePackBackfill` runs from the setup screens and lobbies of AniRank, AniTune and
-  AniFake (never the hub — players who never open them never fetch the pack), fills only
-  ABSENT show stats, and fills character `favourites` when the stored value is 0 too, because
-  the import writes `favourites ?? 0` and a stored 0 is ambiguous. `profileFingerprint`
-  counts both, or a repair would never reach a room the profile is already in. Episodes are
-  deliberately not backfilled: the pack's is the canonical season (clue material), a
-  profile's is summed across seasons.
-- **The best-known supporting characters** (favourites ≥ 1000, four per show) arrive under
-  **`supportingIn`**, beside `appearsIn`, which **still means MAIN in** — both cast clues say
-  "main character", and widening it would make them state something false. See
-  `src/games/aniquiz/CLAUDE.md`.
-- **The catalog is the top 1000 by popularity**, against v3's 500, and the cache files for the
-  changed query and the popularity pages carry a `-v4` suffix, so neither the old fields nor
-  the 2026-09-08 ranking could be silently reused.
-
-Measured on the v4 run: 1004 media grouped into 680 shows (Dragon Ball's Z, Super and GT, and
-Naruto's Shippuden and Boruto, each fold into their franchise — AniList links them as sequels,
-and an import folds them the same way); director 99.9% (was 98%), series composition 82%,
-composer 96.8% over a pack half again as large (the newer, less-famous shows are where it
-misses), and popularity, score and year 100%. 205 aliases; 239 characters are supporting-only.
-A first run over a cold cache takes hours rather than minutes, nearly all of it staff paging
-on films that never credit a series composition — a warm cache makes the next one quick.
-
-`pack-v5` is the first with facts from **outside AniList**, and only for things AniList has no
-field for at all — every AniList value is byte-identical to v4's. Each outside source is a file
-in `factSources/` handed `collect()`'s franchise groups (`meta.groups`: key, member AniList ids
-canonical-first, source), looks them up **by AniList id** — never by title — and returns rows;
-`generateFacts.js` appends them after AniList's, so first-write-wins means an outside value
-only ever fills a gap and can never create a subject. What a response *means* lives in
-`shared/utils/outsideFacts.js`, with tests; the adapters are just network and cache.
-
-- **`themes`** — openings and endings from **AnimeThemes** (`factSources/animethemes.js`), the
-  API AniTune already plays from, matched through the AniList id it stores as a "resource".
-  `{ type: 'OP'|'ED', song, artists? }`, at most 4 openings and 2 endings per franchise,
-  canonical season first; `artists` is absent when AnimeThemes has no performer linked (397
-  of 2022 themes), which rules a song out of the who-sings-it clues but not the which-show
-  one. AnimeThemes files alternate versions as a theme `group`, numbered from 1 again: a
-  **dub** ("English Version - 4Kids", "Korean Version") is left out — read as the show's own,
-  it put the 4Kids "One Piece Theme" among One Piece's openings — while a Japanese broadcast
-  variant ("BD Version", "Repeat Show", "Yorinuki Gintama-san") is kept but ranked after the
-  main sequence. Versions of one song ("movie ver.", "-Piano ver.-", "-TEKINA remix-",
-  Evangelion's per-episode "Fly Me to the Moon -B22 (A-Type)-") count as ONE song (`songKey`)
-  and keep the plain title, or a "which show" clue would offer a song beside its own remix. A
-  null `sequence` reads as 1: K-ON!'s real OP1 is unnumbered beside a numbered variant.
-- **`serializedIn` and `originalPublisher`** — the source work's magazine, and that magazine's
-  publisher (Weekly Shōnen Jump → Shueisha), or a light novel's imprint (Dengeki Bunko), from
-  **Wikidata** (CC0; Jikan was turned down as an unlicensed MAL scrape). Two measured traps,
-  both in the query: a season item ("Attack on Titan, season 1") carries the AniList id but
-  not "based on", so the query climbs part-of-the-series first; and a manga's own publisher
-  list is every licensee in every country, so the magazine's publisher is read instead (light
-  novels have no magazine, so their publishers are limited to Japanese ones, which yields the
-  imprint). A work only attaches when its type matches AniList's `source`, and a value the
-  source disagrees with itself about (Fullmetal Alchemist: Enix *and* Square Enix) is dropped.
-- **`originalYear`** — when the source began, from the **source work's own AniList entry** (the
-  anime's SOURCE relation, already in the cached response; one batched query). Wikidata has
-  the date too and was measured worse: it disagreed by over a year on 14 of 434 shows and
-  was the wrong one in every case checked (Mob Psycho 100's manga "began" in 2018, after its
-  own anime). It survives only as a fallback, and AniQuiz additionally refuses a source year
-  later than the premiere.
-
-Measured on the v5 run: themes on 96% of shows, a magazine for 74% of manga, a publisher or
-imprint for 71% of manga and light novels, a source year for all of them.
-
-**Checked against MyAnimeList** (official API, comparison only — nothing from it ships) on
-2026-10-18, which is where the dub, variant and K-ON! rules above came from. After them: of
-2011 themes, 1949 titles appear in MAL's lists for the franchise and the other 62 are
-romanization variants ("Tenchi Geshi" / "Tenchi Gaeshi") or film themes; of those with a
-performer, the 247 that "differ" are MAL crediting "Alya (CV: Sumire Uesaka)" where AnimeThemes
-credits the actor. Magazines: 239 of 256 agree and the rest are the same magazine renamed or
-abbreviated (Jump SQ. / Jump Square, Gessan / Monthly Shōnen Sunday) or a series that later
-moved. Source years: 506 exact, 14 a year apart, 4 where the pack is the right one. Two
-magazines Wikidata had wrong (WataMote, Toilet-bound Hanako-kun), three with no single right
-answer (web serials that moved) are in `facts/overrides.json`, and so are AnimeThemes' own
-slips: five misspelt titles where MAL and the Japanese agree against it (Love Tyrant, 天地ガエシ
-"Tenchi Geshi", 眠れる本能 "Nemureru Honoo", "Utatane Shunshine", "Konpeki no Alpine"), and two
-soundtrack pieces it files as a first episode's "OP1" with no performer (Made in Abyss's
-"Underground River", Zombie Land Saga's "Temptation from the Hell"), which put an instrumental
-ahead of the real opening. That second kind can't be a rule: of the 24 shows whose first
-opening has no credited performer, nearly all are the famous one ("R★O★C★K★S",
-"Makafushigi Adventure") and simply lack the link. Override arrays are built by running
-`themesFromAnimeThemes` over the cached records minus the bad entries, so caps and order match
-what the generator would have made. An override replaces a counted fact, so the manifest's
-`facts` moves only when one fills an empty field or a suppression finds something.
-
-The generator prints the four coverage figures every run, because these sources are not ours
-and a quiet drop looks like success. The new caches are per AniList id
-(`animethemes-v2-<id>.json`, `wikidata-origin-v1-<id>.json`,
-`anilist-source-<id>.json`), and a full pass over cold ones is a few minutes, not hours. Both services filter on **User-Agent**, which Node's `fetch` does
-not send — the adapters set one, which is why they do not share AniTune's browser client.
-
-It shipped empty at first, and the reason is worth knowing before the next 403. AniList
-answers any request carrying **no `Referer`** with a 403 claiming the API is "temporarily
-disabled due to severe stability issues" — it reads as an outage and is a bot filter. The
-fix is `REFERER` in `anilistClient.js`, a no-op in the browser, where `Referer` is a
-forbidden header name and `fetch()` sends the page's own.
-
-**A franchise folds to one key, so assembly is first-write-wins, per field.** All six Attack
-on Titan entries emit rows against `attack on titan`; last-write-wins left the identity block
-saying WIT 2013 while the facts said MAPPA 2022 — one subject wearing two seasons. `collect`
-emits each group's canonical season first, then the rest by air date, and groups best-ranked
-first (so of two unrelated franchises folding to one title, the better-known holds the key);
-"per field" lets a later season still backfill what it had no value for.
-
-**A pack key is the SAME fold a saved profile keys on** — `franchiseTitleKey` for shows and
-`characterNameKey` for characters, exactly what `anirank/utils/deck.js` computes when it
-collapses a profile into cards. That identity is the whole targeting design: "only shows
-this room imported" becomes a Set lookup at draw time and "any show at all" is skipping it,
-so which game asks what is not decided in the data and nothing has to be regenerated to
-change the answer. The keys are re-exported through `facts.js` rather than imported
-directly by the generator, so the two sides cannot drift on what a key is. `anilistId` is
-carried as **provenance only** — identity in this repo is deliberately not id-based, since
-the ids ListManager minted for hand-entered entries and AniList's own share no id space, so
-a lookup routed through it would miss every one of those still saved.
-
-**The loader takes two fetches and the indirection is the point.** The manifest is small and
-always revalidated; the pack file it names is immutable and can be cached hard. A data fix
-is then "write `pack-v5.json`, change one line of `index.json`" — no app code change, no
-rebuild, no redeploy of anything but those two files. A bundled `import()` of the JSON was
-rejected for that reason plus one more: it is parsed as JavaScript on every load by every
-player, including everyone who never opens the game.
-
-Everything testable lives in `shared/utils/facts.js` rather than in the generator, for the
-reason `prefs.js` and `fame.js` are separate from the screens that read them — logic in a
-root-level script is logic with no test. **It carries explicit `.js` extensions**, unlike the
-rest of the app, because `generateFacts.js` imports it under plain Node, which does not do
-Vite's extensionless resolution; `franchise.js`'s import of `./ranking.js` carries one for
-the same reason. That is the price of the generator and the app sharing one definition of a
-key, and sharing it is exactly the point.
-
-`facts/overrides.json` is applied **after** generation, so a regeneration can never clobber a
-hand-made correction, and a `null` value there *suppresses* a fact the source got wrong.
-`generateFacts.js` and `generateProfiles.js` import `anilistClient.js` directly rather than
-hand-rolling a throttle — that module is plain fetch and timers and is Node-safe despite its
-"for the browser" header. `generateProfiles.js` carried its own 600ms copy until it was folded
-in, and a copy is how a rate-limit fix ends up applied to two callers out of three.
+`public/facts/` serves a generated pack (`npm run generate:facts`) of answers a profile cannot
+derive. AniQuiz reads it; AniRank, AniTune and AniFake read its stats only through
+`usePackBackfill`. A missing entry is normal, never a failed load, and a pack key is the same
+fold a profile keys on (`franchiseTitleKey`, `characterNameKey`). Versions, outside sources,
+`facts/overrides.json` and AniList's no-`Referer` 403 are in `.claude/rules/fact-packs.md`.
 
 ### External APIs
 
@@ -1049,21 +611,13 @@ in, and a copy is how a rate-limit fix ends up applied to two callers out of thr
   the API actually returns (~30/min, not the widely-cited 90) and backs off on 429.
   `shared/services/anilist.js` batches ~15 media per aliased query to stay under AniList's
   500 query-complexity cap; the characters connection is hard-capped at 25/page.
-- Kitsu (`kitsu.app/api/edge`, JSON:API) — public, no auth, `Access-Control-Allow-Origin: *`.
-  `filter[userId]` on `library-entries` with `include=anime.mappings`, followed by
-  `links.next`. Users are looked up by `filter[slug]`, then `filter[name]`: plenty of
-  accounts never set a slug.
-- MyAnimeList — only through `workers/mal-proxy` (no CORS on MAL's API; see "List sources").
-  The worker reads `/v2/users/{name}/animelist` with `X-MAL-CLIENT-ID`, one request per status
-  (MAL's filter takes one), and maps MAL's 403 (private list) and 404 to one "not found".
+- Kitsu and MyAnimeList (proxy only): `.claude/rules/list-import.md`.
 - `games/anitune/services/animethemesClient.js` — public, no auth. Two verified quirks
   documented in the file: the API bot-filters on `User-Agent` (fine in a browser, fatal for
   Node scripts), and the audio CDN omits CORS headers on the actual GET, so `<audio src>`
   playback and Range seeking work but `fetch`/`decodeAudioData` never will.
   `factSources/animethemes.js` is the generator's own Node copy (it must send a UA).
-- Wikidata (`query.wikidata.org/sparql`) — generator only, never the app. CC0. Requires an
-  identifying `User-Agent`, kills queries past 60s (hence 40 ids a batch: the season → series
-  property path is the expensive part), and is POSTed to because the query outgrows a URL.
+- Wikidata (generator only): `.claude/rules/fact-packs.md`.
 
 With no `.env.local`, `firebaseEnabled` is false, `ensureInitialized()` is never called, and
 local play touches no **third-party** network at all. Keep that property intact. What local
@@ -1078,41 +632,9 @@ Audio, so the sound engine never asks.
 
 ### Offline: the service worker
 
-Because local play only ever asks its own origin for anything, all of it can be stored, and
-is: a production build carries `/sw.js` (`sw/serviceWorker.template.js`, written into the
-build by `sw/plugin.js` at `writeBundle`), and once a phone has opened the arcade with signal
-it opens, and plays locally, with none. What is stored is decided by
-`shared/utils/precache.js` over the finished build: every chunk (a game opened offline must
-already be there), the page, the fact pack `index.json` names and no other, fonts, prints,
-sounds and icons — about 3.5 MB, not `og.png`. The version hashes every stored file's bytes,
-because `public/` names are not content-hashed and a re-encoded sound must still ship.
-
-- **It never touches another origin.** Firebase, AniList, AnimeThemes, the MAL proxy and
-  portraits go straight to the network, so online play is exactly as live as before and the
-  property above holds. "Play online" is disabled on the cover page while `navigator.onLine`
-  is false (`useOnline`), and an invite link waits on the cover until signal returns.
-- **Updates are quiet.** A new build installs and takes over at once, but a page already open
-  keeps running what it loaded — its lazily loaded chunks still come from the previous build's
-  cache, which activation keeps (newest two, never more). The next load is the new build. Page
-  loads are network-first with a 3s wait, so a deploy reaches the next load and a dead
-  connection still opens.
-- **Never cache an HTML answer to a file request.** Hosting rewrites a missing file to
-  `index.html` with a 200; stored under an old chunk's name it would break every later load.
-- **It answers only for what it stored, and `/assets/` chunks.** Everything else passes
-  through, because a preview build on `localhost:5173` registers the worker on the same origin
-  the dev server uses, and a worker caching whatever it saw would freeze `/src` modules
-  across every edit. Dev page loads are still network-first, so they stay live; Application →
-  Service workers → Unregister in DevTools clears it entirely.
-- **Lookups ignore `Vary`.** The precache stores plain requests, the page asks for module
-  scripts with an `Origin` header, and a `Vary: Origin` answer (vite preview's) made every
-  stored file a miss — the page loaded offline and then failed every script on it.
-- `firebase.json` serves `/sw.js` `no-cache` (JSON has no comments, so the reason lives here),
-  and `registerServiceWorker` registers only in a production bundle, after `load`, and never
-  under Data Saver — the same people `preloadGames` already spares the download.
-- The playtest bots run with `serviceWorkers: 'block'` (a worker's fetches go around
-  Playwright's routing); `playtest/browser/offline.spec.js` is the one project that allows it,
-  and checks a phone with no signal can open the arcade and set up AniQuiz, the game with the
-  most fetched on demand.
+A production build ships `/sw.js`, so local play works with no signal. It answers only for
+the files it precached and `/assets/` chunks, never another origin, and never caches an HTML
+answer to a file request. The rest: `.claude/rules/service-worker.md`.
 
 ### Styling
 
@@ -1123,172 +645,15 @@ red = no/wrong/destructive, amber = warnings/scores/timer, blue = asking); don't
 vibe at the call site. The `btn-pop` / `focus-pop` utilities carry the press-down physics.
 UI primitives are imported from the `src/shared/ui` barrel.
 
-**The look is a manga page: warm paper, black ink, one red.** It replaced a neon arcade
-cabinet (near-black canvas, glow halos) because the cabinet read as generated and generic;
-the references were two manga landing pages. Canvas `#efebe2`, three surfaces 1.12 / 1.24:1
-apart, ink `#141414` for every border and hard shadow. **Every token name survived the
-swap** — roles, not values, are what call sites name — which is how ~500 call sites changed
-colour without being edited. The tokens, shared primitives and shell went first; the hub,
-setup screens, results and in-round screens followed, each onto a shared frame (below), and
-the game sounds with them.
+The core, which every screen edit must keep (the full design system, and why, is in
+`.claude/rules/styling.md`, which loads with any `.jsx`/`.css` file):
 
-**The accent contract INVERTED with the canvas, and it is the one non-obvious rule here.**
-On paper no colour can be both readable text on the page (luminance below ~0.15) and a
-fill under ink text (above ~0.20). So every solid fill is a DARK print ink and carries
-**`text-paper`**, and the same ink reads as text on the page — the way the references set
-black ORDER NOW and white-on-red logos. Each accent's comment carries both ratios (text on
-`surface-2`, the darkest surface; paper text on the fill), and both must be re-checked
-together. Two consequences:
-
-- `text-ink` now means *ink-coloured text*, which is right only on a LIGHT fill — a white
-  chip, or a knocked-back tint. `anirank/utils/tierTone.js` is the worked example: solid
-  rungs take `text-paper`, the /45 tints over paper are mid-tone and take `text-ink`.
-- `pink` is vermilion (`#b4300f`) and `red` is crimson (`#931229`) — two reds, separated by
-  hue. So a right/wrong is never colour alone: rows use `shared/ui/Mark.jsx` (a stamped ✓/✗
-  with its word) and a result landing uses `ResultImpact`'s ✓/✗ block. A board or panel is
-  ruled in INK, never in a game's red accent — AniQuiz's crimson is hub identity only, and
-  a board ruled in it read as a board of mistakes.
-
-`Button`'s `primary` is **ink**, not pink: a page whose every main action is red has no red
-left for the one thing that should stand out. `secondary` is the outline of the same block.
-
-**The glow is gone, and `--glow` with it.** Light needs a dark room; on paper a coloured blur
-reads as a printing fault. `btn-pop` kept its physics exactly — the ink shadow is what the
-press travels into. Where glow carried meaning it was replaced, not dropped: `TimerBar`'s last
-five seconds take a paper `hatch` (a texture change, which also survives colour-blindness),
-and the "lit" leader / perfect-board numerals are inked in amber, the score colour.
-
-**Print textures are static, gradient-or-inline-SVG utilities** — `paper-grain`,
-`plus-grid`, `halftone` (`--tone`, `--tone-size`), `speed-lines` (`--lines`), `hatch`
-(`--hatch`), `slash` (`--slash`). No requests, nothing to 404, nothing that moves, so nothing
-for reduced motion to stop. Colour comes from the custom property with an ink default.
-
-**Motion is three things, all FROM-state animations so reduced motion leaves the finished
-picture:** `screen-in` on `Screen`'s root (every view renders its own Screen, so every view
-change in every game page-turns with no router involved — clip-path and opacity only, NEVER
-transform, because a transformed ancestor becomes the containing block for `fixed`
-descendants and a modal mounted mid-animation would jump); the hub's `PanelWipe` between
-title → hub → game (timers in `hub/useWipe.js`, not `animationend`, which jsdom never fires
-and a backgrounded tab can freeze; a press during a wipe is ignored, so tests must wait for
-`[data-wipe]` to clear); and `attract-blink` on PRESS START.
-
-**Type:** Oswald (display, condensed caps), Archivo (body), and Dela Gothic One as
-`--font-kana` — **decoration only**, always through `<Kana>` (aria-hidden, `lang="ja"`), and
-the file is a cut holding only the katakana block + べ を 中 選. Every string comes from
-`shared/ui/kanaText.js` or a game descriptor's `kana`, and
-`kanaText.test.js` pins them against the cut, because a missing glyph silently falls back mid-word. **The module is
-`kanaText.js`, not `kana.js`:** beside `Kana.jsx` on a case-insensitive filesystem, Vite
-resolved `./Kana` to the `.js` and every `<Kana>` crashed. `font-synthesis-weight: none` on
-`body` stops kana inheriting a faux bold.
-
-**Art is public-domain ukiyo-e, never generated — except the hub tiles, which are the
-player's own characters.** The title, hero and credits use three Met Open Access prints
-(Hokusai, Kuniyoshi, Hiroshige), grayscale WebP in `public/art/`, each processed once — the
-record of source, licence and processing is `shared/ui/credits.js`, which also feeds the
-hub's Credits dialog and the title screen's credit line, and `credits.test.js` checks each
-file exists and is CC0. The tiles draw fresh greyscale portraits from the main profile's
-imported list every visit (`hub/tileCharacters.js`; see `src/hub/CLAUDE.md`), so every
-player's board is theirs — they are the player's data, not shipped assets. **The red is never
-in a file:** a CSS sun disc sits behind the print and the print is `mix-blend-multiply`'d over
-it, so ink lines stay black and only the paper turns red. Keep every shipped asset CC0 or OFL;
-a new one under any other licence needs a decision, not just an entry.
-
-**The shell:**
-
-- `shared/components/TopBar.jsx` is the strip across every screen, mounted once by
-  `HubScreen` (which knows the open game's title). Things a GAME owns arrive through two
-  **slots** (`shared/context/topBarContext.js`) by portal: `HubButton` into the left,
-  `RoomShell`'s room code + Leave into the right — minus the code in the lobby, whose
-  banner draws the big `RoomCode` (each game's lobby branch passes `codeInPage`), so the one
-  screen never shows the code twice. With no bar (a game mounted alone in a test) both fall
-  back to placing themselves. `Screen`'s `pt-20` is what clears the bar's
-  `h-14`.
-- `shared/components/RoomShell.jsx` replaced the `shell()` hand-copied into all seven
-  `OnlineGame.jsx` files (which had drifted: only AniTag showed the code on phones and capped
-  the disconnect banners). A game's `shell` is now one line around it.
-- `hub/TitleScreen.jsx` once per browser session (`hub/titleSeen.js`, sessionStorage, so a
-  refresh mid-game skips it). PRESS START is also the user gesture the sound engine needs.
-  `renderArcade` marks it seen unless passed `{ showTitle: true }`.
-- Sound: `shared/services/sound.js` (Web Audio; bytes prefetched at idle, the context created
-  inside the first gesture, every failure is silence) and `SoundProvider` for the mute switch
-  (`aniarcade_sound_muted`, not in `PRESERVED_KEYS`). `Button` takes `sound` (`'tap'`
-  default, `null` for none), `GhostButton` and `HubButton` play `back`, `Modal` plays `open`
-  (its `sound` prop, `null` where the moment already made one).
-  The files are Kenney CC0, converted to MP3 because Safari's Vorbis support is not worth
-  betting a click on.
-- **Game sounds come in two kinds, and which kind a moment is decides how it is wired.** A
-  moment that IS a press — a Yes/No ruling, a buzz, a local guess — plays through the
-  button (`sound="yes"`, or `sound={null}` plus `playSound` in the handler when the result
-  is only known inside it). A moment that ARRIVES — a verdict over the network, a reveal, a
-  turn coming round, a clock running down — goes through `shared/hooks/useSoundCue.js`:
-  `useSoundCue(name, key)` plays once per new key (so re-renders and StrictMode never
-  replay it) through `playCue`, which never creates the AudioContext — a context made
-  outside a gesture starts suspended, so a cue on a freshly reloaded tab is silent until
-  the first tap. `useCountdownCue` is the last five seconds' tick and the `timeup` buzzer,
-  in `TimerBar` and AniGuess's own clock. **Online, each phone sounds its OWN result**
-  (`myId`/`playerId` decides `correct` vs `wrong`; anyone else's result is the plain
-  `reveal`), and shared moments — a reveal, the results stamp, a buzz — sound everywhere.
-  On the one local device the table's result plays. `sound.test.js` checks every name
-  has its file.
-
-**No emoji, anywhere on screen — `shared/ui/icons.js` is the arcade's one icon set.** ~450
-platform emoji were the last thing on the page drawn by somebody else: every OS paints them in
-its own glossy colours, so on black ink they were the one part that looked pasted in. Most
-were simply DELETED — they decorated a label that already said the same thing ("🎮 Start
-Game") — and an icon survives only where it carries something the words do not: yes/no
-marks, a player's status in a row (locked in, out, waiting, buzzed), lives, a host's crown,
-the fake's mask, icon-only buttons. `<Icon name>` (24px ink, round strokes) sizes to the
-surrounding text and is the one place `currentColor` is allowed — an inline icon is part of
-the text it sits in, so it follows that text through every button variant. It is
-decorative unless given a `label`. Places are `<PlaceMark place>` (a numbered medal, with
-the digit as text), lives are AniTune's `Lives`, and `Banner` draws its tone's mark itself,
-so no call site prefixes a "⚠️". `icons.test.js` checks every `<Icon name="…">` in `src`
-exists and fails on any emoji on a rendered (non-comment) line; the playtest strategies find
-buttons by label, so a label change there needs a strategy change too.
-
-**Neutral colour is a ROLE, never an opacity, and `white/N` must not come back.** The
-canvas, surfaces and accents were always tokens, but every dim text line, hairline and
-translucent fill was a hardcoded `white/N` utility — ~510 of them at **fifteen** different
-opacity steps, plus 16 `black/N` scrims. That the canvas could go from black to paper as a
-value edit is the proof the ramp was worth it: a `white/N` literal would have been white on
-paper, and so would the 229 `text-white` literals the paper pass had to sweep to
-`text-fg-strong` by hand. Don't write `text-white` either.
-
-**There are FOUR text levels and that is a ceiling, not a preference.** The ramp is ink at
-graded alpha; on `surface-2` 4.5:1 puts the floor at 0.62, so there is only so much room
-between it and solid ink. The ramp used to have six and the bottom two were simply illegal;
-`fg-faint` was **folded into `fg-subtle`** because the alpha both needed in order to pass was
-the same number — they were never two roles. Three roles sit below that floor on purpose:
-`fg-icon` (glyph buttons, a UI affordance held to 3.0:1), `fg-disabled` (WCAG exempts
-disabled controls) and `fg-ghost` (`aria-hidden` markers). Collapsing any of those into
-`fg-subtle` silently re-couples them to an obligation they don't owe. If a shade seems
-missing, the question is never "which opacity" but **which role**. Scrims stayed ink through
-the canvas swap — a wash tints the page, a scrim hides what is under it, and hiding is
-darkening on any ground — and text on a scrim is `text-paper`.
-
-`public/favicon.svg` is hand-synced to `--color-pop-pink` / `--color-ink` / `--color-paper`
-because a file in `public/` cannot see the theme — a palette change that skips it leaves the
-tab icon on the old colours silently.
-
-**`field-lit` is a second focus signal and must never become the only one.** Every field
-already has an ink border, so focus cannot be a border alone. `field-lit` takes the primary
-accent on the border plus a hard underline, and it is applied **alongside** `focus-pop`,
-never instead of it: the ink ring is what a forced-colours or high-contrast user actually
-gets. It fires on `:focus`, not `:focus-visible`, because a field that lights only for
-keyboard users leaves every pointer user on an unlit form. `NumberInput` applies it **only
-when the value is valid** — on an invalid stepper it would repaint the red error border at
-exactly the moment the user is looking at it.
-
-**Modals blur what is behind them** — an ink scrim over a busy page leaves the page's own ink
-lines showing through as noise behind the panel — and the panel takes a 3px rule and a
-deeper shadow, the one panel that has to look lifted off the page.
-
-**Viewport heights are `dvh`, not `vh`.** `vh` on mobile browsers measures the viewport
-*without* the retracting URL bar, so a centred screen paints a bar-height too low and then
-jumps when the bar hides on first scroll. `Screen.jsx`, `ListManager.jsx` and the `body`
-floor in the base layer all use `dvh`; they are all `min-height`, so it costs nothing on
-desktop. Don't reintroduce `min-h-screen`.
-
+- On paper every solid fill is a dark ink carrying `text-paper`; `text-ink` is right only on
+  a light fill. A right/wrong is never colour alone (`Mark`, `ResultImpact`).
+- No emoji on screen — `shared/ui/icons.js` is the one icon set. Neutral colour is a role
+  (`fg-*` tokens), never an opacity: never write `white/N` or `text-white`.
+- Viewport heights are `dvh`; never `min-h-screen`. Animations are from-state, and never a
+  `transform` on `Screen` (it breaks `fixed` descendants).
 
 ### Generated files — don't read these
 
