@@ -1,6 +1,8 @@
+import { useCoverGame } from '../context/coverGameContext';
 import { ART } from './credits';
 import { accentVar } from './accents';
 import Kana from './Kana';
+import { KANA } from './kanaText';
 
 // The page behind every screen: a printed sheet. All layers decorative, all
 // pointer-events-none, all inside one fixed container so a long page scrolls
@@ -8,32 +10,39 @@ import Kana from './Kana';
 //
 // It replaced a CRT (glow pools under a vignette and grain), and kept that
 // version's one hard rule: NOTHING HERE MOVES. A full-screen animated layer is a
-// permanent compositing cost on every screen in the app, so the texture is
-// paper fibre, registration crosses and a corner of screentone, all static —
-// see the print-texture utilities in index.css.
+// permanent compositing cost on every screen in the app, so every layer is a
+// static print texture — see the print-texture utilities in index.css.
+//
+// The sheet is a COVER: a speed-line burst from the corner, a screentone brush
+// slash and a name in kana set down the edge like a manga cover's, all in one
+// ink. It used to be faint registration crosses (plus-grid, now only AniTurf's
+// board cells), which read as a blank page of plus signs between the hub's
+// print and each game's banner.
+//
+// Whose cover is decided here, so no screen has to: an explicit `game` (a
+// registry descriptor, or anything with `accent` and `kana`) wins; otherwise
+// the game the hub has open (CoverGameContext, which reaches every screen of a
+// game, in-round included); otherwise the arcade's own — the brand vermilion
+// and アニアーケード, on the hub's screens and on a component mounted alone in a
+// test. The menus still pass `game` so they are right even mounted alone.
 //
 // `art` is one of shared/ui/credits.js's ART keys, for the few screens that
 // carry a print (the hub). It is multiplied into the paper and knocked right
 // back, so it reads as an image printed faintly on the sheet rather than as a
 // photo behind the content — content here is ink on paper and has to stay
 // readable over it.
-//
-// `game` (a registry descriptor) turns the sheet into that game's cover, and
-// only the MENUS pass it: the cover page (ModePicker), every setup screen and
-// lobby (SetupLayout) and Play Online (RoomSetup). On those, a page of faint
-// crosses read as blank between the hub's print and the game's own banner, so
-// the crosses give way to the game's ink — a speed-line burst, a screentone
-// brush slash and its kana name set down the edge like a manga cover's.
-// In-round screens never pass it: a board, a timer and a row of faces are busy
-// enough, and the quiet sheet is what keeps them readable.
+const ARCADE = { accent: 'pink', kana: KANA.arcade };
+
 export default function Backdrop({ art = null, game = null }) {
+  const open = useCoverGame();
+  const cover = game ?? open ?? ARCADE;
   const print = art ? ART[art] : null;
 
   return (
     <div
       aria-hidden="true"
       className="fixed inset-0 -z-10 overflow-hidden bg-canvas"
-      style={game ? { '--game-ink': accentVar(game.accent) } : undefined}
+      style={{ '--game-ink': accentVar(cover.accent) }}
     >
       {print && (
         <img
@@ -43,27 +52,9 @@ export default function Backdrop({ art = null, game = null }) {
           className="absolute inset-0 h-full w-full object-cover opacity-[0.07] mix-blend-multiply"
         />
       )}
-      {game ? <CoverLayers kana={game.kana} /> : <SheetLayers />}
+      <CoverLayers kana={cover.kana} />
       <div className="paper-grain absolute inset-0 opacity-[0.22]" />
     </div>
-  );
-}
-
-function SheetLayers() {
-  return (
-    <>
-      <div className="plus-grid absolute inset-0 opacity-[0.16]" />
-      {/* Screentone in two opposite corners, fading out — the way a manga page
-          shades an empty panel corner rather than tinting the whole thing. */}
-      <div
-        className="halftone absolute -top-10 -right-10 h-72 w-72 opacity-[0.14]
-          [mask-image:radial-gradient(circle_at_top_right,#000_0%,transparent_70%)]"
-      />
-      <div
-        className="halftone absolute -bottom-10 -left-10 h-80 w-80 opacity-[0.12] [--tone-size:9px]
-          [mask-image:radial-gradient(circle_at_bottom_left,#000_0%,transparent_70%)]"
-      />
-    </>
   );
 }
 
@@ -94,19 +85,23 @@ function CoverLayers({ kana }) {
         className="halftone absolute -right-10 -bottom-10 h-72 w-72 opacity-[0.12] [--tone-size:9px]
           [mask-image:radial-gradient(circle_at_bottom_right,#000_0%,transparent_70%)]"
       />
-      {/* The game's name down the right edge, the way a manga cover runs its
-          title. Sized to the viewport so the longest names (six glyphs:
-          アニフェイク, アニチューン) fit under the top bar on a phone, and faint
-          enough that the column's text reads over it where they overlap.
+      {/* The name down the right edge, the way a manga cover runs its title,
+          faint enough that the column's text reads over it where they overlap.
+          Sized by its own LENGTH as well as the viewport: a fixed 12dvh fitted
+          the six-glyph game names, but アニアーケード (seven) ran past the
+          bottom of a laptop screen and vertical text wraps a new column rather
+          than overflowing — a stray ド beside the rest. Each glyph takes about
+          1.12em with Kana's tracking; 5rem is the top bar plus a margin, and
+          nowrap means a miscount clips instead of wrapping.
           Hidden under forced colours, which would repaint it solid CanvasText. */}
       {kana && (
-        <Kana
-          vertical
-          className="absolute top-16 right-[2vw] text-[min(22vw,12dvh)] leading-none text-[var(--game-ink)]
+        <div
+          className="absolute top-16 right-[2vw] leading-none whitespace-nowrap text-[var(--game-ink)]
             opacity-[0.09] forced-colors:hidden"
+          style={{ fontSize: `min(22vw, 12dvh, calc((100dvh - 5rem) / ${[...kana].length * 1.15}))` }}
         >
-          {kana}
-        </Kana>
+          <Kana vertical>{kana}</Kana>
+        </div>
       )}
     </>
   );

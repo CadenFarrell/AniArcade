@@ -23,6 +23,7 @@ import { useCloudSave } from '../shared/context/cloudSaveContext';
 import { useProfileStore } from '../shared/context/profileContext';
 import { InviteContext } from '../shared/context/inviteContext';
 import { TileCharacterContext } from '../shared/context/tileCharacterContext';
+import { CoverGameContext } from '../shared/context/coverGameContext';
 import { useWakeLock } from '../shared/hooks/useWakeLock';
 import { playSound } from '../shared/services/sound';
 import { readRestore, stripRestore } from '../shared/utils/cloudSave';
@@ -402,11 +403,14 @@ export default function HubScreen() {
           {/* Inside the boundary, so a game whose code never arrives lands on the
               boundary's reload screen rather than taking down the arcade. */}
           <Suspense fallback={<GameLoading title={active.title} kana={active.kana} accent={active.accent} />}>
-            {/* The tapped tile's character, for the game's cover page. */}
+            {/* The tapped tile's character, for the game's cover page, and
+                the game itself, for the backdrop behind all its screens. */}
             <TileCharacterContext.Provider value={tiles[active.id] ?? null}>
-              <InviteContext.Provider value={inviteValue}>
-                <Game onExit={backToMenu} />
-              </InviteContext.Provider>
+              <CoverGameContext.Provider value={active}>
+                <InviteContext.Provider value={inviteValue}>
+                  <Game onExit={backToMenu} />
+                </InviteContext.Provider>
+              </CoverGameContext.Provider>
             </TileCharacterContext.Provider>
           </Suspense>
         </ErrorBoundary>

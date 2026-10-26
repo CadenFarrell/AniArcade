@@ -23,7 +23,8 @@ import {
 //         because a required-by-accident prop is exactly what happened here.
 //   game  the game's descriptor, for the menus' cover backdrop (Backdrop.jsx).
 //         Not a stand-in for `tone`: AniGuess's online wordmark is purple, not
-//         its pink. Optional; without it the page is the plain sheet.
+//         its pink. Optional; without it Backdrop takes the open game from
+//         context, so this only matters when the screen is mounted alone.
 //
 // No name box: the hub already asked. This screen only ever wanted to know
 // "who am I", and typing that answer fresh each time is what quietly created

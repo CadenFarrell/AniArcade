@@ -25,7 +25,9 @@ export default function GameLoading({ title, kana, accent }) {
   if (!shown) return null;
   return (
     <>
-      <Backdrop />
+      {/* Explicit: this is Suspense's fallback, outside the game's
+          CoverGameContext, and the cover should already be the game's. */}
+      <Backdrop game={{ accent, kana }} />
       <Screen center width="md" className="text-center">
         <div className="relative mx-auto grid aspect-[4/3] max-w-sm place-items-center overflow-hidden border-2 border-ink bg-surface shadow-pop">
           <div aria-hidden="true" className="speed-lines absolute inset-0 opacity-25" />
