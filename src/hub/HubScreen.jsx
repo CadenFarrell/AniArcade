@@ -1,6 +1,9 @@
 import { Suspense, useEffect, useMemo, useState } from 'react';
 import { games } from './registry';
 import CreditsModal from './CreditsModal';
+import FeedbackModal from '../shared/components/FeedbackModal';
+import HowToSheet from '../shared/components/HowToSheet';
+import { markHowToSeen, readHowToSeen } from './howToSeen';
 import GameLoading from './GameLoading';
 import { readInvite, stripInvite } from '../shared/utils/inviteLink';
 import PanelWipe from './PanelWipe';
@@ -26,7 +29,7 @@ import { CoverGameContext } from '../shared/context/coverGameContext';
 import { useWakeLock } from '../shared/hooks/useWakeLock';
 import { playSound } from '../shared/services/sound';
 import { preloadGames } from '../shared/utils/lazyGame';
-import { Backdrop, Badge, GhostButton, HubButton, Kana, Screen } from '../shared/ui';
+import { Backdrop, Badge, GhostButton, HubButton, Icon, Kana, Screen } from '../shared/ui';
 import { accentBg } from '../shared/ui/accents';
 import { ART } from '../shared/ui/credits';
 import { KANA } from '../shared/ui/kanaText';
@@ -45,6 +48,27 @@ import { KANA } from '../shared/ui/kanaText';
 // directly rather than <Button>: it needs a full-bleed panel over a two-part
 // body, which the plain label-in-a-block Button API does not cover.
 const GAME_IDS = games.map((g) => g.id);
+
+// The open game's rules, from the top bar — the one place on every screen of a
+// game (cover, setup, a round, the lobby, results), so the rules are never more
+// than a press away and no game screen had to grow a button. Icon-only because
+// on a phone the bar already holds Hub, a room's code and Leave, and Mute; its
+// name is the words. Styled as the Mute toggle beside it, a quiet glyph in the
+// bar rather than a block that competes with Hub.
+function HowToButton({ onClick }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label="How to play"
+      title="How to play"
+      className="focus-pop grid h-10 w-10 place-items-center rounded-pop-sm text-xl text-fg-icon
+        transition-colors hover:bg-wash hover:text-fg-strong"
+    >
+      <Icon name="help" />
+    </button>
+  );
+}
 
 // `captioned` is the BOARD's answer, not this tile's: the caption hangs half
 // into the tile body, so a tile with one pushes its title down — and if only
@@ -262,6 +286,16 @@ export default function HubScreen() {
   const [gameId, setGameId] = useState(() => invite?.gameId ?? null);
   const [showPicker, setShowPicker] = useState(false);
   const [showCredits, setShowCredits] = useState(false);
+  // The How to play sheet: the id of the game it is open for, or null. It opens
+  // by itself the first time a game is opened on this device (howToSeen.js) —
+  // invite links included, since a friend joining by link is the newest player
+  // at the table — and from the top bar's button any time after.
+  const [howToFor, setHowToFor] = useState(() => (
+    invite?.gameId && !readHowToSeen(invite.gameId) ? invite.gameId : null
+  ));
+  // The feedback box: null when closed, else { gameId } — '' for the arcade
+  // itself, a game's id when opened from that game's rules sheet.
+  const [feedback, setFeedback] = useState(null);
   // Which profile's anime list is open, or null for the menu. ListManager is a
   // full-height page rather than a dialog, so it gets its own hub view instead
   // of living inside ProfilePicker.
@@ -313,11 +347,16 @@ export default function HubScreen() {
 
   const openGame = (id) => {
     playSound('select');
-    wipe(() => setGameId(id));
+    wipe(() => {
+      setGameId(id);
+      // Behind the slab, so the sheet is already up when the cover appears.
+      if (!readHowToSeen(id)) setHowToFor(id);
+    });
   };
   const backToMenu = () => wipe(() => {
     setGameId(null);
     setInvite(null);
+    setHowToFor(null);
     setTiles(drawTileCharacters(activeProfile, GAME_IDS));
   });
 
@@ -357,8 +396,8 @@ export default function HubScreen() {
     // produced it; going back to the menu unmounts the boundary anyway, and
     // the key makes that true even if this branch is ever reused.
     content = (
-      <TopBar title={active.title} kana={active.kana}>
-        <ErrorBoundary key={active.id} onBack={backToMenu}>
+      <TopBar title={active.title} kana={active.kana} end={<HowToButton onClick={() => setHowToFor(active.id)} />}>
+        <ErrorBoundary key={active.id} gameId={active.id} onBack={backToMenu}>
           {/* Inside the boundary, so a game whose code never arrives lands on the
               boundary's reload screen rather than taking down the arcade. */}
           <Suspense fallback={<GameLoading title={active.title} kana={active.kana} accent={active.accent} />}>
@@ -459,6 +498,14 @@ export default function HubScreen() {
             <span>Characters from your own list · prints from the Met · sounds by Kenney.</span>
             <button
               type="button"
+              onClick={() => setFeedback({ gameId: '' })}
+              className="focus-pop min-h-6 px-1 font-bold text-fg-body underline decoration-2 underline-offset-2
+                hover:text-fg-strong"
+            >
+              Feedback
+            </button>
+            <button
+              type="button"
               onClick={() => setShowCredits(true)}
               // min-h-6: the 24px floor of WCAG 2.5.8, without growing the
               // text — at text-xs the bare link was 16px tall.
@@ -485,9 +532,29 @@ export default function HubScreen() {
     );
   }
 
+  // Closing marks the game seen, whichever way it closes — "Got it", Escape, or
+  // on to the feedback box.
+  const sheetGame = games.find((g) => g.id === howToFor && g.id === gameId) ?? null;
+  const closeSheet = () => {
+    markHowToSeen(howToFor);
+    setHowToFor(null);
+  };
+
   return (
     <>
       {content}
+      {/* Outside the branches: a dialog is fixed over the page whichever view is
+          under it, and the feedback box opens from both the menu and a game. */}
+      {sheetGame && (
+        <HowToSheet
+          game={sheetGame}
+          onClose={closeSheet}
+          onFeedback={() => { closeSheet(); setFeedback({ gameId: sheetGame.id }); }}
+        />
+      )}
+      {feedback && (
+        <FeedbackModal games={games} gameId={feedback.gameId} onClose={() => setFeedback(null)} />
+      )}
       {wipeId != null && <PanelWipe key={wipeId} />}
     </>
   );

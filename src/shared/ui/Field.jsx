@@ -13,6 +13,12 @@ export function Input({ className = '', ...rest }) {
   return <input className={`${BASE} ${className}`} {...rest} />;
 }
 
+// The same box, several lines tall — the feedback form's message. resize-y
+// only, so a drag can never widen it past the dialog.
+export function Textarea({ className = '', ...rest }) {
+  return <textarea className={`${BASE} resize-y ${className}`} {...rest} />;
+}
+
 export function Select({ className = '', children, ...rest }) {
   return (
     <select className={`${BASE} ${className}`} {...rest}>

@@ -82,6 +82,16 @@ knowledge the hidden role lacks, so publish the discard.
 the repeating value in the key (`redeal:${round}:${game.deal}`) or it fires once and wedges the
 room. Host migration and the card check are the two such cases so far.
 
+## Outside `rooms/`: reports
+
+`reports/{crashes,feedback}/{uid}/{id}` and `reportGate/{uid}/{kind}` (root `CLAUDE.md`, "Crash
+reports and feedback") are **write-only**: no rule grants a read, so nothing in the app can
+list them. A report is written in ONE multi-path `update` with its gate set to the server
+`now`; the report's rule reads the gate's new value through `newData.parent()` ×4 (the
+multi-path trap below is about `root`, which sees the old tree), and the gate's rule refuses
+a stamp within 30s (crashes) or 60s (feedback) of the last. Every field is capped and
+`$other` is refused, so a hand-made write cannot grow a report. `smoke/reports.smoke.test.js`.
+
 ## RTDB traps
 
 - **Multi-location `update()` rules evaluate against the pre-update tree**, so a batch writing

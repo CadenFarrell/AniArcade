@@ -14,4 +14,5 @@ export { default as NumberInput } from './NumberInput';
 export { default as Screen } from './Screen';
 export { default as TimerBar } from './TimerBar';
 export { default as Wordmark } from './Wordmark';
-export { Checkbox, Field, Input, Label, Select } from './Field';
+export { Checkbox, Field, Input, Label, Select, Textarea } from './Field';
+export { default as SheetSection } from './SheetSection';

@@ -1,4 +1,4 @@
-import { Button, Kana, Modal } from '../shared/ui';
+import { Button, Kana, Modal, SheetSection as Section } from '../shared/ui';
 import { ART, FONTS, SOUND_PACK } from '../shared/ui/credits';
 import { KANA } from '../shared/ui/kanaText';
 
@@ -59,16 +59,5 @@ function ArtCredit({ art }) {
       </a>
       <span className="text-fg-body"> — {art.artist}, {art.date}. {art.source}. {art.licence}.</span>
     </li>
-  );
-}
-
-function Section({ title, children }) {
-  return (
-    <section className="mb-5">
-      <h3 className="mb-2 inline-block bg-ink px-2 py-0.5 font-display text-xs font-bold uppercase tracking-[0.18em] text-paper">
-        {title}
-      </h3>
-      <ul className="space-y-2 text-sm text-fg-strong">{children}</ul>
-    </section>
   );
 }

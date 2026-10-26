@@ -47,6 +47,10 @@ const DENY_START = [
   // The profile picker's create paths and the first-visit welcome: device
   // housekeeping, never a step in a game.
   'new player', 'just a name', 'bring my', 'not now',
+  // The rules sheet and the feedback box: help, never a step in a game. A bot
+  // pressing the top bar's "How to play" at random would only reopen a dialog,
+  // and Send feedback would write to the database the build points at.
+  'how to play', 'feedback', 'send feedback',
 ];
 // A name ending in a disclosure triangle opens or closes a panel and never
 // moves a game on; pressed at random it is the commonest way to look busy. And
@@ -119,11 +123,25 @@ export function genericAction(snap, ctx) {
 
 // ---- the arcade's shared screens -----------------------------------------
 //
+// A game's rules sheet opens by itself the first time the game is opened on a
+// device (hub/howToSeen.js), over the cover page. The snapshot still lists the
+// cover's buttons beneath it, and jsdom would let a press through to them, but
+// a real browser's dialog swallows it — so close it first, as a player would.
+// Shared by the local driver (arcadeAction) and the online table (roomAction).
+export function closeRulesSheet(snap) {
+  const gotIt = find(snap, /^got it$/i);
+  return snap.dialog && gotIt && /how to play/i.test(snap.text) ? click(gotIt, 'close rules sheet') : null;
+}
+
+//
 // Hub → mode picker → local setup → profile picker is the same path in every
 // game (HubScreen.test.jsx pins it), so it is handled once here. Returns an
 // action, or null when the current screen is not one of these.
 export function arcadeAction(snap, ctx) {
   const { game, scenario, memory } = ctx;
+
+  const sheet = closeRulesSheet(snap);
+  if (sheet) return sheet;
 
   // The profile picker in 'add' mode: seat the next fixture player we want, or
   // close it once the table is full. Seated players drop out of its list, so

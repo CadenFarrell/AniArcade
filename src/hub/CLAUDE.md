@@ -152,6 +152,19 @@ answered, never again (`welcomeSeen.js`, localStorage, not in `PRESERVED_KEYS`);
 playtest fixtures seed profiles, so the bots never meet it, and `generic.js` denies its
 buttons anyway.
 
+## How to play, and feedback
+
+**A game's rules sheet opens by itself once per game per device, over the cover**
+(`howToSeen.js`, one localStorage list of ids, not in `PRESERVED_KEYS`), invite links
+included — a friend joining by link is the newest player at the table. `openGame` sets it
+inside the wipe, so it is up when the cover appears; closing it any way marks it seen. After
+that the top bar's "How to play" (`HowToButton`, passed as the bar's `end` while a game is
+open) brings it back on any screen. Both dialogs render outside the view branches, since the
+feedback box opens from the menu's footer ("Feedback", beside Credits) and from a sheet's
+"Send feedback", which arrives with the game chosen. `renderArcade` marks every game seen
+unless passed `{ showHowTo: true }`; the bots close a sheet by "Got it"
+(`playtest/core/generic.js`'s `closeRulesSheet`) and never open one.
+
 ## Title, hero and wipe
 
 **`TitleScreen` shows once per browser session** (`titleSeen.js`, sessionStorage): right on
@@ -173,7 +186,7 @@ what `HubScreen.test.jsx`'s `findTile` / `findHub` do. Reduced motion swaps imme
 Every game's `Component` is `shared/utils/lazyGame.js`'s `lazyGame(() => import(...))`. The
 registry used to import all seven eagerly, so the menu could not paint until every game,
 Firebase and dnd-kit had arrived: one ~1 MB file (301 KB gzipped) before the first tile.
-Startup is now ~209 KB (66 KB gzipped, measured after the paper redesign); each game is its own chunk, and Firebase sits in a
+Startup is now ~222 KB (68 KB gzipped, measured 2026-10-26 with the rules sheet and feedback box in it); each game is its own chunk, and Firebase sits in a
 shared one that only a game pulls in.
 
 **The tap is not slower, because the hub preloads.** `preloadGames` runs once the menu is up

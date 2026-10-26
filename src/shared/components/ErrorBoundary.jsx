@@ -1,4 +1,5 @@
 import { Component } from 'react';
+import { reportCrash } from '../services/crashReport';
 import { storage } from '../services/storage';
 import { keysToClear } from '../utils/resetKeys';
 import Button from '../ui/Button';
@@ -52,8 +53,12 @@ export default class ErrorBoundary extends Component {
     return { hasError: true, loadFailed: Boolean(error?.gameLoad) };
   }
 
+  // Logged here and reported home (services/crashReport.js), which does
+  // nothing for a failed download, offline, or on a dev server. `gameId` is
+  // HubScreen's, on the per-game mount; the root one has none to give.
   componentDidCatch(error, info) {
     console.error('AniArcade crashed:', error, info);
+    reportCrash(error, { componentStack: info?.componentStack, gameId: this.props.gameId });
   }
 
   // Clears everything except the player's imported profiles — see

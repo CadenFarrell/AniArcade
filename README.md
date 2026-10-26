@@ -22,7 +22,8 @@ Play it at **https://aniguess-a08f7.web.app/**.
 | **AniPeek** | A face hides under sixteen tiles. Bid how few you need to name them, then prove it. |
 
 Every game has a local mode and an online mode, and every finished game goes into each
-player's play record.
+player's play record. Each game's rules are one press away under "How to play" in the top
+bar, and open by themselves the first time you play it.
 
 ## Running it
 
@@ -72,6 +73,10 @@ Deploying:
 npx firebase deploy --only database   # database.rules.json
 npm run build && npx firebase deploy --only hosting
 ```
+
+Crash reports and player feedback are written to `reports/` in the Realtime Database, which
+no client can read: read them in the Firebase console. Deploy the database rules before a
+build that sends them, or every send is refused.
 
 ## Generated files
 

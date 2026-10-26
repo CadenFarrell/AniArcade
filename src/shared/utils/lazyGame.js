@@ -53,6 +53,9 @@ export function preloadGames(games, { idle = globalThis.requestIdleCallback } = 
       // A failed preload is not an error anyone needs to see: the tap retries,
       // and the loading screen says so if it fails again.
       if (game.available) game.Component?.preload?.()?.catch(() => {});
+      // The rules sheet too, so "How to play" opens with no wait, and offline
+      // it is in the cache with the game (the service worker keeps /assets/).
+      game.howTo?.()?.catch(() => {});
     }
   };
   if (typeof idle === 'function') {

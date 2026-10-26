@@ -15,6 +15,9 @@ test('AniRank tier board: drag a card into a row and back to the tray', async ({
       aniguess_profiles: { [profile.id]: profile },
       aniarcade_active_profile: profile.id,
       aniarcade_game_prefs: { anirank: { format: 'tiers', axisId: 'best', sharedOnly: true, scoring: false, blind: false } },
+      // The rules sheet opens by itself over a game's first cover
+      // (hub/howToSeen.js) and swallows the press below it. Not this test's subject.
+      aniarcade_howto_seen: ['anirank'],
     },
   });
   const offsite = [];

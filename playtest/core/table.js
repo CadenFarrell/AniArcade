@@ -13,7 +13,7 @@
 // interface plus crash() (the tab closes: socket drops, no exit runs) and
 // alive.
 import { screenChecks, rosterCheck } from './checks.js';
-import { find, genericAction, startButton, click, fill } from './generic.js';
+import { closeRulesSheet, find, genericAction, startButton, click, fill } from './generic.js';
 import { reproCommand, describeScenario } from './driver.js';
 
 // Both casings of the label, spelled out: the lobby's banner `RoomCode` sets it
@@ -53,6 +53,8 @@ const inLobby = (snap) => /the host picks the settings|share this code with the 
 
 function roomAction(snap, ctx) {
   const { seat, table } = ctx;
+  const sheet = closeRulesSheet(snap);
+  if (sheet) return sheet;
   const online = find(snap, /play online/i);
   if (online) return click(online, 'play online');
 

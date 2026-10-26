@@ -11,8 +11,12 @@ test('the arcade opens and a game sets up with no network', async ({ page, conte
   const errors = [];
   page.on('pageerror', (e) => errors.push(e.message));
   // A device with no profile meets the first-visit welcome (hub/WelcomeModal),
-  // which sits over the tiles. It is not what this test is about.
-  await page.addInitScript(() => localStorage.setItem('aniarcade_welcome_seen', '1'));
+  // which sits over the tiles, and a game's first cover meets its rules sheet
+  // (hub/howToSeen.js). Neither is what this test is about.
+  await page.addInitScript(() => {
+    localStorage.setItem('aniarcade_welcome_seen', '1');
+    localStorage.setItem('aniarcade_howto_seen', JSON.stringify(['aniquiz']));
+  });
 
   await page.goto('/');
   // Installed, activated and in control of this page: the cache is full.

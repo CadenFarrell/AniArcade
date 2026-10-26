@@ -2,6 +2,19 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { serviceWorker } from './sw/plugin.js'
+import { execSync } from 'node:child_process'
+
+// The commit a build was made from, stamped into every crash report and piece
+// of feedback (shared/services/reports.js) so a report can be read against the
+// code that produced it. 'dev' when git is not there to ask, which a build
+// must survive rather than fail on.
+function buildId() {
+  try {
+    return execSync('git rev-parse --short HEAD', { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim() || 'dev'
+  } catch {
+    return 'dev'
+  }
+}
 
 export default defineConfig(({ mode }) => ({
   plugins: [
@@ -10,6 +23,7 @@ export default defineConfig(({ mode }) => ({
     // dist/sw.js, for offline local play: see sw/serviceWorker.template.js.
     serviceWorker(),
   ],
+  define: { 'import.meta.env.VITE_APP_BUILD': JSON.stringify(buildId()) },
   // The playtest bots write reports and builds while a dev server may be up;
   // none of it is source, and a watched write would reload the open app.
   server: { watch: { ignored: ['**/playtest-report/**', '**/dist-playtest/**', '**/dist-playtest-emu/**'] } },

@@ -141,6 +141,12 @@ export const ICONS = {
   list: [s('M8.5 6h12M8.5 12h12M8.5 18h12', 2.5), f('M3.5 4.5h3v3h-3zM3.5 10.5h3v3h-3zM3.5 16.5h3v3h-3z')],
   // talk it out
   speech: [s('M4 5h16v10.5h-8.5L7 19.5v-4H4z')],
+  // how to play (the top bar's rules-sheet button, which has no words of its own)
+  help: [
+    { tag: 'circle', paint: 'stroke', cx: 12, cy: 12, r: 8.5 },
+    s('M9.6 9.4a2.5 2.5 0 1 1 3.4 2.35c-.65.3-1 .85-1 1.55v.4', 2.25),
+    { tag: 'circle', paint: 'fill', cx: 12, cy: 16.9, r: 1.35 },
+  ],
   // the fake (AniFake) — a domino mask; the eye holes are cut out, not painted,
   // so it reads on any fill
   mask: [

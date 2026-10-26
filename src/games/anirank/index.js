@@ -12,4 +12,6 @@ export default {
   available: true,
   // Loaded on demand — see shared/utils/lazyGame.js.
   Component: lazyGame(() => import('./AniRankGame')),
+  // The rules sheet, loaded on demand like the game (shared/utils/lazyGame.js).
+  howTo: () => import('./howTo'),
 };

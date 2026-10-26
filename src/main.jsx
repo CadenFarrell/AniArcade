@@ -7,6 +7,11 @@ import ProfileProvider from './shared/context/ProfileProvider.jsx'
 import HelpDetailProvider from './shared/context/HelpDetailProvider.jsx'
 import SoundProvider from './shared/context/SoundProvider.jsx'
 import { registerServiceWorker } from './shared/services/serviceWorker.js'
+import { installCrashListeners } from './shared/services/crashReport.js'
+
+// Before the first render, so an error thrown while the arcade starts up is
+// heard too. ErrorBoundary reports render crashes; this catches the rest.
+installCrashListeners()
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>

@@ -1,5 +1,72 @@
 {
   "rules": {
+    "reportGate": {
+      "$uid": {
+        "$kind": {
+          ".write": "auth != null && auth.uid === $uid && newData.val() === now && (($kind === 'crashes' && (!data.exists() || data.val() < now - 30000)) || ($kind === 'feedback' && (!data.exists() || data.val() < now - 60000)))"
+        }
+      }
+    },
+    "reports": {
+      "crashes": {
+        "$uid": {
+          "$id": {
+            ".write": "auth != null && auth.uid === $uid && !data.exists() && newData.exists() && newData.parent().parent().parent().parent().child('reportGate/'+$uid+'/crashes').val() === now",
+            ".validate": "newData.hasChildren(['message', 'at']) && newData.child('at').val() === now",
+            "message": {
+              ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 300"
+            },
+            "stack": {
+              ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 2000"
+            },
+            "componentStack": {
+              ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 1500"
+            },
+            "gameId": {
+              ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 40"
+            },
+            "path": {
+              ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 200"
+            },
+            "ua": {
+              ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 200"
+            },
+            "build": {
+              ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 40"
+            },
+            "at": {
+              ".validate": "newData.isNumber()"
+            },
+            "$other": {
+              ".validate": false
+            }
+          }
+        }
+      },
+      "feedback": {
+        "$uid": {
+          "$id": {
+            ".write": "auth != null && auth.uid === $uid && !data.exists() && newData.exists() && newData.parent().parent().parent().parent().child('reportGate/'+$uid+'/feedback').val() === now",
+            ".validate": "newData.hasChildren(['text', 'at']) && newData.child('at').val() === now",
+            "text": {
+              ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 1000"
+            },
+            "gameId": {
+              ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 40"
+            },
+            "build": {
+              ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 40"
+            },
+            "at": {
+              ".validate": "newData.isNumber()"
+            },
+            "$other": {
+              ".validate": false
+            }
+          }
+        }
+      }
+    },
     "roomIndex": {
       ".read": "auth != null && query.orderByKey == true && query.endAt <= (now - 86400000) + ''",
       "$key": {

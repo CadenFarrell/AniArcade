@@ -271,6 +271,89 @@ describe.each(games.map((g) => [g.title, g]))('%s', (_title, game) => {
   });
 });
 
+// The rules sheet (shared/components/HowToSheet.jsx, hub/howToSeen.js) and the
+// feedback box (shared/components/FeedbackModal.jsx). The sheet opens by itself
+// once per game per device, so these tests ask renderArcade for it with
+// `showHowTo`; every other test here lands on the cover with no dialog.
+describe('how to play and feedback', () => {
+  const sheetHeading = () => screen.queryByRole('heading', { name: 'How to play' });
+
+  it('opens a game’s rules by itself the first time, and only the first time', async () => {
+    seedProfiles([makeProfile('Caden')]);
+    const user = userEvent.setup();
+    renderArcade(<HubScreen />, { showHowTo: true });
+    const game = games[0];
+    const { HOW_TO } = await game.howTo();
+
+    await user.click(tileFor(game));
+    expect(await screen.findByText(HOW_TO.goal)).toBeTruthy();
+    expect(sheetHeading()).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: 'Got it' }));
+    expect(sheetHeading()).toBeNull();
+    expect(JSON.parse(localStorage.getItem('aniarcade_howto_seen'))).toEqual([game.id]);
+
+    // Back out and in again: the cover, with no sheet over it.
+    await user.click(await findHub());
+    await user.click(await findTile(game));
+    await screen.findByRole('button', { name: /play on this device/i });
+    expect(sheetHeading()).toBeNull();
+    // A different game is still new.
+    await user.click(await findHub());
+    await user.click(await findTile(games[1]));
+    expect(await screen.findByRole('heading', { name: 'How to play' })).toBeTruthy();
+    expect(errors).toEqual([]);
+  });
+
+  it('keeps How to play in the top bar, on the cover and inside local setup', async () => {
+    seedProfiles([makeProfile('Caden')]);
+    const user = userEvent.setup();
+    renderArcade(<HubScreen />);
+    const game = games[games.length - 1];
+    const { HOW_TO } = await game.howTo();
+
+    await user.click(tileFor(game));
+    const button = await screen.findByRole('button', { name: 'How to play' });
+    expect(button.closest('header')).toBeTruthy();
+    await user.click(button);
+    expect(await screen.findByText(HOW_TO.goal)).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: 'Got it' }));
+
+    await user.click(await screen.findByRole('button', { name: /play on this device/i }));
+    await user.click(screen.getByRole('button', { name: 'How to play' }));
+    expect(await screen.findByText(HOW_TO.goal)).toBeTruthy();
+    expect(errors).toEqual([]);
+  });
+
+  it('offers feedback from the hub, and says when this build cannot send it', async () => {
+    const user = userEvent.setup();
+    seedProfiles([makeProfile('Caden')]);
+    renderArcade(<HubScreen />);
+
+    await user.click(screen.getByRole('button', { name: 'Feedback' }));
+    expect(screen.getByRole('heading', { name: 'Send feedback' })).toBeTruthy();
+    // This suite is the unconfigured build (firebase is mocked off above).
+    expect(await screen.findByText(/isn’t set up to receive feedback/i)).toBeTruthy();
+    await user.type(screen.getByLabelText('Your message'), 'The quiz is great');
+    expect(screen.getByRole('button', { name: 'Send' }).disabled).toBe(true);
+    await user.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect(screen.queryByRole('heading', { name: 'Send feedback' })).toBeNull();
+  });
+
+  it('opens feedback about a game from that game’s rules sheet', async () => {
+    seedProfiles([makeProfile('Caden')]);
+    const user = userEvent.setup();
+    renderArcade(<HubScreen />);
+    const game = games[2];
+
+    await user.click(tileFor(game));
+    await user.click(await screen.findByRole('button', { name: 'How to play' }));
+    await user.click(await screen.findByRole('button', { name: 'Send feedback' }));
+    expect(sheetHeading()).toBeNull();
+    expect(screen.getByRole('heading', { name: 'Send feedback' })).toBeTruthy();
+    expect(screen.getByLabelText('About').value).toBe(game.id);
+  });
+});
+
 // shared/utils/autoSeat.js: a game that needs a crowd seats the couch; a game
 // that plays solo seats only the main profile.
 describe('auto-seating', () => {

@@ -11,14 +11,22 @@ import HelpDetailProvider from '../context/HelpDetailProvider';
 import SoundProvider from '../context/SoundProvider';
 import { profileIdFromName } from '../utils/profileStats';
 import { markTitleSeen } from '../../hub/titleSeen';
+import { HOWTO_KEY } from '../../hub/howToSeen';
+import { games } from '../../hub/registry';
 
 // `options` goes straight to RTL's render — the playtest bots pass a
 // `container` per simulated device, so several arcades share one document —
 // except `showTitle`. By default the tab is marked as past the title screen,
 // the way a player mid-session is, so a test lands on the hub it is about;
 // pass `showTitle: true` to test the title screen itself.
-export function renderArcade(ui, { showTitle = false, ...options } = {}) {
+//
+// `showHowTo` is the same idea for the rules sheet that opens by itself the
+// first time each game is opened (hub/howToSeen.js): by default every game is
+// marked as already explained, so a test that opens a game lands on its cover
+// rather than on a dialog over it. Pass `showHowTo: true` to test the sheet.
+export function renderArcade(ui, { showTitle = false, showHowTo = false, ...options } = {}) {
   if (!showTitle) markTitleSeen();
+  if (!showHowTo) localStorage.setItem(HOWTO_KEY, JSON.stringify(games.map((g) => g.id)));
   return render(
     <ErrorBoundary>
       <ProfileProvider>

@@ -83,12 +83,12 @@ one your rules were deployed to.
 
 `src/hub/registry.js` is the entire arcade menu. A game is a folder under `src/games/`
 whose `index.js` default-exports a descriptor (`{ id, title, kana, blurb, accent,
-available, Component }`) plus one line added to that array. `Component` receives a single
+available, Component, howTo }`) plus one line added to that array. `Component` receives a single
 `onExit` prop and owns everything from there.
 
 **`Component` is always `lazyGame(() => import('./<Game>Game'))`, never a static import.**
 Everything else on the descriptor is the menu and stays eager; the game's code downloads on
-demand, so the hub paints after ~66 KB gzipped instead of the whole arcade's ~300 KB. A new
+demand, so the hub paints after ~68 KB gzipped instead of the whole arcade's ~300 KB. A new
 game that imports its component statically pulls itself — and anything only it uses — back
 into the hub's startup bundle, and nothing fails to say so. The mechanics (idle preload,
 the loading screen, the reload-not-reset error) are in `src/hub/CLAUDE.md`.
@@ -108,6 +108,14 @@ of which is a thin view-router holding a `view` string and rendering dumb screen
 
 Tile sizing, the tile characters, the blurb's two homes and `ArcadeMark` are in
 `src/hub/CLAUDE.md`.
+
+**Every game ships a rules sheet: `howTo: () => import('./howTo')`**, whose `HOW_TO` is
+`{ goal, players, sections: [{ title, items }] }` built from the game's own `rules.js` and
+`prefs.js` constants, so a retuned number reaches the sheet by itself. `HubScreen` shows it
+(`shared/components/HowToSheet.jsx`) from a "How to play" button in the top bar on every
+screen of a game, and by itself the first time a game is opened on a device
+(`hub/howToSeen.js`). `hub/howTo.test.js` fails a game without one, or one printing
+`undefined`. Change a game's rules, check its sheet.
 
 ### rules.js — the central invariant
 
@@ -182,6 +190,18 @@ Every finished game is a line in `aniarcade_history`. Each game's FINAL results 
 `useRecordResult(gameId, players, winnerIds, { places, scores })` once — never a between-rounds
 `RoundEnd`, which would count a game several times. Ties, solo tables, team wins, the online
 scope and the head-to-head: `.claude/rules/play-history.md`.
+
+### Crash reports and feedback
+
+`shared/services/reports.js` is the one write-only channel home: `reports/crashes/{uid}` and
+`reports/feedback/{uid}` in the same RTDB, which no client can read (read them in the Firebase
+console), each write rate-limited by a `reportGate/{uid}/{kind}` stamp the rules check.
+Firebase is imported **dynamically** there, so the hub's bundle carries no SDK and local play
+contacts Firebase only when something is actually sent. Crashes come from `ErrorBoundary`
+and `main.jsx`'s window listeners (`crashReport.js`: never from a dev server, offline, or for a
+failed game download, and never a profile or an invite's query); feedback from
+`FeedbackModal.jsx` (hub footer, and each rules sheet). Rules and smoke test:
+`.claude/rules/online-rooms.md`, `smoke/reports.smoke.test.js`.
 
 ### The screen stays on
 
