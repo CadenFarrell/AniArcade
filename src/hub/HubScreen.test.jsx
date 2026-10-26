@@ -23,6 +23,9 @@ vi.mock('../shared/services/firebase', () => ({
   getFirebaseDb: () => { throw new Error('firebase touched in a local-only test'); },
   ensureSignedIn: () => { throw new Error('firebase touched in a local-only test'); },
 }));
+// The backup code reads the same flag from here, without the SDK (see
+// firebaseConfig.js), so it is forced off the same way.
+vi.mock('../shared/services/firebaseConfig', () => ({ firebaseEnabled: false, firebaseConfig: {} }));
 
 const CRASH = /something went wrong/i;
 
@@ -113,6 +116,39 @@ describe('hub', () => {
   it('asks a first-time player to set up a profile', () => {
     renderArcade(<HubScreen />);
     expect(screen.getByText(/no profile yet/i)).toBeTruthy();
+  });
+
+  it('welcomes a device with no profiles, once', async () => {
+    const user = userEvent.setup();
+    renderArcade(<HubScreen />);
+    expect(screen.getByRole('heading', { name: 'Welcome to AniArcade' })).toBeTruthy();
+    // No Firebase in this build, so no backup code to offer.
+    expect(screen.queryByLabelText('Have a backup code?')).toBeNull();
+
+    await user.click(screen.getByRole('button', { name: 'Not now' }));
+    expect(screen.queryByRole('heading', { name: 'Welcome to AniArcade' })).toBeNull();
+    cleanup();
+    renderArcade(<HubScreen />);
+    expect(screen.queryByRole('heading', { name: 'Welcome to AniArcade' })).toBeNull();
+    expect(screen.getByText(/no profile yet/i)).toBeTruthy();
+  });
+
+  it('takes a new player straight to an import that makes their profile', async () => {
+    const user = userEvent.setup();
+    renderArcade(<HubScreen />);
+    await user.click(screen.getByRole('button', { name: 'Bring my anime list' }));
+    expect(screen.getByRole('heading', { name: 'Bring your anime list' })).toBeTruthy();
+    expect(screen.getByLabelText('Your name in the arcade')).toBeTruthy();
+    // Closing the import goes back to the welcome, having made nothing.
+    await user.click(screen.getByRole('button', { name: 'Close' }));
+    expect(screen.getByRole('heading', { name: 'Welcome to AniArcade' })).toBeTruthy();
+    expect(localStorage.getItem('aniguess_profiles')).toBeNull();
+  });
+
+  it('does not welcome a returning player', () => {
+    seedProfiles([makeProfile('Caden')]);
+    renderArcade(<HubScreen />);
+    expect(screen.queryByRole('heading', { name: 'Welcome to AniArcade' })).toBeNull();
   });
 
   it('does not nag a player who already has one', () => {

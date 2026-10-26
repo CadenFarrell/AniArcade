@@ -52,3 +52,18 @@ export const storage = {
     }
   }
 };
+
+// Asks the browser to keep this site's storage rather than evict it under
+// pressure — and, on Safari, rather than wipe it after seven days without a
+// visit, which otherwise takes a returning iPhone player's profiles with it.
+// Chrome decides silently from how the site is used; Firefox asks the player,
+// which is why it is called right after something worth keeping (an import, a
+// backup turned on), from inside the click that made it. Fire-and-forget: a
+// refusal changes nothing, and a browser without the API simply goes without.
+export function requestPersistentStorage() {
+  try {
+    navigator.storage?.persist?.().catch(() => {});
+  } catch {
+    // nothing to do: the data is saved either way, just not pinned
+  }
+}

@@ -1,14 +1,19 @@
-import { useState, useMemo, useEffect, useRef } from 'react';
+import { useContext, useState, useMemo, useEffect, useRef } from 'react';
+import { useCloudSave } from '../context/cloudSaveContext';
+import { ProfileContext } from '../context/profileContext';
 import { buildImportedAnime } from '../services/importGroups';
 import { fetchListEntries, LIST_SITES, malProxyEnabled, siteLabel } from '../services/listSources';
+import { requestPersistentStorage } from '../services/storage';
 import { groupIntoFranchises } from '../utils/franchise';
 import { kitsuSlugFrom, listSourceOf } from '../utils/listImport';
+import { profileIdFromName } from '../utils/profileStats';
 import {
   mergeAnimeIntoProfile,
   classifyImportGroups,
   mergeImportedAnilistIds,
 } from '../utils/profileMerge';
 import { Badge, Button, Card, Checkbox, Icon, Input, Label, Modal, NumberInput } from '../ui';
+import BackupPanel from './BackupPanel';
 
 const MAL_EXPORT_URL = 'https://myanimelist.net/panel.php?go=export';
 
@@ -25,8 +30,28 @@ const USERNAME_COPY = {
 // grouping, the checklist, the character import, the merge — is the same code
 // the AniList-only screen always ran, and a profile built from MyAnimeList is
 // indistinguishable from one built from AniList.
-export default function ListImport({ profile, onClose, onImported, autoRefresh = false }) {
+//
+// `profile={null}` makes a NEW profile out of the import, named after the
+// account it came from — creating a profile and importing into it used to be
+// two dialogs, a name box then this, and the name a player typed had nothing to
+// do with the username they typed a moment later. The name stays editable, and
+// a name that folds onto a profile already saved here imports INTO that one
+// (the near-miss ProfilePicker exists to catch), so this can never mint a
+// second "Sam". Nothing is created until Done: cancelling a first import leaves
+// no empty profile behind. The caller saves what onImported hands it.
+//
+// `offerBackup` puts the backup code on the done step — the one moment a new
+// player has something worth carrying to another device and is looking.
+export default function ListImport({ profile, onClose, onImported, autoRefresh = false, offerBackup = false }) {
   const [step, setStep] = useState('username'); // username | loading-list | list | importing | done | error
+  const creating = !profile;
+  // Soft, not useProfileStore: this dialog is also mounted alone in its tests,
+  // and only the creating path needs the saved profiles.
+  const savedProfiles = useContext(ProfileContext)?.profiles ?? {};
+  const cloud = useCloudSave();
+  // Read once: a player whose backup is already on is not offered it again, and
+  // one who turns it on from the done step should see the code it made.
+  const [backupWasOn] = useState(() => Boolean(cloud.code));
   // Where this profile imported from last time. Prefilled so a re-import is one
   // tap. Re-importing is the common case, not the rare one: the page cache in
   // anilist.js is in-memory only, so every refresh means paying the full
@@ -41,10 +66,25 @@ export default function ListImport({ profile, onClose, onImported, autoRefresh =
   // file instead — the same file the 'file' site reads.
   const [malByFile, setMalByFile] = useState(!malProxyEnabled());
   const usesFile = site === 'file' || (site === 'mal' && malByFile);
+
+  // The new profile's name: the account's own name until the player edits it.
+  // A file has no account name, so there it starts empty and is required.
+  const [nameInput, setNameInput] = useState('');
+  const [nameTouched, setNameTouched] = useState(false);
+  const accountName = usesFile ? '' : (site === 'kitsu' ? kitsuSlugFrom(username) : username).trim();
+  const newName = (nameTouched ? nameInput : accountName).trim();
+  const newId = profileIdFromName(newName);
+  const existing = creating && newName ? savedProfiles[newId] ?? null : null;
+  // Whatever the import merges into: the profile passed in, the saved one the
+  // typed name folds onto, or a fresh draft.
+  const base = useMemo(
+    () => profile ?? existing ?? { id: newId, name: newName, animeList: [] },
+    [profile, existing, newId, newName]
+  );
   // Remembered from the last successful import, so a one-tap refresh applies the
   // same filters the existing list was built with rather than silently reverting
   // to the defaults and pulling in characters the user had filtered out.
-  const savedSettings = profile?.anilistImportSettings;
+  const savedSettings = base?.anilistImportSettings;
   const [includeCurrent, setIncludeCurrent] = useState(savedSettings?.includeCurrent ?? false);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [minSupportingFavourites, setMinSupportingFavourites] = useState(
@@ -68,8 +108,8 @@ export default function ListImport({ profile, onClose, onImported, autoRefresh =
   // animeList) with a regex in the inner loop — fine once per fetch, wasteful
   // on every keystroke in the filter box.
   const { byKey: importStates, counts, suggested } = useMemo(
-    () => classifyImportGroups(profile, animeOptions),
-    [profile, animeOptions]
+    () => classifyImportGroups(base, animeOptions),
+    [base, animeOptions]
   );
   // A first-ever import has nothing to compare against, so the whole feature
   // stays invisible: no summary, no badges, no toggle, everything preselected —
@@ -90,7 +130,7 @@ export default function ListImport({ profile, onClose, onImported, autoRefresh =
     && Boolean(source.username)
     && username.trim().toLowerCase() === source.username.toLowerCase();
 
-  const ready = usesFile ? Boolean(file) : Boolean(username.trim());
+  const ready = (usesFile ? Boolean(file) : Boolean(username.trim())) && (!creating || Boolean(newName));
 
   const [progress, setProgress] = useState({ index: 0, total: 0 });
   const [abortController, setAbortController] = useState(null);
@@ -127,7 +167,7 @@ export default function ListImport({ profile, onClose, onImported, autoRefresh =
       // franchises that gained a season. Selecting all 200 shows to discover
       // three new ones is ~14 throttled round-trips against AniList's real
       // ~30 req/min limit, every time. Select All is still one tap away.
-      const { suggested: toImport } = classifyImportGroups(profile, groups);
+      const { suggested: toImport } = classifyImportGroups(base, groups);
       setAnimeOptions(groups);
       setSelected(toImport);
       // Default the toggle on only when there is something left to look at —
@@ -232,7 +272,7 @@ export default function ListImport({ profile, onClose, onImported, autoRefresh =
 
     const {
       profile: merged, addedAnime, addedChars, updatedChars,
-    } = mergeAnimeIntoProfile(profile, importedAnimeList);
+    } = mergeAnimeIntoProfile(base, importedAnimeList);
     // All three are remembered only on a successful import, so a typo'd username
     // never sticks, and a cancelled run never claims coverage it doesn't have.
     setMergedProfile({
@@ -254,7 +294,7 @@ export default function ListImport({ profile, onClose, onImported, autoRefresh =
       // franchise's seasons into ONE entry, so the surviving entry id cannot say
       // which seasons were fetched — and that is exactly what the next import's
       // checklist has to answer to spot a newly aired season.
-      anilistImportedIds: mergeImportedAnilistIds(profile?.anilistImportedIds, memberIds),
+      anilistImportedIds: mergeImportedAnilistIds(base?.anilistImportedIds, memberIds),
       anilistImportSettings: { includeCurrent, mainOnly, minSupportingFavourites },
     });
     setStats({ addedAnime, addedChars, updatedChars, unmatched });
@@ -263,6 +303,9 @@ export default function ListImport({ profile, onClose, onImported, autoRefresh =
   }
 
   const finishImport = () => {
+    // From inside the click: Firefox asks before keeping a site's data, and
+    // only from a gesture. An import is the thing most worth keeping.
+    requestPersistentStorage();
     onImported(mergedProfile, stats);
   };
 
@@ -277,7 +320,9 @@ export default function ListImport({ profile, onClose, onImported, autoRefresh =
     // dialog would strand the in-progress fetch, so lock it during 'importing'.
     <Modal onClose={onClose} dismissible={step !== 'importing'}>
       <div className="mb-6 flex items-center justify-between">
-        <h2 className="font-display text-2xl font-extrabold text-fg-strong">Import your list</h2>
+        <h2 className="font-display text-2xl font-extrabold text-fg-strong">
+          {creating ? 'Bring your anime list' : 'Import your list'}
+        </h2>
         {step !== 'importing' && (
           <button
             onClick={onClose}
@@ -372,6 +417,24 @@ export default function ListImport({ profile, onClose, onImported, autoRefresh =
                 className="mb-4"
               />
             </>
+          )}
+          {creating && (
+            <div className="mb-4">
+              <Label htmlFor="list-profile-name">Your name in the arcade</Label>
+              <Input
+                id="list-profile-name"
+                type="text"
+                value={nameTouched ? nameInput : accountName}
+                onChange={(e) => { setNameTouched(true); setNameInput(e.target.value); }}
+                placeholder={usesFile ? 'Enter your name...' : 'Same as your username'}
+                disabled={step === 'loading-list'}
+              />
+              {existing && (
+                <p className="mt-1 text-sm text-fg-helper">
+                  Adds to {existing.name}, already saved on this device.
+                </p>
+              )}
+            </div>
           )}
           <Checkbox
             label="Also include shows I'm currently watching"
@@ -601,6 +664,12 @@ export default function ListImport({ profile, onClose, onImported, autoRefresh =
               </>
             )}
           </p>
+          {offerBackup && !backupWasOn && (
+            <div className="mb-6 rounded-pop-sm border-2 border-line p-4 text-left">
+              <p className="mb-2 font-display font-extrabold text-fg-strong">Playing on another device too?</p>
+              <BackupPanel showRestore={false} />
+            </div>
+          )}
           <Button variant="success" size="lg" fullWidth onClick={finishImport}>Done</Button>
         </div>
       )}

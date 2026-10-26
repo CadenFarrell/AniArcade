@@ -44,6 +44,9 @@ const DENY_START = [
   'swap', 'replace', 'custom', 'add player', 'set as main', 'more detail', 'ⓘ', 'show detail',
   'hide detail', 'play online', 'peek', 'skip', 'give up', 'report', 'copy', 'share', 'new profile',
   'all-time leaderboard', 'close', 'sound on', 'sound off', 'credits', 'back to lobby',
+  // The profile picker's create paths and its backup code: device housekeeping,
+  // never a step in a game, and "Turn on backup" would write to the database.
+  'new player', 'just a name', 'bring my', 'turn on backup', 'stop syncing', 'send link', 'not now',
 ];
 // A name ending in a disclosure triangle opens or closes a panel and never
 // moves a game on; pressed at random it is the commonest way to look busy. And

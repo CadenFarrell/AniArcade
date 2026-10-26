@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useHistoryScope } from '../context/historyScopeContext';
+import { notifyLocalChange } from '../services/cloudSave';
 import { storage } from '../services/storage';
 import { HISTORY_KEY, addEntries, entriesForGame, normalizeHistory } from '../utils/history';
 
@@ -14,6 +15,8 @@ function recordGame(args) {
   const lines = entriesForGame({ ...args, at: Date.now() });
   if (!Object.keys(lines).length) return;
   storage.setItem(HISTORY_KEY, addEntries(readHistory(), lines));
+  // A backed-up record follows the player to their other devices.
+  notifyLocalChange();
 }
 
 /**

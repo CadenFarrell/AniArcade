@@ -18,6 +18,7 @@ vi.stubEnv('VITE_MAL_PROXY_URL', '');
 
 const { fetchManyAnimeCharacters, fetchMediaByIds } = await import('../services/anilist');
 const { default: ListImport } = await import('./ListImport');
+const { ProfileContext } = await import('../context/profileContext');
 
 const MAL_EXPORT = `<?xml version="1.0" encoding="UTF-8" ?>
 <myanimelist>
@@ -153,5 +154,75 @@ describe('ListImport', () => {
     expect(screen.getByLabelText('Your MyAnimeList export')).toBeTruthy();
     expect(screen.getByRole('link', { name: 'Export My List' }).getAttribute('href'))
       .toBe('https://myanimelist.net/panel.php?go=export');
+  });
+
+  describe('with no profile: making one from the import', () => {
+    const stubFetch = () => {
+      stubKitsu();
+      fetchMediaByIds.mockResolvedValue({ byAnilistId: new Map([[1, BEBOP]]), byMalId: new Map() });
+      fetchManyAnimeCharacters.mockResolvedValue(new Map([[1, { genres: ['Sci-Fi'], edges: [SPIKE] }]]));
+    };
+    const importFromKitsu = async (user) => {
+      await user.click(screen.getByRole('button', { name: 'Kitsu' }));
+      await user.type(screen.getByLabelText('Kitsu username or profile link'), 'https://kitsu.app/users/vikhyat');
+    };
+    const finish = async (user) => {
+      await user.click(screen.getByRole('button', { name: 'Fetch My List' }));
+      await user.click(await screen.findByRole('button', { name: /Import Selected/ }));
+      await user.click(await screen.findByRole('button', { name: 'Done' }));
+    };
+
+    it("names the new profile after the account, and says so as it's typed", async () => {
+      const user = userEvent.setup();
+      stubFetch();
+      const onImported = vi.fn();
+      render(<ListImport profile={null} onClose={() => {}} onImported={onImported} />);
+
+      expect(screen.getByRole('heading', { name: 'Bring your anime list' })).toBeTruthy();
+      await importFromKitsu(user);
+      // The slug, not the pasted link.
+      expect(screen.getByLabelText('Your name in the arcade').value).toBe('vikhyat');
+      await finish(user);
+
+      const made = onImported.mock.calls[0][0];
+      expect(made).toMatchObject({ id: 'vikhyat', name: 'vikhyat', listSource: { site: 'kitsu', username: 'vikhyat' } });
+      expect(made.animeList.map((a) => a.title)).toEqual(['Cowboy Bebop']);
+    });
+
+    it('lets the name be changed, and needs one for a file', async () => {
+      const user = userEvent.setup();
+      stubFetch();
+      const onImported = vi.fn();
+      render(<ListImport profile={null} onClose={() => {}} onImported={onImported} />);
+
+      await user.click(screen.getByRole('button', { name: 'List file' }));
+      await user.upload(screen.getByLabelText('Your exported list'), new File([MAL_EXPORT], 'a.xml', { type: 'text/xml' }));
+      expect(screen.getByRole('button', { name: 'Read My List' }).disabled).toBe(true);
+      await user.type(screen.getByLabelText('Your name in the arcade'), 'Sam Lee');
+      expect(screen.getByRole('button', { name: 'Read My List' }).disabled).toBe(false);
+    });
+
+    it('imports into a saved profile the name folds onto, rather than minting a second one', async () => {
+      const user = userEvent.setup();
+      stubFetch();
+      const onImported = vi.fn();
+      const saved = {
+        id: 'vikhyat', name: 'Vikhyat', portraitKey: 'spike spiegel',
+        animeList: [{ id: 'old_1', title: 'Trigun', characters: [] }],
+      };
+      render(
+        <ProfileContext.Provider value={{ profiles: { vikhyat: saved } }}>
+          <ListImport profile={null} onClose={() => {}} onImported={onImported} />
+        </ProfileContext.Provider>
+      );
+
+      await importFromKitsu(user);
+      expect(screen.getByText(/Adds to Vikhyat, already saved on this device/)).toBeTruthy();
+      await finish(user);
+
+      const merged = onImported.mock.calls[0][0];
+      expect(merged).toMatchObject({ id: 'vikhyat', name: 'Vikhyat', portraitKey: 'spike spiegel' });
+      expect(merged.animeList.map((a) => a.title).sort()).toEqual(['Cowboy Bebop', 'Trigun']);
+    });
   });
 });

@@ -6,8 +6,8 @@ import { getFirebaseAuth, getFirebaseDb, ensureSignedIn } from '../services/fire
 import { storage } from '../services/storage';
 import { usePresence } from './usePresence';
 import { GRACE_MS, rosterSnapshot, nextHostId, isLastToLeave } from '../utils/presence';
+import { CODE_CHARS } from '../utils/codeAlphabet';
 
-const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no ambiguous 0/O/1/I
 const EMPTY_PLAYERS = []; // stable identity so the roster memo doesn't churn
 
 function generateRoomCode() {

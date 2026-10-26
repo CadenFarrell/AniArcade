@@ -1,22 +1,12 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, connectAuthEmulator, signInAnonymously, onAuthStateChanged } from 'firebase/auth';
 import { getDatabase, connectDatabaseEmulator } from 'firebase/database';
+import { firebaseConfig as config, firebaseEnabled } from './firebaseConfig';
 
-const config = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  databaseURL: import.meta.env.VITE_FIREBASE_DATABASE_URL,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID,
-};
-
-// Online mode is only available when the app has been configured with a real
-// (or emulator) Firebase project. With no .env.local, this stays false and
-// nothing below ever touches the network — local pass-and-play mode has zero
-// Firebase dependency.
-export const firebaseEnabled = Boolean(config.apiKey && config.databaseURL);
+// Re-exported so every existing `firebaseEnabled` import keeps working — and
+// so a test's mock of this module still decides it for the game screens. The
+// value lives in firebaseConfig.js, which the hub can import without the SDK.
+export { firebaseEnabled };
 
 let app = null;
 let auth = null;

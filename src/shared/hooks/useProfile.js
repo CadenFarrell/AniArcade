@@ -4,12 +4,12 @@ import { normalizeCharacter } from '../utils/character';
 import { dedupeProfileAnimeList } from '../utils/profileMerge';
 import { profileIdFromName } from '../utils/profileStats';
 
-const PROFILES_KEY = 'aniguess_profiles';
+export const PROFILES_KEY = 'aniguess_profiles';
 
 // A new key, so it gets the current name. PROFILES_KEY above cannot be renamed
 // to match — it predates the hub, and changing it would orphan every profile
 // players have already saved.
-const ACTIVE_PROFILE_KEY = 'aniarcade_active_profile';
+export const ACTIVE_PROFILE_KEY = 'aniarcade_active_profile';
 
 // Runs on every read, so profiles saved before franchise grouping existed get
 // their duplicate entries collapsed without a migration flag — and the repair
@@ -51,7 +51,8 @@ export function useProfile() {
     const newProfile = {
       id,
       name: trimmed,
-      animeList: []
+      animeList: [],
+      savedAt: Date.now(),
     };
 
     profiles[id] = newProfile;
@@ -62,9 +63,15 @@ export function useProfile() {
   // Returns whether the write actually persisted. ProfileProvider surfaces a
   // false: a profile that silently failed to save is an AniList import the
   // player loses on reload while the screen still says it worked.
+  //
+  // Every write stamps `savedAt`, which is how a backup merge (utils/cloudSave.js)
+  // tells which of two devices' copies of a profile is the newer one. Stamped
+  // here, at the one door every profile write goes through, rather than by the
+  // callers, so no write path can forget it. The caller's own copy is left
+  // unstamped; the next write stamps whatever it is handed anyway.
   const saveProfile = useCallback((profile) => {
     const profiles = storage.getItem(PROFILES_KEY) || {};
-    profiles[profile.id] = profile;
+    profiles[profile.id] = { ...profile, savedAt: Date.now() };
     return storage.setItem(PROFILES_KEY, profiles);
   }, []);
 

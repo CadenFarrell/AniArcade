@@ -143,6 +143,19 @@ title seen for the session, and takes the invite off the address bar. The wipe d
 for it — there is nothing on screen to wipe from. `backToMenu` drops any invite still
 pending. A link to a game this build does not have opens the plain hub.
 
+**A backup link (`/?restore=<code>`) skips it the same way** and restores on arrival; the
+banner over the board says what came across. See "Backup codes" in the root CLAUDE.md.
+
+## The first-visit welcome
+
+`WelcomeModal.jsx` opens over the board when this device has **no profiles at all**: "Bring my
+anime list" (the import that makes the profile, `ListImport` with no profile), a backup-code
+field, and "Not now". Never over an invite or a restore link — each already knows what the
+player came for — and once answered, never again (`welcomeSeen.js`, localStorage, not in
+`PRESERVED_KEYS`); the one-line hint and the bar's Set profile stay for later visits. The
+playtest fixtures seed profiles, so the bots never meet it, and `generic.js` denies its
+buttons anyway.
+
 ## Title, hero and wipe
 
 **`TitleScreen` shows once per browser session** (`titleSeen.js`, sessionStorage): right on

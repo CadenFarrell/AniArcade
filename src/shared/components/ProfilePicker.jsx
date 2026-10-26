@@ -1,7 +1,9 @@
 import { useState } from 'react';
+import { useCloudSave } from '../context/cloudSaveContext';
 import { useProfileStore } from '../context/profileContext';
 import { portraitFor } from '../utils/portrait';
 import { summarizeProfiles } from '../utils/profileStats';
+import BackupPanel from './BackupPanel';
 import ListImport from './ListImport';
 import Portrait from './Portrait';
 import PortraitPicker from './PortraitPicker';
@@ -18,12 +20,15 @@ import { Badge, Button, Icon, Input, Label, Modal } from '../ui';
 // not a dialog, so the hub routes to it instead and this just asks for it.
 //
 // *Importing* one is, and the distinction is the shape rather than the topic:
-// ListImport is already a dialog, so it can replace this one in place. A
-// brand-new profile is handed straight to it, because creating a profile used to
-// dead-end on the menu with an empty list and a warning pill — the import was
-// three navigations away (reopen the picker, the pencil, ListManager) and nothing on
-// screen said so. An empty profile is the one state where the import is the only
-// useful next action, so it is offered rather than merely reachable.
+// ListImport is already a dialog, so it can replace this one in place. "New
+// profile" IS the import (ListImport with no profile makes one, named after the
+// account): creating a profile used to dead-end on the menu with an empty list
+// and a warning pill, and then became a name box followed by the import, where
+// the name typed first had nothing to do with the username typed second. A
+// profile with no list is still one link away, for a guest with no tracker.
+//
+// The backup code ('main' mode only) sits at the foot: it is device-level, like
+// delete, and 'add' is about who is on the couch, not about this device.
 //
 // Two modes over one list, because the underlying question differs:
 //
@@ -55,8 +60,8 @@ export default function ProfilePicker({
   } = useProfileStore();
   const [nameInput, setNameInput] = useState('');
   const [creating, setCreating] = useState(false);
-  // The profile just created, waiting on its import. Null the rest of the time.
-  const [importFor, setImportFor] = useState(null);
+  // A new profile's import is open.
+  const [importing, setImporting] = useState(false);
   // The profile whose character is being chosen. Its picker replaces this
   // dialog the way the import does, and closing it comes back here.
   const [faceFor, setFaceFor] = useState(null);
@@ -80,14 +85,12 @@ export default function ProfilePicker({
     const trimmed = nameInput.trim();
     if (!trimmed) return;
     // ensureProfile in 'add' mode: creating a guest must not make them you.
-    const { profile, isNew } = adding ? ensureProfile(trimmed) : createProfile(trimmed);
+    // A name that folds onto a profile you already have comes back as that
+    // profile — the near-miss this picker exists to catch.
+    const { profile } = adding ? ensureProfile(trimmed) : createProfile(trimmed);
     setNameInput('');
     setCreating(false);
-    // A name that folds onto a profile you already have is not a new profile — it
-    // is the near-miss this picker exists to catch, and it already has a list.
-    // Only a genuinely new one is worth interrupting for.
-    if (isNew) setImportFor(profile);
-    else finishWith(profile);
+    finishWith(profile);
   };
 
   const handleDelete = (row) => {
@@ -215,16 +218,24 @@ export default function ProfilePicker({
 
   // Replaces this dialog rather than stacking on top of it: two <Modal>s means
   // two fixed backdrops and two Escape handlers over what reads as one panel.
-  if (importFor) {
+  if (importing) {
     return (
       <ListImport
-        profile={importFor}
-        // Skipping IS closing — the picker's job is done either way. Saved
-        // through the store, not useProfile: ListImport only hands the merged
-        // profile back, and a bare write would leave the hub's profile pill stale
-        // and swallow the quota banner ProfileProvider raises.
-        onClose={() => finishWith(importFor)}
-        onImported={(merged) => { saveProfile(merged); finishWith(merged); }}
+        profile={null}
+        offerBackup={!adding}
+        // Closing comes back here: nothing was created, so there is still a
+        // choice to make.
+        onClose={() => setImporting(false)}
+        // Saved through the store, not useProfile: ListImport only hands the
+        // merged profile back, and a bare write would leave the hub's profile
+        // pill stale and swallow the quota banner ProfileProvider raises. Then
+        // made the main profile — saveProfile has already put it in the map
+        // selectProfile reads — unless this is a guest for the couch.
+        onImported={(merged) => {
+          saveProfile(merged);
+          if (!adding) selectProfile(merged.id);
+          finishWith(merged);
+        }}
       />
     );
   }
@@ -254,7 +265,7 @@ export default function ProfilePicker({
 
       {rows.length === 0 && !creating && (
         <p className="mb-5 text-center text-fg-subtle">
-          No profiles yet. Create one and import your list once — every game uses it.
+          No profiles yet. Bring your list once — every game uses it.
         </p>
       )}
 
@@ -278,7 +289,7 @@ export default function ProfilePicker({
         </div>
       )}
 
-      {creating || rows.length === 0 ? (
+      {creating ? (
         <div>
           <Label htmlFor="new-profile-name">New profile name</Label>
           <Input
@@ -292,11 +303,9 @@ export default function ProfilePicker({
             className="mb-3 text-lg"
           />
           <div className="flex gap-3">
-            {rows.length > 0 && (
-              <Button variant="neutral" onClick={() => { setCreating(false); setNameInput(''); }}>
-                Cancel
-              </Button>
-            )}
+            <Button variant="neutral" onClick={() => { setCreating(false); setNameInput(''); }}>
+              Cancel
+            </Button>
             <Button
               variant="success"
               className="flex-1"
@@ -308,10 +317,39 @@ export default function ProfilePicker({
           </div>
         </div>
       ) : (
-        <Button variant="neutral" fullWidth onClick={() => setCreating(true)}>
-          New profile
-        </Button>
+        <div>
+          {/* Primary only when it is the one thing to do here. */}
+          <Button variant={rows.length === 0 ? 'primary' : 'neutral'} fullWidth onClick={() => setImporting(true)}>
+            {adding ? 'New player from their list' : 'New profile from my list'}
+          </Button>
+          <button
+            type="button"
+            onClick={() => setCreating(true)}
+            className="focus-pop mt-2 min-h-6 w-full rounded-pop-sm text-sm text-fg-subtle hover:text-fg-strong"
+          >
+            Just a name, no list
+          </button>
+        </div>
+      )}
+
+      {!adding && (
+        <BackupSection />
       )}
     </Modal>
+  );
+}
+
+// A section, not just the panel: in a build with no Firebase the panel renders
+// nothing, and its heading must go with it.
+function BackupSection() {
+  const cloud = useCloudSave();
+  if (!cloud.available) return null;
+  return (
+    <div className="mt-6 border-t-2 border-line pt-5">
+      <p className="mb-2 font-display text-xs font-bold uppercase tracking-widest text-fg-subtle">
+        Your other devices
+      </p>
+      <BackupPanel />
+    </div>
   );
 }

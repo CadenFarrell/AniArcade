@@ -7,6 +7,7 @@
 import { render, screen } from '@testing-library/react';
 import ErrorBoundary from '../components/ErrorBoundary';
 import ProfileProvider from '../context/ProfileProvider';
+import CloudSaveProvider from '../context/CloudSaveProvider';
 import HelpDetailProvider from '../context/HelpDetailProvider';
 import SoundProvider from '../context/SoundProvider';
 import { profileIdFromName } from '../utils/profileStats';
@@ -22,9 +23,11 @@ export function renderArcade(ui, { showTitle = false, ...options } = {}) {
   return render(
     <ErrorBoundary>
       <ProfileProvider>
-        <HelpDetailProvider>
-          <SoundProvider>{ui}</SoundProvider>
-        </HelpDetailProvider>
+        <CloudSaveProvider>
+          <HelpDetailProvider>
+            <SoundProvider>{ui}</SoundProvider>
+          </HelpDetailProvider>
+        </CloudSaveProvider>
       </ProfileProvider>
     </ErrorBoundary>,
     options,
