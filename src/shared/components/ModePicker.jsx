@@ -46,7 +46,7 @@ export default function ModePicker({ game, tagline, onLocal, onOnline, onExit })
 
   return (
     <>
-      <Backdrop />
+      <Backdrop game={game} />
       {/* The menu is an in-game screen too, so the way home stays in the same
           corner here as it does everywhere past it. */}
       <HubButton onClick={onExit} />

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useAniTurfRoom } from './hooks/useAniTurfRoom';
 import RoomSetup from '../../shared/components/RoomSetup';
+import descriptor from './index';
 import RoomShell from '../../shared/components/RoomShell';
 import ResultImpact from '../../shared/components/ResultImpact';
 import RoundHeader from '../../shared/components/RoundHeader';
@@ -51,7 +52,7 @@ export default function OnlineGame({ onBack, onExit }) {
     return (
       <>
         <HubButton onClick={onExit} />
-        <RoomSetup room={room} onBack={onBack} tone="plum" stat={(p) => `${countCharacters(p)} characters`} />
+        <RoomSetup game={descriptor} room={room} onBack={onBack} tone="plum" stat={(p) => `${countCharacters(p)} characters`} />
       </>
     );
   }

@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { useAniFakeRoom } from './hooks/useAniFakeRoom';
 import { eligibleCharacters } from './utils/pool';
 import RoomSetup from '../../shared/components/RoomSetup';
+import descriptor from './index';
 import { countCharacters } from '../../shared/utils/profileStats';
 import OnlineLobby from './components/OnlineLobby';
 import CardCheck from './components/CardCheck';
@@ -46,6 +47,7 @@ export default function OnlineGame({ onBack, onExit }) {
       <>
         <HubButton onClick={onExit} />
         <RoomSetup
+          game={descriptor}
           room={room}
           onBack={onBack}
           tone="teal"

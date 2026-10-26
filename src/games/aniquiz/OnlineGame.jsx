@@ -2,6 +2,7 @@ import { useQuizRoom } from './hooks/useQuizRoom';
 import { useFactPack } from '../../shared/hooks/useFactPack';
 import { currentClue, requiredIds, wagerLimit } from './rules';
 import RoomSetup from '../../shared/components/RoomSetup';
+import descriptor from './index';
 import { countShows } from '../../shared/utils/profileStats';
 import OnlineLobby from './components/OnlineLobby';
 import Board from './components/Board';
@@ -43,7 +44,7 @@ export default function OnlineGame({ onBack, onExit }) {
     return (
       <>
         <HubButton onClick={onExit} />
-        <RoomSetup room={room} onBack={onBack} tone="red" stat={(p) => `${countShows(p)} shows`} />
+        <RoomSetup game={descriptor} room={room} onBack={onBack} tone="red" stat={(p) => `${countShows(p)} shows`} />
       </>
     );
   }

@@ -19,7 +19,7 @@ import { Backdrop, Kana, Screen } from '../ui';
 export default function SetupLayout({ game, tagline, onBack, aside, left, right, start }) {
   return (
     <>
-      <Backdrop />
+      <Backdrop game={game} />
       {/* pb-36 clears the pinned Start bar so the last setting can scroll
           above it rather than sit permanently underneath. */}
       <Screen width="lg" onBack={onBack} className="pb-36!">

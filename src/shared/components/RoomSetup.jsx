@@ -21,11 +21,14 @@ import {
 //         `stat(profile)` before a single pixel of the online path rendered —
 //         so the default is a function, not a bare guard at the call site,
 //         because a required-by-accident prop is exactly what happened here.
+//   game  the game's descriptor, for the menus' cover backdrop (Backdrop.jsx).
+//         Not a stand-in for `tone`: AniGuess's online wordmark is purple, not
+//         its pink. Optional; without it the page is the plain sheet.
 //
 // No name box: the hub already asked. This screen only ever wanted to know
 // "who am I", and typing that answer fresh each time is what quietly created
 // empty duplicate profiles. The profile itself is shared by every game.
-export default function RoomSetup({ room, onBack, tone = 'purple', stat = () => null }) {
+export default function RoomSetup({ room, onBack, tone = 'purple', stat = () => null, game = null }) {
   const { activeProfile: profile, saveProfile, selectProfile } = useProfileStore();
   // An invite link's code (shared/utils/inviteLink.js), typed in for the player.
   const invite = useInvite();
@@ -84,7 +87,7 @@ export default function RoomSetup({ room, onBack, tone = 'purple', stat = () => 
 
   return (
     <>
-      <Backdrop />
+      <Backdrop game={game} />
       <Screen onBack={onBack}>
         <Wordmark tone={tone} size="md" level={2} className="mb-8">
           Play Online

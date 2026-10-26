@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useAniTuneRoom } from './hooks/useAniTuneRoom';
 import { isRace, hasLives, isEliminated, livePlayerIds } from './rules';
 import RoomSetup from '../../shared/components/RoomSetup';
+import descriptor from './index';
 import { countShows } from '../../shared/utils/profileStats';
 import { formatPoints } from '../../shared/utils/deadline';
 import OnlineLobby from './components/OnlineLobby';
@@ -86,6 +87,7 @@ export default function OnlineGame({ onBack, onExit }) {
       <>
         <HubButton onClick={onExit} />
         <RoomSetup
+          game={descriptor}
           room={room}
           onBack={onBack}
           tone="blue"

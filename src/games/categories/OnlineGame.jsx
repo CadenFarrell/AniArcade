@@ -1,6 +1,7 @@
 import { useCategoriesRoom } from './hooks/useCategoriesRoom';
 import { useCustomCategories } from './hooks/useCustomCategories';
 import RoomSetup from '../../shared/components/RoomSetup';
+import descriptor from './index';
 import OnlineLobby from './components/OnlineLobby';
 import PickPhase from './components/PickPhase';
 import TurnScreen from './components/TurnScreen';
@@ -56,7 +57,7 @@ export default function OnlineGame({ onBack, onExit }) {
             judgement call about which mode the host might pick: nothing in this
             game reads an anime list, so any number about one shown here would
             read as a requirement that does not exist. */}
-        <RoomSetup room={room} onBack={onBack} tone="lime" />
+        <RoomSetup game={descriptor} room={room} onBack={onBack} tone="lime" />
       </>
     );
   }

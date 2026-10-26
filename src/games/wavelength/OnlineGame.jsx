@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useWavelengthRoom } from './hooks/useWavelengthRoom';
 import RoomSetup from '../../shared/components/RoomSetup';
+import descriptor from './index';
 import OnlineLobby from './components/OnlineLobby';
 import PsychicView from './components/PsychicView';
 import GuessView from './components/GuessView';
@@ -73,7 +74,7 @@ export default function OnlineGame({ onBack, onExit }) {
             count shown here would read as a requirement in the mode that has
             none. The lobby badges the exact players who need one, once the
             mode is actually chosen. */}
-        <RoomSetup room={room} onBack={onBack} tone="purple" />
+        <RoomSetup game={descriptor} room={room} onBack={onBack} tone="purple" />
       </>
     );
   }

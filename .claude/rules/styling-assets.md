@@ -23,7 +23,10 @@ The rules every screen keeps are in `.claude/rules/styling.md`.
 `halftone` (`--tone`, `--tone-size`), `speed-lines` (`--lines`), `hatch` (`--hatch`), `slash`
 (`--slash`): no requests, nothing that moves, colour from the custom property with an ink
 default. `btn-pop`'s press travels into the ink shadow; the "lit" leader and perfect-board
-numerals are inked amber, the score colour.
+numerals are inked amber, the score colour. `Backdrop` is the plain sheet (crosses, ink tone)
+unless given `game`: then it is that game's cover — speed-line burst, screentone slash and the
+vertical kana, all in `accentVar(accent)`. Only the menus pass it (`ModePicker`, `SetupLayout`,
+`RoomSetup`); in-round screens stay on the quiet sheet so busy boards read.
 
 **Type:** Oswald (display caps), Archivo (body), Dela Gothic One as `--font-kana` — decoration
 only, always through `<Kana>` (aria-hidden, `lang="ja"`). The font file holds only the katakana

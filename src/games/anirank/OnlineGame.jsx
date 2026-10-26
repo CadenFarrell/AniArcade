@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useAniRankRoom } from './hooks/useAniRankRoom';
 import RoomSetup from '../../shared/components/RoomSetup';
+import descriptor from './index';
 import { countShows } from '../../shared/utils/profileStats';
 import OnlineLobby from './components/OnlineLobby';
 import RoomTiers from './RoomTiers';
@@ -38,6 +39,7 @@ export default function OnlineGame({ onBack, onExit }) {
       <>
         <HubButton onClick={onExit} />
         <RoomSetup
+          game={descriptor}
           room={room}
           onBack={onBack}
           tone="amber"

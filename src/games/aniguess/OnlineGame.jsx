@@ -5,6 +5,7 @@ import { isCorrectGuess } from './utils/guessMatch';
 import { buildWhoIsWho } from './utils/whoIsWho';
 import { roundComplete } from './rules';
 import RoomSetup from '../../shared/components/RoomSetup';
+import descriptor from './index';
 import { countCharacters } from '../../shared/utils/profileStats';
 import OnlineLobby from './components/OnlineLobby';
 import OnlineCharacterAssignment from './components/OnlineCharacterAssignment';
@@ -193,6 +194,7 @@ export default function OnlineGame({ onBack, onExit }) {
       <>
         <HubButton onClick={onExit} />
         <RoomSetup
+          game={descriptor}
           room={room}
           onBack={onBack}
           tone="purple"

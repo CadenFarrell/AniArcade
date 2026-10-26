@@ -363,6 +363,22 @@
   mask-image: radial-gradient(circle at center, transparent 32%, #000 72%);
 }
 
+/* The same lines bursting from the top-left corner instead of closing in on a
+   centre: the menus' cover backdrop (Backdrop.jsx). Its own utility rather
+   than speed-lines on a square centred on the corner — that box ended halfway
+   across a wide screen, cutting every ray off on a hard vertical seam. Rays
+   are finer and closer than speed-lines' (only a quarter turn is ever on
+   screen), and fade OUT with distance, so the burst reads as coming from the
+   corner and is gone before the column's text. */
+@utility speed-burst {
+  background-image: repeating-conic-gradient(
+    from 0deg at 0 0,
+    var(--lines, var(--color-ink)) 0deg 0.6deg,
+    transparent 0.6deg 3deg
+  );
+  mask-image: radial-gradient(circle at 0 0, #000 8%, transparent 70%);
+}
+
 /* The diagonal hatch from the references' "2020 ////" bar — also the stamp for
    a game that is not out yet. */
 @utility hatch {
