@@ -66,6 +66,15 @@ npx firebase deploy --only database    # database.rules.json
 npx firebase deploy --only hosting     # dist/ — run npm run build first
 ```
 
+The arcade lives at **`aniarcade.web.app`**, a second Hosting site in the Firebase project
+`aniguess-a08f7` (a project ID can never change, so the console, the database
+`aniguess-a08f7-default-rtdb` and `.env.local`'s `*.firebaseapp.com` auth domain keep the old
+name). `firebase.json`'s `hosting` is a list of two: `aniarcade` serves `dist/`, and the
+project's original site `aniguess-a08f7.web.app` 301s every path there from
+`hosting/old-address/` (renamed before release, so nothing was stranded). One deploy updates
+both. A new origin the app is served from must also be in the MyAnimeList proxy's
+`ALLOWED_ORIGINS` (`workers/mal-proxy/wrangler.toml`), redeployed, or that import breaks there.
+
 The CLI is `firebase-tools` in devDependencies, not a global install, so a bare `firebase`
 in a shell is "command not found". npm scripts are the exception — they put
 `node_modules/.bin` on the PATH, which is why `test:smoke` can call it bare.

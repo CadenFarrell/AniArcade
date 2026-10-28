@@ -5,8 +5,8 @@ const IDS = ['aniguess', 'aniturf'];
 
 describe('invite links', () => {
   it('round-trips a game and a code', () => {
-    const url = buildInviteUrl('https://aniguess-a08f7.web.app/some/path', 'aniturf', 'ABCDE');
-    expect(url).toBe('https://aniguess-a08f7.web.app/?game=aniturf&join=ABCDE');
+    const url = buildInviteUrl('https://aniarcade.web.app/some/path', 'aniturf', 'ABCDE');
+    expect(url).toBe('https://aniarcade.web.app/?game=aniturf&join=ABCDE');
     expect(readInvite(new URL(url).search, IDS)).toEqual({ gameId: 'aniturf', code: 'ABCDE' });
   });
 

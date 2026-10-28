@@ -5,7 +5,7 @@ Party games built from your anime list. Import your list from AniList, MyAnimeLi
 you've actually watched. Play pass-and-play on one phone, or each on your own device in an
 online room. Once it has loaded, it also works offline as an installable app.
 
-Play it at **https://aniguess-a08f7.web.app/**.
+Play it at **https://aniarcade.web.app/**.
 
 ## Games
 

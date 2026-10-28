@@ -24,7 +24,7 @@ const ENDPOINT = 'https://graphql.anilist.co';
 // It is a no-op in the browser: Referer is a forbidden header name, so fetch()
 // silently drops this and sends the page's own referrer, which is why the app's
 // import kept working throughout and only Node was ever blocked.
-const REFERER = 'https://aniguess-a08f7.web.app/';
+const REFERER = 'https://aniarcade.web.app/';
 
 // The allowance is a FIXED WINDOW, not a rate, and that decides the whole
 // design below. Measured 2026-10-26: X-RateLimit-Remaining counts down from 29

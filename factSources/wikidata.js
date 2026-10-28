@@ -32,7 +32,7 @@ import { originFromWikidata } from '../src/shared/utils/outsideFacts.js';
 const ENDPOINT = 'https://query.wikidata.org/sparql';
 // Wikidata's query service requires an identifying User-Agent and blocks
 // generic ones.
-const USER_AGENT = 'AniArcade-facts/1.0 (+https://aniguess-a08f7.web.app)';
+const USER_AGENT = 'AniArcade-facts/1.0 (+https://aniarcade.web.app)';
 // Small batches: the property path that climbs from a season to its series is
 // the expensive part of the query, and the service kills anything past 60s.
 const BATCH = 40;

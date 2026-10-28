@@ -18,7 +18,7 @@
 import { themesFromAnimeThemes } from '../src/shared/utils/outsideFacts.js';
 
 const ENDPOINT = 'https://api.animethemes.moe/anime';
-const USER_AGENT = 'AniArcade-facts/1.0 (+https://aniguess-a08f7.web.app)';
+const USER_AGENT = 'AniArcade-facts/1.0 (+https://aniarcade.web.app)';
 const BATCH = 50;
 // 90 requests a minute, measured from x-ratelimit-limit; 700ms stays under it.
 const MIN_INTERVAL_MS = 700;

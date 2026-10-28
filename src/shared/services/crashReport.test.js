@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { buildCrashReport, crashSignature, isOwnError } from './crashReport';
 import { LIMITS, trimFields } from './reports';
 
-const ORIGIN = 'https://aniguess-a08f7.web.app';
+const ORIGIN = 'https://aniarcade.web.app';
 
 function errorWithStack(message, stack) {
   const e = new Error(message);

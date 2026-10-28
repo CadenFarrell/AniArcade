@@ -12,4 +12,4 @@ compatibility_date = "2026-10-01"
 [vars]
 # Pages allowed to read the proxy's answers. The hosting origins plus local dev
 # and preview (both serve on 5173 in this repo). A fork adds its own here.
-ALLOWED_ORIGINS = "https://aniguess-a08f7.web.app,https://aniguess-a08f7.firebaseapp.com,http://localhost:5173,http://127.0.0.1:5173"
+ALLOWED_ORIGINS = "https://aniarcade.web.app,https://aniarcade.firebaseapp.com,http://localhost:5173,http://127.0.0.1:5173"
