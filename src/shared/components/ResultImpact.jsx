@@ -5,8 +5,14 @@ import { KANA } from '../ui/kanaText';
 import { Icon, Kana } from '../ui';
 
 const LOOK = {
-  correct: { icon: 'check', word: 'Right!', kana: KANA.hit, ink: 'bg-pop-lime' },
-  wrong: { icon: 'cross', word: 'Miss!', kana: KANA.miss, ink: 'bg-pop-red' },
+  correct: { icon: 'check', word: 'Right!', kana: KANA.hit, ink: 'bg-pop-lime', sound: 'correct' },
+  wrong: { icon: 'cross', word: 'Miss!', kana: KANA.miss, ink: 'bg-pop-red', sound: 'wrong' },
+  // A miss with a sting in it: AniTurf's sprung trap, which scorches the
+  // square AND takes back the team's newest claim. It used to land as an
+  // ordinary Miss!, so the game's one twist looked like any wrong guess. Amber
+  // (the warning ink) and a skull, so it reads apart from red's plain miss by
+  // shape as well as colour, and the buzzer rather than the miss sound.
+  trap: { icon: 'skull', word: 'Trap!', kana: KANA.miss, ink: 'bg-pop-amber', sound: 'buzz' },
 };
 
 const SHOW_MS = 750;
@@ -18,7 +24,8 @@ const SHOW_MS = 750;
 // different rules — one component, one `eventKey`, one moment.
 //
 // Same keying as useSoundCue: it fires once per new non-null `eventKey` while
-// `result` is 'correct' or 'wrong', and never again for that key. Online pass
+// `result` is one of LOOK's ('correct', 'wrong', 'trap'), and never again for
+// that key. Online pass
 // the result only when it is THIS player's (the sound rule — a room of phones
 // does not all flash for one player's answer); null shows and plays nothing.
 //
@@ -35,7 +42,7 @@ const SHOW_MS = 750;
 export default function ResultImpact({ result, eventKey }) {
   const look = LOOK[result] ?? null;
   const key = look ? eventKey : null;
-  useSoundCue(result, key);
+  useSoundCue(look?.sound ?? null, key);
 
   // Which key is on screen. Set when a new key arrives (adjusting state while
   // rendering, the arcade's pattern for this), cleared by the timer.

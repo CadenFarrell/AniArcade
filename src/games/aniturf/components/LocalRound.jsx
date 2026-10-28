@@ -5,6 +5,9 @@ import RoundHeader from '../../../shared/components/RoundHeader';
 import { Backdrop, Button, Screen } from '../../../shared/ui';
 import { useAniTurfRound } from '../hooks/useAniTurfRound';
 import { TEAM_NAMES, other, trapsFor } from '../rules';
+
+// A claim's outcome as the impact frame says it: a sprung trap has its own.
+const IMPACT = { claim: 'correct', miss: 'wrong', trap: 'trap' };
 import ClueLog from './ClueLog';
 import ClueTurn from './ClueTurn';
 import GuessPanel from './GuessPanel';
@@ -141,7 +144,7 @@ export default function LocalRound({ setup, players, onFinish }) {
   return (
     <>
       <Backdrop />
-      {last && <ResultImpact result={last.outcome === 'claim' ? 'correct' : 'wrong'} eventKey={last.key} />}
+      {last && <ResultImpact result={IMPACT[last.outcome] ?? 'wrong'} eventKey={last.key} />}
       {body()}
     </>
   );

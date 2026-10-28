@@ -85,7 +85,7 @@ export default function OnlineGame({ onBack, onExit }) {
   // their own phone — and nobody else ever does.
   const keyView = amGiver && key ? { team: myTeam, footing: key.footing, traps: key.traps } : null;
   const impact = (
-    <ResultImpact result={mine ? (lastEvent.kind === 'claim' ? 'correct' : 'wrong') : null} eventKey={mine ? eventKey : null} />
+    <ResultImpact result={mine ? ({ claim: 'correct', miss: 'wrong', trap: 'trap' }[lastEvent.kind] ?? 'wrong') : null} eventKey={mine ? eventKey : null} />
   );
   // The latest hand-over that cost a team its traps, shown until the next clue
   // — news for the turn it happens in, not a fixture for the rest of the game.

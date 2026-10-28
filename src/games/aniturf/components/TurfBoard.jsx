@@ -126,6 +126,17 @@ function describe(ch, mark, { footing, trapped, fresh, revealed }) {
 function Cell({ ch, mark, mode, pickable, plantable, selected, keyTeam, footing, fresh, trapped, revealed, onPress }) {
   const claimed = mark === 'red' || mark === 'blue' ? TEAM_STYLE[mark] : null;
   const rubble = mark === 'miss' || mark === 'trap';
+  // A mark that changed while this square was on screen lands — a claim's ink
+  // floods in and its letter stamps down, a scorch burns in. Only a CHANGE:
+  // the board remounts on every screen of a turn, and replaying every mark
+  // each time would turn the board into noise. Compared during render, the
+  // arcade's pattern for state that follows a prop.
+  const [seenMark, setSeenMark] = useState(mark);
+  const [landed, setLanded] = useState(false);
+  if (seenMark !== mark) {
+    setSeenMark(mark);
+    setLanded(mark != null);
+  }
   const keyed = keyTeam && mark == null;
   const interactive = pickable || plantable;
   const label = describe(ch, mark, { footing: keyed && footing, trapped: mark == null && trapped, fresh, revealed });
@@ -152,20 +163,25 @@ function Cell({ ch, mark, mode, pickable, plantable, selected, keyTeam, footing,
         />
         {claimed && (
           <>
-            <span aria-hidden="true" className={`absolute inset-0 ${claimed.fill} opacity-75 mix-blend-multiply`} />
+            <span aria-hidden="true" className={`absolute inset-0 ${claimed.fill} opacity-75 mix-blend-multiply ${landed ? 'curtain-in' : ''}`} />
             <span aria-hidden="true" className={`absolute inset-0 ${claimed.texture}`} />
             <span
               aria-hidden="true"
+              style={landed ? { animationDelay: '260ms' } : undefined}
               className={`absolute top-1 left-1 grid h-6 w-6 place-items-center border-2 border-ink ${claimed.fill}
-                font-display text-sm font-bold leading-none text-paper`}
+                font-display text-sm font-bold leading-none text-paper ${landed ? 'stamp-in' : ''}`}
             >
               {claimed.letter}
             </span>
           </>
         )}
         {rubble && (
-          <span aria-hidden="true" className="plus-grid absolute inset-0 grid place-items-center bg-surface-2/70">
-            <span className="grid h-8 w-8 place-items-center border-2 border-ink bg-ink text-lg text-paper sm:h-10 sm:w-10 sm:text-2xl">
+          <span aria-hidden="true" className={`plus-grid absolute inset-0 grid place-items-center bg-surface-2/70 ${landed ? 'curtain-in' : ''}`}>
+            <span
+              style={landed ? { animationDelay: '300ms' } : undefined}
+              className={`grid h-8 w-8 place-items-center border-2 border-ink text-lg text-paper sm:h-10 sm:w-10 sm:text-2xl
+                ${mark === 'trap' ? 'bg-pop-amber' : 'bg-ink'} ${landed ? 'stamp-in' : ''}`}
+            >
               <Icon name={mark === 'trap' ? 'skull' : 'cross'} />
             </span>
           </span>
