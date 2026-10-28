@@ -20,6 +20,7 @@ const TONES = {
   red: '[--slash:var(--color-pop-red)]',
   plum: '[--slash:var(--color-pop-plum)]',
   slate: '[--slash:var(--color-pop-slate)]',
+  moss: '[--slash:var(--color-pop-moss)]',
 };
 
 const SIZES = {

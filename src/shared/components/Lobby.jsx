@@ -99,6 +99,7 @@ const YOU_BADGE = {
   red: 'red',
   plum: 'plum',
   slate: 'slate',
+  moss: 'moss',
 };
 
 /**

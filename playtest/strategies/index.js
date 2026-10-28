@@ -11,5 +11,6 @@ import anitag from './anitag.js';
 import aniquiz from './aniquiz.js';
 import aniturf from './aniturf.js';
 import anipeek from './anipeek.js';
+import aniout from './aniout.js';
 
-export const strategies = { aniguess, anitune, anirank, anifake, aniwave, anitag, aniquiz, aniturf, anipeek };
+export const strategies = { aniguess, anitune, anirank, anifake, aniwave, anitag, aniquiz, aniturf, anipeek, aniout };

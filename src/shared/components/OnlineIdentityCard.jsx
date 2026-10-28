@@ -18,6 +18,7 @@ const TONES = {
   red: 'text-pop-red',
   plum: 'text-pop-plum',
   slate: 'text-pop-slate',
+  moss: 'text-pop-moss',
 };
 
 export default function OnlineIdentityCard({ profile, stat, tone = 'purple', onSwitch, onImport }) {

@@ -137,9 +137,10 @@ network.
 lists), `src/games/wavelength/CLAUDE.md` (AniWave), `src/games/categories/CLAUDE.md` (AniTag),
 `src/games/aniquiz/CLAUDE.md` (AniQuiz), `src/games/anifake/CLAUDE.md` (AniFake: the deal and
 the card check, hidden-role patterns, fame coverage), `src/games/aniturf/CLAUDE.md` (AniTurf: crossing
-goals, the winding-route footing and its detours, the two-device claim) and
+goals, the winding-route footing and its detours, the two-device claim),
 `src/games/anipeek/CLAUDE.md` (AniPeek: the bid and its score, the pool's three filters, the
-tile board, the skip). Read the relevant one before changing a game's
+tile board, the skip) and `src/games/aniout/CLAUDE.md` (AniOut: the connections, the
+one-answer checks, profile-then-pack facts, the reasons). Read the relevant one before changing a game's
 behaviour from shared code, where it will not load on its own.
 
 ### Online rooms (Firebase Realtime Database)

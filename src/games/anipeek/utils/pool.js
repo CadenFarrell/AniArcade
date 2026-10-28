@@ -2,16 +2,14 @@
 // answer. Built on shared/utils/characterPool.js — the one collapse AniFake and
 // AniTurf already share — so "the same person under three season titles is
 // one character" means the same thing here as there.
-import { characterOwners } from '../../../shared/utils/characterPool';
+import { characterOwners, hasPortrait } from '../../../shared/utils/characterPool';
 import { characterNameKey } from '../../../shared/utils/character';
 import { portraitsFor } from '../../../shared/utils/portrait';
 
-// AniList's stand-in for a character with no picture is a real image at a real
-// URL ("…/character/large/default.jpg"), so a non-empty imageUrl is not enough:
-// a round under that would be sixteen tiles over a grey silhouette.
-const PLACEHOLDER = /\/default\.(jpe?g|png|webp)$/i;
-
-export const hasPortrait = (url) => typeof url === 'string' && url.trim() !== '' && !PLACEHOLDER.test(url.trim());
+// The no-picture test lives in characterPool.js now (AniOut shares it); it is
+// re-exported because this folder's deal and tests import it from here. A round
+// under AniList's stand-in would be sixteen tiles over a grey silhouette.
+export { hasPortrait };
 
 /**
  * Every character a round can be dealt: one per person across the table's

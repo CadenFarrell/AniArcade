@@ -10,6 +10,14 @@
 // Pure and offline: every field it reads is already on a saved profile.
 import { characterNameKey, normalizeCharacter } from './character';
 
+// AniList's stand-in for a character with no picture is a real image at a real
+// URL ("…/character/large/default.jpg"), so a non-empty imageUrl is not enough:
+// a card under that is a grey silhouette. Lifted out of AniPeek's pool when
+// AniOut needed the same test for its card grid.
+const PLACEHOLDER = /\/default\.(jpe?g|png|webp)$/i;
+
+export const hasPortrait = (url) => typeof url === 'string' && url.trim() !== '' && !PLACEHOLDER.test(url.trim());
+
 // Which of two copies of the same character to keep. The highest favourites
 // count is the one mergeCharacterEdges already settled on across seasons, and a
 // copy with a portrait beats one without, since a card is mostly the

@@ -137,6 +137,10 @@
      long way in saturation from blue (asking) and purple (whose turn), so it
      cannot be read as either. */
   --color-pop-slate: #3f5163; /* AniPeek                  6.21 / 7.70 */
+  /* Moss: a dark olive, the tenth game's. Yellower and greyer than lime (yes,
+     correct) so a moss block is never read as a right answer, and well clear
+     of amber's brown (scores). */
+  --color-pop-moss: #5c5a14; /* AniOut                    5.45 / 6.76 */
 
   /* AniTurf's two teams. Their own role, not pop-red and pop-blue: those mean
      wrong and asking, and a claimed square is neither. Kept a hue apart from
