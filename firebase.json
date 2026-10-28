@@ -18,6 +18,7 @@
       "site": "aniguess-a08f7",
       "public": "hosting/old-address",
       "redirects": [
+        { "source": "/", "destination": "https://aniarcade.web.app/", "type": 301 },
         { "source": "/:path*", "destination": "https://aniarcade.web.app/:path", "type": 301 }
       ]
     }
