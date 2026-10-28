@@ -26,6 +26,19 @@ export const LIVES = 'lives';
 // the clip. Everything else runs the everyone-types shape, so components and
 // gates should branch on this rather than listing modes.
 export const isRace = (mode) => mode === RACE;
+
+// The last song of a round scores double. A round used to end the way it ran:
+// whoever led after song seven had usually won, and the last three were a
+// formality. Doubling the last one keeps a trailing player in it to the end,
+// and the table hears it announced before the clip plays.
+export const FINAL_MULTIPLIER = 2;
+
+// What this song's points are multiplied by: double on the round's last song,
+// once a round has more than one (a one-song round has no "final" to raise).
+export function songMultiplier(state) {
+  return state?.finalIndex != null && state.finalIndex > 0 && state.index === state.finalIndex
+    ? FINAL_MULTIPLIER : 1;
+}
 // Lives layers elimination on top of that shape. Kept separate from isRace so
 // adding a fourth mode is one entry here, not a scan for `=== SIMULTANEOUS`.
 export const hasLives = (mode) => mode === LIVES;
@@ -88,10 +101,15 @@ export function startRound(players, mode = RACE, {
   guessSeconds = 20,
   answerSeconds = 10,
   startingLives = 3,
+  // How many songs were dealt, so the last one can score double (songMultiplier).
+  roundLength = null,
 } = {}) {
   return {
     mode,
     index: 0,
+    finalIndex: roundLength > 1 ? roundLength - 1 : null,
+    // One line per settled song (see settle), for the final screen's awards.
+    log: [],
     scores: Object.fromEntries(players.map((p) => [p.id, 0])),
     timed: Boolean(timed),
     guessMs: timed ? guessSeconds * 1000 : null,
@@ -229,11 +247,20 @@ export function isEliminated(state, playerId) {
  */
 function settle(state, answers, graded) {
   const scores = { ...state.scores };
+  const mult = songMultiplier(state);
   for (const [id, answer] of Object.entries(answers)) {
-    const points = scoreAnswer(answer, state.windowMs);
+    const points = scoreAnswer(answer, state.windowMs) * mult;
     if (points) scores[id] = (scores[id] || 0) + points;
   }
-  if (!hasLives(state.mode)) return { scores };
+  // The song's line in the round's log: who got it, and how fast (-1 where no
+  // time was measured — RTDB keeps a number, not a null). Appended here because
+  // every path to a reveal runs through settle exactly once per song.
+  const got = {};
+  for (const [id, answer] of Object.entries(answers)) {
+    if (answer?.correct) got[id] = answer.ms ?? -1;
+  }
+  const log = [...(state.log ?? []), { i: state.index, got }];
+  if (!hasLives(state.mode)) return { scores, log };
 
   const lives = { ...state.lives };
   const eliminated = [...(state.eliminated ?? [])];
@@ -244,7 +271,7 @@ function settle(state, answers, graded) {
     lives[id] = left;
     if (left === 0) eliminated.push(id);
   }
-  return { scores, lives, eliminated };
+  return { scores, lives, eliminated, log };
 }
 
 // --- Race ------------------------------------------------------------------
@@ -316,6 +343,69 @@ export function resolveBuzz(state, question, guess, players, now) {
       deadlineAt: done || state.pausedRemainingMs == null ? null : now + state.pausedRemainingMs,
       pausedRemainingMs: null,
       ...(done ? settle(state, answers, lockedOut) : {}),
+    },
+  };
+}
+
+// --- One device, out loud ----------------------------------------------------
+
+/**
+ * Shout-it race (local `localRace: 'shout'`): somebody shouted the answer, and
+ * the table says who was first. Takes the clip like a buzz — paused, the speed
+ * measured to this instant — but with no answer clock: nobody is typing, the
+ * table is checking the answer on screen, and a clock expiring mid-check would
+ * resume a clip whose answer everyone has just seen.
+ */
+export function claimSpoken(state, playerId, now) {
+  const { patch } = buzz(state, playerId, now);
+  if (!patch.phase) return { patch: {} };
+  return { patch: { ...patch, deadlineAt: null } };
+}
+
+/**
+ * The table checked the claimed answer. Right scores as a buzz would (speed to
+ * the claim); wrong ends the song for everyone, because the answer was on the
+ * screen to be checked — unlike a typed miss, there is nothing left to race for.
+ * The answer is marked `aloud`, so the reveal says "said it" rather than quoting
+ * text nobody typed.
+ */
+export function awardSpoken(state, correct) {
+  if (state.phase !== 'buzzed' || !state.buzzedBy) return { patch: {} };
+  const playerId = state.buzzedBy;
+  const answers = {
+    ...state.answers,
+    [playerId]: { text: '', correct: Boolean(correct), ms: elapsedIn(state, state.buzzedAt), aloud: true },
+  };
+  return {
+    patch: {
+      phase: 'revealed',
+      answers,
+      lockedOut: correct ? state.lockedOut : [...state.lockedOut, playerId],
+      deadlineAt: null,
+      pausedRemainingMs: null,
+      ...settle(state, answers, [playerId]),
+    },
+  };
+}
+
+/**
+ * Everyone-guesses out loud (local `localEntry: 'aloud'`): the clip played,
+ * everyone said their answer, the answer is on screen, and the table ticked who
+ * got it. One flat point each — nobody typed, so there is no time to score —
+ * and in Lives everyone still in who was not ticked loses one, exactly as an
+ * unanswered entry would.
+ */
+export function selfReport(state, gotIds = [], activeIds = []) {
+  if (state.phase === 'revealed' || isRace(state.mode)) return { patch: {} };
+  const live = livePlayerIds(state, activeIds);
+  const answers = {};
+  for (const id of live) answers[id] = { text: '', correct: gotIds.includes(id), ms: null, aloud: true };
+  return {
+    patch: {
+      answers,
+      phase: 'revealed',
+      deadlineAt: null,
+      ...settle({ ...state, windowMs: null }, answers, live),
     },
   };
 }
@@ -595,4 +685,67 @@ export function activePlayerId(state) {
   if (state.phase === 'buzzed') return state.buzzedBy;
   if (state.phase === 'handoff' || state.phase === 'entry') return state.entryOrder[state.entryIndex];
   return null;
+}
+
+// --- The round's story ----------------------------------------------------------
+
+/**
+ * The final screen's superlatives, from the round's log (settle). A clear
+ * leader or nothing — a tie drops the award rather than picking one by seat.
+ *
+ *   Fastest finger   the quickest right answer of the round
+ *   Hot streak       the most songs in a row got right (three or more)
+ *   Deep cut         the most songs only they got (everyone-guesses modes)
+ *
+ * `titleOf(i)` names song i for the detail line.
+ */
+export function roundAwards(log = [], players = [], { mode = RACE, titleOf = () => '' } = {}) {
+  const lines = (log ?? []).filter(Boolean);
+  const byId = (id) => players.find((p) => p.id === id) ?? null;
+  const out = [];
+
+  const timed = lines.flatMap((l) => Object.entries(l.got ?? {})
+    .filter(([, ms]) => ms >= 0).map(([id, ms]) => ({ id, ms, i: l.i })));
+  if (timed.length) {
+    const best = Math.min(...timed.map((t) => t.ms));
+    const at = timed.filter((t) => t.ms === best);
+    if (new Set(at.map((t) => t.id)).size === 1 && byId(at[0].id)) {
+      const title = titleOf(at[0].i);
+      out.push({
+        title: 'Fastest finger',
+        player: byId(at[0].id),
+        detail: `${(best / 1000).toFixed(1)}s${title ? ` on ${title}` : ''}`,
+      });
+    }
+  }
+
+  const ordered = [...lines].sort((a, b) => a.i - b.i);
+  const streak = {};
+  for (const p of players) {
+    let run = 0;
+    let longest = 0;
+    for (const l of ordered) {
+      run = l.got?.[p.id] != null ? run + 1 : 0;
+      longest = Math.max(longest, run);
+    }
+    streak[p.id] = longest;
+  }
+  const streaks = Object.entries(streak).sort((a, b) => b[1] - a[1]);
+  if (streaks.length && streaks[0][1] >= 3 && !(streaks[1] && streaks[1][1] === streaks[0][1]) && byId(streaks[0][0])) {
+    out.push({ title: 'Hot streak', player: byId(streaks[0][0]), detail: `${streaks[0][1]} songs in a row` });
+  }
+
+  if (!isRace(mode) && players.length > 1) {
+    const solo = {};
+    for (const l of lines) {
+      const ids = Object.keys(l.got ?? {});
+      if (ids.length === 1) solo[ids[0]] = (solo[ids[0]] || 0) + 1;
+    }
+    const rows = Object.entries(solo).sort((a, b) => b[1] - a[1]);
+    if (rows.length && !(rows[1] && rows[1][1] === rows[0][1]) && byId(rows[0][0])) {
+      const n = rows[0][1];
+      out.push({ title: 'Deep cut', player: byId(rows[0][0]), detail: `The only one to get ${n} ${n === 1 ? 'song' : 'songs'}` });
+    }
+  }
+  return out;
 }

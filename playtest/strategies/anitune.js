@@ -24,6 +24,10 @@ export default makeStrategy({
     sharedSongsOnly: [true, false],
     includeEndings: [true, false],
     popularity: ['any', 'known', 'popular'],
+    // One device only (online ignores them), and the hint ladder.
+    localRace: ['buzz', 'shout'],
+    localEntry: ['private', 'aloud'],
+    hints: [false, true],
   },
   // Pre-fills resolveAnime's and buildQuestions' caches the way a finished
   // first game leaves them, from the same canned API the cold path calls.
@@ -54,6 +58,28 @@ export default makeStrategy({
 
     const play = find(snap, /^play clip$/i);
     if (play) return click(play, 'play the clip');
+
+    // Shout it: a claimed song is checked by the table, right about half the time.
+    const right = find(snap, /^right$/i);
+    const wrong = find(snap, /^wrong$/i);
+    if (right && wrong) return click(rng.chance(0.5) ? right : wrong, 'check the shouted answer');
+    const first = findAll(snap, / said it first$/i);
+    if (first.length) return click(rng.pick(first), 'who said it first');
+    const someone = find(snap, /^someone got it$/i);
+    if (someone && rng.chance(0.35)) return click(someone, 'someone got it');
+
+    // Out loud: show the answer, then tick a few (or nobody).
+    const show = find(snap, /^show the answer$/i);
+    if (show && rng.chance(0.4)) return click(show, 'show the answer');
+    const ticks = findAll(snap, / got it$/i).filter((c) => c.role === 'button' && !/^(nobody|someone)/i.test(c.name));
+    if (ticks.length) {
+      const done = find(snap, /^done$/i);
+      const pressed = ticks.filter((c) => c.pressed);
+      if (!pressed.length && rng.chance(0.25)) return click(find(snap, /^nobody got it$/i), 'nobody got it');
+      const unpressed = ticks.filter((c) => !c.pressed);
+      if (unpressed.length && (!pressed.length || rng.chance(0.4))) return click(rng.pick(unpressed), 'tick who got it');
+      if (done && !done.disabled) return click(done, 'done ticking');
+    }
 
     // An answer box: a show off somebody's list (a suggestion when offered,
     // which is right about as often as a real table is), or a random word.

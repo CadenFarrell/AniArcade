@@ -3,6 +3,7 @@ import {
   RACE, SIMULTANEOUS, LIVES, startRound, buzz, resolveBuzz, everyoneLockedOut, releaseBuzz,
   submitAnswer, beginEntry, startGuessing, submitOnlineAnswer, revealNow, giveUp, nextQuestion,
   openWindow, scoreAnswer, expireQuestion, livePlayerIds, answerElapsedMs, resumeRound,
+  songMultiplier, FINAL_MULTIPLIER, claimSpoken, awardSpoken, selfReport, roundAwards,
 } from './rules';
 
 const player = (id) => ({ id, name: id });
@@ -579,5 +580,64 @@ describe('resumeRound', () => {
     const solo = [ANA];
     const saved = { ...startRound(solo, LIVES, { startingLives: 3 }), index: 2, lives: { ana: 1 } };
     expect(resumeRound(saved, solo, 10)?.index).toBe(2);
+  });
+});
+
+describe('the final song', () => {
+  it('scores double on the last of several songs, and never on a one-song round', () => {
+    const r = { ...startRound(ALL, RACE, { roundLength: 3 }), index: 2 };
+    expect(songMultiplier(r)).toBe(FINAL_MULTIPLIER);
+    expect(songMultiplier({ ...r, index: 1 })).toBe(1);
+    expect(songMultiplier({ ...startRound(ALL, RACE, { roundLength: 1 }) })).toBe(1);
+    const won = { ...r, ...buzz(r, 'ana', T0).patch };
+    expect(resolveBuzz(won, QUESTION, RIGHT, ALL, T0).patch.scores.ana).toBe(scoreAnswer({ correct: true }, null) * FINAL_MULTIPLIER);
+  });
+});
+
+describe('the song log', () => {
+  it('records who got each song as it settles', () => {
+    const r = startRound(ALL, RACE);
+    const won = { ...r, ...buzz(r, 'ben', T0).patch };
+    const { patch } = resolveBuzz(won, QUESTION, RIGHT, ALL, T0);
+    expect(patch.log).toEqual([{ i: 0, got: { ben: -1 } }]);
+  });
+});
+
+describe('one device, out loud', () => {
+  it('a shouted claim pauses with no answer clock, and right scores while wrong ends the song', () => {
+    const r = timedRound(RACE);
+    const claimed = { ...r, ...claimSpoken(r, 'cleo', T0 + 2000).patch };
+    expect(claimed).toMatchObject({ phase: 'buzzed', buzzedBy: 'cleo', deadlineAt: null });
+    const right = awardSpoken(claimed, true).patch;
+    expect(right.phase).toBe('revealed');
+    expect(right.scores.cleo).toBeGreaterThan(1);
+    expect(right.answers.cleo).toMatchObject({ correct: true, aloud: true });
+    const wrong = awardSpoken(claimed, false).patch;
+    expect(wrong.phase).toBe('revealed');
+    expect(wrong.scores.cleo).toBe(0);
+  });
+
+  it('a tick list scores one flat point each, and costs the unticked a life', () => {
+    const lives = startRound(ALL, LIVES, { startingLives: 2 });
+    const { patch } = selfReport(lives, ['ana'], ALL_IDS);
+    expect(patch.scores).toEqual({ ana: 1, ben: 0, cleo: 0 });
+    expect(patch.lives).toEqual({ ana: 2, ben: 1, cleo: 1 });
+    expect(selfReport(startRound(ALL, RACE), ['ana'], ALL_IDS).patch).toEqual({});
+  });
+});
+
+describe('roundAwards', () => {
+  it('names the fastest finger, a streak of three, and a deep cut, dropping ties', () => {
+    const log = [
+      { i: 0, got: { ana: 1200, ben: 3000 } },
+      { i: 1, got: { ana: 4000 } },
+      { i: 2, got: { ana: 2500, cleo: 5000 } },
+    ];
+    const awards = roundAwards(log, ALL, { mode: SIMULTANEOUS, titleOf: () => 'Bebop' });
+    expect(awards.map((a) => [a.title, a.player.id])).toEqual([
+      ['Fastest finger', 'ana'], ['Hot streak', 'ana'], ['Deep cut', 'ana'],
+    ]);
+    expect(awards[0].detail).toBe('1.2s on Bebop');
+    expect(roundAwards([{ i: 0, got: { ana: 900, ben: 900 } }], ALL)).toEqual([]);
   });
 });

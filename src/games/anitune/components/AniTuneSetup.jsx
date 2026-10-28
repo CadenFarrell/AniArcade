@@ -120,6 +120,7 @@ export default function AniTuneSetup({ onStart, preparing, progress, error, onBa
             <AniTuneSettings
               players={players}
               values={settings}
+              local
               disabled={preparing}
               onChange={(key, value) => setSettings((s) => ({ ...s, [key]: value }))}
             />

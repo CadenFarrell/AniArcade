@@ -61,6 +61,13 @@ function normalizeGame(game) {
     timed: game.timed ?? false,
     guessMs: game.guessMs ?? null,
     answerMs: game.answerMs ?? null,
+    // The final song's double and the song log (rules.settle). Both absent on
+    // a round dealt before them; the log may come back index-keyed, and a line
+    // whose song nobody got has no `got` at all (RTDB drops the empty object).
+    finalIndex: game.finalIndex ?? null,
+    log: (Array.isArray(game.log) ? game.log : Object.values(game.log ?? {}))
+      .filter(Boolean)
+      .map((l) => ({ i: l.i ?? 0, got: l.got ?? {} })),
   };
 }
 
@@ -189,7 +196,7 @@ export function useAniTuneRoom() {
       // guarantee for free, which it did not when this hook rolled the offsets.
       await patchState({
         round,
-        game: rules.startRound(dealtIn, settings.mode, settings),
+        game: rules.startRound(dealtIn, settings.mode, { ...settings, roundLength: round.length }),
         view: 'round',
       });
     } catch (e) {

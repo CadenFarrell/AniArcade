@@ -6,6 +6,15 @@ import Lives from './Lives';
 import { useSoundCue } from '../../../shared/hooks/useSoundCue';
 import ResultImpact from '../../../shared/components/ResultImpact';
 import PlayerFace from '../../../shared/components/PlayerFace';
+import { useStagger } from '../../../shared/hooks/useStagger';
+import { useCountUp } from '../../../shared/hooks/useCountUp';
+
+// A row's points ticking up as the row lands (useCountUp; final from the start
+// for a reader, since nothing compares a per-song badge across devices).
+function PointsBadge({ points, delayMs, skip }) {
+  const shown = useCountUp(points, { delayMs, skip });
+  return <Badge tone="lime" className="flex-shrink-0">+{formatPoints(shown)}</Badge>;
+}
 
 // The answer card plus the round leaderboard for this question.
 //
@@ -25,6 +34,9 @@ export default function QuestionReveal({
   question, mode, players, answers, windowMs = null, lives = null, onNext, nextLabel,
   // Online only: whose phone this is, so the sound is that player's own result.
   myId = null,
+  // The final song's double (rules.songMultiplier): the scores already carry
+  // it, so the rows must show the points that were actually awarded.
+  multiplier = 1,
 }) {
   const race = isRace(mode);
   const scorers = players.filter((p) => answers[p.id]?.correct);
@@ -61,7 +73,7 @@ export default function QuestionReveal({
       player: p,
       answer: answers[p.id],
       ms: answerElapsedMs(answers[p.id]),
-      points: scoreAnswer(answers[p.id], windowMs),
+      points: scoreAnswer(answers[p.id], windowMs) * multiplier,
     }))
     .sort((a, b) => {
       if (a.ms == null) return b.ms == null ? 0 : 1;
@@ -77,8 +89,13 @@ export default function QuestionReveal({
   const ownerNames = players.filter((p) => owners.includes(p.id)).map((p) => p.name);
   const showOwners = ownerNames.length > 0 && ownerNames.length < players.length;
 
+  // Staged: the answer card is unveiled, then the rows land fastest first with
+  // their points ticking up. "Next" is live from the first frame (useStagger).
+  const stagger = useStagger({ count: rows.length, stepMs: 160, leadMs: 520, key: question.id });
+  const on = !stagger.skipped;
+
   return (
-    <div className="mt-6 text-center">
+    <div className="mt-6 text-center" {...stagger.rootProps}>
       <ResultImpact result={impact} eventKey={question.id} />
       <div className={`mb-3 text-5xl ${scorers.length ? 'text-pop-pink' : 'text-pop-red'}`}>
         <Icon name={scorers.length ? 'burst' : 'cross'} />
@@ -88,6 +105,7 @@ export default function QuestionReveal({
           scorers.length ? 'text-pop-lime' : 'text-fg-body'
         }`}
       >
+        {multiplier > 1 && scorers.length > 0 && <span className="mr-2 text-pop-amber">×{multiplier}</span>}
         {race
           ? (winner ? `${winner.name} got it!` : 'Nobody got it')
           : (scorers.length
@@ -95,7 +113,7 @@ export default function QuestionReveal({
             : 'Nobody got it')}
       </p>
 
-      <Card padding="lg" className="mb-5">
+      <Card padding="lg" className={`mb-5 ${on ? 'curtain-in' : ''}`}>
         <div className="flex items-start gap-4 text-left">
           {question.coverImageUrl && (
             <Avatar src={question.coverImageUrl} alt="" size="lg" className="flex-shrink-0" />
@@ -143,8 +161,8 @@ export default function QuestionReveal({
           load rather than as nothing having happened. */}
       {rows.length > 0 && (
       <Card padding="sm" className="mb-5">
-        {rows.map(({ player: p, answer, ms, points }) => (
-          <CardRow key={p.id} className="text-left">
+        {rows.map(({ player: p, answer, ms, points }, i) => (
+          <CardRow key={p.id} className={`text-left ${on ? 'reveal-row' : ''}`} style={on ? stagger.style(i) : undefined}>
             <span className={`w-6 flex-shrink-0 text-lg ${answer?.correct ? 'text-pop-lime' : 'text-pop-red'}`}>
               <Icon name={answer?.correct ? 'check' : 'cross'} label={answer?.correct ? 'Right' : 'Wrong'} />
             </span>
@@ -159,7 +177,9 @@ export default function QuestionReveal({
                 )}
               </span>
               <span className="block truncate text-sm text-fg-subtle">
-                {answer?.text?.trim() ? `“${answer.text}”` : 'passed'}
+                {answer?.aloud
+                  ? (answer.correct ? 'said it' : 'missed it')
+                  : answer?.text?.trim() ? `“${answer.text}”` : 'passed'}
               </span>
             </span>
             {ms != null && (
@@ -170,9 +190,7 @@ export default function QuestionReveal({
                 )}
               </span>
             )}
-            {points > 0 && (
-              <Badge tone="lime" className="flex-shrink-0">+{formatPoints(points)}</Badge>
-            )}
+            {points > 0 && <PointsBadge points={points} delayMs={stagger.delay(i)} skip={stagger.skipped} />}
           </CardRow>
         ))}
       </Card>

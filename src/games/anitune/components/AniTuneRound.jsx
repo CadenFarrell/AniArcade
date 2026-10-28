@@ -1,12 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import ClipPlayer from './ClipPlayer';
 import RaceRound from './RaceRound';
+import SpokenRace from './SpokenRace';
+import SongHints from './SongHints';
+import SelfReport from '../../../shared/components/SelfReport';
 import SimultaneousRound from './SimultaneousRound';
 import QuestionReveal from './QuestionReveal';
 import { useAniTuneRound } from '../hooks/useAniTuneRound';
-import { isRace, hasLives, isEliminated } from '../rules';
+import { isRace, hasLives, isEliminated, songMultiplier, livePlayerIds } from '../rules';
 import { formatPoints } from '../../../shared/utils/deadline';
-import { Backdrop, Badge, GhostButton, Screen, TimerBar } from '../../../shared/ui';
+import { Backdrop, Badge, Button, GhostButton, Screen, TimerBar } from '../../../shared/ui';
 import Lives from './Lives';
 import { useSoundCue } from '../../../shared/hooks/useSoundCue';
 import PlayerRow from '../../../shared/components/PlayerRow';
@@ -22,11 +25,21 @@ import RoundHeader from '../../../shared/components/RoundHeader';
 export default function AniTuneRound({
   round, players, questions, clipSeconds, playbackRate = 1, mode, settings = {},
   initialState = null, onProgress, onFinish, onBackToSetup,
+  // One device: how a race is buzzed ('buzz' pads or 'shout'), how everyone
+  // answers ('private' handoffs or 'aloud' with a tick list), and the hint
+  // ladder. See prefs.js.
+  localRace = 'buzz', localEntry = 'private', hints = false,
 }) {
   const {
     state, activeId, isLastQuestion, clock, setQuestion, openWindow,
     buzz, resolveBuzz, giveUp, startGuessing, beginEntry, submitAnswer, advance,
+    claimSpoken, awardSpoken, selfReport,
   } = useAniTuneRound(players, mode, round.length, settings, initialState);
+  // Out-loud everyone-guesses: whether this song's answer is up for ticking.
+  // Keyed by the song, so the next one starts covered.
+  const [checkingFor, setCheckingFor] = useState(-1);
+  const aloud = !isRace(mode) && localEntry === 'aloud' && players.length > 1;
+  const doubled = songMultiplier(state) > 1;
 
   // Hand every state change up so LocalGame can save it. Here rather than in the
   // hook because the hook is the online twin's shape too, and only local play
@@ -88,6 +101,8 @@ export default function AniTuneRound({
         scores: state.scores,
         lives: state.lives,
         eliminated: state.eliminated,
+        // Every settled song (rules.settle), for the results' awards.
+        log: state.log ?? [],
         // How many clips actually played. Not round.length: Lives can finish the
         // round early, leaving dealt-but-unheard questions the recap must not
         // list.
@@ -126,6 +141,7 @@ export default function AniTuneRound({
         <RoundHeader
           title={race ? 'Buzz in' : lastManStanding ? 'Last one standing' : 'Everyone guesses'}
           tag={`Song ${state.index + 1}/${round.length}`}
+          hint={doubled ? 'Final song: double points' : undefined}
         />
 
         <ClipPlayer
@@ -159,7 +175,24 @@ export default function AniTuneRound({
           />
         )}
 
-        {!revealed && race && (
+        {hints && !revealed && state.deadlineAt != null && state.phase === 'listening' && (
+          <SongHints question={question} players={players} fraction={clock.fraction} />
+        )}
+
+        {!revealed && race && localRace === 'shout' && (
+          <SpokenRace
+            players={players}
+            lockedOut={state.lockedOut}
+            buzzedBy={state.buzzedBy}
+            question={question}
+            clipDone={clipDone}
+            onClaim={claimSpoken}
+            onAward={awardSpoken}
+            onGiveUp={giveUp}
+          />
+        )}
+
+        {!revealed && race && localRace !== 'shout' && (
           <RaceRound
             players={players}
             questions={questions}
@@ -172,7 +205,36 @@ export default function AniTuneRound({
           />
         )}
 
-        {!revealed && !race && (
+        {!revealed && aloud && (
+          checkingFor === state.index ? (
+            <div className="mt-6">
+              <div className="relative mb-6 border-[3px] border-ink bg-surface px-5 pt-8 pb-5 text-center shadow-pop-sm">
+                <span className="absolute -top-[3px] -left-[3px] border-[3px] border-ink bg-ink px-2.5 py-1 font-display text-xs font-bold uppercase tracking-[0.15em] text-paper">
+                  The answer
+                </span>
+                <p className="font-display text-3xl font-bold uppercase tracking-wide text-fg-strong [overflow-wrap:anywhere]">
+                  {question.animeTitle}
+                </p>
+              </div>
+              <SelfReport
+                key={state.index}
+                players={players.filter((p) => livePlayerIds(state, players.map((x) => x.id)).includes(p.id))}
+                onDone={selfReport}
+              />
+            </div>
+          ) : (
+            <div className="mt-6">
+              <p className="mb-4 text-center text-base text-fg-body">
+                Everyone say which anime it is — then check together.
+              </p>
+              <Button variant="primary" size="lg" fullWidth onClick={() => setCheckingFor(state.index)}>
+                Show the answer
+              </Button>
+            </div>
+          )
+        )}
+
+        {!revealed && !race && !aloud && (
           <SimultaneousRound
             players={players}
             questions={questions}
@@ -196,6 +258,7 @@ export default function AniTuneRound({
             answers={state.answers}
             windowMs={state.windowMs}
             lives={lastManStanding ? state.lives : null}
+            multiplier={songMultiplier(state)}
             onNext={next}
             nextLabel={isLastQuestion ? 'See results →' : 'Next question →'}
           />

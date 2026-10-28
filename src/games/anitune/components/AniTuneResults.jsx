@@ -1,8 +1,8 @@
 import { computeRankedPlayers } from '../../../shared/utils/ranking';
 import { formatPoints } from '../../../shared/utils/deadline';
 import { themeAndYear, songCredit } from '../utils/labels';
-import { hasLives } from '../rules';
-import ResultsLayout, { Splash, Standings } from '../../../shared/components/Results';
+import { hasLives, roundAwards } from '../rules';
+import ResultsLayout, { Awards, Splash, Standings } from '../../../shared/components/Results';
 import { StartBar } from '../../../shared/components/SetupLayout';
 import { splitPodium } from '../../../shared/utils/podium';
 import { Avatar, Badge, Button, Card, CardRow, Icon } from '../../../shared/ui';
@@ -22,6 +22,8 @@ export default function AniTuneResults({
   // played, and listing them would both claim the table heard things it didn't
   // and hand out the answers to a re-deal from the same pool.
   round = [], playedCount = null,
+  // Every settled song (rules.settle), for the awards.
+  log = [],
   departedIds = [], onPlayAgain, onBack,
 }) {
   const played = round.slice(0, playedCount ?? round.length);
@@ -93,6 +95,8 @@ export default function AniTuneResults({
         score={(p) => formatPoints(p.total)}
         extra={lastManStanding ? livesBadge : undefined}
       />
+
+      <Awards awards={roundAwards(log, players, { mode, titleOf: (i) => round[i]?.animeTitle ?? '' })} />
 
       {/* The round's setlist. Not a spoiler measure — the reveal already names
           the song and its performers as each one is played — just the

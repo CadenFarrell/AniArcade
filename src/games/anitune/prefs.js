@@ -46,7 +46,33 @@ export const DEFAULT_PREFS = {
   yearTo: YEAR_MAX,
   // Caps how many of one show's themes a round may draw (see pickRound).
   maxPerAnime: 2,
+
+  // --- one device ---
+  // Race on one device: 'buzz' is a pad per player on the screen (and number
+  // keys on a laptop), 'shout' is everyone shouting the answer and the table
+  // tapping who was first. Both kept; buzz is the default because it is what
+  // every saved table already played.
+  localRace: 'buzz',
+  // Everyone-guesses on one device: 'private' passes the device for each
+  // answer; 'aloud' plays the clip once, everyone says their answer, and the
+  // table ticks who got it — no handoffs, and no speed bonus.
+  localEntry: 'private',
+
+  // Hints while the clip plays (the year and OP/ED number at 35% of the guess
+  // window, whose lists the show is on at 65%). Off by default: recognition is
+  // the game, and a table that wants a lifeline turns it on.
+  hints: false,
 };
+
+export const LOCAL_RACE_STYLES = [
+  { id: 'buzz', label: 'Buzz pads', blurb: 'A button for each player on the screen. On a laptop, number keys 1–9 buzz too.' },
+  { id: 'shout', label: 'Shout it', blurb: 'Everyone shouts the answer; tap who said it first, then check it together.' },
+];
+
+export const LOCAL_ENTRY_STYLES = [
+  { id: 'private', label: 'Pass the device', blurb: 'Everyone types their answer in private, one at a time.' },
+  { id: 'aloud', label: 'Say it out loud', blurb: 'Everyone says their answer, then the table ticks who got it. No speed bonus.' },
+];
 // Deliberately absent: allowSpoilers / allowNsfw. They gated on AnimeThemes'
 // per-entry video flags, which say nothing about the audio this game plays —
 // see pickAudioForTheme for the measurement that settled it.

@@ -175,6 +175,9 @@ export default function LocalGame({ onExit, onBack }) {
             startingLives: game.startingLives,
           }}
           initialState={resumed}
+          localRace={game.localRace}
+          localEntry={game.localEntry}
+          hints={Boolean(game.hints)}
           onProgress={handleProgress}
           onFinish={(standings) => {
             // The round is over, so there is nothing to come back to. Clearing
@@ -205,6 +208,7 @@ export default function LocalGame({ onExit, onBack }) {
           mode={game.mode}
           round={game.round}
           playedCount={final.playedCount}
+          log={final.log ?? []}
           roundSize={game.round.length}
           // Re-deal from the same question pool rather than re-fetching; the
           // caches make a full rebuild cheap, but this keeps it instant.

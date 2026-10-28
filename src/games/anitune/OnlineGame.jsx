@@ -18,6 +18,8 @@ import Lives from './components/Lives';
 import { useSoundCue } from '../../shared/hooks/useSoundCue';
 import PlayerRow from '../../shared/components/PlayerRow';
 import RoundHeader from '../../shared/components/RoundHeader';
+import SongHints from './components/SongHints';
+import { songMultiplier } from './rules';
 
 // The online view-router — the Firebase-backed counterpart to AniTuneRound's local
 // orchestration. Modelled on src/games/aniguess/OnlineGame.jsx: a shell() wraps
@@ -186,6 +188,7 @@ export default function OnlineGame({ onBack, onExit }) {
           <RoundHeader
             title={race ? 'Buzz in' : lastManStanding ? 'Last one standing' : 'Everyone guesses'}
             tag={`Song ${game.index + 1}/${round.length}`}
+            hint={songMultiplier(game) > 1 ? 'Final song: double points' : undefined}
           />
 
           <SyncedClipPlayer
@@ -214,6 +217,10 @@ export default function OnlineGame({ onBack, onExit }) {
               fraction={room.clock.fraction}
               label={game.phase === 'buzzed' ? 'Time to answer' : 'Time to guess'}
             />
+          )}
+
+          {room.settings?.hints && !revealed && game.deadlineAt != null && game.phase === 'listening' && (
+            <SongHints question={question} players={room.players} fraction={room.clock.fraction} />
           )}
 
           {!revealed && race && (
@@ -257,6 +264,7 @@ export default function OnlineGame({ onBack, onExit }) {
               answers={game.answers}
               windowMs={game.windowMs}
               lives={lastManStanding ? game.lives : null}
+              multiplier={songMultiplier(game)}
               myId={room.myPlayerId}
               onNext={room.advance}
               nextLabel={isLast ? 'See results →' : 'Next question →'}
@@ -279,6 +287,7 @@ export default function OnlineGame({ onBack, onExit }) {
         // game.index is the last question the room actually reached, which in
         // Lives is short of the round it was dealt.
         playedCount={(room.game.index ?? 0) + 1}
+        log={room.game.log ?? []}
         departedIds={room.departedIds}
         roundSize={room.round?.length ?? Object.keys(room.game.scores).length}
         onPlayAgain={room.returnToLobby}

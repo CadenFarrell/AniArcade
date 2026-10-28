@@ -51,6 +51,11 @@ describe('AniTune online', () => {
     for (const d of [A, B]) await d.act((r) => r.submitAnswer(q(r), 'wrong'));
     await sleep(GRACE_WAIT);
     await until(() => [A, B].every((d) => d.r.game.phase === 'revealed'), { what: 'q2 revealed without Cat', timeout: 15_000 });
+    // The song log survives the database: q2's line, which nobody got, comes
+    // back with no `got` at all (an empty object is not stored) and is repaired.
+    expect(A.r.game.log.map((l) => l.i)).toEqual([0, 1]);
+    expect(A.r.game.log[1].got).toEqual({});
+    expect(Object.keys(A.r.game.log[0].got).length).toBeGreaterThan(0);
     expect(syncErrors([A, B])).toEqual([]);
   });
 

@@ -16,7 +16,7 @@ import * as rules from '../rules';
 // at a question boundary with no expired clock in it — this hook takes it as
 // given rather than re-checking, the same way it takes startRound's output.
 export function useAniTuneRound(players, mode, roundLength, settings = {}, initialState = null) {
-  const [state, setState] = useState(() => initialState ?? rules.startRound(players, mode, settings));
+  const [state, setState] = useState(() => initialState ?? rules.startRound(players, mode, { ...settings, roundLength }));
 
   // Rules run inside the updater so handlers always see current state — several
   // of them (buzzing, locking in) can fire in quick succession.
@@ -68,6 +68,14 @@ export function useAniTuneRound(players, mode, roundLength, settings = {}, initi
     ),
     giveUp: useCallback(
       () => apply((s) => rules.giveUp(s, players.map((p) => p.id))),
+      [apply, players]
+    ),
+
+    // One device, out loud (rules.claimSpoken / awardSpoken / selfReport).
+    claimSpoken: useCallback((playerId) => apply((s) => rules.claimSpoken(s, playerId, Date.now())), [apply]),
+    awardSpoken: useCallback((correct) => apply((s) => rules.awardSpoken(s, correct)), [apply]),
+    selfReport: useCallback(
+      (gotIds) => apply((s) => rules.selfReport(s, gotIds, players.map((p) => p.id))),
       [apply, players]
     ),
 

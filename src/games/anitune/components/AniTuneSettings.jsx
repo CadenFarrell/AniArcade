@@ -1,6 +1,7 @@
 import { hasLives, isRace } from '../rules';
 import { MODES } from '../modes';
-import { PLAYBACK_RATES } from '../prefs';
+import { LOCAL_ENTRY_STYLES, LOCAL_RACE_STYLES, PLAYBACK_RATES } from '../prefs';
+import { RACE } from '../rules';
 import {
   eligibleEntries, SAMPLE_POINTS, YEAR_MIN, YEAR_MAX, yearRangeIsOpen,
 } from '../utils/questionPool';
@@ -53,7 +54,9 @@ function poolStages(players, values) {
   return { base, afterYear, final };
 }
 
-export default function AniTuneSettings({ players, values, onChange, disabled = false }) {
+// `local` adds the two choices only one shared device has: how a race is
+// buzzed, and whether everyone types in private or says it out loud.
+export default function AniTuneSettings({ players, values, onChange, disabled = false, local = false }) {
   const { base, afterYear, final } = poolStages(players, values);
 
   const level = getPopularityLevel(values.popularity);
@@ -168,6 +171,55 @@ export default function AniTuneSettings({ players, values, onChange, disabled = 
         )}
 
         {/* How the clip itself plays — set once and left alone at most tables. */}
+        {values.timed && (
+          <>
+            <Checkbox
+              label="Hints"
+              checked={Boolean(values.hints)}
+              disabled={disabled}
+              onChange={(e) => onChange('hints', e.target.checked)}
+              className="mb-2"
+            />
+            <SettingHelp
+              indent
+              className="mb-5"
+              more="Never the song's title. Answering before a hint already pays more, through the speed bonus."
+            >
+              While nobody has it: the theme's number and year a third of the way in, then whose lists it is on.
+            </SettingHelp>
+          </>
+        )}
+
+        {local && (players?.length ?? 0) > 1 && (values.mode === RACE ? (
+          <>
+            <Field label="On one device" htmlFor="anitune-local-race" className="mb-2">
+              <Select
+                id="anitune-local-race"
+                value={values.localRace}
+                disabled={disabled}
+                onChange={(e) => onChange('localRace', e.target.value)}
+              >
+                {LOCAL_RACE_STYLES.map((o) => <option key={o.id} value={o.id}>{o.label}</option>)}
+              </Select>
+            </Field>
+            <SettingHelp className="mb-5">{LOCAL_RACE_STYLES.find((o) => o.id === values.localRace)?.blurb}</SettingHelp>
+          </>
+        ) : (
+          <>
+            <Field label="On one device" htmlFor="anitune-local-entry" className="mb-2">
+              <Select
+                id="anitune-local-entry"
+                value={values.localEntry}
+                disabled={disabled}
+                onChange={(e) => onChange('localEntry', e.target.value)}
+              >
+                {LOCAL_ENTRY_STYLES.map((o) => <option key={o.id} value={o.id}>{o.label}</option>)}
+              </Select>
+            </Field>
+            <SettingHelp className="mb-5">{LOCAL_ENTRY_STYLES.find((o) => o.id === values.localEntry)?.blurb}</SettingHelp>
+          </>
+        ))}
+
         <MoreSettings about="the clip">
           <Field label="Clip length (s)" htmlFor="anitune-clip-seconds" className="mb-5">
             <NumberInput
