@@ -1,6 +1,11 @@
 import { useState } from 'react';
 import { GRID, TILES } from '../rules';
 import { Button } from '../../../shared/ui';
+import { useSoundCue } from '../../../shared/hooks/useSoundCue';
+
+// How far apart the last covered tiles lift off at the reveal: fast enough to
+// read as one unveiling, slow enough that the face comes out of the board.
+const CASCADE_MS = 45;
 
 // The portrait under its tiles — every screen of a round draws this one board.
 //
@@ -38,6 +43,46 @@ export default function PeekBoard({ imageUrl, name, uncovered = [], revealAll = 
   const open = new Set(uncovered);
   const failed = broken || !imageUrl;
 
+  // The tiles that came off since the last render — a ghost of each lifts away
+  // where it sat, so a peek is a tile coming off rather than a hole appearing.
+  // Compared during render (state that follows a prop); a new card starts with
+  // nothing lifting, so a skip or the next round never flies its first board's
+  // tiles.
+  const openKey = `${imageUrl}|${uncovered.join(',')}`;
+  const [prevKey, setPrevKey] = useState(openKey);
+  const [lifting, setLifting] = useState([]);
+  if (prevKey !== openKey) {
+    const sameCard = prevKey.split('|')[0] === imageUrl;
+    const before = new Set(sameCard ? prevKey.split('|')[1].split(',').filter(Boolean).map(Number) : uncovered);
+    setPrevKey(openKey);
+    setLifting(uncovered.filter((i) => !before.has(i)));
+  }
+  // Every device hears a tile come off — the whole table is watching the
+  // board, so it is a shared moment (styling.md's sound rule), not a press.
+  useSoundCue('select', uncovered.length ? openKey : null);
+
+  // A covered tile's face, drawn by the live tile and by its ghost alike.
+  const face = (i) => (
+    <>
+      <span className="halftone pointer-events-none absolute inset-0 opacity-25" />
+      <span className="relative font-display text-sm font-bold text-fg-subtle">{i + 1}</span>
+    </>
+  );
+  const look = 'relative grid place-items-center bg-surface shadow-[0_0_0_1px_var(--color-ink)]';
+  // tile-lift ends invisible and starts as the tile, so with the animation
+  // removed (reduced motion) the ghost is simply gone. aria-hidden and never a
+  // button: the bots and a screen reader see the board as it now is.
+  const ghost = (i, delayMs = 0) => (
+    <span
+      key={i}
+      aria-hidden="true"
+      style={delayMs ? { animationDelay: `${delayMs}ms` } : undefined}
+      className={`${look} tile-lift z-10`}
+    >
+      {face(i)}
+    </span>
+  );
+
   return (
     <figure
       className="relative mx-auto mb-5 aspect-[2/3] w-full max-w-[15rem] overflow-hidden border-[3px] border-ink
@@ -55,20 +100,28 @@ export default function PeekBoard({ imageUrl, name, uncovered = [], revealAll = 
         />
       )}
 
+      {/* At the reveal the tiles still covered lift off in a cascade rather
+          than vanishing — the unveiling the whole round was a bid on. The
+          picture and its name are already there underneath. */}
+      {revealAll && !failed && (
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 grid"
+          style={{ gridTemplateColumns: `repeat(${GRID}, 1fr)`, gridTemplateRows: `repeat(${GRID}, 1fr)` }}
+        >
+          {Array.from({ length: TILES }, (_, i) => (
+            open.has(i) ? <span key={i} /> : ghost(i, 150 + i * CASCADE_MS)
+          ))}
+        </div>
+      )}
+
       {!revealAll && (
         <div
           className="absolute inset-0 grid"
           style={{ gridTemplateColumns: `repeat(${GRID}, 1fr)`, gridTemplateRows: `repeat(${GRID}, 1fr)` }}
         >
           {Array.from({ length: TILES }, (_, i) => {
-            if (open.has(i)) return <span key={i} aria-hidden="true" />;
-            const face = (
-              <>
-                <span className="halftone pointer-events-none absolute inset-0 opacity-25" />
-                <span className="relative font-display text-sm font-bold text-fg-subtle">{i + 1}</span>
-              </>
-            );
-            const look = 'relative grid place-items-center bg-surface shadow-[0_0_0_1px_var(--color-ink)]';
+            if (open.has(i)) return lifting.includes(i) ? ghost(i) : <span key={i} aria-hidden="true" />;
             return onPick && !failed ? (
               <button
                 key={i}
@@ -77,10 +130,10 @@ export default function PeekBoard({ imageUrl, name, uncovered = [], revealAll = 
                 onClick={() => onPick(i)}
                 className={`${look} focus-pop z-0 hover:bg-surface-2 focus-visible:z-10`}
               >
-                {face}
+                {face(i)}
               </button>
             ) : (
-              <span key={i} aria-hidden="true" className={look}>{face}</span>
+              <span key={i} aria-hidden="true" className={look}>{face(i)}</span>
             );
           })}
         </div>

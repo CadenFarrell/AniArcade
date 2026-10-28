@@ -66,6 +66,11 @@ gone. After a tile is open it is refused: the table has seen part of THIS pictur
 spare left, the round is void. jsdom never fires `load` or `error`, so nothing gates on the
 image loading; the tiles are live as soon as the round is.
 
+A tile that comes off while the board is on screen leaves a GHOST that lifts away (`tile-lift`,
+aria-hidden, never a button), and at the reveal every tile still covered lifts off in a cascade
+over the picture, which is already there with its name. Both are decoration over a board that is
+already in its new state, so the bots and a screen reader never wait on them.
+
 ## Online
 
 `hooks/usePeekRoom.js` is AniQuiz's shape: a `deal` node written once and a `game` node moved
