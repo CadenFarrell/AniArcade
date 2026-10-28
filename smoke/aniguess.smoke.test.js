@@ -80,4 +80,38 @@ describe('AniGuess online', () => {
     await until(() => last.r.view === 'leaderboard', { what: 'leaderboard when one player is left', timeout: 15_000 });
     expect(syncErrors([last])).toEqual([]);
   });
+
+  it('a solve and a give-up carry the character, and the round is kept for the awards', async () => {
+    const devs = [mk('h2'), mk('b2')];
+    const P = [profile('Dee'), profile('Eli')];
+    await seatTable(devs, P);
+    const [A] = devs;
+    await A.act((r) => r.handleStartGame({ players: r.activePlayers, settings: { ...SETTINGS, rounds: 2 } }));
+    await assignEveryone(devs, P);
+    await until(() => devs.every((d) => d.r.view === 'game'), { what: 'game view' });
+
+    // The guesser names it: the answering device reads the character and the
+    // lock carries it, so the guesser's own screen can show who they were.
+    const g = devs.find((d) => d.r.isMyTurn);
+    const other = devs.find((d) => d !== g);
+    const character = await other.r.readAssignment(g.r.myPlayerId);
+    await other.act((r) => r.handleCorrectGuess({ id: 'g1', type: 'guess', text: character.name, correct: true }, character));
+    await until(() => devs.every((d) => d.r.view === 'correctGuess'), { what: 'solve screen' });
+    expect(g.r.lastLocked.character.name).toBe(character.name);
+    await other.act((r) => r.setView('game'));
+
+    // The other player is now the last one guessing: final chances apply.
+    await until(() => devs.every((d) => d.r.view === 'game' && d.r.turnsLeft != null), { what: 'final chances' });
+    // They give up — resolved by the device that can read their character.
+    const theirs = await g.r.readAssignment(other.r.myPlayerId);
+    await g.act((r) => r.handleGiveUp(theirs));
+    await until(() => devs.every((d) => d.r.view === 'correctGuess' && d.r.lastLocked?.unsolved), { what: 'out screen' });
+    expect(other.r.lastLocked.character.name).toBe(theirs.name);
+
+    await A.act((r) => r.finishRound(r.lockedPositions));
+    await until(() => devs.every((d) => d.r.view === 'roundEnd' && d.r.roundHistory.length === 1), { what: 'round banked with its story' });
+    expect(A.r.roundHistory[0]).toHaveLength(2);
+    expect(A.r.gameSession.settings.rounds).toBe(2);
+    expect(syncErrors(devs)).toEqual([]);
+  });
 });

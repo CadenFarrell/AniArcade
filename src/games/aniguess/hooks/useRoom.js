@@ -22,6 +22,9 @@ const initialState = (localProfile) => ({
   turnCounts: {},
   roundNumber: 1,
   totalScores: {},
+  // Every finished round's locks, keyed by round number, for the final
+  // leaderboard's awards (rules.matchAwards).
+  roundHistory: null,
   turnState: { pendingAction: null },
 });
 
@@ -41,6 +44,7 @@ const normalizeState = (val) => ({
   questionLogs: val.questionLogs ?? {},
   turnCounts: val.turnCounts ?? {},
   totalScores: val.totalScores ?? {},
+  roundHistory: val.roundHistory ?? {},
   turnState: val.turnState ?? { pendingAction: null },
   lastOutcome: val.lastOutcome ?? null,
   // Same quirk: a room where nobody has written presence yet reads back with no
@@ -149,6 +153,7 @@ export function useRoom() {
         turnCounts: initial.turnCounts,
         roundNumber: initial.roundNumber,
         totalScores: initial.totalScores,
+        roundHistory: null,
         lastOutcome: null,
         view: 'assignment',
       }));
@@ -209,21 +214,38 @@ export function useRoom() {
 
   // The turn rotation skips anyone who has left — nobody can act on their
   // behalf, so landing on them would stall the room.
-  const handleTurnComplete = useCallback((logEntry) => {
-    const { patch } = rules.turnComplete(state, logEntry, rosterRef.current.departedIds);
-    return patchState({ ...patch, lastOutcome: outcomeFor(logEntry) });
-  }, [state, patchState, outcomeFor, rosterRef]);
+  //
+  // `character` is the guesser's, passed by the answering device that read it
+  // (never the guesser's own, which cannot): a lock carries it so the solve
+  // screen can show who they were. A turn that was the last of the final
+  // chances (rules.turnsLeft) locks them out and goes to that screen.
+  const afterTurn = useCallback((result, logEntry) => (
+    result.next === 'correctGuess'
+      ? patchState({ ...result.patch, lastOutcome: null, view: 'correctGuess' })
+      : patchState({ ...result.patch, lastOutcome: outcomeFor(logEntry) })
+  ), [patchState, outcomeFor]);
 
-  const handleCorrectGuess = useCallback((logEntry) => {
-    const { patch } = rules.correctGuess(state, logEntry, rosterRef.current.departedIds);
+  const handleTurnComplete = useCallback((logEntry, character = null) => (
+    afterTurn(rules.turnComplete(state, logEntry, rosterRef.current.departedIds, character), logEntry)
+  ), [state, afterTurn, rosterRef]);
+
+  const handleCorrectGuess = useCallback((logEntry, character = null) => {
+    const { patch } = rules.correctGuess(state, logEntry, rosterRef.current.departedIds, character);
     // The celebration screen says everything — no banner needed after it.
     return patchState({ ...patch, lastOutcome: null, view: 'correctGuess' });
   }, [state, patchState, rosterRef]);
 
-  const handleWrongGuess = useCallback((logEntry) => {
-    const { patch } = rules.wrongGuess(state, logEntry, rosterRef.current.departedIds);
-    return patchState({ ...patch, lastOutcome: outcomeFor(logEntry) });
-  }, [state, patchState, outcomeFor, rosterRef]);
+  const handleWrongGuess = useCallback((logEntry, character = null) => (
+    afterTurn(rules.wrongGuess(state, logEntry, rosterRef.current.departedIds, character), logEntry)
+  ), [state, afterTurn, rosterRef]);
+
+  // The guesser gave up. Resolved by an answering device, like a guess, so the
+  // lock can carry the character the guesser's own device cannot read.
+  const handleGiveUp = useCallback((character = null) => {
+    const { patch, next } = rules.giveUp(state, rosterRef.current.departedIds, character);
+    if (!next) return Promise.resolve();
+    return patchState({ ...patch, lastOutcome: null, view: next });
+  }, [state, patchState, rosterRef]);
 
   // Two different things want to fold lockedPositions into totalScores: a round
   // ending normally (finishRound) and a room emptying out mid-round (the
@@ -255,7 +277,11 @@ export function useRoom() {
       // that empties out in this exact instant still lands on the right totals
       // — endSession finds the claim gone and leaves them alone.
       if (await claimRoundBanking(state.roundNumber)) {
-        await patchState({ totalScores: rules.applyRoundScores(state.totalScores, locked) });
+        await patchState({
+          totalScores: rules.applyRoundScores(state.totalScores, locked),
+          // The round's story rides the same claimed write as its points.
+          [`roundHistory/${state.roundNumber}`]: locked,
+        });
       }
       // Never drag the room back off the leaderboard: endSession may have ended
       // the session while we were banking, and once it has, its view wins. The
@@ -364,6 +390,7 @@ export function useRoom() {
     if (claimed) {
       await patchState({
         totalScores: rules.applyRoundScores(snapshot.totalScores ?? {}, locked),
+        [`roundHistory/${snapshot.roundNumber}`]: locked,
         lockedPositions: [],
       });
     }
@@ -449,6 +476,12 @@ export function useRoom() {
     turnCounts: state?.turnCounts ?? {},
     roundNumber: state?.roundNumber,
     totalScores: state?.totalScores ?? {},
+    // In round order. Each round's locks may come back index-keyed (RTDB).
+    roundHistory: Object.keys(state?.roundHistory ?? {})
+      .sort((a, b) => Number(a) - Number(b))
+      .map((k) => Object.values(state.roundHistory[k] ?? {})),
+    // Final chances for the last player still guessing (rules.turnsLeft).
+    turnsLeft: state?.gameSession?.players ? rules.turnsLeft(state, core.departedIds) : null,
     pendingAction: state?.turnState?.pendingAction ?? null,
     lastOutcome: state?.lastOutcome ?? null,
     currentProposal,
@@ -463,7 +496,7 @@ export function useRoom() {
     dropping: core.dropping,
     graceMs: core.graceMs,
     handleStartGame, proposeCharacter, lockInAssignment, setMyApproval, handleRevealDone,
-    handleTurnComplete, handleCorrectGuess, handleWrongGuess,
+    handleTurnComplete, handleCorrectGuess, handleWrongGuess, handleGiveUp,
     finishRound, handlePeek, handleNewRound, handleEndSession,
     submitPendingAction, resolvePendingAction, clearPendingAction,
     readAssignment,

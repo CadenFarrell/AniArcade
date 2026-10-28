@@ -18,6 +18,9 @@ export default function OnlineLobby({ room }) {
   // it never reaches the room. No timer or talk mode — see AniGuessSettings'
   // `local`.
   const [settings, setSettings] = useState(() => ({
+    rounds: prefs.rounds,
+    timerEnabled: prefs.timerEnabled,
+    timerSeconds: prefs.timerSeconds,
     sharedShowsOnly: prefs.sharedShowsOnly,
     twoStepRandom: prefs.twoStepRandom,
     pointsPerPosition: prefs.pointsPerPosition,
@@ -27,6 +30,9 @@ export default function OnlineLobby({ room }) {
 
   const applyDefaults = () => {
     setSettings({
+      rounds: DEFAULT_PREFS.rounds,
+      timerEnabled: DEFAULT_PREFS.timerEnabled,
+      timerSeconds: DEFAULT_PREFS.timerSeconds,
       sharedShowsOnly: DEFAULT_PREFS.sharedShowsOnly,
       twoStepRandom: DEFAULT_PREFS.twoStepRandom,
       pointsPerPosition: [...DEFAULT_PREFS.pointsPerPosition],
@@ -62,9 +68,9 @@ export default function OnlineLobby({ room }) {
       // Deal in the players actually here — the turn rotation and the character
       // pool are both built from this list.
       players: active,
-      // The timer literals are not defaults being restated: online play has no
-      // timer at all, so a remembered one from local play must not leak in here.
-      settings: { ...settings, timerEnabled: false, timerSeconds: 60 },
+      // Talk mode is local only (there is no hot seat online), so a remembered
+      // one from local play must not leak in here.
+      settings: { ...settings, talkMode: false },
     });
   };
 

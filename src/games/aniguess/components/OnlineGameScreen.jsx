@@ -9,6 +9,8 @@ import { rankSuggestions } from '../../../shared/utils/guessSuggest';
 import { Avatar, Button, Combobox, GhostButton, Input, Screen } from '../../../shared/ui';
 import RoundHeader from '../../../shared/components/RoundHeader';
 import TurnChoice from './TurnChoice';
+import FinalChances from './FinalChances';
+import LocalClock from '../../../shared/components/LocalClock';
 
 // The active guesser's device. Deliberately never receives the assigned
 // character — only raw question/guess text ever leaves this device, sent via
@@ -28,6 +30,15 @@ export default function OnlineGameScreen({
   pendingAction,
   lastOutcome,
   sharedShowsOnly = true,
+  // Final chances and the way out (FinalChances), as on the local screen.
+  turnsLeft = null,
+  onGiveUp = null,
+  // The turn clock, 0 for none. This device's own clock, keyed on the turn:
+  // only the guesser acts on it, and it is hidden — the turn's time stops —
+  // while a question waits on the table, the local timer's pause.
+  timerSeconds = 0,
+  turnKey = '',
+  onTimeout = null,
 }) {
   const [mode, setMode] = useState('choose'); // choose | question | guess
   const [question, setQuestion] = useState('');
@@ -72,7 +83,19 @@ export default function OnlineGameScreen({
 
       <LastOutcomeBanner outcome={lastOutcome} />
 
-      <RoundHeader title="Your Turn" tag={`Turn ${turnCount + 1}`} hint="Ask a question or submit a guess" />
+      <RoundHeader title="Your Turn" tag={`Turn ${turnCount + 1}`} hint="Ask a question or submit a guess">
+        {timerSeconds > 0 && !waiting && (
+          <LocalClock
+            key={turnKey}
+            ms={timerSeconds * 1000}
+            label="Time left in this turn"
+            className=""
+            onExpire={() => onTimeout?.()}
+          />
+        )}
+      </RoundHeader>
+
+      <FinalChances turnsLeft={turnsLeft} onGiveUp={mode === 'choose' && !waiting ? onGiveUp : null} />
 
       {/* The turn's two tools, side by side: neither is the turn itself. */}
       <div className="mb-5 grid grid-cols-2 gap-3">

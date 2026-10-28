@@ -14,6 +14,7 @@ import ResultImpact from '../../../shared/components/ResultImpact';
 import RoundHeader from '../../../shared/components/RoundHeader';
 import TurnChoice from './TurnChoice';
 import SpeechBubble from '../../../shared/components/SpeechBubble';
+import FinalChances from './FinalChances';
 
 export default function GameScreen({
   guesser,
@@ -34,6 +35,10 @@ export default function GameScreen({
   // Local "talk it out": questions and guesses are spoken, and the table taps
   // the outcome. Nothing is typed, and the whole turn is one tap.
   talkMode = false,
+  // Final chances (rules.turnsLeft): null until this is the last player
+  // unsolved. And the confirmed way out of the round (rules.giveUp).
+  turnsLeft = null,
+  onGiveUp = null,
 }) {
   const [question, setQuestion] = useState('');
   const [guess, setGuess] = useState('');
@@ -238,6 +243,13 @@ export default function GameScreen({
           />
         )}
       </RoundHeader>
+
+      <FinalChances
+        turnsLeft={turnsLeft}
+        name={guesser.name}
+        // Only between actions: not with a question waiting on the table.
+        onGiveUp={mode === 'choose' && !waitingForAnswer && !turnOver ? onGiveUp : null}
+      />
 
       {/* The turn's two tools, side by side: neither is the turn itself. */}
       <div className="mb-5 grid grid-cols-2 gap-3">

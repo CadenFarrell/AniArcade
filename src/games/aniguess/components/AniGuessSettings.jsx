@@ -3,6 +3,8 @@ import SettingsFooter from '../../../shared/components/SettingsFooter';
 import SettingHelp, { DetailToggle } from '../../../shared/components/SettingHelp';
 import { Card, CardRow, Checkbox, NumberInput, PlaceMark } from '../../../shared/ui';
 import { DEFAULT_PREFS, POSITIONS } from '../prefs';
+import { DEFAULT_MATCH_ROUNDS } from '../rules';
+import MatchLengthSetting from '../../../shared/components/MatchLengthSetting';
 
 /**
  * AniGuess's Settings card, rendered by both PlayerSetup and the online
@@ -11,9 +13,9 @@ import { DEFAULT_PREFS, POSITIONS } from '../prefs';
  * orders, and only local play had the detail switch. AniFakeSettings is the
  * precedent this follows.
  *
- * `local` adds the two options only a shared device can use. The timer runs in
- * GameScreen, which only local play renders, and talk mode decides which screen
- * the hot seat sees, and there is no hot seat online. The lobby passes
+ * `local` adds the one option only a shared device can use: talk mode decides
+ * which screen the hot seat sees, and there is no hot seat online. The timer is
+ * on both now — online each guesser's own device runs it (OnlineGameScreen). The lobby passes
  * `local={false}` and gets the host note in their place. Its prefs are therefore
  * a SUBSET of local play's, which is why each caller's savePrefs merges.
  *
@@ -25,7 +27,7 @@ import { DEFAULT_PREFS, POSITIONS } from '../prefs';
  * the host's device, and a setter per prop is the drift put back one level down.
  */
 export default function AniGuessSettings({ values, onChange, local, onReset }) {
-  const { sharedShowsOnly, twoStepRandom, timerEnabled, timerSeconds, talkMode, pointsPerPosition } = values;
+  const { rounds, sharedShowsOnly, twoStepRandom, timerEnabled, timerSeconds, talkMode, pointsPerPosition } = values;
 
   // NumberInput hands over an already-parsed, already-clamped number, so this
   // only writes the slot — copied, so the array in state is never mutated.
@@ -37,6 +39,8 @@ export default function AniGuessSettings({ values, onChange, local, onReset }) {
 
   return (
     <Card title="Settings" action={<DetailToggle />} padding="lg" className="mb-6">
+      <MatchLengthSetting id="aniguess-rounds" value={rounds} defaultRounds={DEFAULT_MATCH_ROUNDS} onChange={onChange} />
+
       <Checkbox
         label="Shared shows only"
         checked={sharedShowsOnly}
@@ -55,35 +59,35 @@ export default function AniGuessSettings({ values, onChange, local, onReset }) {
         Characters only come from shows at least one other player has too.
       </SettingHelp>
 
+      <Checkbox
+        label="Enable Timer"
+        checked={timerEnabled}
+        onChange={(e) => onChange('timerEnabled', e.target.checked)}
+        className="mb-2"
+      />
+      <SettingHelp indent className="mb-4">
+        A countdown each turn. Asking your question stops it; running out ends your turn.
+      </SettingHelp>
+
+      {timerEnabled && (
+        <div className="mb-5 ml-10 flex items-center gap-3 text-lg text-fg-strong">
+          <span>Seconds:</span>
+          {/* Steps by 15 — 30 to 300 in ones is 270 presses. */}
+          <NumberInput
+            size="sm"
+            value={timerSeconds}
+            min={30}
+            max={300}
+            step={15}
+            ariaLabel="Timer seconds"
+            onChange={(n) => onChange('timerSeconds', n)}
+            className="w-44"
+          />
+        </div>
+      )}
+
       {local && (
         <>
-          <Checkbox
-            label="Enable Timer"
-            checked={timerEnabled}
-            onChange={(e) => onChange('timerEnabled', e.target.checked)}
-            className="mb-2"
-          />
-          <SettingHelp indent className="mb-4">
-            A countdown each turn. Asking your question stops it; running out ends your turn.
-          </SettingHelp>
-
-          {timerEnabled && (
-            <div className="mb-5 ml-10 flex items-center gap-3 text-lg text-fg-strong">
-              <span>Seconds:</span>
-              {/* Steps by 15 — 30 to 300 in ones is 270 presses. */}
-              <NumberInput
-                size="sm"
-                value={timerSeconds}
-                min={30}
-                max={300}
-                step={15}
-                ariaLabel="Timer seconds"
-                onChange={(n) => onChange('timerSeconds', n)}
-                className="w-44"
-              />
-            </div>
-          )}
-
           <Checkbox
             label="Talk it out"
             checked={talkMode}

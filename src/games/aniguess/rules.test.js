@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   getNextPlayerIndex, firstActiveIndex, roundComplete, revealDone,
   skipDepartedAssignment, skipDepartedTurn, turnComplete, correctGuess, wrongGuess, newRound,
+  turnsLeft, giveUp, matchAwards, LAST_STANDING_TURNS,
 } from './rules';
 
 const player = (id) => ({ id, name: id });
@@ -171,5 +172,56 @@ describe('newRound', () => {
     const { patch } = newRound(stateWith({ roundNumber: 1 }));
     expect(patch.assignmentIndex).toBe(0);
     expect(patch.currentPlayerIndex).toBe(0);
+  });
+});
+
+describe('the solve shows who you were', () => {
+  it('carries the character on the lock', () => {
+    const { lastLocked } = correctGuess(stateWith(), entry('guess'), [], { name: 'Levi', series: 'AoT', imageUrl: 'x.jpg', role: 'MAIN' });
+    expect(lastLocked.character).toEqual({ name: 'Levi', series: 'AoT', imageUrl: 'x.jpg' });
+  });
+});
+
+describe('final chances', () => {
+  // ana, ben and cleo have solved; dev is the last one guessing.
+  const lastOneLeft = (devTurns) => stateWith({
+    currentPlayerIndex: 3,
+    lockedPositions: [lock('ana', 2, 1), lock('ben', 4, 2), lock('cleo', 5, 3)],
+    turnCounts: { dev: devTurns },
+  });
+
+  it('only applies once exactly one player is still guessing', () => {
+    expect(turnsLeft(stateWith())).toBeNull();
+    expect(turnsLeft(lastOneLeft(0))).toBe(5 + LAST_STANDING_TURNS);
+    expect(turnsLeft(lastOneLeft(6))).toBe(5 + LAST_STANDING_TURNS - 6);
+  });
+
+  it('locks the last player out, unsolved, on their final turn', () => {
+    const allowed = 5 + LAST_STANDING_TURNS;
+    const res = turnComplete(lastOneLeft(allowed - 1), entry(), [], { name: 'Mikasa' });
+    expect(res.next).toBe('correctGuess');
+    expect(res.lastLocked).toMatchObject({ playerId: 'dev', unsolved: true, points: 0, position: null });
+    expect(res.lastLocked.character.name).toBe('Mikasa');
+    expect(res.patch.lockedPositions).toHaveLength(4);
+    // One turn earlier, the round goes on.
+    expect(wrongGuess(lastOneLeft(allowed - 2), entry('guess')).next).toBeUndefined();
+  });
+
+  it('a give-up locks the player out at any point, and places ignore it', () => {
+    const res = giveUp(stateWith({ currentPlayerIndex: 1, turnCounts: { ben: 3 } }));
+    expect(res.lastLocked).toMatchObject({ playerId: 'ben', unsolved: true, turnsUsed: 3 });
+    // ana then solves in 5 turns: the unsolved ben (3 turns) does not push her down.
+    const after = stateWith({ lockedPositions: res.patch.lockedPositions, turnCounts: { ana: 4 } });
+    expect(correctGuess(after, entry('guess')).lastLocked.position).toBe(1);
+  });
+});
+
+describe('matchAwards', () => {
+  it('names the sharpest single solve and the most round wins, dropping ties', () => {
+    const r1 = [lock('ana', 2, 1), lock('ben', 5, 2)];
+    const r2 = [lock('ana', 3, 1), { ...lock('ben', 9, null), unsolved: true }];
+    const awards = matchAwards([r1, r2], PLAYERS);
+    expect(awards.map((a) => [a.title, a.player.id])).toEqual([['Sharpest', 'ana'], ['Most wins', 'ana']]);
+    expect(matchAwards([[lock('ana', 2, 1), lock('ben', 2, 1)]], PLAYERS)).toEqual([]);
   });
 });

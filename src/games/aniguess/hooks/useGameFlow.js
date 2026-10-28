@@ -31,6 +31,8 @@ export function useGameFlow({ view, setView }) {
   // Scoring
   const [roundNumber, setRoundNumber] = useState(1);
   const [totalScores, setTotalScores] = useState({});
+  // Every finished round's locks, for the final leaderboard's awards.
+  const [roundHistory, setRoundHistory] = useState([]);
 
   // Persistence
   const [showResumePrompt, setShowResumePrompt] = useState(false);
@@ -61,11 +63,11 @@ export function useGameFlow({ view, setView }) {
       saveSession({
         view, gameSession, assignmentIndex, assignments,
         currentPlayerIndex, lockedPositions, peekedPlayers,
-        questionLogs, turnCounts, roundNumber, totalScores,
+        questionLogs, turnCounts, roundNumber, totalScores, roundHistory,
       });
     }
   }, [view, gameSession, assignmentIndex, assignments, currentPlayerIndex,
-      lockedPositions, peekedPlayers, questionLogs, turnCounts, roundNumber, totalScores, saveSession]);
+      lockedPositions, peekedPlayers, questionLogs, turnCounts, roundNumber, totalScores, roundHistory, saveSession]);
 
   const handleResumeSession = useCallback(() => {
     const s = savedSession;
@@ -80,6 +82,8 @@ export function useGameFlow({ view, setView }) {
     setTurnCounts(s.turnCounts);
     setRoundNumber(s.roundNumber);
     setTotalScores(s.totalScores);
+    // Absent on a game saved before matches existed.
+    setRoundHistory(s.roundHistory ?? []);
     setShowResumePrompt(false);
     setSavedSession(null);
   }, [savedSession, setView]);
@@ -103,6 +107,7 @@ export function useGameFlow({ view, setView }) {
     setTurnCounts(initial.turnCounts);
     setRoundNumber(initial.roundNumber);
     setTotalScores(initial.totalScores);
+    setRoundHistory([]);
     setView('assignment');
   }, [clearSession, setView]);
 
@@ -123,40 +128,67 @@ export function useGameFlow({ view, setView }) {
     setView(next);
   }, [assignmentIndex, gameSession, setView]);
 
-  // Called when current player asks a question (question + answer already logged)
-  const handleTurnComplete = useCallback((logEntry) => {
-    const { patch } = rules.turnComplete(
-      { gameSession, currentPlayerIndex, lockedPositions, questionLogs, turnCounts }, logEntry
-    );
+  // The current guesser's character: every lock carries it, so the solve
+  // screen can show who they were (one device holds every assignment).
+  const characterOf = useCallback(
+    (index) => assignments.find((a) => a.playerId === gameSession?.players[index]?.id)?.character ?? null,
+    [assignments, gameSession],
+  );
+
+  // A turn that did not solve can still end the player's round, when it was
+  // their last final chance (rules.turnsLeft) — then the lock lands and the
+  // table sees who they were.
+  const applyMiss = useCallback(({ patch, next }) => {
     setQuestionLogs(patch.questionLogs);
     setTurnCounts(patch.turnCounts);
-    setCurrentPlayerIndex(patch.currentPlayerIndex);
-  }, [gameSession, currentPlayerIndex, lockedPositions, questionLogs, turnCounts]);
+    if ('currentPlayerIndex' in patch) setCurrentPlayerIndex(patch.currentPlayerIndex);
+    if (patch.lockedPositions) setLockedPositions(patch.lockedPositions);
+    if (next) setView(next);
+  }, [setView]);
+
+  // Called when current player asks a question (question + answer already logged)
+  const handleTurnComplete = useCallback((logEntry) => {
+    applyMiss(rules.turnComplete(
+      { gameSession, currentPlayerIndex, lockedPositions, questionLogs, turnCounts }, logEntry, [],
+      characterOf(currentPlayerIndex),
+    ));
+  }, [gameSession, currentPlayerIndex, lockedPositions, questionLogs, turnCounts, characterOf, applyMiss]);
+
+  // The current guesser gives up (GameScreen confirms first).
+  const handleGiveUp = useCallback(() => {
+    const { patch, next } = rules.giveUp(
+      { gameSession, currentPlayerIndex, lockedPositions, turnCounts }, [], characterOf(currentPlayerIndex),
+    );
+    if (!patch.lockedPositions) return;
+    setLockedPositions(patch.lockedPositions);
+    if ('currentPlayerIndex' in patch) setCurrentPlayerIndex(patch.currentPlayerIndex);
+    setView(next);
+  }, [gameSession, currentPlayerIndex, lockedPositions, turnCounts, characterOf, setView]);
 
   // Called when current player guesses correctly
   const handleCorrectGuess = useCallback((logEntry) => {
     const { patch } = rules.correctGuess(
-      { gameSession, currentPlayerIndex, lockedPositions, questionLogs, turnCounts }, logEntry
+      { gameSession, currentPlayerIndex, lockedPositions, questionLogs, turnCounts }, logEntry, [],
+      characterOf(currentPlayerIndex),
     );
     setQuestionLogs(patch.questionLogs);
     setTurnCounts(patch.turnCounts);
     setLockedPositions(patch.lockedPositions);
     if ('currentPlayerIndex' in patch) setCurrentPlayerIndex(patch.currentPlayerIndex);
     setView('correctGuess');
-  }, [gameSession, currentPlayerIndex, lockedPositions, questionLogs, turnCounts, setView]);
+  }, [gameSession, currentPlayerIndex, lockedPositions, questionLogs, turnCounts, characterOf, setView]);
 
   // Called when current player guesses wrong — just advance turn
   const handleWrongGuess = useCallback((logEntry) => {
-    const { patch } = rules.wrongGuess(
-      { gameSession, currentPlayerIndex, lockedPositions, questionLogs, turnCounts }, logEntry
-    );
-    setQuestionLogs(patch.questionLogs);
-    setTurnCounts(patch.turnCounts);
-    if ('currentPlayerIndex' in patch) setCurrentPlayerIndex(patch.currentPlayerIndex);
-  }, [gameSession, currentPlayerIndex, lockedPositions, questionLogs, turnCounts]);
+    applyMiss(rules.wrongGuess(
+      { gameSession, currentPlayerIndex, lockedPositions, questionLogs, turnCounts }, logEntry, [],
+      characterOf(currentPlayerIndex),
+    ));
+  }, [gameSession, currentPlayerIndex, lockedPositions, questionLogs, turnCounts, characterOf, applyMiss]);
 
   const finishRound = useCallback((locked) => {
     setTotalScores((prev) => rules.applyRoundScores(prev, locked));
+    setRoundHistory((prev) => [...prev, locked]);
     setView('roundEnd');
   }, [setView]);
 
@@ -203,11 +235,11 @@ export function useGameFlow({ view, setView }) {
     gameSession, setGameSession,
     assignmentIndex, assignments,
     currentPlayerIndex, lockedPositions, peekedPlayers, questionLogs, turnCounts,
-    roundNumber, totalScores,
+    roundNumber, totalScores, roundHistory,
     showResumePrompt, savedSession,
     handleResumeSession, handleDiscardSession,
     handleStartGame, handleCharacterAssigned, handleRevealDone,
-    handleTurnComplete, handleCorrectGuess, handleWrongGuess,
+    handleTurnComplete, handleCorrectGuess, handleWrongGuess, handleGiveUp,
     finishRound, handlePeek, handleNewRound, handleEndSession,
     currentGuesser, currentAssignment, hasPeeked, lastLocked,
     assignmentPlayer, assignmentCharacter,

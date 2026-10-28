@@ -98,7 +98,7 @@ export default function OnlineGame({ onBack, onExit }) {
   useEffect(() => {
     if (room.view !== 'game' || room.isMyTurn) return;
     const pending = room.pendingAction;
-    if (!pending || pending.resolved || pending.kind !== 'guess') return;
+    if (!pending || pending.resolved || (pending.kind !== 'guess' && pending.kind !== 'giveup')) return;
 
     let cancelled = false;
     (async () => {
@@ -116,6 +116,11 @@ export default function OnlineGame({ onBack, onExit }) {
       // on an answer that can never arrive.
       try {
         const character = await room.readAssignment(pending.askedBy);
+        if (pending.kind === 'giveup') {
+          await room.clearPendingAction();
+          await room.handleGiveUp(character);
+          return;
+        }
         if (!character) {
           await room.clearPendingAction();
           return;
@@ -123,8 +128,8 @@ export default function OnlineGame({ onBack, onExit }) {
         const correct = isCorrectGuess(character, pending.text);
         const logEntry = { id: crypto.randomUUID(), type: 'guess', text: pending.text, correct };
         await room.clearPendingAction();
-        if (correct) await room.handleCorrectGuess(logEntry);
-        else await room.handleWrongGuess(logEntry);
+        if (correct) await room.handleCorrectGuess(logEntry, character);
+        else await room.handleWrongGuess(logEntry, character);
       } catch {
         await room.clearPendingAction();
       }
@@ -212,8 +217,11 @@ export default function OnlineGame({ onBack, onExit }) {
       const claimed = await room.resolvePendingAction();
       if (claimed) {
         const logEntry = { id: crypto.randomUUID(), type: 'question', text: claimed.text, answer };
+        // Read now, while this device is the one resolving: if this was the
+        // last of the guesser's final chances, the lock shows who they were.
+        const character = await room.readAssignment(claimed.askedBy).catch(() => null);
         await room.clearPendingAction();
-        await room.handleTurnComplete(logEntry);
+        await room.handleTurnComplete(logEntry, character);
       }
     } finally {
       setResolving(false);
@@ -305,6 +313,11 @@ export default function OnlineGame({ onBack, onExit }) {
           pendingAction={room.pendingAction}
           lastOutcome={room.lastOutcome}
           sharedShowsOnly={room.gameSession.settings.sharedShowsOnly ?? true}
+          turnsLeft={room.turnsLeft}
+          onGiveUp={() => room.submitPendingAction('giveup', '')}
+          timerSeconds={room.gameSession.settings.timerEnabled ? room.gameSession.settings.timerSeconds : 0}
+          turnKey={`${room.roundNumber}:${room.turnCounts[room.currentGuesser.id] || 0}`}
+          onTimeout={() => room.handleTurnComplete({ id: crypto.randomUUID(), type: 'timer', text: "Time's up!" })}
         />
       );
     }
@@ -349,6 +362,7 @@ export default function OnlineGame({ onBack, onExit }) {
         players={room.gameSession.players}
         lockedPositions={room.lockedPositions}
         roundNumber={room.roundNumber}
+        rounds={room.gameSession.settings?.rounds ?? 0}
         totalScores={room.totalScores}
         departedIds={room.departedIds}
         isHost={room.isHost}
@@ -365,6 +379,7 @@ export default function OnlineGame({ onBack, onExit }) {
         players={room.gameSession.players}
         totalScores={room.totalScores}
         roundNumber={room.roundNumber}
+        roundHistory={room.roundHistory}
         departedIds={room.departedIds}
         onPlayAgain={() => { room.leaveRoom(); onBack(); }}
         onEditLists={() => { room.leaveRoom(); onBack(); }}

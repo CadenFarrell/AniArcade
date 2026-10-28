@@ -35,6 +35,8 @@ export default makeStrategy({
     talkMode: [false, true],
     timerEnabled: [false, true],
     timerSeconds: [30, 60],
+    // A match's length; 0 is endless (the bot ends it after one or two).
+    rounds: [1, 2, 0],
   },
   isDone: (snap) => has(snap, /final results/i) && Boolean(find(snap, /play again|back to lobby/i, { enabled: false })),
 
@@ -116,6 +118,10 @@ export default makeStrategy({
     // to the modal for seven minutes and the guesser waited forever.
     const closePanel = find(snap, /— close$/i);
     if (closePanel) return click(closePanel, 'close the panel');
+
+    // The match's last round: its one way on is the final leaderboard.
+    const finalResults = find(snap, /^final results/i);
+    if (finalResults) return click(finalResults, 'final results');
 
     // Round over: play one or two, then end the session.
     const newRound = find(snap, /new round/i);

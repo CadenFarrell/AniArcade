@@ -1,5 +1,5 @@
 import { DEFAULT_PREFS } from './prefs';
-import { MIN_PLAYERS } from './rules';
+import { DEFAULT_MATCH_ROUNDS, LAST_STANDING_TURNS, MIN_PLAYERS } from './rules';
 
 // The game's rules sheet, opened from the top bar's "How to play" (see
 // shared/components/HowToSheet.jsx). Loaded on demand like the game itself, and
@@ -19,13 +19,15 @@ export const HOW_TO = {
         'A right guess finishes your round. A wrong one just ends your turn.',
         'Once a round you may peek at your own anime list for ideas.',
         'The round ends when everyone has named their character.',
+        `Final chances: once everyone else has solved, the last player gets as many turns as the slowest solver took, plus ${LAST_STANDING_TURNS}. Then their character is revealed and they score nothing that round.`,
+        'You can also give up your round at any point, which reveals your character.',
       ],
     },
     {
       title: 'Scoring',
       items: [
         `Places go by how few turns you needed: ${first}, ${second} and ${third} points for the first three by default. The same number of turns shares a place.`,
-        'Play as many rounds as you like. The leaderboard adds them up.',
+        `A match is ${DEFAULT_MATCH_ROUNDS} rounds by default, then the final leaderboard. Set the rounds to Endless to play until you choose to stop.`,
       ],
     },
     {

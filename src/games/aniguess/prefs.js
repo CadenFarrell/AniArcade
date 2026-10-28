@@ -1,3 +1,5 @@
+import { DEFAULT_MATCH_ROUNDS } from './rules';
+
 // Every option AniGuess remembers between sessions, at its literal default.
 //
 // One module rather than a literal in each screen: PlayerSetup and OnlineLobby
@@ -9,6 +11,9 @@
 // exactly why savePrefs merges: it saves the three it renders and leaves the
 // rest of the slice alone.
 export const DEFAULT_PREFS = {
+  // A match of this many rounds, then the final leaderboard; 0 is endless. On
+  // by default so a session ends on a winner (rules.DEFAULT_MATCH_ROUNDS).
+  rounds: DEFAULT_MATCH_ROUNDS,
   sharedShowsOnly: true,
   twoStepRandom: false,
   talkMode: false,

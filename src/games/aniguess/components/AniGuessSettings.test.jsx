@@ -13,7 +13,8 @@ import { openMoreSettings, renderArcade } from '../../../shared/testing/arcade';
 
 afterEach(cleanup);
 
-const LOCAL_ONLY = [/enable timer/i, /talk it out/i];
+// The timer runs online too now (each guesser's own device); talk mode cannot.
+const LOCAL_ONLY = [/talk it out/i];
 
 function mount(props) {
   const onChange = vi.fn();
@@ -33,6 +34,7 @@ describe('AniGuessSettings', () => {
   it('drops them online and tells the host their settings apply to everyone', () => {
     mount({ local: false });
     for (const label of LOCAL_ONLY) expect(screen.queryByRole('checkbox', { name: label })).toBeNull();
+    expect(screen.getByRole('checkbox', { name: /enable timer/i })).toBeTruthy();
     expect(screen.getByText(/you're the host/i)).toBeTruthy();
   });
 

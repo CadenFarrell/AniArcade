@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useAutoSeat } from '../../shared/hooks/useAutoSeat';
-import { MIN_PLAYERS } from './rules';
+import { MIN_PLAYERS, turnsLeft } from './rules';
 import ListManager from '../../shared/components/ListManager';
 import PlayerSetup from './components/PlayerSetup';
 import CharacterAssignment from './components/CharacterAssignment';
@@ -31,10 +31,10 @@ function App({ onExit, onBack }) {
     gameSession, setGameSession,
     assignmentIndex, assignments,
     lockedPositions, questionLogs, turnCounts,
-    roundNumber, totalScores,
+    roundNumber, totalScores, roundHistory,
     showResumePrompt, handleResumeSession, handleDiscardSession,
     handleStartGame, handleCharacterAssigned, handleRevealDone,
-    handleTurnComplete, handleCorrectGuess, handleWrongGuess,
+    handleTurnComplete, handleCorrectGuess, handleWrongGuess, handleGiveUp,
     finishRound, handlePeek, handleNewRound, handleEndSession,
     currentGuesser, currentAssignment, hasPeeked, lastLocked,
     assignmentPlayer, assignmentCharacter,
@@ -170,6 +170,8 @@ function App({ onExit, onBack }) {
             timerSeconds={gameSession.settings.timerSeconds}
             sharedShowsOnly={gameSession.settings.sharedShowsOnly ?? true}
             talkMode={gameSession.settings.talkMode ?? false}
+            turnsLeft={turnsLeft({ gameSession, lockedPositions, turnCounts })}
+            onGiveUp={handleGiveUp}
           />
         )}
 
@@ -192,7 +194,9 @@ function App({ onExit, onBack }) {
             players={gameSession.players}
             lockedPositions={lockedPositions}
             roundNumber={roundNumber}
+            rounds={gameSession.settings.rounds ?? 0}
             totalScores={totalScores}
+            assignments={assignments}
             onNewRound={handleNewRound}
             onEndSession={handleEndSession}
           />
@@ -203,6 +207,7 @@ function App({ onExit, onBack }) {
             players={gameSession.players}
             totalScores={totalScores}
             roundNumber={roundNumber}
+            roundHistory={roundHistory}
             onPlayAgain={() => {
               clearSession();
               setGameSession(null);

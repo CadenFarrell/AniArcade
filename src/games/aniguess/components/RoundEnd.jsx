@@ -5,6 +5,7 @@ import { Button } from '../../../shared/ui';
 import { KANA } from '../../../shared/ui/kanaText';
 import { computeRankedPlayers } from '../../../shared/utils/ranking';
 import descriptor from '../index';
+import { isEndless, isFinalRound } from '../../../shared/utils/match';
 
 // The stop between rounds, on the same frame as the final leaderboard: the
 // splash goes to this round's best — fewest turns to solve, everyone tied for it —
@@ -17,7 +18,13 @@ export default function RoundEnd({
   // working untouched. Only the online round end passes these.
   isHost = true, hostName = '',
   onNewRound, onEndSession,
+  // The match length (shared/utils/match.js; 0 is endless). On its last round
+  // the only way on is the final leaderboard.
+  rounds = 0,
+  // Local only: who everyone was, for a lock written before locks carried it.
+  assignments = [],
 }) {
+  const last = isFinalRound(roundNumber, rounds);
   const ranked = useMemo(
     () => computeRankedPlayers(players, totalScores),
     [players, totalScores]
@@ -28,19 +35,25 @@ export default function RoundEnd({
   // the round reads in the same list as the totals below it.
   const thisRound = useMemo(
     () => [...lockedPositions]
-      .sort((a, b) => a.position - b.position)
+      // Unsolved locks hold no place, so they sort after every solve.
+      .sort((a, b) => (a.position ?? 99) - (b.position ?? 99))
       .map((lp) => ({ ...lp, id: lp.playerId, total: lp.points })),
     [lockedPositions]
   );
   const firsts = thisRound.filter((lp) => lp.position === 1);
   const leaders = firsts.map((lp) => players.find((p) => p.id === lp.id) ?? { id: lp.id, name: lp.name });
-  const isTied = (lp) => thisRound.filter((o) => o.turnsUsed === lp.turnsUsed).length > 1;
+  const isTied = (lp) => !lp.unsolved && thisRound.filter((o) => !o.unsolved && o.turnsUsed === lp.turnsUsed).length > 1;
+  // Who each player turned out to be — the round's other story.
+  const characterOf = (lp) => lp.character?.name
+    ?? assignments.find((a) => a.playerId === lp.playerId)?.character?.name
+    ?? null;
   const turns = (n) => `${n} turn${n === 1 ? '' : 's'}`;
 
   return (
     <ResultsLayout
       game={descriptor}
       title={`Round ${roundNumber} Done!`}
+      subtitle={isEndless(rounds) ? null : `${roundNumber} of ${rounds}${last ? ' — that was the last round' : ''}`}
       players={players}
       splash={firsts.length > 0 && (
         <Splash
@@ -60,15 +73,17 @@ export default function RoundEnd({
           width="md"
           status={isHost
             ? `${roundNumber} round${roundNumber === 1 ? '' : 's'} played`
-            : `Waiting for ${hostName || 'the host'} to start the next round…`}
+            : `Waiting for ${hostName || 'the host'} to ${last ? 'show the final results' : 'start the next round'}…`}
           ready={isHost}
         >
-          {isHost && (
+          {isHost && (last ? (
+            <Button variant="primary" size="lg" onClick={onEndSession}>Final Results →</Button>
+          ) : (
             <>
               <Button variant="neutral" size="lg" onClick={onEndSession}>End &amp; See Leaderboard</Button>
               <Button variant="primary" size="lg" onClick={onNewRound}>New Round</Button>
             </>
-          )}
+          ))}
         </StartBar>
       )}
     >
@@ -78,8 +93,10 @@ export default function RoundEnd({
         score={(lp) => `+${lp.points} pts`}
         scoreClass="text-pop-lime"
         extra={(lp) => (
-          <span className="shrink-0 text-right text-sm text-fg-subtle">
+          <span className="min-w-0 shrink text-right text-sm text-fg-subtle">
+            {characterOf(lp) && <span className="block truncate text-fg-helper">as {characterOf(lp)}</span>}
             {isTied(lp) && <span className="mr-2 font-display font-bold uppercase text-pop-amber">Tied</span>}
+            {lp.unsolved && <span className="mr-2 font-display font-bold uppercase text-pop-red">Out</span>}
             {turns(lp.turnsUsed)}
           </span>
         )}

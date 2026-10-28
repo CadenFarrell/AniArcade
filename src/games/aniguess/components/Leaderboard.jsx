@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
-import ResultsLayout, { Splash, Standings } from '../../../shared/components/Results';
+import ResultsLayout, { Awards, Splash, Standings } from '../../../shared/components/Results';
+import { matchAwards } from '../rules';
 import { StartBar } from '../../../shared/components/SetupLayout';
 import { Button } from '../../../shared/ui';
 import { computeRankedPlayers } from '../../../shared/utils/ranking';
@@ -17,6 +18,8 @@ import { fromRanked } from '../../../shared/utils/history';
 // wearing the character they sat down as.
 export default function Leaderboard({
   players, totalScores, roundNumber, departedIds = [], onPlayAgain, onEditLists,
+  // Every finished round's locks (the match's story), for the awards.
+  roundHistory = [],
 }) {
   const ranked = useMemo(
     () => computeRankedPlayers(players, totalScores),
@@ -57,6 +60,7 @@ export default function Leaderboard({
           <span className="font-display text-xs font-bold uppercase tracking-wider text-pop-amber">Tied</span>
         )}
       />
+      <Awards awards={matchAwards(roundHistory, players)} />
     </ResultsLayout>
   );
 }
