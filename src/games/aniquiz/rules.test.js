@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   BOARD, QUIZ, DD_FLOOR, advance, currentClue, expireClue, isDailyDouble, normalizeDeal, normalizeGame,
   pickCell, placeWager, requiredIds, revealNow, settleIfComplete, skipPicker, standings, startGame,
-  stillToAct, submitAnswer, wagerLimit,
+  selfReport, stillToAct, submitAnswer, wagerLimit,
 } from './rules';
 
 // A hand-built deal: grading only ever reads `accept`, so a clue here needs
@@ -286,5 +286,27 @@ describe('standings', () => {
   it('shares a place on a tie', () => {
     const rows = standings([{ id: 'a' }, { id: 'b' }, { id: 'c' }], { a: 5, b: 9, c: 5 });
     expect(rows.map((r) => [r.id, r.position])).toEqual([['b', 1], ['a', 2], ['c', 2]]);
+  });
+});
+
+describe('answering out loud', () => {
+  it('scores the ticked players at face value and marks every answer as said aloud', () => {
+    const deal = boardDeal();
+    let g = startGame(IDS, deal);
+    g = apply(g, pickCell(g, deal, 'ann', '0-1'));
+    g = apply(g, selfReport(g, deal, ['bo'], IDS));
+    expect(g.phase).toBe('revealed');
+    expect(g.scores).toEqual({ ann: 0, bo: 400, cy: 0 });
+    expect(Object.values(g.answers).every((a) => a.aloud)).toBe(true);
+    expect(g.answers.bo).toMatchObject({ correct: true, delta: 400 });
+  });
+
+  it('never takes an honour tick on a wagered clue', () => {
+    const deal = boardDeal();
+    let g = startGame(IDS, deal);
+    g = apply(g, pickCell(g, deal, 'ann', '1-2'));
+    g = apply(g, placeWager(g, deal, 'ann', 1000, IDS));
+    expect(g.phase).toBe('answering');
+    expect(selfReport(g, deal, ['ann'], IDS).patch).toEqual({});
   });
 });

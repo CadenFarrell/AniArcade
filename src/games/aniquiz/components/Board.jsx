@@ -1,3 +1,4 @@
+import { useStagger } from '../../../shared/hooks/useStagger';
 import { ROWS, cellKey } from '../clues';
 
 // The grid. Columns are categories, rows climb in value. A spent cell stays in
@@ -19,15 +20,25 @@ import { ROWS, cellKey } from '../clues';
 export default function Board({ deal, game, canPick, onPick }) {
   const columns = deal?.categories ?? [];
   const template = { gridTemplateColumns: `repeat(${columns.length}, minmax(0, 1fr))` };
+  // A fresh board lands a column at a time, header then values, the way a game
+  // show lays out its board. Only a fresh one — after every clue the board
+  // comes back, and re-running the show each time would be a wait, not a
+  // flourish. The cells are real buttons from the first frame (useStagger's
+  // rule), so a quick pick is never refused.
+  const fresh = Object.keys(game?.used ?? {}).length === 0;
+  const stagger = useStagger({ count: fresh ? columns.length : 0, stepMs: 140, key: game?.round ?? 'board' });
+  const land = fresh && !stagger.skipped;
+  const at = (c, row) => (land ? { animationDelay: `${stagger.delay(c) + row * 45}ms` } : undefined);
 
   return (
-    <div className="grid gap-1.5 sm:gap-2" style={template}>
-      {columns.map((col) => (
+    <div className="grid gap-1.5 sm:gap-2" style={template} {...stagger.rootProps}>
+      {columns.map((col, c) => (
         <div
           key={`h-${col.id}`}
-          className="flex min-h-14 items-center justify-center rounded-pop-sm border-2 border-ink bg-ink px-1 py-2
+          style={at(c, 0)}
+          className={`${land ? 'reveal-row' : ''} flex min-h-14 items-center justify-center rounded-pop-sm border-2 border-ink bg-ink px-1 py-2
             text-center font-display text-[0.65rem] font-bold uppercase leading-tight tracking-wide text-paper
-            sm:text-xs"
+            sm:text-xs`}
         >
           {col.title}
         </div>
@@ -52,9 +63,10 @@ export default function Board({ deal, game, canPick, onPick }) {
             disabled={!canPick}
             onClick={() => onPick(key)}
             aria-label={`${col.title} for ${value}`}
-            className="btn-pop focus-pop min-h-14 rounded-pop-sm! border-ink bg-surface text-base text-pop-amber
+            style={at(c, row + 1)}
+            className={`${land ? 'reveal-row' : ''} btn-pop focus-pop min-h-14 rounded-pop-sm! border-ink bg-surface text-base text-pop-amber
               tabular-nums enabled:hover:bg-surface-2 disabled:cursor-default disabled:shadow-none sm:min-h-16
-              sm:text-2xl"
+              sm:text-2xl`}
           >
             {value}
           </button>

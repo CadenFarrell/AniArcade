@@ -222,6 +222,26 @@ export function submitAnswer(game, deal, playerId, text, activeIds) {
 }
 
 /**
+ * A one-device table that answers OUT LOUD (the local "Say it out loud" option):
+ * the clue goes up, everyone says their answer, the answer is shown, and the
+ * table ticks who got it (shared/components/SelfReport). `gotIds` is that tick
+ * list. Each required player gets an answer marked `aloud`, so the reveal says
+ * "said it" rather than quoting text nobody typed.
+ *
+ * Never on a wagered clue: a wager is a private stake, and an honour tick on a
+ * Daily Double or the final would let a player decide after seeing the answer
+ * whether they had "really" known it. Those keep the private handoff.
+ */
+export function selfReport(game, deal, gotIds = [], activeIds = []) {
+  if (game.phase !== 'answering' || isWagered(game, deal)) return { patch: {} };
+  const answers = {};
+  for (const id of requiredIds(game, activeIds)) {
+    answers[id] = { text: '', correct: gotIds.includes(id), delta: 0, aloud: true };
+  }
+  return { patch: settle(game, deal, answers) };
+}
+
+/**
  * The clock ran out. Everyone still owing an answer is recorded as blank — and
  * a blank on a wagered clue loses the stake, or sitting out the clock would be
  * the safe play on every Daily Double.

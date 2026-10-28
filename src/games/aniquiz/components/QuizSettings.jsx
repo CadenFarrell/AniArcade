@@ -1,6 +1,6 @@
 import { POOLS, needsLists } from '../utils/pool';
 import {
-  ANSWER_SECONDS_RANGE, ANSWER_STYLES, CATEGORY_RANGE, FORMATS, QUIZ_RANGE,
+  ANSWER_SECONDS_RANGE, ANSWER_STYLES, CATEGORY_RANGE, FORMATS, LOCAL_ANSWERS, QUIZ_RANGE,
 } from '../prefs';
 import { BOARD } from '../rules';
 import { ROWS, TOPICS } from '../clues';
@@ -22,7 +22,9 @@ import {
 // and the online lobby — AniTuneSettings' arrangement, for its reason: two
 // hand-kept copies of a settings card are a promise to drift. Changes go out as
 // one onChange(key, value), the convention CLAUDE.md sets for settings cards.
-export default function QuizSettings({ values, onChange, report, packStatus, onRetryPack, players, disabled = false }) {
+export default function QuizSettings({
+  values, onChange, report, packStatus, onRetryPack, players, disabled = false, local = false,
+}) {
   const board = values.format === BOARD;
 
   return (
@@ -62,6 +64,27 @@ export default function QuizSettings({ values, onChange, report, packStatus, onR
         <SettingHelp className="mb-5">
           {ANSWER_STYLES.find((s) => s.id === values.answerStyle)?.blurb}
         </SettingHelp>
+
+        {/* One device only: online everyone already has their own. With more
+            than one player on a shared device this is the difference between
+            a game and a hundred handoffs, so it sits up front. */}
+        {local && (players?.length ?? 0) > 1 && (
+          <>
+            <Field label="On one device" htmlFor="aniquiz-local-answers" className="mb-2">
+              <Select
+                id="aniquiz-local-answers"
+                value={values.localAnswers}
+                disabled={disabled}
+                onChange={(e) => onChange('localAnswers', e.target.value)}
+              >
+                {LOCAL_ANSWERS.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
+              </Select>
+            </Field>
+            <SettingHelp className="mb-5">
+              {LOCAL_ANSWERS.find((s) => s.id === values.localAnswers)?.blurb}
+            </SettingHelp>
+          </>
+        )}
 
         {board ? (
           <Field label="Categories" htmlFor="aniquiz-categories">

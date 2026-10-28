@@ -29,7 +29,18 @@ export const DEFAULT_PREFS = {
   timed: true,
   answerSeconds: 30,
   topicsOff: [],
+  // Local only: 'private' passes the device to each player for every clue (the
+  // original, and still the default — typed answers need it); 'aloud' puts the
+  // clue up once, everyone says their answer, and the table ticks who got it.
+  // About a hundred handoffs a board become none. Wagered clues stay private
+  // either way (rules.selfReport).
+  localAnswers: 'private',
 };
+
+export const LOCAL_ANSWERS = [
+  { id: 'private', label: 'Pass the device', blurb: 'Everyone answers in private, one at a time.' },
+  { id: 'aloud', label: 'Say it out loud', blurb: 'Everyone says their answer, then the table ticks who got it. Bets stay private.' },
+];
 
 export const FORMATS = [
   {

@@ -29,6 +29,10 @@ export function useQuizRound(players, deal, settings) {
       (playerId, text) => apply((g) => rules.submitAnswer(g, deal, playerId, text, ids)),
       [apply, deal, ids],
     ),
+    selfReport: useCallback(
+      (gotIds) => apply((g) => rules.selfReport(g, deal, gotIds, ids)),
+      [apply, deal, ids],
+    ),
     next: useCallback(() => apply((g) => rules.advance(g, deal, ids, null)), [apply, deal, ids]),
   };
 }

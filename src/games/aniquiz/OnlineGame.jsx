@@ -160,7 +160,14 @@ export default function OnlineGame({ onBack, onExit }) {
     body = (
       <>
         <ClueCard clue={clue} category={category} stakeLabel={stakeLabelFor(game, deal)} className="mb-6" />
-        <ClueReveal clue={clue} players={seated} answers={game.answers} required={required} myId={me}>
+        <ClueReveal
+          clue={clue}
+          players={seated}
+          answers={game.answers}
+          required={required}
+          myId={me}
+          staged={game.round === 'final'}
+        >
           <Button variant="primary" size="lg" fullWidth onClick={room.next}>
             {nextLabel(game, deal)}
           </Button>

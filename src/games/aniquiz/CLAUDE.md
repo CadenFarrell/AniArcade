@@ -119,6 +119,16 @@ deadline, and a second offset by `REVEAL_GRACE_MS` gates `expireClue`, so an ans
 last instant lands before the clue closes on it. Local play is not resumable; the Hub button
 says so rather than pretending.
 
+**One device can answer out loud** (`localAnswers: 'aloud'`, local only): the clue goes up once,
+everyone says their answer, "Show the answer" shows it, and the table ticks who got it in
+`SelfReport` — `rules.selfReport` scores the ticks at face value and marks each answer `aloud`.
+It replaced about a hundred handoffs a board. **Never on a wagered clue** (Daily Double, final):
+an honour tick placed after seeing the answer would let a player decide whether they had
+"really" known it, so those keep the private handoff whatever the option says.
+
+A fresh board lands a column at a time and the final's reveal is staged row by row
+(`useStagger`), each over complete markup, so the bots and a quick pick are never held up.
+
 `AniQuizGame.test.jsx` plays whole games through the real screens against the real pack — a
 solo quiz with no list, a full board through both wagers, two players passing the device for
 typed answers. Red is AniQuiz's accent as hub identity only: in-game, red still means wrong,
