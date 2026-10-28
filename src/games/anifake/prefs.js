@@ -1,6 +1,6 @@
 import { DEFAULT_FAME_ID } from './fame';
 import { DEFAULT_MODE_ID } from './modes';
-import { DEFAULT_CLUE_ROUNDS } from './rules';
+import { DEFAULT_CLUE_ROUNDS, DEFAULT_CLUE_SECONDS, DEFAULT_MATCH_ROUNDS } from './rules';
 
 // Every option AniFake remembers between sessions, at its literal default.
 // One module rather than a literal in each screen, and it doubles as the schema
@@ -20,4 +20,9 @@ export const DEFAULT_PREFS = {
   // happens without them asking.
   fame: DEFAULT_FAME_ID,
   allowRedeal: true,
+  // A match of this many rounds, then a final podium; 0 is endless. On by
+  // default, so an existing player's next session ends on a winner — the
+  // reason it was added.
+  rounds: DEFAULT_MATCH_ROUNDS,
+  clueSeconds: DEFAULT_CLUE_SECONDS,
 };

@@ -19,6 +19,12 @@ export const SETTING_HELP = {
            their own story.`,
   },
 
+  clueSeconds: {
+    short: 'How long each player has to give their clue. Off by default.',
+    more: `Run out and the clue list says so — which is evidence in itself, and the fake,
+           who has to invent a word on the spot, feels the clock most.`,
+  },
+
   sharedOnly: {
     short: 'Only use characters that every player has on their list.',
     more: `The whole table gives clues about one of them, so a character only one player

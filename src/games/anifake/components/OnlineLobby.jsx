@@ -29,6 +29,8 @@ export default function OnlineLobby({ room }) {
     sharedOnly: prefs.sharedOnly,
     fame: prefs.fame,
     allowRedeal: prefs.allowRedeal,
+    rounds: prefs.rounds,
+    clueSeconds: prefs.clueSeconds,
   }));
   const change = (key, value) => setSettings((s) => ({ ...s, [key]: value }));
   const { mode, sharedOnly, fame } = settings;

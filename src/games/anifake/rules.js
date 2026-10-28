@@ -66,6 +66,22 @@ export const MAX_CLUE_ROUNDS = 10;
 // burning everyone's taps turns out to matter more than a second honest re-roll.
 export const MAX_DEALS = 3;
 
+// A match: this many rounds (each a new secret and a new fake), then a final
+// podium (shared/utils/match.js; 0 is the old endless loop). Three, so the
+// fake's role has gone round a three-player table once on average, and a
+// lucky first escape is not the whole evening.
+export const DEFAULT_MATCH_ROUNDS = 3;
+
+// The clue clock, off by default: AniFake's tension is the bluff, and a table
+// that likes to deliberate should not be rushed into it. When on, a speaker
+// who runs out of time is marked in the log as having said nothing (see
+// timeOutClue), which is itself evidence — so the clock is a pressure on the
+// fake, who has to invent a word fast, more than on the crew.
+export const CLUE_SECONDS_OPTIONS = [0, 20, 30, 45, 60, 90];
+export const DEFAULT_CLUE_SECONDS = 0;
+// What a timed-out turn reads as everywhere a clue is shown.
+export const TIMED_OUT_TEXT = '…';
+
 /**
  * How many eligible characters a mode needs before it can deal.
  *
@@ -481,6 +497,22 @@ export function passTurn(state, playerId) {
   return { patch: { turn: state.turn + 1 } };
 }
 
+// The clue clock ran out on the speaker. Recorded rather than silently passed:
+// a turn with nothing said is evidence ("you froze on that one"), and a log
+// that simply skipped them would hide it. Only the speaker's own device calls
+// this, as its clock expires — the same device that would have typed the clue,
+// so there is no second clock to disagree with. A speaker who LEFT is handled
+// by skipDepartedTurn, as before.
+export function timeOutClue(state, playerId) {
+  if (currentSpeakerId(state) !== playerId) return { patch: {} };
+  return {
+    patch: {
+      clues: [...(state.clues ?? []), { by: playerId, text: TIMED_OUT_TEXT, lap: lapOf(state), timedOut: true }],
+      turn: state.turn + 1,
+    },
+  };
+}
+
 // The lap cannot wait on someone who has closed their tab. Walks forward past
 // everyone who has gone, bounded by the last turn — so an entire roster leaving
 // ends the lap rather than spinning.
@@ -817,6 +849,63 @@ export function applyRoundScores(totalScores, roundScores) {
   const out = { ...totalScores };
   for (const [id, score] of Object.entries(roundScores ?? {})) {
     out[id] = (out[id] || 0) + score;
+  }
+  return out;
+}
+
+// --- the match ---------------------------------------------------------------
+//
+// One line per finished round, for the final screen's awards: who was the
+// fake, whether they walked, and who named them. Built from the same truth
+// and ballots scoreRound reads, so an award can never credit something the
+// score did not. Null for an unscored round (no fake reconstructed).
+export function roundLogEntry(state, { fakeId, secret } = {}) {
+  if (!fakeId) return null;
+  const { caught } = voteOutcome(state);
+  const named = new Set();
+  for (const ballot of [state.votes, state.runoff?.votes]) {
+    for (const [voter, target] of Object.entries(ballot ?? {})) {
+      if (voter !== fakeId && target === fakeId) named.add(voter);
+    }
+  }
+  return {
+    fakeId,
+    escaped: caught !== fakeId,
+    stole: caught === fakeId && state.mode === 'blind' && stealIsCorrect(state.steal, secret),
+    namedBy: [...named],
+  };
+}
+
+/**
+ * The final screen's superlatives, from the match log. Each is a fact with a
+ * clear winner or it is left out — a tie for "Best liar" between everyone who
+ * escaped once says nothing, so ties drop the award rather than picking one.
+ *
+ *   Best liar      most escapes as the fake
+ *   Sharpest eye   most times named the fake
+ */
+export function matchAwards(log = [], players = []) {
+  const entries = log.filter(Boolean);
+  const byId = (id) => players.find((p) => p.id === id) ?? null;
+  const top = (counts) => {
+    const rows = Object.entries(counts).filter(([, n]) => n > 0).sort((a, b) => b[1] - a[1]);
+    if (!rows.length || (rows[1] && rows[1][1] === rows[0][1])) return null;
+    return { id: rows[0][0], n: rows[0][1] };
+  };
+  const escapes = {};
+  const reads = {};
+  for (const e of entries) {
+    if (e.escaped) escapes[e.fakeId] = (escapes[e.fakeId] || 0) + 1;
+    for (const id of e.namedBy ?? []) reads[id] = (reads[id] || 0) + 1;
+  }
+  const out = [];
+  const liar = top(escapes);
+  if (liar && byId(liar.id)) {
+    out.push({ title: 'Best liar', player: byId(liar.id), detail: `Got away ${liar.n} ${liar.n === 1 ? 'time' : 'times'} as the fake` });
+  }
+  const eye = top(reads);
+  if (eye && byId(eye.id)) {
+    out.push({ title: 'Sharpest eye', player: byId(eye.id), detail: `Named the fake ${eye.n} ${eye.n === 1 ? 'time' : 'times'}` });
   }
   return out;
 }

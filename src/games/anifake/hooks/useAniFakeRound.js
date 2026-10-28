@@ -95,6 +95,11 @@ export function useAniFakeRound(players, pool, {
     apply((s) => rules.passTurn(s, rules.currentSpeakerId(s)));
   }, [apply]);
 
+  // The clue clock ran out on whoever holds the device.
+  const timeOutClue = useCallback(() => {
+    apply((s) => rules.timeOutClue(s, rules.currentSpeakerId(s)));
+  }, [apply]);
+
   const castVote = useCallback((voterId, targetId) => {
     apply((s) => rules.castVote(s, voterId, targetId));
   }, [apply]);
@@ -162,6 +167,7 @@ export function useAniFakeRound(players, pool, {
     scores: rules.scoreRound(state, truth),
     submitClue,
     passTurn,
+    timeOutClue,
     castVote,
     openRunoff,
     submitSteal,

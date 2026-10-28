@@ -990,3 +990,44 @@ describe('applyRoundScores', () => {
     expect(rules.applyRoundScores({ a: 2 }, undefined)).toEqual({ a: 2 });
   });
 });
+
+describe('timeOutClue', () => {
+  it('logs the speaker as out of time and moves the turn on', () => {
+    const r = round();
+    const speaker = rules.currentSpeakerId(r);
+    const { patch } = rules.timeOutClue(r, speaker);
+    expect(patch.turn).toBe(r.turn + 1);
+    expect(patch.clues).toEqual([{ by: speaker, text: rules.TIMED_OUT_TEXT, lap: 0, timedOut: true }]);
+  });
+
+  it('does nothing for anyone but the speaker', () => {
+    const r = round();
+    const other = r.order.find((id) => id !== rules.currentSpeakerId(r));
+    expect(rules.timeOutClue(r, other).patch).toEqual({});
+  });
+});
+
+describe('the match log and awards', () => {
+  const players = [{ id: 'a', name: 'Ann' }, { id: 'b', name: 'Ben' }, { id: 'c', name: 'Cat' }];
+
+  it('logs who was fake, whether they walked, and who named them', () => {
+    const r = round({ mode: 'blind', votes: { a: 'c', b: 'c', c: 'a' } });
+    expect(rules.roundLogEntry(r, { fakeId: 'c' })).toEqual({ fakeId: 'c', escaped: false, stole: false, namedBy: ['a', 'b'] });
+    expect(rules.roundLogEntry(r, { fakeId: 'b' })).toMatchObject({ fakeId: 'b', escaped: true, namedBy: [] });
+    expect(rules.roundLogEntry(r, {})).toBeNull();
+  });
+
+  it('gives each award to a clear leader, and drops it on a tie', () => {
+    const log = [
+      { fakeId: 'a', escaped: true, namedBy: [] },
+      { fakeId: 'a', escaped: true, namedBy: ['b'] },
+      { fakeId: 'c', escaped: false, namedBy: ['a', 'b'] },
+      null,
+    ];
+    const awards = rules.matchAwards(log, players);
+    expect(awards.map((a) => [a.title, a.player.id])).toEqual([['Best liar', 'a'], ['Sharpest eye', 'b']]);
+
+    const tied = [{ fakeId: 'a', escaped: true, namedBy: [] }, { fakeId: 'b', escaped: true, namedBy: [] }];
+    expect(rules.matchAwards(tied, players)).toEqual([]);
+  });
+});

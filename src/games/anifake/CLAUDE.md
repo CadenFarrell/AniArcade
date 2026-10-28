@@ -93,6 +93,21 @@ have this: its fake discarded a *different* character, so one shared list would 
 card differs. That mode keeps the detector and only copy can help it. Whenever a hidden-role
 game lets state be replaced mid-round, ask what the discard proves.
 
+## The match and the clue clock
+
+A match is `rounds` rounds (`DEFAULT_MATCH_ROUNDS`, 0 = endless) ending on `AniFakeFinal`,
+the one screen that records history. The reveal is now the stop BETWEEN rounds: the host's
+"Next round" calls `startGame(settings, { next: true })`, which keeps `totalScores` and the
+log; a start from the lobby is a new match and clears both. `matchLog/{roundNumber}` is written
+in the SAME patch as the totals, under the `bankedAt` claim, so an award (`matchAwards`) can
+never count a round the scores did not; it is keyed by round, not an array, because an
+unscored round writes no line.
+
+The clue clock stores nothing in the room. Every device runs its own `LocalClock` keyed on the
+turn, and only the speaker's device acts on expiry (`timeOutClue`, which logs the turn as out
+of time — evidence, unlike a silent pass). A refresh restarting one phone's clock is the
+accepted cost; a deadline in `state/` would have to ride every turn write.
+
 ## Fame: favourites coverage
 
 Character `favourites` needs more care than the show-level stats, and AniFake's

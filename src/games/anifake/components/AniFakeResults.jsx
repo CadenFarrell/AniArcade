@@ -2,11 +2,11 @@ import { stealIsCorrect, voteOutcome } from '../rules';
 import { getMode } from '../modes';
 import { computeRankedPlayers } from '../../../shared/utils/ranking';
 import ResultsLayout, { Splash, Standings } from '../../../shared/components/Results';
+import { useCeremonyTiming } from '../../../shared/context/ceremonyContext';
 import { StartBar } from '../../../shared/components/SetupLayout';
 import { Avatar, Badge, Banner, Button, Card, Icon } from '../../../shared/ui';
 import { KANA } from '../../../shared/ui/kanaText';
 import descriptor from '../index';
-import { useRecordResult } from '../../../shared/hooks/useRecordResult';
 
 /**
  * One ballot, grouped by who was ACCUSED rather than by who voted.
@@ -17,7 +17,10 @@ import { useRecordResult } from '../../../shared/hooks/useRecordResult';
  * the detail underneath. Safe to show in full here and nowhere earlier: the
  * vote has closed, which is the whole reason VoteScreen shows none of it.
  */
-function Ballot({ votes = {}, counts = {}, caught, fakeId, players, departedIds = [] }) {
+function Ballot({ votes = {}, counts = {}, caught, fakeId, players, departedIds = [], stageFrom = 0 }) {
+  // Staged (the results ceremony): each accused lands in turn, its bar growing
+  // to its count, and the fake's splash waits until the last has.
+  const staged = useCeremonyTiming();
   const cast = Object.keys(votes).length;
   const playerOf = (id) => players.find((p) => p.id === id) ?? null;
   const nameOf = (id) => playerOf(id)?.name ?? id;
@@ -32,7 +35,7 @@ function Ballot({ votes = {}, counts = {}, caught, fakeId, players, departedIds 
 
   return (
     <div className="flex flex-col gap-4">
-      {accused.map((id) => {
+      {accused.map((id, i) => {
         const n = counts[id];
         const isCaught = id === caught;
         // A player who left is said in words and a quieter text role, never an
@@ -40,7 +43,7 @@ function Ballot({ votes = {}, counts = {}, caught, fakeId, players, departedIds 
         // bar, which is not text, still fades.
         const left = departedIds.includes(id);
         return (
-          <div key={id}>
+          <div key={id} className={staged ? 'reveal-row' : ''} style={staged?.style(stageFrom + i)}>
             <div className="flex items-center gap-2">
               <span className="w-6 flex-shrink-0 text-center font-display text-sm
                 font-extrabold text-fg-subtle">
@@ -61,8 +64,8 @@ function Ballot({ votes = {}, counts = {}, caught, fakeId, players, departedIds 
                 equal length and says "nobody" without needing a caption. */}
             <div className={`mt-1.5 ml-8 h-2 overflow-hidden rounded-pop-sm bg-wash ${left ? 'opacity-40' : ''}`}>
               <div
-                className={`h-full rounded-pop-sm ${isCaught ? 'bg-pop-red' : 'bg-wash-mid'}`}
-                style={{ width: `${(n / cast) * 100}%` }}
+                className={`h-full rounded-pop-sm ${isCaught ? 'bg-pop-red' : 'bg-wash-mid'} ${staged ? 'bar-grow' : ''}`}
+                style={{ width: `${(n / cast) * 100}%`, ...(staged?.style(stageFrom + i) ?? {}) }}
               />
             </div>
             <p className="mt-1 ml-8 truncate text-sm text-fg-subtle">
@@ -108,7 +111,13 @@ export default function AniFakeResults({
   totalScores = {},
   departedIds = [],
   onPlayAgain,
-  playAgainLabel = 'New round',
+  playAgainLabel = 'Next round',
+  // The match's way out early ("End match"), beside the next round; null on
+  // the last round, whose own button already goes to the final scores, and
+  // for an online guest, who moves nothing.
+  onEndMatch = null,
+  // "Round 2 of 3" (shared/utils/match.js), under the mode.
+  matchTag = null,
   // onBack is local-only: online "again" returns to the lobby, and there is no
   // local setup to go back to. Screen omits the row when it is undefined.
   onBack,
@@ -133,16 +142,13 @@ export default function AniFakeResults({
 
   const wasCaught = caught === fakeId;
 
-  // Into each seated profile's history (utils/history.js) as a side's win: the
-  // fake wins by walking or by stealing the card back after being caught (the
-  // steal is the fake's way back, so landing it is their round), the rest of
-  // the table wins by catching them. A round with no fake has no outcome.
-  const fakeWon = !wasCaught || stoleIt;
-  useRecordResult(
-    descriptor.id,
-    players,
-    scored ? (fakeWon ? [fakeId] : players.filter((p) => p.id !== fakeId).map((p) => p.id)) : null,
-  );
+  // History is recorded once per MATCH, on AniFakeFinal — this screen is now
+  // the stop between rounds (play-history rule: final results only).
+
+  // The staged unmasking (ResultsLayout's ceremony): every accused row of both
+  // ballots lands in turn, then the fake, then everything that explains them.
+  const firstRows = Object.keys(firstCounts ?? {}).length;
+  const runoffRows = isRunoff ? Object.keys(counts ?? {}).length : 0;
 
   // The round's verdict, said once — in the splash for a scored round, and as
   // the status line beside the way on.
@@ -162,13 +168,57 @@ export default function AniFakeResults({
     <ResultsLayout
       game={descriptor}
       title="Reveal"
-      subtitle={mode.label}
+      subtitle={[mode.label, matchTag].filter(Boolean).join(' · ')}
       players={players}
       onBack={onBack}
       backLabel="← Back to setup"
-      // The splash is the fake, not the leader: who it was is what the whole
-      // round was asking, and the standings are further down for the rest.
-      splash={scored && (
+      ceremony={scored && anyVotes ? { rows: firstRows + runoffRows, order: 'forward' } : null}
+      bar={(
+        <StartBar width="md" status={scored ? (wasCaught ? 'The fake was caught.' : 'The fake got away.') : 'This round doesn’t score.'} ready>
+          {onEndMatch && <Button variant="secondary" size="lg" onClick={onEndMatch}>End match</Button>}
+          {onPlayAgain && <Button variant="primary" size="lg" onClick={onPlayAgain}>{playAgainLabel}</Button>}
+        </StartBar>
+      )}
+    >
+      {!scored && (
+        <Banner tone="warning" className="mb-6">
+          Too many players left before the reveal to work out who the fake was —
+          this round doesn&apos;t score.
+        </Banner>
+      )}
+
+      {/* Both ballots first, in the order they happened, so the round reads as
+          the story it was — the votes land, THEN who the fake was. */}
+      <Card title={isRunoff ? 'The opening vote' : 'The vote'} padding="lg" className="mb-6">
+        <Ballot
+          votes={game?.votes}
+          counts={firstCounts}
+          // Nobody was caught on this ballot if it went to a runoff — leaving
+          // `caught` in would paint the runoff's loser red on the wrong chart.
+          caught={isRunoff ? null : caught}
+          fakeId={fakeId}
+          players={players}
+          departedIds={departedIds}
+        />
+      </Card>
+
+      {isRunoff && (
+        <Card title="The runoff" padding="lg" className="mb-6">
+          <Ballot
+            votes={game?.runoff?.votes}
+            counts={counts}
+            caught={caught}
+            fakeId={fakeId}
+            players={players}
+            departedIds={departedIds}
+            stageFrom={firstRows}
+          />
+        </Card>
+      )}
+
+      {/* The splash is the fake, not the leader: who it was is what the whole
+          round was asking, and the standings are further down for the rest. */}
+      {scored && (
         <Splash
           players={fake ? [fake] : []}
           stamp={wasCaught ? 'Caught' : 'Got away'}
@@ -200,19 +250,8 @@ export default function AniFakeResults({
           )}
         </Splash>
       )}
-      bar={(
-        <StartBar width="md" status={scored ? (wasCaught ? 'The fake was caught.' : 'The fake got away.') : 'This round doesn’t score.'} ready>
-          <Button variant="primary" size="lg" onClick={onPlayAgain}>{playAgainLabel}</Button>
-        </StartBar>
-      )}
-    >
-      {!scored && (
-        <Banner tone="warning" className="mb-6">
-          Too many players left before the reveal to work out who the fake was —
-          this round doesn&apos;t score.
-        </Banner>
-      )}
 
+      <AfterSplash>
       <Card title="The secret" padding="lg" className="mb-6">
         {secret ? (
           <div className="flex items-center gap-4">
@@ -262,40 +301,21 @@ export default function AniFakeResults({
         </Card>
       )}
 
-      {/* Both ballots, in the order they happened, so the round reads as the
-          story it was rather than as a single number nobody can source. */}
-      <Card title={isRunoff ? 'The opening vote' : 'The vote'} padding="lg" className="mb-6">
-        <Ballot
-          votes={game?.votes}
-          counts={firstCounts}
-          // Nobody was caught on this ballot if it went to a runoff — leaving
-          // `caught` in would paint the runoff's loser red on the wrong chart.
-          caught={isRunoff ? null : caught}
-          fakeId={fakeId}
-          players={players}
-          departedIds={departedIds}
-        />
-      </Card>
-
-      {isRunoff && (
-        <Card title="The runoff" padding="lg" className="mb-6">
-          <Ballot
-            votes={game?.runoff?.votes}
-            counts={counts}
-            caught={caught}
-            fakeId={fakeId}
-            players={players}
-            departedIds={departedIds}
-          />
-        </Card>
-      )}
-
       <Standings
         ranked={ranked}
         departedIds={departedIds}
         scoreClass="text-pop-teal"
         extra={(p) => (roundScores[p.id] ?? 0) > 0 && <Badge tone="lime">+{roundScores[p.id]}</Badge>}
       />
+      </AfterSplash>
     </ResultsLayout>
   );
+}
+
+// Everything that explains the fake — the secret, the decoy, the totals — lands
+// just after the splash does. The standings would spoil it otherwise: the fake's
+// +2 sits right there in the list.
+function AfterSplash({ children }) {
+  const staged = useCeremonyTiming();
+  return <div className={staged ? 'reveal-row' : ''} style={staged?.after(500)}>{children}</div>;
 }

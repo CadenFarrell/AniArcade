@@ -40,6 +40,8 @@ export default function AniFakeSetup({ onStart, error, onBack }) {
     talkMode: prefs.talkMode,
     fame: prefs.fame,
     allowRedeal: prefs.allowRedeal,
+    rounds: prefs.rounds,
+    clueSeconds: prefs.clueSeconds,
   }));
   const change = (key, value) => setSettings((s) => ({ ...s, [key]: value }));
   const { mode, sharedOnly, fame } = settings;

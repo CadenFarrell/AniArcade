@@ -6,7 +6,8 @@ import { fameReport, hasAnyFameData } from '../utils/pool';
 import { FAME_LEVELS, getFame } from '../fame';
 import { SETTING_HELP } from '../help';
 import { DEFAULT_PREFS } from '../prefs';
-import { MAX_CLUE_ROUNDS } from '../rules';
+import { CLUE_SECONDS_OPTIONS, DEFAULT_MATCH_ROUNDS, MAX_CLUE_ROUNDS } from '../rules';
+import MatchLengthSetting from '../../../shared/components/MatchLengthSetting';
 
 /**
  * AniFake's Settings card, rendered by both AniFakeSetup and the online
@@ -29,12 +30,16 @@ import { MAX_CLUE_ROUNDS } from '../rules';
  * screens, as its own decision.
  */
 export default function AniFakeSettings({ values, onChange, poolEntries, local, onReset }) {
-  const { laps, sharedOnly, fame, allowRedeal, talkMode } = values;
+  const { laps, sharedOnly, fame, allowRedeal, talkMode, rounds, clueSeconds } = values;
   const { blind, tooTight, famous } = fameReport(poolEntries, fame);
   const fameLabel = getFame(fame).label;
 
   return (
     <Card title="Settings" action={<DetailToggle />} padding="lg" className="mb-6">
+      {/* Rounds of the MATCH (each a new secret and a new fake) — not to be
+          confused with clue rounds below, which are laps inside one. */}
+      <MatchLengthSetting id="anifake-rounds" value={rounds} defaultRounds={DEFAULT_MATCH_ROUNDS} onChange={onChange} />
+
       <Field label="Clue rounds" htmlFor="anifake-laps" className="mb-2">
         <NumberInput
           id="anifake-laps"
@@ -47,6 +52,22 @@ export default function AniFakeSettings({ values, onChange, poolEntries, local, 
       </Field>
       <SettingHelp className="mb-5" more={SETTING_HELP.laps.more}>
         {SETTING_HELP.laps.short}
+      </SettingHelp>
+
+      <Field label="Clue clock" htmlFor="anifake-clue-seconds" className="mb-2">
+        <Select
+          id="anifake-clue-seconds"
+          value={clueSeconds}
+          onChange={(e) => onChange('clueSeconds', Number(e.target.value))}
+          className="text-lg"
+        >
+          {CLUE_SECONDS_OPTIONS.map((n) => (
+            <option key={n} value={n}>{n ? `${n} seconds` : 'Off'}</option>
+          ))}
+        </Select>
+      </Field>
+      <SettingHelp className="mb-5" more={SETTING_HELP.clueSeconds.more}>
+        {SETTING_HELP.clueSeconds.short}
       </SettingHelp>
 
       <Checkbox

@@ -1,4 +1,4 @@
-import { createContext, useContext, useMemo } from 'react';
+import { useContext, useMemo } from 'react';
 import { accentBg } from '../ui/accents';
 import { KANA } from '../ui/kanaText';
 import { splitTitle } from '../utils/splitTitle';
@@ -13,6 +13,7 @@ import { useStagger } from '../hooks/useStagger';
 import { useStepCues } from '../hooks/useStepCues';
 import CountUp from './CountUp';
 import { useNextGameSlot } from '../context/nextGameContext';
+import { CeremonyContext } from '../context/ceremonyContext';
 
 // The frame every results screen shares — the final standings of every game and
 // the stops between rounds (AniGuess's "Round 2 Done!", AniTag's round end).
@@ -39,19 +40,25 @@ import { useNextGameSlot } from '../context/nextGameContext';
 // (useStagger's rule), so nothing waits on it, and a press anywhere finishes
 // it. Between-round screens leave it off: a stop the table passes through
 // every round should not make them sit through a show.
+//
+// `ceremony` may also be `{ rows, order: 'forward' }` for a reveal that is a
+// story told top down rather than a countdown — AniFake's ballots, where the
+// rows are each accused and the splash (the fake) lands after the last.
+// Anything a screen wants landing AFTER the splash takes `after(ms)`, and any
+// staged piece of its own reads the timing through useCeremonyTiming().
 
-// The timing one ceremony shares between its rows and its splash.
-const CeremonyContext = createContext(null);
 const ROW_STEP_MS = 280;
 const ROW_LEAD_MS = 250;
 // The pause between the last row (second place) landing and the winner: the
 // beat that makes it a reveal rather than one more row.
 const SPLASH_BEAT_MS = 450;
 
-function useCeremony(rows, key) {
-  const on = rows != null;
-  const count = on ? Math.max(0, rows) : 0;
-  const stagger = useStagger({ count, stepMs: ROW_STEP_MS, leadMs: ROW_LEAD_MS, order: 'reverse', key });
+function useCeremony(spec, key) {
+  const on = spec != null && spec !== false;
+  const rows = typeof spec === 'object' && spec ? spec.rows : spec;
+  const order = (typeof spec === 'object' && spec?.order) || 'reverse';
+  const count = on ? Math.max(0, rows ?? 0) : 0;
+  const stagger = useStagger({ count, stepMs: ROW_STEP_MS, leadMs: ROW_LEAD_MS, order, key });
   const splashAt = count && !stagger.skipped ? stagger.totalMs + SPLASH_BEAT_MS : 0;
   // A tick as each row lands (bottom place first), the stamp with the winner.
   const steps = on ? [
@@ -59,8 +66,10 @@ function useCeremony(rows, key) {
     { atMs: count ? ROW_LEAD_MS + (count - 1) * ROW_STEP_MS + SPLASH_BEAT_MS : 0, name: 'stamp' },
   ] : [];
   useStepCues(steps, on ? key : null, { skip: stagger.skipped });
-  return on ? { ...stagger, splashAt } : null;
+  const after = (ms) => (stagger.skipped ? undefined : { animationDelay: `${splashAt + ms}ms` });
+  return on ? { ...stagger, splashAt, after } : null;
 }
+
 
 export default function ResultsLayout({
   game, title, subtitle, players, onBack, backLabel, splash, bar, children, ceremony = null,

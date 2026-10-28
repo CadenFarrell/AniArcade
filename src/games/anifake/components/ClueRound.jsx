@@ -16,6 +16,7 @@ import {
 } from '../../../shared/ui';
 import RoundHeader from '../../../shared/components/RoundHeader';
 import PlayerRow from '../../../shared/components/PlayerRow';
+import LocalClock from '../../../shared/components/LocalClock';
 
 // The clue lap, both locally and online. One screen for both because the only
 // difference is who is allowed to type: locally the device passes and whoever
@@ -44,6 +45,14 @@ export default function ClueRound({
   onPass,
   onQuit,
   error,
+  // The clue clock (rules.CLUE_SECONDS_OPTIONS), 0 for none. Every device runs
+  // its own copy keyed on the turn, so the whole table sees the time draining;
+  // only the speaker's device acts on it (`onTimeout`), which is the one device
+  // that would have typed the clue. Nothing goes in the room — a turn changes
+  // within a beat on every phone, and a refresh mid-turn restarting one clock
+  // is cheaper than a deadline in state that every write would have to carry.
+  clueSeconds = 0,
+  onTimeout,
 }) {
   const [text, setText] = useState('');
 
@@ -76,6 +85,15 @@ export default function ClueRound({
         {/* Turn order is the game, so it is on screen as the row of faces with
             whoever speaks now framed under NOW. */}
         <PlayerRow players={players} activeId={speaker?.id ?? null} label="Clue order" />
+
+        {clueSeconds > 0 && speaker && (
+          <LocalClock
+            key={`${turn}:${clues.length}:${speaker.id}`}
+            ms={clueSeconds * 1000}
+            label={isMyTurn ? 'Time for your clue' : `Time for ${speaker.name}'s clue`}
+            onExpire={() => { if (isMyTurn) { setText(''); onTimeout?.(); } }}
+          />
+        )}
 
         {card && (
           <div className="mb-5">

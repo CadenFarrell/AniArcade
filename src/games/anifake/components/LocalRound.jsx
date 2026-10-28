@@ -280,6 +280,8 @@ export default function LocalRound({ players, pool, settings, onFinish, onQuit }
       total={round.totalTurns}
       onSubmit={round.submitClue}
       onPass={round.passTurn}
+      clueSeconds={settings.clueSeconds ?? 0}
+      onTimeout={round.timeOutClue}
       onQuit={onQuit}
     />
   );

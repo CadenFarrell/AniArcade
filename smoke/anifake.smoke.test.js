@@ -84,4 +84,50 @@ describe('AniFake online', () => {
     for (const d of live) expect(d.r.fakeId, `${d.label} derives the departed fake`).toBe(fakeId);
     expect(syncErrors(live)).toEqual([]);
   });
+
+  it('a match: a timed-out clue is logged, the next round keeps the totals, and it ends on the final', async () => {
+    const devs = [mk('h3'), mk('b3'), mk('c3')];
+    const [A] = devs;
+    await seatTable(devs, [profile('Ivy'), profile('Jon'), profile('Kai')]);
+    const MATCH = { ...SETTINGS, allowRedeal: false, rounds: 2, clueSeconds: 20 };
+
+    const playRound = async (n) => {
+      await until(() => devs.every((d) => d.r.view === 'clues' && d.r.card && d.r.matchRound === n), { what: `round ${n} clues` });
+      expect(A.r.clueSeconds).toBe(20);
+      // The first speaker's clock runs out: their device logs it and the turn moves on.
+      const first = devs.find((d) => d.r.isMyTurn);
+      await first.act((r) => r.timeOutClue());
+      await until(() => devs.every((d) => d.r.clues[0]?.timedOut === true), { what: 'the timed-out clue everywhere' });
+      await playClues(devs);
+      const fakeId = devs.find((d) => d.r.card.isFake).r.myPlayerId;
+      const crewId = devs.find((d) => !d.r.card.isFake).r.myPlayerId;
+      for (const d of devs) await d.act((r) => r.castVote(d.r.myPlayerId === fakeId ? crewId : fakeId));
+      await until(() => devs.every((d) => ['steal', 'reveal', 'results'].includes(d.r.view)), { what: 'past the vote' });
+      if (devs.some((d) => d.r.view === 'steal')) await devs.find((d) => d.r.card.isFake).act((r) => r.submitSteal('nobody'));
+      await until(() => devs.every((d) => d.r.view === 'results' && d.r.matchLog.length === n), { what: `round ${n} banked`, timeout: 20_000 });
+      return fakeId;
+    };
+
+    await A.act((r) => r.startGame(MATCH));
+    const fake1 = await playRound(1);
+    expect(A.r.matchLog[0]).toMatchObject({ fakeId: fake1, escaped: false });
+    const afterOne = { ...A.r.totalScores };
+
+    await A.act((r) => r.nextRound());
+    await playRound(2);
+    // Round two added to round one's totals rather than starting over.
+    for (const [id, pts] of Object.entries(afterOne)) expect(A.r.totalScores[id]).toBeGreaterThanOrEqual(pts);
+    expect(A.r.matchLog).toHaveLength(2);
+
+    await A.act((r) => r.endMatch());
+    await until(() => devs.every((d) => d.r.view === 'final'), { what: 'final scores everywhere' });
+
+    // A new match from the lobby starts clean.
+    await A.act((r) => r.returnToLobby());
+    await until(() => devs.every((d) => d.r.view === 'lobby'), { what: 'lobby' });
+    await A.act((r) => r.startGame(MATCH));
+    await until(() => devs.every((d) => d.r.matchRound === 1 && d.r.matchLog.length === 0), { what: 'a fresh match' });
+    expect(A.r.totalScores).toEqual({});
+    expect(syncErrors(devs)).toEqual([]);
+  });
 });

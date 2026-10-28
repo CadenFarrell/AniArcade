@@ -19,6 +19,12 @@ const initialState = (localProfile) => ({
   // answer readable — so this is what makes a stale card unreadable instead of
   // silently wrong. Same trick as AniGuess's assignment forRound stamp.
   roundNumber: 0,
+  // The match (shared/utils/match.js): which round of it this is, and one log
+  // line per scored round (rules.roundLogEntry) for the final screen's awards.
+  // Keyed by roundNumber, not an array: an unscored round writes no line, and
+  // RTDB would turn the gap into a sparse array.
+  matchRound: 0,
+  matchLog: null,
   players: [localProfile],
 });
 
@@ -87,6 +93,8 @@ const normalizeState = (val) => {
     presence: val.presence ?? {},
     totalScores: val.totalScores ?? {},
     roundNumber: val.roundNumber ?? 0,
+    matchRound: val.matchRound ?? 0,
+    matchLog: val.matchLog ?? {},
     players,
     game: normalizeGame(val.game),
   };
@@ -238,8 +246,10 @@ export function useAniFakeRoom() {
     });
   }, [roomCode, setSyncError]);
 
-  const startGame = useCallback(async (settings) => {
-    if (!isHost) return;
+  // `next` is the host's "Next round" from a reveal: the same settings, the
+  // match's totals and log kept. From the lobby it is a new match, both cleared.
+  const startGame = useCallback(async (settings, { next = false } = {}) => {
+    if (!isHost || !settings) return;
     // Deal from the players actually here — a departed player's list should not
     // shape the pool, least of all under "shared characters only".
     const dealtIn = rosterRef.current.active;
@@ -310,6 +320,9 @@ export function useAniFakeRoom() {
     await patchState({
       settings,
       roundNumber: nextRound,
+      ...(next
+        ? { matchRound: (state?.matchRound ?? 0) + 1 }
+        : { matchRound: 1, matchLog: null, totalScores: {} }),
       game: rules.startRound(ids, {
         mode: settings.mode,
         laps: settings.laps,
@@ -319,7 +332,17 @@ export function useAniFakeRoom() {
       }),
       view: settings.allowRedeal ? 'check' : 'clues',
     });
-  }, [isHost, roomCode, roundNumber, patchState, bestEffort, rosterRef, setSyncError]);
+  }, [isHost, roomCode, roundNumber, state?.matchRound, patchState, bestEffort, rosterRef, setSyncError]);
+
+  // The reveal's two host buttons: the next round of the match, or its end.
+  const nextRound = useCallback(() => startGame(state?.settings, { next: true }), [startGame, state?.settings]);
+  const endMatch = useCallback(() => (isHost ? patchState({ view: 'final' }) : undefined), [isHost, patchState]);
+
+  // The clue clock ran out on me (ClueRound calls it only on the speaker's
+  // own device).
+  const timeOutClue = useCallback(() => (
+    applyGame((g) => rules.timeOutClue(g, myPlayerId))
+  ), [applyGame, myPlayerId]);
 
   // My answer to the card check. `asked` never becomes a per-player value —
   // rules.respondToCheck folds it into one shared latch. See the note there.
@@ -457,7 +480,13 @@ export function useAniFakeRoom() {
     ).catch(() => null);
     if (!claim) return false; // transient — retry on a later render
     if (claim.committed) {
-      await patchState({ totalScores: rules.applyRoundScores(state.totalScores ?? {}, scores) });
+      // The match log rides the same write as the totals, under the same
+      // claim, so an award can never count a round the scores did not.
+      const entry = rules.roundLogEntry(snapshot, answer);
+      await patchState({
+        totalScores: rules.applyRoundScores(state.totalScores ?? {}, scores),
+        ...(entry ? { [`matchLog/${roundNumber}`]: entry } : {}),
+      });
     }
     await runTransaction(ref(db, `rooms/${roomCode}/state/view`), (cur) =>
       (cur === 'results' ? undefined : 'results')
@@ -620,6 +649,14 @@ export function useAniFakeRoom() {
     seatedPlayers: game ? rules.seating(game, players) : players,
     settings: state?.settings ?? null,
     totalScores: state?.totalScores ?? {},
+    matchRound: state?.matchRound ?? 0,
+    // In round order; RTDB hands back `namedBy` dropped when nobody named the fake.
+    matchLog: Object.keys(state?.matchLog ?? {})
+      .sort((a, b) => Number(a) - Number(b))
+      .map((k) => ({ ...state.matchLog[k], namedBy: state.matchLog[k]?.namedBy ?? [] })),
+    rounds: state?.settings?.rounds ?? 0,
+    clueSeconds: state?.settings?.clueSeconds ?? 0,
+    nextRound, endMatch, timeOutClue,
     game,
     mode,
     card,

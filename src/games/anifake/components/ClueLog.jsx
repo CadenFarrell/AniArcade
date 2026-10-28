@@ -48,9 +48,17 @@ export default function ClueLog({ clues = [], players = [] }) {
                   <span className="font-display text-xs uppercase tracking-wider text-fg-subtle">
                     {speaker?.name ?? clue.by}
                   </span>
-                  <span className="ml-2 font-display text-lg font-extrabold text-fg-strong">
-                    {clue.text}
-                  </span>
+                  {/* A clue the clock ran out on (rules.timeOutClue) says so in
+                      words — a bare ellipsis reads as a clue someone chose. */}
+                  {clue.timedOut ? (
+                    <span className="ml-2 text-sm font-bold uppercase tracking-wide text-pop-amber">
+                      out of time
+                    </span>
+                  ) : (
+                    <span className="ml-2 font-display text-lg font-extrabold text-fg-strong">
+                      {clue.text}
+                    </span>
+                  )}
                 </span>
               );
             })}

@@ -5,8 +5,9 @@
 // What the bot has to get right that the generic fallback would not:
 //   - every clue must be NEW (a repeated clue is refused, and a bot that kept
 //     offering "spirit" would sit on a disabled Say it button forever);
-//   - the session never ends on its own — the reveal offers "New round" — so
-//     a run is one or two rounds, then done;
+//   - a match is `rounds` rounds and ends on "Final Scores"; an endless one
+//     (rounds 0) never ends on its own, so the bot ends it with "End match"
+//     after one or two reveals;
 //   - the steal is a search-then-pick, and the bot sometimes knows the answer:
 //     it saw the crew's cards on the way round, as the table did.
 import { makeStrategy } from './base.js';
@@ -41,16 +42,11 @@ export default makeStrategy({
     talkMode: [false, true],
     fame: ['any', 'known', 'iconic'],
     allowRedeal: [true, false],
+    rounds: [1, 2, 0],
+    clueSeconds: [0, 0, 30],
   },
-  isDone(snap, ctx) {
-    if (!/^reveal$/i.test(snap.heading)) return false;
-    // Online the reveal's way on is "Back to lobby" (host) — one round is the game.
-    if (find(snap, /back to lobby/i, { enabled: false }) && !find(snap, /new round/i)) return true;
-    if (!find(snap, /new round/i)) return false;
-    const m = ctx.memory;
-    // Count each reveal once, however many steps it is looked at.
-    if (m.lastReveal !== snap.signature) { m.lastReveal = snap.signature; m.reveals = (m.reveals ?? 0) + 1; }
-    return m.reveals >= m.target;
+  isDone(snap) {
+    return /^final scores$/i.test(snap.heading);
   },
 
   act(snap, ctx) {
@@ -59,9 +55,17 @@ export default makeStrategy({
     memory.used ??= new Set();
     memory.cards ??= [];
 
-    // Not the last round yet: start the next one.
-    const again = find(snap, /new round/i);
-    if (again && /^reveal$/i.test(snap.heading)) return click(again, 'next round');
+    // Between rounds: the last one goes on to the final scores; an endless
+    // match is ended after `target` reveals; otherwise deal the next.
+    if (/^reveal$/i.test(snap.heading)) {
+      if (memory.lastReveal !== snap.signature) { memory.lastReveal = snap.signature; memory.reveals = (memory.reveals ?? 0) + 1; }
+      const final = find(snap, /^final scores$/i);
+      if (final) return click(final, 'final scores');
+      const end = find(snap, /^end match$/i);
+      if (end && memory.reveals >= memory.target && !/round \d+ of/i.test(snap.text)) return click(end, 'end the endless match');
+      const again = find(snap, /^next round$/i);
+      if (again) return click(again, 'next round');
+    }
 
     // A card on screen: remember whose it is (the vote and the steal use it),
     // then hide or ask for a re-deal now and then.

@@ -10,6 +10,8 @@ import ClueRound from './components/ClueRound';
 import VoteScreen from './components/VoteScreen';
 import StealScreen from './components/StealScreen';
 import AniFakeResults from './components/AniFakeResults';
+import AniFakeFinal from './components/AniFakeFinal';
+import { isFinalRound, matchLabel } from '../../shared/utils/match';
 import WaitingScreen from '../../shared/components/WaitingScreen';
 import { MAX_DEALS } from './rules';
 import RoomShell from '../../shared/components/RoomShell';
@@ -101,6 +103,8 @@ export default function OnlineGame({ onBack, onExit }) {
         lap={room.lap}
         laps={room.laps}
         onSubmit={room.submitClue}
+        clueSeconds={room.clueSeconds}
+        onTimeout={room.timeOutClue}
         onQuit={handleExitToHub}
       />
     );
@@ -149,7 +153,27 @@ export default function OnlineGame({ onBack, onExit }) {
     return shell(<WaitingScreen title="Turning the cards over…" />);
   }
 
+  if (room.view === 'final') {
+    return shell(
+      <AniFakeFinal
+        players={room.seatedPlayers}
+        totalScores={room.totalScores}
+        log={room.matchLog}
+        played={room.matchRound}
+        rounds={room.rounds}
+        departedIds={room.departedIds}
+        onPlayAgain={room.isHost ? room.returnToLobby : null}
+        againLabel="Back to lobby"
+      />,
+      // The final results: the host may take the table on to another game.
+      { nextGame: true },
+    );
+  }
+
   if (room.view === 'results' && room.game) {
+    // Between rounds now: the host deals the next one or ends the match; the
+    // last round's one button goes to the final scores.
+    const last = isFinalRound(room.matchRound, room.rounds);
     return shell(
       <AniFakeResults
         players={room.seatedPlayers}
@@ -160,11 +184,11 @@ export default function OnlineGame({ onBack, onExit }) {
         roundScores={room.roundScores}
         totalScores={room.totalScores}
         departedIds={room.departedIds}
-        onPlayAgain={room.returnToLobby}
-        playAgainLabel="Back to lobby"
+        onPlayAgain={room.isHost ? (last ? room.endMatch : room.nextRound) : null}
+        playAgainLabel={last ? 'Final scores' : 'Next round'}
+        onEndMatch={room.isHost && !last ? room.endMatch : null}
+        matchTag={matchLabel(room.matchRound, room.rounds)}
       />,
-      // The final results: the host may take the table on to another game.
-      { nextGame: true },
     );
   }
 
