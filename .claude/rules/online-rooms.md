@@ -45,7 +45,7 @@ node whose **security rule** — not a client check — hides it. Pick by who mu
 | node | read | write | for | used by |
 | --- | --- | --- | --- | --- |
 | `assignments/{playerId}` | everyone **except** the owner | everyone except the owner | a value about you that you alone must not learn | AniGuess (your character), AniTag `dealt` |
-| `secrets/{playerId}` | the owner **only** | any member | a value only you may learn | AniFake (your card), AniWave (target, `readroom`'s card — see its CLAUDE.md), AniTag `chosen`, AniTurf (each team's key, in its clue-giver's node) |
+| `secrets/{playerId}` | the owner **only** | any member | a value only you may learn | AniFake (your card), AniWave (target, `readroom`'s card — see its CLAUDE.md), AniTag `chosen`, AniTurf (each team's key, in its clue-giver's node), AniChain (the turn's card, in both givers' nodes) |
 
 `secrets/` write is any member, not "the host", because the host is a `state/` value the rules
 cannot cheaply check and members are already trusted with `state/`. AniTag and AniTurf write

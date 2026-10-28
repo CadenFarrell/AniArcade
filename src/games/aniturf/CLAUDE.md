@@ -106,7 +106,9 @@ window. Text on a team header sits on a solid
 patch of the team's ink, never straight on its texture (the stripes took it to ~3.4:1, and axe
 cannot measure text over a background image). Teams have their own tokens (`team-red`, `team-blue` — not pop-red/pop-blue, which
 mean wrong and asking) and each also carries a texture (hatch / screentone) and letter, so a
-claim is never colour alone. The game's accent is the decorative `plum`.
+claim is never colour alone. The split, the look and the teams card are shared since AniChain
+(`shared/utils/teams.js`, `shared/components/teams/`); AniTurf's `teamStyle.js` adds each
+team's crossing direction, its `TeamsCard` the crown, and `rules.js` re-exports the helpers. The game's accent is the decorative `plum`.
 
 Locally the impact frame sits at one fixed place in `LocalRound`'s tree across every screen:
 the claim that ends a turn is followed straight away by the next handoff, and a fresh

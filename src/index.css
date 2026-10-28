@@ -144,6 +144,10 @@
   /* Umber: a dark sepia brown. Redder and much darker than amber (scores), and
      far darker than the vermilion brand, so it reads as its own ink. */
   --color-pop-umber: #6a3f22; /* AniName                   6.79 / 8.43 */
+  /* Violet: halfway round the wheel between purple's indigo (whose turn) and
+     plum's wine — redder than the one, bluer than the other — so it reads as
+     neither. */
+  --color-pop-violet: #652d96; /* AniChain                6.73 / 8.35 */
 
   /* AniTurf's two teams. Their own role, not pop-red and pop-blue: those mean
      wrong and asking, and a claimed square is neither. Kept a hue apart from

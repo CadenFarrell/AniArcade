@@ -13,5 +13,6 @@ import aniturf from './aniturf.js';
 import anipeek from './anipeek.js';
 import aniout from './aniout.js';
 import aniname from './aniname.js';
+import anichain from './anichain.js';
 
-export const strategies = { aniguess, anitune, anirank, anifake, aniwave, anitag, aniquiz, aniturf, anipeek, aniout, aniname };
+export const strategies = { aniguess, anitune, anirank, anifake, aniwave, anitag, aniquiz, aniturf, anipeek, aniout, aniname, anichain };

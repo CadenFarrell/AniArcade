@@ -21,11 +21,13 @@
 //   'trap'   scorched by a sprung trap — rubble too, marked apart so the table
 //            can see where a trap was
 import { characterNameKey } from '../../shared/utils/character';
+import { TEAMS, other, teamsReady as teamsReadyFor } from '../../shared/utils/teams';
+
+// The team split itself is shared (AniChain has the same two teams).
+export { TEAMS, TEAM_NAMES, other, splitTeams, teamOf } from '../../shared/utils/teams';
 
 export const SIZE = 5;
 export const CELLS = SIZE * SIZE;
-export const TEAMS = ['red', 'blue'];
-export const TEAM_NAMES = { red: 'Red', blue: 'Blue' };
 // Decoy squares on every key: footing that touches no square of the route, so
 // a lone hit proves nothing about which way the route runs (see makeFooting).
 export const DECOYS = 2;
@@ -39,7 +41,6 @@ export const OPENING_CLUE = 1;
 export const MAX_TRAPS = 3;
 export const MAX_CLUE_LENGTH = 24;
 
-export const other = (team) => (team === 'red' ? 'blue' : 'red');
 export const rowOf = (i) => Math.floor(i / SIZE);
 export const colOf = (i) => i % SIZE;
 const at = (r, c) => r * SIZE + c;
@@ -282,23 +283,6 @@ export function rebuildFooting(game, team, rng = Math.random) {
 
 // --- teams ------------------------------------------------------------------
 
-/**
- * The teams from the seat order plus whatever each player chose. A player who
- * has not chosen joins the smaller side so far, so a table that never touches
- * the teams card is split evenly in seat order — and adding a player never
- * reshuffles anyone seated before them.
- */
-export function splitTeams(ids, chosen = {}) {
-  const teams = { red: [], blue: [] };
-  for (const id of ids) {
-    const pick = chosen?.[id] === 'red' || chosen?.[id] === 'blue'
-      ? chosen[id]
-      : (teams.red.length <= teams.blue.length ? 'red' : 'blue');
-    teams[pick].push(id);
-  }
-  return teams;
-}
-
 /** Seats alternate Red, Blue, Red… — the setup screen's starting split. */
 export function assignTeams(ids) {
   return {
@@ -307,20 +291,9 @@ export function assignTeams(ids) {
   };
 }
 
-export function teamOf(game, id) {
-  if (game?.teams?.red?.includes(id)) return 'red';
-  if (game?.teams?.blue?.includes(id)) return 'blue';
-  return null;
-}
-
 /** Whether a split can start: two a side, so each team has a guesser. */
 export function teamsReady(teams) {
-  for (const team of TEAMS) {
-    if ((teams?.[team]?.length ?? 0) < MIN_TEAM) {
-      return { ok: false, reason: `${TEAM_NAMES[team]} needs ${MIN_TEAM} players.` };
-    }
-  }
-  return { ok: true, reason: null };
+  return teamsReadyFor(teams, MIN_TEAM);
 }
 
 /**

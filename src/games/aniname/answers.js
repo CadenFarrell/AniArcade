@@ -22,12 +22,9 @@
 import { characterNameKey } from '../../shared/utils/character';
 import { franchiseTitleKey } from '../../shared/utils/franchise';
 import { resolveShowKey } from '../../shared/utils/facts';
+import { fold, uniqueByWords, words } from '../../shared/utils/nameMatch';
 
 const filled = (s) => typeof s === 'string' && s.trim() !== '';
-const fold = (s) => characterNameKey(String(s ?? ''));
-// Punctuation splits words rather than joining them: "Frieren:" is "frieren",
-// "Journey's" is "journey s", so a typed word meets a title's word as itself.
-const words = (s) => fold(s).replace(/[^\p{L}\p{N}\s]/gu, ' ').split(' ').filter(Boolean);
 const titleCase = (key) => key.replace(/\b\w/g, (c) => c.toUpperCase());
 
 // AniList tags that describe a show's cast make-up or rating rather than what
@@ -181,23 +178,8 @@ export const categoryText = (cat) => (cat && KINDS[cat.kind] ? KINDS[cat.kind].s
 
 // ── The judge ─────────────────────────────────────────────────────────────
 
-// The one entry in `entries` (key → label) whose words include every typed
-// word, or null when none or several do: "Kakashi" is Kakashi Hatake in
-// Naruto's cast, but "Uchiha" is three people and the judge will not guess.
-// Words of one letter are ignored, so an initial never narrows anything.
-function uniqueByWords(typed, entries) {
-  const want = typed.filter((w) => w.length > 1);
-  if (!want.length) return null;
-  let hit = null;
-  for (const [key, label] of entries) {
-    const have = new Set(words(label));
-    if (want.every((w) => have.has(w))) {
-      if (hit) return null;
-      hit = { key, label };
-    }
-  }
-  return hit;
-}
+// uniqueByWords (shared/utils/nameMatch.js) is the partial-name rule: every
+// typed word in exactly one answer's name.
 
 /**
  * Grades one typed answer against a category. Returns
