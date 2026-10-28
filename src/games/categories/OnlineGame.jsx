@@ -159,7 +159,7 @@ export default function OnlineGame({ onBack, onExit }) {
             // built-in's id or a written category's whole definition.
             category={shown ? getCategory(shown) : null}
             result={game.results?.[seatId] ?? null}
-            points={row?.points ?? 0}
+            points={row?.turnPoints ?? 0}
             cap={room.cap}
             nameFor={nameFor}
             // Any device may move the seat on. The turn is over and its result

@@ -98,6 +98,13 @@ offering them, `declareCategory` refuses. Three consequences worth keeping:
   else has been claimed, and at any size once a seat has missed at everybody left. The screen has
   to say so rather than render a dead control.
 
+**A chosen clause pays its owner `OWNER_POINTS` when it is solved** (`ownerPoints`, folded into
+`finalScores` and `explainRound`'s `points`; `turnPoints` is the go alone, which is what a turn's
+end shows). Before it the owner earned nothing for picking, so nobody had a stake in a clause
+being findable. It pays once per round because a clause can be claimed once, and it is
+deliberately small next to a solve, whose floor is half the cap: `scoreTurn` costs a point per
+TWO names, so a single fast solve no longer decides a three-round game on its own.
+
 **A wrong declaration costs `WRONG_DECLARATION_COST` names, not the round, and it is carried by
 the trail with no new state.** It used to end the turn outright, which was right when a turn was
 an uninterrupted block of ten and is a spectator sport now that the seat moves every name — a

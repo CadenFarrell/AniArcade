@@ -1,5 +1,5 @@
 import { DEFAULT_PREFS, MODE_LABELS } from './prefs';
-import { MIN_PLAYERS, WRONG_DECLARATION_COST } from './rules';
+import { MIN_PLAYERS, OWNER_POINTS, WRONG_DECLARATION_COST } from './rules';
 
 // The game's rules sheet (shared/components/HowToSheet.jsx), built from the
 // rules' own constants. The scoring line mirrors scoreTurn: fewer names spent
@@ -31,8 +31,9 @@ export const HOW_TO = {
     {
       title: 'Scoring',
       items: [
-        `You get ${DEFAULT_PREFS.proposalCap} names a round by default. A right declaration scores more the fewer names you used.`,
+        `You get ${DEFAULT_PREFS.proposalCap} names a round by default. A right declaration scores more the fewer names you used: a point less for every two names, never under half.`,
         'Running out of names, or giving up, scores nothing that round.',
+        `When you picked your own category, you score ${OWNER_POINTS} if someone works it out — so pick one the table can find.`,
         `${DEFAULT_PREFS.rounds} rounds by default. Highest total wins.`,
       ],
     },

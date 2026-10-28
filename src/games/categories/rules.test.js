@@ -6,7 +6,7 @@ import {
   judge, judgeIdFor, nextSeatId, nextTurn, normalizeGame, normalizePending,
   normalizeResults, normalizeTrail, normalizeTrails, passTurn, proposalsLeft,
   proposalsUsed, proposeName, publishCategory, recordPick, requiredJudges,
-  revealAllowed, roundComplete, scoreTurn, settlePending, skipDepartedSeat,
+  revealAllowed, roundComplete, scoreTurn, settlePending, skipDepartedSeat, OWNER_POINTS,
   startRound, toSpec, trailFor, turnOrder, verdictsOf,
 } from './rules';
 
@@ -765,7 +765,14 @@ describe('scoreTurn', () => {
   it('caps a blind solve at what a one-name solve pays', () => {
     expect(scoreTurn({ solved: true, used: 0, cap: 10 })).toBe(10);
     expect(scoreTurn({ solved: true, used: 1, cap: 10 })).toBe(10);
-    expect(scoreTurn({ solved: true, used: 2, cap: 10 })).toBe(9);
+    expect(scoreTurn({ solved: true, used: 3, cap: 10 })).toBe(9);
+  });
+
+  // The softened curve: a point per two names, never under half the cap, so
+  // one quick solve does not decide the game on its own.
+  it('costs a point per two names, down to half the cap', () => {
+    expect([1, 2, 3, 4, 5, 9, 10].map((used) => scoreTurn({ solved: true, used, cap: 10 }))).toEqual([10, 10, 9, 9, 8, 6, 6]);
+    expect(scoreTurn({ solved: true, used: 99, cap: 10 })).toBe(5);
   });
 
   // The floor: solving on the last name still beat not solving at all.
@@ -777,7 +784,7 @@ describe('scoreTurn', () => {
 
 describe('the round result', () => {
   it('scores only players who had a turn', () => {
-    const s = { cap: 10, results: { a: { solved: true, used: 2 }, b: { solved: false, used: 10 } } };
+    const s = { cap: 10, results: { a: { solved: true, used: 3 }, b: { solved: false, used: 10 } } };
     expect(finalScores(s, IDS)).toEqual({ a: 9, b: 0 });
   });
 
@@ -969,5 +976,21 @@ describe('normalizers', () => {
     s = ruleAll(declared, true);
     s = apply(s, publishCategory(s, 'c', { id: 'x', label: 'Wears glasses', custom: true }));
     expect(normalizeGame(JSON.parse(JSON.stringify(s)))).toEqual(s);
+  });
+});
+
+describe('owner points (chosen mode)', () => {
+  it('pays the owner of a solved clause, once, and only in chosen mode', () => {
+    const results = { a: { solved: true, used: 3, targetId: 'b' }, b: { solved: false, used: 10 } };
+    expect(finalScores({ mode: 'chosen', cap: 10, results }, IDS)).toEqual({ a: 9, b: OWNER_POINTS });
+    expect(finalScores({ mode: 'dealt', cap: 10, results }, IDS)).toEqual({ a: 9, b: 0 });
+    const [rowA, rowB] = explainRound({ mode: 'chosen', cap: 10, trails: {}, results }, ['a', 'b']);
+    expect([rowA.turnPoints, rowA.ownerPoints, rowA.points]).toEqual([9, 0, 9]);
+    expect([rowB.turnPoints, rowB.ownerPoints, rowB.points]).toEqual([0, OWNER_POINTS, OWNER_POINTS]);
+  });
+
+  it('pays an owner who never took a turn too (they still picked the clause)', () => {
+    const results = { a: { solved: true, used: 1, targetId: 'c' } };
+    expect(finalScores({ mode: 'chosen', cap: 10, results }, IDS).c).toBe(OWNER_POINTS);
   });
 });

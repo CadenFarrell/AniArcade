@@ -117,9 +117,14 @@ export const DEFAULT_CAP = 10;
 // pins it so that change is deliberate rather than incidental.
 export const WRONG_DECLARATION_COST = 3;
 
-// The floor a solve can score. A turn that used every name still beat one that
-// ran out, and paying it nothing would say those were the same turn.
-const MIN_SOLVE_POINTS = 1;
+// What a chosen-mode clause pays its OWNER when somebody correctly declares it.
+// Before this the owner earned nothing for picking, so nobody had a stake in a
+// clause being fair: an impossible one cost its owner nothing and a dull one
+// gained them nothing. Now a clause that gets solved pays its owner — enough to
+// want a rule the table can find, never enough to rival the solve itself (a
+// solve pays at least half the cap). Dealt mode has no owners: the clause was
+// handed out, and everyone at the table already knew it.
+export const OWNER_POINTS = 3;
 
 const clean = (text, max) => (text || '')
   .trim()
@@ -876,7 +881,13 @@ export function publishCategory(state, playerId, spec) {
 /**
  * Points for one turn.
  *
- * Fewer names is worth more, linearly, and an unsolved turn is worth nothing.
+ * Fewer names is worth more, and an unsolved turn is worth nothing. Every TWO
+ * names cost a point, down to a floor of half the cap: a solve on the last name
+ * of ten pays 6 and a solve on the first pays 10. It used to cost a point per
+ * name down to 1, which made one lucky early solve worth ten slow ones and
+ * decided three-round games on a single go; working the trail properly is now
+ * still clearly worth it, and finding the rule at all is worth the most.
+ *
  * Bounded at BOTH ends on purpose: the floor keeps a solve on the last name
  * ahead of no solve at all, and the ceiling stops a lucky blind declaration —
  * legal, and almost impossible — from outscoring somebody who actually worked
@@ -890,7 +901,20 @@ export function publishCategory(state, playerId, spec) {
 export function scoreTurn({ solved, used = 0, cap = DEFAULT_CAP } = {}) {
   if (!solved) return 0;
   const c = toCap(cap);
-  return Math.max(MIN_SOLVE_POINTS, Math.min(c, c - used + 1));
+  const spent = Math.max(1, used);
+  return Math.max(Math.ceil(c / 2), Math.min(c, c - Math.floor((spent - 1) / 2)));
+}
+
+// What each owner earned from their clause being solved this round, by owner id
+// — chosen mode only (see OWNER_POINTS). A clause can be claimed once, so an
+// owner earns it at most once a round.
+export function ownerPoints(state) {
+  if (!isChosen(state)) return {};
+  const out = {};
+  for (const result of Object.values(state?.results ?? {})) {
+    if (result?.solved === true && result.targetId) out[result.targetId] = OWNER_POINTS;
+  }
+  return out;
 }
 
 /**
@@ -912,12 +936,14 @@ export function scoreTurn({ solved, used = 0, cap = DEFAULT_CAP } = {}) {
  * YOU, which is half of what a chosen-mode round was about.
  */
 export function explainRound(state, playerIds = [], categories = {}) {
+  const owned = ownerPoints(state);
   const claimedBy = {};
   for (const [declarerId, result] of Object.entries(state?.results ?? {})) {
     if (result?.solved === true && result.targetId) claimedBy[result.targetId] = declarerId;
   }
   return playerIds.map((playerId) => {
     const result = state?.results?.[playerId] ?? null;
+    const turnPoints = scoreTurn({ solved: result?.solved, used: result?.used, cap: state?.cap });
     return {
       playerId,
       took: !!result,
@@ -934,7 +960,13 @@ export function explainRound(state, playerIds = [], categories = {}) {
       // denied the owner's secrets/ node — while `categories` is the local
       // hook's whole answer, where one device holds every slot.
       category: result?.category ?? state?.reveal?.[playerId] ?? categories[playerId] ?? null,
-      points: scoreTurn({ solved: result?.solved, used: result?.used, cap: state?.cap }),
+      // `points` is the round's whole score for this player — what the round
+      // screen and the totals use. Its two halves are kept apart for the screens
+      // that mean only one: a turn's end shows `turnPoints`, and the round
+      // screen says where `ownerPoints` came from.
+      turnPoints,
+      ownerPoints: owned[playerId] ?? 0,
+      points: turnPoints + (owned[playerId] ?? 0),
     };
   });
 }
@@ -942,10 +974,11 @@ export function explainRound(state, playerIds = [], categories = {}) {
 /** The round's scores. */
 export function finalScores(state, playerIds = []) {
   const out = {};
+  const owned = ownerPoints(state);
   for (const playerId of playerIds) {
     const result = state?.results?.[playerId];
-    if (!result) continue;
-    out[playerId] = scoreTurn({ solved: result.solved, used: result.used, cap: state?.cap });
+    if (result) out[playerId] = scoreTurn({ solved: result.solved, used: result.used, cap: state?.cap });
+    if (owned[playerId]) out[playerId] = (out[playerId] ?? 0) + owned[playerId];
   }
   return out;
 }

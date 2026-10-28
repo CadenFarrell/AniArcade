@@ -49,7 +49,9 @@ export default function RoundEnd({
     const parts = [];
     if (row.solved && row.targetId) parts.push(`solved ${nameOf(row.targetId)}`);
     else if (row.took && row.guess && row.targetId) parts.push(`missed ${nameOf(row.targetId)}`);
-    if (row.claimedBy) parts.push(`claimed by ${nameOf(row.claimedBy)}`);
+    if (row.claimedBy) {
+      parts.push(`claimed by ${nameOf(row.claimedBy)}${row.ownerPoints ? ` (+${row.ownerPoints} for the category)` : ''}`);
+    }
     return parts.length ? parts.join(' · ') : null;
   };
 

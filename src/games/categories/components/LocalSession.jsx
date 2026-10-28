@@ -120,7 +120,7 @@ export default function LocalSession({
           // reveal gate applies identically in both.
           category={shown ? getCategory(shown) : null}
           result={result}
-          points={row?.points ?? 0}
+          points={row?.turnPoints ?? 0}
           cap={round.cap}
           nameFor={nameFor}
           canAdvance
