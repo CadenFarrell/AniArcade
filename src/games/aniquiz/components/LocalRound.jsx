@@ -8,7 +8,7 @@ import ClueReveal from './ClueReveal';
 import Scoreboard from './Scoreboard';
 import WagerEntry from './WagerEntry';
 import QuizResults from './QuizResults';
-import LocalClock from './LocalClock';
+import LocalClock from '../../../shared/components/LocalClock';
 import { categoryFor, nextLabel, stakeLabelFor } from '../roundText';
 import { Backdrop, Button, Card, Icon, Screen } from '../../../shared/ui';
 import Handoff from '../../../shared/components/Handoff';
