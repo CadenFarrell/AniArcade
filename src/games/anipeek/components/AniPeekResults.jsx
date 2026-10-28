@@ -17,6 +17,7 @@ export default function AniPeekResults({ players, scores, departedIds = [], onPl
 
   return (
     <ResultsLayout
+      ceremony={rest.length}
       game={descriptor}
       title="Final Scores"
       players={players}
@@ -39,7 +40,7 @@ export default function AniPeekResults({ players, scores, departedIds = [], onPl
         </StartBar>
       )}
     >
-      <Standings ranked={rest} departedIds={departedIds} score={(p) => String(p.total)} />
+      <Standings build ranked={rest} departedIds={departedIds} score={(p) => String(p.total)} />
     </ResultsLayout>
   );
 }

@@ -22,6 +22,7 @@ export default function QuizResults({ players, scores, departedIds = [], onPlayA
 
   return (
     <ResultsLayout
+      ceremony={rest.length}
       game={descriptor}
       title="Final Scores"
       players={players}
@@ -48,6 +49,7 @@ export default function QuizResults({ players, scores, departedIds = [], onPlayA
       )}
     >
       <Standings
+        build
         ranked={rest}
         departedIds={departedIds}
         score={(p) => signed(p.total)}

@@ -17,6 +17,7 @@ export default function AniOutResults({ players, scores, departedIds = [], onPla
 
   return (
     <ResultsLayout
+      ceremony={rest.length}
       game={descriptor}
       title="Final Scores"
       players={players}
@@ -39,7 +40,7 @@ export default function AniOutResults({ players, scores, departedIds = [], onPla
         </StartBar>
       )}
     >
-      <Standings ranked={rest} departedIds={departedIds} score={(p) => String(p.total)} />
+      <Standings build ranked={rest} departedIds={departedIds} score={(p) => String(p.total)} />
     </ResultsLayout>
   );
 }

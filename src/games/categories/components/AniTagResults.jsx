@@ -26,6 +26,7 @@ export default function AniTagResults({
 
   return (
     <ResultsLayout
+      ceremony={rest.length}
       game={descriptor}
       title="Final scores"
       players={players}
@@ -43,7 +44,7 @@ export default function AniTagResults({
         </StartBar>
       )}
     >
-      <Standings ranked={rest} />
+      <Standings build ranked={rest} />
     </ResultsLayout>
   );
 }

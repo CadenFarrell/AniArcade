@@ -68,6 +68,7 @@ export default function AniTuneResults({
 
   return (
     <ResultsLayout
+      ceremony={rest.length}
       game={descriptor}
       title="Final Scores"
       subtitle={suffix}
@@ -86,6 +87,7 @@ export default function AniTuneResults({
       )}
     >
       <Standings
+        build
         ranked={rest}
         departedIds={departedIds}
         score={(p) => formatPoints(p.total)}

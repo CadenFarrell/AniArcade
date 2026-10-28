@@ -22,6 +22,7 @@ export default function WavelengthResults({
 
   return (
     <ResultsLayout
+      ceremony={rest.length}
       game={descriptor}
       title="Final scores"
       players={players}
@@ -40,7 +41,7 @@ export default function WavelengthResults({
         </StartBar>
       )}
     >
-      <Standings ranked={rest} />
+      <Standings build ranked={rest} />
     </ResultsLayout>
   );
 }

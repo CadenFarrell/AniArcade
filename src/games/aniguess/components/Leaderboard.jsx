@@ -33,6 +33,7 @@ export default function Leaderboard({
 
   return (
     <ResultsLayout
+      ceremony={rest.length}
       game={descriptor}
       title="Final Results"
       subtitle={rounds}
@@ -48,6 +49,7 @@ export default function Leaderboard({
       )}
     >
       <Standings
+        build
         ranked={rest}
         departedIds={departedIds}
         score={(p) => `${p.total} pts`}

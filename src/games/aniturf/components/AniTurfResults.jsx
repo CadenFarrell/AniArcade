@@ -38,6 +38,7 @@ export default function AniTurfResults({
   });
   return (
     <ResultsLayout
+      ceremony={ranked.length}
       game={descriptor}
       title="Final Board"
       subtitle={`${s.name} takes the turf.`}
@@ -59,7 +60,10 @@ export default function AniTurfResults({
       )}
     >
       <Standings
+        build
         title="Wins"
+        // Only this game's winners tick: everyone else's session total is unchanged.
+        previous={Object.fromEntries(ranked.map((p) => [p.id, winnerIds.includes(p.id) ? p.total - 1 : p.total]))}
         ranked={ranked}
         departedIds={departedIds}
         extra={(p) => {
