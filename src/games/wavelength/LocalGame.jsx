@@ -13,6 +13,7 @@ export default function LocalGame({ onExit, onBack }) {
   // { players, rounds, mode, cardPool, sharedOnly }
   const [game, setGame] = useState(null);
   const [totals, setTotals] = useState({});
+  const [log, setLog] = useState([]);
   // Bumped per session so LocalSession remounts and re-deals rather than reusing
   // a hook whose lazy initializers have already run.
   const [sessionKey, setSessionKey] = useState(0);
@@ -34,7 +35,7 @@ export default function LocalGame({ onExit, onBack }) {
           mode={game.mode}
           cardPool={game.cardPool}
           sharedOnly={game.sharedOnly}
-          onFinish={(totalScores) => { setTotals(totalScores); setView('results'); }}
+          onFinish={(totalScores, roundLog) => { setTotals(totalScores); setLog(roundLog ?? []); setView('results'); }}
           onQuit={() => { setGame(null); setView('setup'); }}
         />
       );
@@ -45,6 +46,7 @@ export default function LocalGame({ onExit, onBack }) {
         <WavelengthResults
           players={game.players}
           totalScores={totals}
+          log={log}
           onPlayAgain={() => start(game)}
           onBack={() => { setGame(null); setView('setup'); }}
         />

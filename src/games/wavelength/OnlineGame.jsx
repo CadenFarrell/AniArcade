@@ -283,6 +283,7 @@ export default function OnlineGame({ onBack, onExit }) {
       <WavelengthResults
         players={room.players}
         totalScores={room.totalScores}
+        log={room.roundLog}
         onPlayAgain={room.isHost ? room.returnToLobby : null}
         playAgainLabel="Back to lobby"
         onBack={handleExitToHub}

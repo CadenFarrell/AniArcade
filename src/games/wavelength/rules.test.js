@@ -1,4 +1,6 @@
 import { describe, it, expect } from 'vitest';
+import * as rules from './rules';
+import { SPECTRA } from './spectra';
 import {
   BANDS, CLUE_MODES, DEFAULT_CLUE_MODE, DIAL_MAX, DIAL_MIN, MAX_CLUE_LEN,
   REVEAL_GRACE_MS,
@@ -736,5 +738,36 @@ describe('normalizeRound', () => {
 describe('guesserIds', () => {
   it('is everyone but the psychic, in the order it was handed', () => {
     expect(guesserIds({ psychicId: 'yuki' }, IDS)).toEqual(['kaito', 'rin', 'sora']);
+  });
+});
+
+describe('the session log and its awards', () => {
+  const players = [{ id: 'a', name: 'Ann' }, { id: 'b', name: 'Ben' }, { id: 'c', name: 'Cat' }];
+  const ids = players.map((p) => p.id);
+
+  it('logs a revealed round in plain words, and nothing for an abandoned one', () => {
+    const r = {
+      ...rules.startRound(ids, { round: 0, mode: 'text' }),
+      psychicId: 'a', spectrum: SPECTRA[1].id,
+      clue: 'beach episode', phase: 'reveal', target: 40, dials: { b: 42, c: 70 },
+    };
+    expect(rules.roundLogEntry(r, ids)).toMatchObject({
+      psychicId: 'a', left: SPECTRA[1].leftLabel, right: SPECTRA[1].rightLabel, clue: 'beach episode', target: 40, bestId: 'b', bestDistance: 2,
+    });
+    expect(rules.roundLogEntry({ ...r, abandoned: true }, ids)).toBeNull();
+  });
+
+  it('names a clear Bullseye and Mind meld, and drops a tie', () => {
+    const log = [
+      { round: 0, psychicId: 'a', left: 'L', right: 'R', bestId: 'b', bestDistance: 1, psychicPoints: 3 },
+      { round: 1, psychicId: 'b', left: 'L', right: 'R', bestId: 'c', bestDistance: 6, psychicPoints: 1 },
+      null,
+    ];
+    expect(rules.sessionAwards(log, players).map((a) => [a.title, a.player.id])).toEqual([['Bullseye', 'b'], ['Mind meld', 'a']]);
+    const tie = [
+      { round: 0, psychicId: 'a', bestId: 'b', bestDistance: 2, psychicPoints: 2 },
+      { round: 1, psychicId: 'b', bestId: 'c', bestDistance: 2, psychicPoints: 2 },
+    ];
+    expect(rules.sessionAwards(tie, players)).toEqual([]);
   });
 });

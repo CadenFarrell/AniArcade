@@ -24,7 +24,7 @@ export default function LocalSession({
   const {
     state, spectrum, card, target, hand, searchCards, psychic, hotSeatId, pending,
     everyoneGuessed, excludeSpectrumId, roundNumber, totalRounds, isFinalRound, explain,
-    roundScores, totalScores, submitClue, placeDial, reveal, nextRound,
+    roundScores, totalScores, log, submitClue, placeDial, reveal, nextRound,
   } = round;
 
   const [readyFor, setReadyFor] = useState(null);
@@ -146,7 +146,7 @@ export default function LocalSession({
       onNext={() => { nextRound(); setReadyFor(null); setDraft(null); }}
       // Totals are banked by the hook's own effect the moment a round reveals,
       // so by the time this button exists they already include this round.
-      onResults={() => onFinish(totalScores)}
+      onResults={() => onFinish(totalScores, log)}
       onQuit={onQuit}
     />
   );

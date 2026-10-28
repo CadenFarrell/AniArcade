@@ -45,6 +45,9 @@ const initialState = (localProfile) => ({
   game: null,
   totalScores: {},
   playedCardIds: [],
+  // One line per revealed round (rules.roundLogEntry), keyed by round so an
+  // abandoned round's missing line leaves no hole for RTDB to make sparse.
+  roundLog: null,
   players: [localProfile],
 });
 
@@ -54,6 +57,7 @@ function normalizeState(raw) {
     ...raw,
     players: Array.isArray(raw.players) ? raw.players.filter(Boolean) : [],
     totalScores: raw.totalScores ?? {},
+    roundLog: raw.roundLog ?? {},
     playedCardIds: rules.normalizePlayedCardIds(raw.playedCardIds),
     // The single point round state enters the hook — so nothing downstream, and
     // least of all rules.js, ever sees the shapes RTDB drops.
@@ -198,6 +202,7 @@ export function useWavelengthRoom() {
     await patchState({
       settings: nextSettings,
       totalScores: {},
+      roundLog: null,
       // null rather than [], because RTDB does not store an empty array — this
       // is a delete, which is what "nothing played yet" has to mean.
       playedCardIds: null,
@@ -354,11 +359,14 @@ export function useWavelengthRoom() {
         (cur) => (cur === game.round ? undefined : game.round),
       );
       if (!claim.committed) return;
+      // The recap line rides the same write, under the same claim.
+      const entry = rules.roundLogEntry(game, playerIds);
       await patchState({
         totalScores: rules.applyRoundScores(
           state?.totalScores ?? {},
           rules.finalScores(game, playerIds),
         ),
+        ...(entry ? { [`roundLog/${game.round}`]: entry } : {}),
       });
     });
   }, [isHost, roomCode, game, state, playerIds, patchState, once]);
@@ -416,6 +424,9 @@ export function useWavelengthRoom() {
     explain: game ? rules.explainRound(game, playerIds) : [],
     roundScores: game ? rules.finalScores(game, playerIds) : {},
     totalScores: state?.totalScores ?? {},
+    roundLog: Object.keys(state?.roundLog ?? {})
+      .sort((a, b) => Number(a) - Number(b))
+      .map((k) => state.roundLog[k]),
     roundNumber: (game?.round ?? 0) + 1,
     totalRounds: settings?.rounds ?? 0,
     isFinalRound: (game?.round ?? 0) + 1 >= (settings?.rounds ?? 0),

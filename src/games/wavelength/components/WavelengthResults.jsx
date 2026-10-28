@@ -1,6 +1,8 @@
-import ResultsLayout, { Splash, Standings } from '../../../shared/components/Results';
+import ResultsLayout, { Awards, Splash, Standings } from '../../../shared/components/Results';
 import { StartBar } from '../../../shared/components/SetupLayout';
-import { Button } from '../../../shared/ui';
+import PlayerFace from '../../../shared/components/PlayerFace';
+import { Badge, Button, Card, CardRow } from '../../../shared/ui';
+import { sessionAwards } from '../rules';
 import { computeRankedPlayers } from '../../../shared/utils/ranking';
 import { splitPodium } from '../../../shared/utils/podium';
 import descriptor from '../index';
@@ -11,9 +13,11 @@ import { fromRanked } from '../../../shared/utils/history';
 // for 2nd are both 2nd, and the next is 3rd) so this screen never does its own
 // sorting — every game in the arcade ends on the same leaderboard semantics.
 export default function WavelengthResults({
-  players, totalScores, onPlayAgain, onBack,
+  players, totalScores, log = [], onPlayAgain, onBack,
   playAgainLabel = 'Play again', backLabel = 'Change settings',
 }) {
+  const lines = log.filter(Boolean);
+  const playerOf = (id) => players.find((p) => p.id === id) ?? null;
   const ranked = computeRankedPlayers(players, totalScores);
   const { winners, rest, stamp, kana } = splitPodium(ranked);
   // The finished game, into each seated profile's history (utils/history.js).
@@ -42,6 +46,37 @@ export default function WavelengthResults({
       )}
     >
       <Standings build ranked={rest} />
+      <Awards awards={sessionAwards(lines, players)} />
+      {/* Every round, told back: who was psychic, the spectrum, the clue, where
+          the target really was and who read it best. The game is the clues,
+          and a final screen of totals alone forgets every one of them. */}
+      {lines.length > 0 && (
+        <Card title="The rounds" padding="sm" className="mb-6">
+          {lines.map((l) => {
+            const psychic = playerOf(l.psychicId);
+            const best = playerOf(l.bestId);
+            return (
+              <CardRow key={l.round}>
+                <PlayerFace player={psychic ?? { id: l.psychicId, name: '?' }} />
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm text-fg-helper">
+                    {psychic?.name ?? 'Psychic'} · {l.left} → {l.right}
+                  </span>
+                  <span className="block truncate font-display text-lg font-extrabold text-fg-strong">
+                    {l.clue || '—'}
+                  </span>
+                  {best && (
+                    <span className="block truncate text-sm text-fg-helper">
+                      Closest: {best.name}, off by {l.bestDistance}
+                    </span>
+                  )}
+                </span>
+                <Badge tone="neutral">{l.target}</Badge>
+              </CardRow>
+            );
+          })}
+        </Card>
+      )}
     </ResultsLayout>
   );
 }

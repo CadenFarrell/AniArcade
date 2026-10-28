@@ -1,3 +1,5 @@
+import { getSpectrum } from './spectra';
+
 // All AniWave logic: no React, no storage, no network. Each function takes a
 // slice of round state and returns a { patch } for the caller to apply however
 // its persistence layer works — useState locally, a Firebase transaction online.
@@ -603,4 +605,78 @@ export function normalizeRound(raw) {
     deadline: Number.isFinite(raw.deadline) ? raw.deadline : null,
     abandoned: raw.abandoned === true,
   };
+}
+
+// --- the session's story ------------------------------------------------------
+//
+// One line per revealed round, for the final screen: the recap of every round
+// and its awards. Plain values only — the spectrum as its two words, the clue
+// as text or the card's name — so a line reads the same on every device and
+// survives RTDB untouched. Null for a round with nothing to tell (abandoned,
+// or never revealed).
+export function roundLogEntry(state, playerIds = []) {
+  if (!state || state.abandoned || !Number.isFinite(state.target)) return null;
+  const spec = state.spectrum ? getSpectrum(state.spectrum) : null;
+  const rows = explainRound(state, playerIds).filter((r) => r.placed);
+  const best = rows.reduce((b, r) => (b == null || r.distance < b.distance ? r : b), null);
+  const scores = finalScores(state, playerIds);
+  return {
+    round: state.round ?? 0,
+    psychicId: state.psychicId ?? null,
+    left: spec?.leftLabel ?? '',
+    right: spec?.rightLabel ?? '',
+    clue: state.clue ?? state.card?.name ?? '',
+    target: state.target,
+    bestId: best?.playerId ?? null,
+    bestDistance: best?.distance ?? null,
+    psychicPoints: state.psychicId ? (scores[state.psychicId] ?? 0) : 0,
+  };
+}
+
+/**
+ * The final screen's superlatives. A clear leader or nothing — a tie drops the
+ * award rather than picking a name by seat.
+ *
+ *   Bullseye    the closest single dial of the session
+ *   Mind meld   the psychic whose clues the table read best, on average
+ */
+export function sessionAwards(log = [], players = []) {
+  const lines = log.filter(Boolean);
+  const byId = (id) => players.find((p) => p.id === id) ?? null;
+  const out = [];
+
+  const dials = lines.filter((l) => l.bestId != null && Number.isFinite(l.bestDistance));
+  if (dials.length) {
+    const closest = Math.min(...dials.map((l) => l.bestDistance));
+    const hits = dials.filter((l) => l.bestDistance === closest);
+    if (new Set(hits.map((l) => l.bestId)).size === 1 && byId(hits[0].bestId)) {
+      const h = hits[0];
+      out.push({
+        title: 'Bullseye',
+        player: byId(h.bestId),
+        detail: closest === 0
+          ? `Dead on the target, ${h.left} → ${h.right}`
+          : `Off by ${closest} on ${h.left} → ${h.right}`,
+      });
+    }
+  }
+
+  const psychic = {};
+  for (const l of lines) {
+    if (!l.psychicId) continue;
+    psychic[l.psychicId] ??= { sum: 0, n: 0 };
+    psychic[l.psychicId].sum += l.psychicPoints;
+    psychic[l.psychicId].n += 1;
+  }
+  const avgs = Object.entries(psychic).map(([id, { sum, n }]) => [id, sum / n]).filter(([, a]) => a > 0)
+    .sort((a, b) => b[1] - a[1]);
+  if (avgs.length && !(avgs[1] && avgs[1][1] === avgs[0][1]) && byId(avgs[0][0])) {
+    const [id, avg] = avgs[0];
+    out.push({
+      title: 'Mind meld',
+      player: byId(id),
+      detail: `The table scored ${Number.isInteger(avg) ? avg : avg.toFixed(1)} a round off their clues`,
+    });
+  }
+  return out;
 }

@@ -65,6 +65,7 @@ export function useWavelengthRound(players, {
   const [session, setSession] = useState(() => ({
     round: rules.startRound(playerIds, { round: 0, mode }),
     history: [],
+    log: [],
     // Grows by one card a round, and outlives every round — its whole job is
     // stopping a small shared pool dealing the same card twice in a session.
     playedCardIds: [],
@@ -115,7 +116,13 @@ export function useWavelengthRound(players, {
       const { patch } = rules.revealTarget(s.round, at);
       if (!patch || Object.keys(patch).length === 0) return s;
       const round = { ...s.round, ...patch };
-      return { ...s, round, history: [...s.history, rules.finalScores(round, playerIds)] };
+      return {
+        ...s,
+        round,
+        history: [...s.history, rules.finalScores(round, playerIds)],
+        // The final screen's recap and awards, appended under the same guard.
+        log: [...(s.log ?? []), rules.roundLogEntry(round, playerIds)],
+      };
     });
   }, [playerIds]);
 
@@ -203,6 +210,7 @@ export function useWavelengthRound(players, {
     explain: rules.explainRound(state, playerIds),
     roundScores: rules.finalScores(state, playerIds),
     totalScores,
+    log: session.log ?? [],
     submitClue,
     placeDial,
     reveal,
