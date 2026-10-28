@@ -112,7 +112,7 @@ export function device(label, hookFile, hookName, { extraMocks = {} } = {}) {
   const storage = memStorage();
 
   const dev = {
-    label, db, storage, view: null, errors: [],
+    label, db, storage, view: null, errors: [], hookFile, hookName,
     get r() { return dev.view.result.current; },
     async mount() {
       vi.resetModules();
@@ -124,8 +124,8 @@ export function device(label, hookFile, hookName, { extraMocks = {} } = {}) {
       }));
       vi.doMock(STORAGE, () => ({ storage }));
       for (const [path, factory] of Object.entries(extraMocks)) vi.doMock(`${REPO}/${path}`, factory);
-      const mod = await import(/* @vite-ignore */ `${REPO}/${hookFile}`);
-      const hook = mod[hookName];
+      const mod = await import(/* @vite-ignore */ `${REPO}/${dev.hookFile}`);
+      const hook = mod[dev.hookName];
       dev.view = renderHook(() => hook());
       await waitFor(() => expect(dev.r.uid).toBeTruthy(), { timeout: 15_000 });
       return dev;
@@ -137,6 +137,15 @@ export function device(label, hookFile, hookName, { extraMocks = {} } = {}) {
     },
     async reload() {
       dev.unmount();
+      await dev.mount();
+    },
+    // The hub opening another game on this same device: the same uid and
+    // storage, a different game's hook. What "Next game" does
+    // (src/shared/utils/handoff.js).
+    async switchTo(nextHookFile, nextHookName) {
+      dev.unmount();
+      dev.hookFile = nextHookFile;
+      dev.hookName = nextHookName;
       await dev.mount();
     },
     async revive() {

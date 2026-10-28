@@ -51,12 +51,21 @@ const DENY_START = [
   // pressing the top bar's "How to play" at random would only reopen a dialog,
   // and Send feedback would write to the database the build points at.
   'how to play', 'feedback', 'send feedback',
+  // A follower's way back from waiting on the host's next game (see the
+  // `next$` pattern below).
+  'back to the results',
 ];
 // A name ending in a disclosure triangle opens or closes a panel and never
 // moves a game on; pressed at random it is the commonest way to look busy. And
 // the record screen's two ways in (the hub strip, a profile row's trophy) lead
 // off to a page with no game on it.
-const DENY_ANYWHERE = [/add .* to this game/i, /^take .* out of/i, /import .*'s list/i, /[▸▾]$/, /^see full record$/i, /'s record$/i];
+// The host's picks under an online room's final results ("Play AniTune next",
+// src/shared/utils/handoff.js) carry the whole table off into another game;
+// browser/online.spec.js presses one on purpose.
+const DENY_ANYWHERE = [
+  /add .* to this game/i, /^take .* out of/i, /import .*'s list/i, /[▸▾]$/, /^see full record$/i, /'s record$/i,
+  /^play .+ next$/i,
+];
 const lead = /^[^\p{L}\p{N}←✕×ⓘ]+/u;
 
 export const DENY = {

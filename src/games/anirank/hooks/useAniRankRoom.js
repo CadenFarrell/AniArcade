@@ -346,6 +346,8 @@ export function useAniRankRoom() {
     error: core.error, syncError: core.syncError,
     dismissError: core.dismissError, dismissSyncError: core.dismissSyncError,
     createRoom: core.createRoom, joinRoom: core.joinRoom, leaveRoom: core.leaveRoom,
+    // Next game, same table: shared/utils/handoff.js.
+    handoff: core.handoff,
     updateMyProfile: core.updateMyProfile, setView: core.setView, returnToLobby,
     view: state?.view,
     hostId: core.hostId, isHost, hostName: core.hostName,

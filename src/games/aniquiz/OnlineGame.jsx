@@ -72,6 +72,8 @@ export default function OnlineGame({ onBack, onExit }) {
         departedIds={room.departedIds}
         onPlayAgain={room.isHost ? room.returnToLobby : null}
       />,
+      // The final results: the host may take the table on to another game.
+      { nextGame: true },
     );
   }
 

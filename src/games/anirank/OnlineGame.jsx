@@ -182,7 +182,9 @@ export default function OnlineGame({ onBack, onExit }) {
         departedIds={room.departedIds}
         onPlayAgain={room.returnToLobby}
         playAgainLabel="Back to lobby"
-      />
+      />,
+      // The final results: the host may take the table on to another game.
+      { nextGame: true },
     );
   }
 

@@ -29,6 +29,7 @@ import { CoverGameContext } from '../shared/context/coverGameContext';
 import { useWakeLock } from '../shared/hooks/useWakeLock';
 import { playSound } from '../shared/services/sound';
 import { preloadGames } from '../shared/utils/lazyGame';
+import { nextGameChoices } from '../shared/utils/handoff';
 import { Backdrop, Badge, GhostButton, HubButton, Icon, Kana, Screen } from '../shared/ui';
 import { accentBg } from '../shared/ui/accents';
 import { ART } from '../shared/ui/credits';
@@ -353,6 +354,26 @@ export default function HubScreen() {
       if (!readHowToSeen(id)) setHowToFor(id);
     });
   };
+  // Next game, same table (shared/utils/handoff.js): a room's results send this
+  // device into another game's room — the host's to create it (`from`, no
+  // code), everyone else's to join it (`code`). It rides the invite: the same
+  // state an invite link seeds, so ModePicker routes on and RoomSetup acts on
+  // it exactly as it does for a link. `leave` runs behind the slab, so the old
+  // room's join screen never flashes up as its hook lets go. Never dropped: a
+  // wipe already running would ignore it, and a follower that does not follow
+  // is stranded in a room everyone else has left.
+  const followTable = ({ gameId: id, code = null, from = null, leave }) => {
+    if (!GAME_IDS.includes(id)) return false;
+    const swap = () => {
+      leave?.();
+      setInvite({ gameId: id, code, handoff: { from, create: code == null } });
+      setGameId(id);
+      if (!readHowToSeen(id)) setHowToFor(id);
+    };
+    if (!wipe(swap)) swap();
+    return true;
+  };
+
   const backToMenu = () => wipe(() => {
     setGameId(null);
     setInvite(null);
@@ -373,6 +394,12 @@ export default function HubScreen() {
     routed: invite?.routed ?? false,
     markRouted: () => setInvite((i) => (i ? { ...i, routed: true } : i)),
     consume: () => setInvite(null),
+    handoff: invite?.gameId === active.id ? invite.handoff ?? null : null,
+    nextGames: nextGameChoices(games, active.id),
+    follow: followTable,
+    // followTable is a fresh closure each render, but everything it reads is
+    // state setters, the stable `wipe` and module constants.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   } : null), [active, invite]);
   let content;
 

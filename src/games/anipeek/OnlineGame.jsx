@@ -66,6 +66,8 @@ export default function OnlineGame({ onBack, onExit }) {
         onPlayAgain={room.isHost ? room.returnToLobby : null}
         againLabel="Back to lobby"
       />,
+      // The final results: the host may take the table on to another game.
+      { nextGame: true },
     );
   }
 

@@ -27,9 +27,15 @@ export default function ClueCard({
   const body = (
     <>
       <Avatar src={card.imageUrl} alt="" size={avatarSize} className="mx-auto mb-2" />
+      {/* Titles WRAP, never clamp: in the psychic's five-across browse strip a
+          card is ~70px wide, and two clamped lines cut "My Teen Romantic Comedy
+          SNAFU" to its first word or two — a card nobody could name it from.
+          overflow-wrap:anywhere breaks a word too long for the card instead of
+          letting it run out of the side (the browser playtest's clipped-text
+          finding), the hub tiles' rule for long character names. */}
       <p
-        className={`font-display font-extrabold leading-tight text-fg-strong ${
-          size === 'lg' ? 'text-xl' : 'line-clamp-2 text-sm'
+        className={`font-display font-extrabold leading-tight text-fg-strong [overflow-wrap:anywhere] ${
+          size === 'lg' ? 'text-xl' : 'text-sm'
         }`}
       >
         {card.title}

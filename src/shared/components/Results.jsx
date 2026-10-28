@@ -9,6 +9,7 @@ import {
 import { Backdrop, Card, Kana, PlaceMark, Screen } from '../ui';
 import Portrait from './Portrait';
 import { useSoundCue } from '../hooks/useSoundCue';
+import { useNextGameSlot } from '../context/nextGameContext';
 
 // The frame every results screen shares — the final standings of every game and
 // the stops between rounds (AniGuess's "Round 2 Done!", AniTag's round end).
@@ -35,6 +36,9 @@ export default function ResultsLayout({
   // otherwise — a results screen mounted alone, in a test.
   const outer = useTablePortraits();
   const own = useMemo(() => (outer ? null : portraitsFor(players ?? [])), [outer, players]);
+  // An online room's final results carry the "Next game" panel under the
+  // recap (shared/context/nextGameContext.js); null everywhere else.
+  const nextGame = useNextGameSlot();
   return (
     <TablePortraitsContext.Provider value={outer ?? own}>
       <Backdrop />
@@ -43,6 +47,7 @@ export default function ResultsLayout({
         <ResultsBanner game={game} title={title} subtitle={subtitle} />
         {splash}
         {children}
+        {nextGame}
       </Screen>
       {bar}
     </TablePortraitsContext.Provider>

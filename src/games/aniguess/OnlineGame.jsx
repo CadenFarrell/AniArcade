@@ -368,7 +368,9 @@ export default function OnlineGame({ onBack, onExit }) {
         departedIds={room.departedIds}
         onPlayAgain={() => { room.leaveRoom(); onBack(); }}
         onEditLists={() => { room.leaveRoom(); onBack(); }}
-      />
+      />,
+      // The final results: the host may take the table on to another game.
+      { nextGame: true },
     );
   }
 

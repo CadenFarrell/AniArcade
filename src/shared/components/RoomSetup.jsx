@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useInvite } from '../context/inviteContext';
 import { useProfileStore } from '../context/profileContext';
 import ListImport from './ListImport';
@@ -85,6 +85,40 @@ export default function RoomSetup({ room, onBack, tone = 'purple', stat = () => 
     // this to one attempt.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [inviteCode, profile, room.uid, room.roomCode]);
+
+  // The host's half of "Next game" (shared/utils/handoff.js): the room is made
+  // by itself, and its code written back into the room the table came from,
+  // where everyone else is waiting for it. Same guards and the same consume-
+  // first as the invite above. A room that cannot be made takes the pick back
+  // out of the old room, so the table there lands on its results again rather
+  // than waiting on a code that is never coming.
+  //
+  // Latched in a ref as well: StrictMode runs a mount's effects twice before
+  // consume()'s state update lands, and where a second join is harmless (it is
+  // idempotent), a second create is a second room the table never hears of.
+  const handoff = invite?.handoff ?? null;
+  const createdFor = useRef(null);
+  useEffect(() => {
+    if (!handoff?.create || !profile || !room.uid || room.roomCode) return;
+    if (createdFor.current === handoff) return;
+    createdFor.current = handoff;
+    const from = handoff.from;
+    invite.consume();
+    (async () => {
+      setBusy(true);
+      setError('');
+      try {
+        const code = await room.createRoom(profile);
+        if (from) await room.handoff?.announce(from, code).catch(() => {});
+      } catch (e) {
+        setError(e.message);
+        if (from) room.handoff?.cancel(from).catch(() => {});
+      } finally {
+        setBusy(false);
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [handoff, profile, room.uid, room.roomCode]);
 
   return (
     <>

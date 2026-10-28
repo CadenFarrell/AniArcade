@@ -22,8 +22,9 @@ Play it at **https://aniguess-a08f7.web.app/**.
 | **AniPeek** | A face hides under sixteen tiles. Bid how few you need to name them, then prove it. |
 
 Every game has a local mode and an online mode, and every finished game goes into each
-player's play record. Each game's rules are one press away under "How to play" in the top
-bar, and open by themselves the first time you play it.
+player's play record. Online, the host can take the whole room on to another game from the
+results screen, with no new code to share. Each game's rules are one press away under "How to
+play" in the top bar, and open by themselves the first time you play it.
 
 ## Running it
 

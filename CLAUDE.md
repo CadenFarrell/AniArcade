@@ -176,7 +176,10 @@ before `rules.js` sees state. Every readiness gate counts the *active* roster
 
 **Read `.claude/rules/online-rooms.md` before touching any room data.** It loads with the room
 hooks, `rules.js`, `database.rules.json` and `smoke/`, and holds the node table, the
-hidden-role lessons, one-shot keys, the RTDB traps, presence, room deletion and invite links.
+hidden-role lessons, one-shot keys, the RTDB traps, presence, room deletion, invite links and
+"Next game" (a host takes the whole table from a room's final results into another game's
+room: `shared/utils/handoff.js`, one `state/next` node in the old room). A new game opts in
+with `{ nextGame: true }` on its final results' `shell()` call.
 
 The shared screens every game is built from — `SetupLayout`/`StartBar`, `Lobby`,
 `PlayerSlots` and `portraitsFor`, `Results`, and the in-round pieces (`Handoff`, `PlayerRow`,

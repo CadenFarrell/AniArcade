@@ -33,7 +33,14 @@ export default function PeekPanel({ peekList, hasPeeked, onPeek, className = 'mb
           {peekList.length === 0 ? (
             <p className="text-lg text-fg-helper">No shared anime found.</p>
           ) : (
-            <ul className="max-h-80 space-y-2 overflow-y-auto">
+            // Focusable and named, because it scrolls: a keyboard user can
+            // only scroll a region they can reach (axe's
+            // scrollable-region-focusable, from the browser playtest).
+            <ul
+              tabIndex={0}
+              aria-label="Your anime list"
+              className="focus-pop max-h-80 space-y-2 overflow-y-auto"
+            >
               {peekList.map((anime) => (
                 <li key={anime.id} className="border-b border-line py-2 text-lg text-fg-strong">
                   {anime.title}

@@ -61,7 +61,9 @@ the round's best between rounds (AniGuess's `RoundEnd`, AniTag's round screen), 
 AniFake's reveal, the best board on AniRank's. `ResultsLayout` takes the table in SEAT order
 and shares portraits with `portraitsFor`, so a winner wears their setup slot's face
 (`Portrait.jsx` draws both). The stamp's `stamp-in` is from-state, so reduced motion leaves it
-stamped.
+stamped. Online, a FINAL results screen also carries the "Next game" card under the recap
+(`NextGame.jsx`, slotted in by `RoomShell` — `.claude/rules/online-rooms.md`); its buttons are
+"Play <Game> next", which the bots' fallback never presses.
 
 **In-round, the faces are the thread.** `TablePortraits.jsx` shares portraits once (seat
 order) for everything past setup — `RoomShell` provides it online, each `LocalGame` locally —

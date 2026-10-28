@@ -1,9 +1,11 @@
 import { useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { HistoryScopeContext } from '../context/historyScopeContext';
+import { NextGameSlotContext } from '../context/nextGameContext';
 import { useTopBar } from '../context/topBarContext';
 import { Banner, HubButton } from '../ui';
 import TablePortraits from './TablePortraits';
+import { FollowScreen, NextGamePicker } from './NextGame';
 
 // Wraps every in-room screen so connection problems and the way out are always
 // reachable, whatever phase the game is in.
@@ -27,10 +29,17 @@ import TablePortraits from './TablePortraits';
 //   and the same five characters twice on one screen read as two codes. Past
 //   the lobby the bar's small one is the only one, for a late joiner to ask.
 // - The banners sit just under the bar, centred, over the screen.
-export default function RoomShell({ room, onExit, codeInPage = false, children }) {
+// - Next game, same table (shared/utils/handoff.js). `nextGame` marks a FINAL
+//   results screen, which then carries the host's picker (ResultsLayout draws
+//   it, through NextGameSlotContext). Once a pick is in, every device but the
+//   host's shows FollowScreen in place of whatever the room was on, whatever
+//   the view, and moves on by itself when the new room's code lands.
+export default function RoomShell({ room, onExit, codeInPage = false, nextGame = false, children }) {
   const bar = useTopBar();
   // Results are recorded on each player's own device (useRecordResult).
   const historyScope = useMemo(() => ({ onlyId: room.myPlayerId ?? null }), [room.myPlayerId]);
+  const next = room.handoff?.next ?? null;
+  const following = next != null && next.by !== room.myPlayerId;
 
   const handleLeave = () => {
     if (!window.confirm('Leave this room? You can rejoin with the same name and room code while anyone is still in it.')) return;
@@ -105,7 +114,11 @@ export default function RoomShell({ room, onExit, codeInPage = false, children }
           roster under gameSession). The lobby's slots share out their own. */}
       <HistoryScopeContext.Provider value={historyScope}>
         <TablePortraits players={room.players ?? room.gameSession?.players}>
-          {children}
+          {following ? <FollowScreen room={room} next={next} /> : (
+            <NextGameSlotContext.Provider value={nextGame ? <NextGamePicker room={room} /> : null}>
+              {children}
+            </NextGameSlotContext.Provider>
+          )}
         </TablePortraits>
       </HistoryScopeContext.Provider>
     </div>

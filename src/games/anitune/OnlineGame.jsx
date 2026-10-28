@@ -282,7 +282,9 @@ export default function OnlineGame({ onBack, onExit }) {
         departedIds={room.departedIds}
         roundSize={room.round?.length ?? Object.keys(room.game.scores).length}
         onPlayAgain={room.returnToLobby}
-      />
+      />,
+      // The final results: the host may take the table on to another game.
+      { nextGame: true },
     );
   }
 

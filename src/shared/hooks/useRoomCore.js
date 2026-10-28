@@ -5,7 +5,9 @@ import {
 import { getFirebaseAuth, getFirebaseDb, ensureSignedIn } from '../services/firebase';
 import { storage } from '../services/storage';
 import { usePresence } from './usePresence';
+import { useInvite } from '../context/inviteContext';
 import { GRACE_MS, rosterSnapshot, nextHostId, isLastToLeave } from '../utils/presence';
+import { normalizeNext } from '../utils/handoff';
 
 const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no ambiguous 0/O/1/I
 const EMPTY_PLAYERS = []; // stable identity so the roster memo doesn't churn
@@ -130,6 +132,16 @@ export function useRoomCore({
   const [serverOffset, setServerOffset] = useState(0); // Firebase server clock skew, ms
   const [error, setError] = useState(''); // fatal: can't reach Firebase / room gone
   const [syncError, setSyncError] = useState(''); // transient: a write failed
+  // The host's pick of the next game, read off the raw snapshot (see
+  // shared/utils/handoff.js), or null.
+  const [next, setNext] = useState(null);
+
+  // A handoff into this game (shared/utils/handoff.js), as it stood when this
+  // hook mounted. It beats a saved room: a device that once closed a tab in
+  // this game's room would otherwise be restored into that stale room instead
+  // of the table it is following.
+  const invite = useInvite();
+  const handoffRef = useRef(invite?.handoff ?? null);
 
   // Held in refs so exitRoom and the subscription keep a stable identity — a
   // caller passing an inline arrow would otherwise re-subscribe every render.
@@ -150,6 +162,7 @@ export function useRoomCore({
     setRoomCode(null);
     setMyPlayerId(null);
     setState(null);
+    setNext(null);
     onExitRef.current?.();
   }, [forgetSavedRoom]);
 
@@ -161,6 +174,10 @@ export function useRoomCore({
         setUid(u);
         if (restoredRef.current) return;
         restoredRef.current = true;
+        if (handoffRef.current) {
+          forgetSavedRoom();
+          return;
+        }
         const saved = storage.getItem(storageKey);
         if (saved?.roomCode && saved?.playerId) {
           setRoomCode(saved.roomCode);
@@ -168,7 +185,7 @@ export function useRoomCore({
         }
       })
       .catch((e) => setError(e.message));
-  }, [storageKey]);
+  }, [storageKey, forgetSavedRoom]);
 
   // Presence timestamps are stamped with the server's clock, so any window
   // measured against them has to use the server's clock too.
@@ -196,6 +213,7 @@ export function useRoomCore({
           return;
         }
         setState(normalizeRef.current(val));
+        setNext(normalizeNext(val.next));
       },
       () => {
         // Permission denied — usually a saved room this device's uid no longer
@@ -469,6 +487,29 @@ export function useRoomCore({
 
   const setView = useCallback((view) => patchState({ view }), [patchState]);
 
+  // --- Next game, same table (shared/utils/handoff.js) -----------------------
+  //
+  // `start` is the host's pick, written into THIS room before they leave it.
+  // `announce` and `cancel` are called from the NEW game's hook, on the room
+  // the table came from: by then this device has left that room, and still
+  // passes its rules, since leaving never removes memberUids. All three throw
+  // rather than going through guard(): each caller has to know whether the
+  // write landed before it moves anyone anywhere.
+  const startNext = useCallback(async (gameId) => {
+    if (!roomCode || !myPlayerId) throw new Error('Not in a room.');
+    const byName = readPath(state, playersPath)?.find((p) => p.id === myPlayerId)?.name ?? '';
+    await set(ref(getFirebaseDb(), `rooms/${roomCode}/state/next`), { gameId, by: myPlayerId, byName });
+  }, [roomCode, myPlayerId, state, playersPath]);
+  const announceNext = useCallback((fromCode, code) => (
+    set(ref(getFirebaseDb(), `rooms/${fromCode}/state/next/code`), code)
+  ), []);
+  const cancelNext = useCallback((fromCode) => (
+    remove(ref(getFirebaseDb(), `rooms/${fromCode}/state/next`))
+  ), []);
+  const handoff = useMemo(() => ({
+    next, start: startNext, announce: announceNext, cancel: cancelNext,
+  }), [next, startNext, announceNext, cancelNext]);
+
   // --- Departure reconciliation ----------------------------------------------
   //
   // The shared half. Effects that notice a player is gone and unstick whatever
@@ -543,6 +584,7 @@ export function useRoomCore({
     error, syncError, setSyncError, dismissError, dismissSyncError,
     createRoom, joinRoom, leaveRoom, exitRoom, updateMyProfile,
     patchState, setView, guard, bestEffort, once,
+    handoff,
     view: state?.view,
     hostId, isHost, hostName,
     players,

@@ -287,7 +287,9 @@ export default function OnlineGame({ onBack, onExit }) {
         playAgainLabel="Back to lobby"
         onBack={handleExitToHub}
         backLabel="Leave the room"
-      />
+      />,
+      // The final results: the host may take the table on to another game.
+      { nextGame: true },
     );
   }
 

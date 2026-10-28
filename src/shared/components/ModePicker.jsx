@@ -35,8 +35,10 @@ export default function ModePicker({ game, tagline, onLocal, onOnline, onExit })
   // what lets Back from that screen land here rather than bounce forward again.
   // Without Firebase, or offline, the link just opens the cover; online is
   // disabled there anyway. Offline it waits: signal coming back routes it on.
+  // A table moving on from another game's results (`handoff`) routes the same
+  // way, the host's device included, which arrives with no code to join.
   useEffect(() => {
-    if (!invite?.code || invite.routed || !canGoOnline) return;
+    if (!(invite?.code || invite?.handoff) || invite.routed || !canGoOnline) return;
     invite.markRouted();
     onOnline();
   }, [invite, onOnline, canGoOnline]);

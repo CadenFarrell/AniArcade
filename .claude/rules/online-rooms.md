@@ -5,6 +5,8 @@ paths:
   - "src/shared/hooks/useOnline.js"
   - "src/shared/utils/presence.js"
   - "src/shared/utils/inviteLink.js"
+  - "src/shared/utils/handoff.js"
+  - "src/shared/components/NextGame.jsx"
   - "src/shared/context/inviteContext.js"
   - "src/shared/components/RoomSetup.jsx"
   - "src/shared/components/RoomShell.jsx"
@@ -137,6 +139,31 @@ lobby's **Share invite** (`navigator.share`, else clipboard) builds from. `ModeP
 online once (`routed`, so Back does not bounce forward); `RoomSetup` joins once there is a
 profile and `room.uid` is set — after `useRoomCore` restored any saved room, which wins. With no
 profile it opens the picker first.
+
+**Next game, same table** (`shared/utils/handoff.js`, `NextGame.jsx`): from an online room's
+FINAL results the host picks another game and the table moves with them, no code shared. It
+rides the invite path above, and four things hold it together:
+
+- **One node in the OLD room, `state/next`**: `{ gameId, by, byName }` at the pick, `code` added
+  once the new room exists. In `state/` because nothing in it is hidden and every member already
+  writes there, so no rule changed. `useRoomCore` reads it off the RAW snapshot (`handoff.next`),
+  since every `normalizeState` rebuilds from named fields and would drop it.
+- **Two writes, because only the new game can build its room** (its `initialState`). The host's
+  device writes the pick, leaves, opens the new game (`invite.follow` in `HubScreen`, with
+  `handoff.create`), `RoomSetup` creates the room and `announce`s the code back. That last write
+  lands AFTER the host left, which works only because leaving keeps `memberUids`.
+- **Followers hold the old room open.** Everyone else's `RoomShell` swaps to `FollowScreen` and
+  waits in the room until the code lands, then leaves and joins it (`invite.code`). So the room
+  outlives the host's leave, and the last follower out deletes it as usual. A follower stuck
+  past `FOLLOW_PATIENCE_MS` may `cancel` the pick (any member can).
+- **A handoff beats a saved room** in the new game: `useRoomCore` forgets one instead of
+  restoring it, or a device that once closed a tab there lands back in that stale room.
+
+A game opts in by passing `{ nextGame: true }` to its final results' `shell()` call; `RoomShell`
+hands `ResultsLayout` the picker through `NextGameSlotContext`, so no results component knows,
+and between-rounds screens never show it. A new game's room hook that lists fields rather than
+spreading `core` must pass `handoff: core.handoff`. `smoke/handoff.smoke.test.js` and
+`NextGame.test.jsx` cover it; the browser layer's online spec chains AniWave into AniTag.
 
 ## Presence and the departed-player problem
 

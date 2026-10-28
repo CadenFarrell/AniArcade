@@ -34,11 +34,13 @@ export function useWipe() {
 
   useEffect(() => () => timers.current.forEach(clearTimeout), []);
 
+  // Returns whether the swap was taken: a caller that must not be dropped (a
+  // device following its table into the next game) runs it itself when not.
   const wipe = useCallback((swap) => {
-    if (busy.current) return;
+    if (busy.current) return false;
     if (prefersReducedMotion()) {
       swap();
-      return;
+      return true;
     }
     busy.current = true;
     setWipeId((n) => (n ?? 0) + 1);
@@ -49,6 +51,7 @@ export function useWipe() {
         setWipeId(null);
       }, WIPE_MS),
     );
+    return true;
   }, []);
 
   return { wipe, wipeId };

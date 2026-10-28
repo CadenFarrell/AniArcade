@@ -23,14 +23,21 @@ const emulatorUp = () => new Promise((resolve) => {
   s.once('error', () => resolve(false));
 });
 
-const cases = GAMES.filter((g) => !ONLY_GAME || g.id === ONLY_GAME).map((g) => ({ game: g, seed: 1, chaos: null }));
+// Next game, same table (src/shared/utils/handoff.js): once AniWave's table
+// finishes, its host takes everyone on to AniTag, and every browser has to
+// land in AniTag's lobby, seated together, with nobody typing a code. Both
+// games need no list, so the chain tests the handoff and nothing else.
+const CHAIN = { aniwave: 'anitag' };
+const cases = GAMES.filter((g) => !ONLY_GAME || g.id === ONLY_GAME)
+  .map((g) => ({ game: g, seed: 1, chaos: null, chainTo: CHAIN[g.id] ?? null }));
 // The departure case, on the game whose readiness gates are the most numerous.
 if (!ONLY_GAME || ONLY_GAME === 'anifake') {
   cases.push({ game: GAMES.find((g) => g.id === 'anifake'), seed: 2, chaos: { kind: 'crash', who: 'guest', at: 8 } });
 }
 
-for (const { game, seed, chaos } of cases) {
-  test(`${game.id} online seed ${seed}${chaos ? ' (a guest leaves)' : ''}`, async ({ browser }, info) => {
+for (const { game, seed, chaos, chainTo } of cases) {
+  const also = [chaos && 'a guest leaves', chainTo && `then on to ${chainTo}`].filter(Boolean).join(', ');
+  test(`${game.id} online seed ${seed}${also ? ` (${also})` : ''}`, async ({ browser }, info) => {
     test.skip(!(await emulatorUp()), 'no Firebase emulator on 127.0.0.1:9000');
     const strategy = strategies[game.id];
     const scenario = scenarioFor(game, strategy, seed, { layer: 'online' });
@@ -74,7 +81,24 @@ for (const { game, seed, chaos } of cases) {
     record.repro = `npm run playtest -- --layer browser --game ${game.id}`;
     for (const s of seats) for (const m of s.offsite) record.findings.push({ kind: 'network', severity: 'warn', message: m });
     writeRun('browser-online', record);
-    for (const s of seats) await s.page.context().close().catch(() => {});
-    expect(record.outcome, `${record.failure?.kind}: ${record.failure?.message}\n${record.lastScreen ?? ''}`).toBe('pass');
+    try {
+      expect(record.outcome, `${record.failure?.kind}: ${record.failure?.message}\n${record.lastScreen ?? ''}`).toBe('pass');
+      if (chainTo) {
+        const next = GAMES.find((g) => g.id === chainTo);
+        await seats[0].page.getByRole('button', { name: `Play ${next.title} next` }).click();
+        for (const s of seats) {
+          // The lobby's banner, with every player in its roster: the host made
+          // the room and each guest joined it by itself.
+          await expect(s.page.getByRole('heading', { level: 1, name: next.title })).toBeVisible({ timeout: 30_000 });
+          await expect(s.page.getByText('Room code', { exact: true })).toBeVisible({ timeout: 30_000 });
+          for (const p of profiles) {
+            await expect(s.page.getByText(p.name, { exact: true }).first(), `${s.name} sees ${p.name} seated`)
+              .toBeVisible({ timeout: 30_000 });
+          }
+        }
+      }
+    } finally {
+      for (const s of seats) await s.page.context().close().catch(() => {});
+    }
   });
 }
