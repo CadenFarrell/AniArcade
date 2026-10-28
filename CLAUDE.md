@@ -150,8 +150,9 @@ lists), `src/games/wavelength/CLAUDE.md` (AniWave), `src/games/categories/CLAUDE
 the card check, hidden-role patterns, fame coverage), `src/games/aniturf/CLAUDE.md` (AniTurf: crossing
 goals, the winding-route footing and its detours, the two-device claim),
 `src/games/anipeek/CLAUDE.md` (AniPeek: the bid and its score, the pool's three filters, the
-tile board, the skip) and `src/games/aniout/CLAUDE.md` (AniOut: the connections, the
-one-answer checks, profile-then-pack facts, the reasons). Read the relevant one before changing a game's
+tile board, the skip), `src/games/aniout/CLAUDE.md` (AniOut: the connections, the
+one-answer checks, profile-then-pack facts, the reasons) and `src/games/aniname/CLAUDE.md`
+(AniName: the auction, the three verdicts, the table's review, the clock). Read the relevant one before changing a game's
 behaviour from shared code, where it will not load on its own.
 
 ### Online rooms (Firebase Realtime Database)

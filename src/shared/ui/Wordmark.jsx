@@ -21,6 +21,7 @@ const TONES = {
   plum: '[--slash:var(--color-pop-plum)]',
   slate: '[--slash:var(--color-pop-slate)]',
   moss: '[--slash:var(--color-pop-moss)]',
+  umber: '[--slash:var(--color-pop-umber)]',
 };
 
 const SIZES = {

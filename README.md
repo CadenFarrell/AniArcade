@@ -21,6 +21,7 @@ Play it at **https://aniarcade.web.app/**.
 | **AniTurf** | Two teams race to claim a route across a board of characters, led by one-word clues. |
 | **AniPeek** | A face hides under sixteen tiles. Bid how few you need to name them, then prove it. |
 | **AniOut** | Six characters from your lists. Five share something. Spot the one who's out, and say why. |
+| **AniName** | Bid how many of a category you can name, then name them before the clock runs out. |
 
 Every game has a local mode and an online mode, and every finished game goes into each
 player's play record. Online, the host can take the whole room on to another game from the
