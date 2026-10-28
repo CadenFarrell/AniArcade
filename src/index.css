@@ -141,6 +141,9 @@
      correct) so a moss block is never read as a right answer, and well clear
      of amber's brown (scores). */
   --color-pop-moss: #5c5a14; /* AniOut                    5.45 / 6.76 */
+  /* Umber: a dark sepia brown. Redder and much darker than amber (scores), and
+     far darker than the vermilion brand, so it reads as its own ink. */
+  --color-pop-umber: #6a3f22; /* AniName                   6.79 / 8.43 */
 
   /* AniTurf's two teams. Their own role, not pop-red and pop-blue: those mean
      wrong and asking, and a claimed square is neither. Kept a hue apart from
@@ -597,6 +600,86 @@
   animation: eq-bar 900ms ease-in-out infinite;
 }
 
+/* Staged reveals (shared/hooks/useStagger.js): the pieces of a result land one
+   at a time — a standings row, an answer card, a column of the quiz board.
+   Every one is a FROM-state over markup that is already complete, with its
+   delay set inline by useStagger and `backwards` holding the start through it.
+
+   clip-path and transform, NEVER opacity. The axe pass samples whatever is on
+   screen, and a row caught mid-fade measures 1.3–3.9:1 (stamp-in's lesson
+   below). A clipped-away row has no painted text to sample at all. And never
+   on a Screen itself — these go on rows and cards, which hold nothing that
+   positions itself `fixed`. */
+
+/* A row wiped on from the left, the way a panel is inked: slides a little and
+   unclips as it comes. */
+@keyframes reveal-row {
+  from {
+    clip-path: inset(0 100% 0 0);
+    transform: translateX(-10px);
+  }
+}
+
+@utility reveal-row {
+  animation: reveal-row 320ms cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
+}
+
+/* A panel unveiled top to bottom — the big answer: a winner's splash, the
+   portrait under AniPeek's tiles, the fake's card. */
+@keyframes curtain-in {
+  from { clip-path: inset(0 0 100% 0); }
+}
+
+@utility curtain-in {
+  animation: curtain-in 520ms cubic-bezier(0.6, 0, 0.2, 1) backwards;
+}
+
+/* A bar growing from its foot: AniFake's vote counts, any tally drawn as
+   length. Scale on the inline axis only, so the label beside it never moves. */
+@keyframes bar-grow {
+  from { transform: scaleX(0); }
+}
+
+@utility bar-grow {
+  transform-origin: left;
+  animation: bar-grow 480ms cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
+}
+
+/* An SVG line drawing itself from one end. Needs `pathLength="1"` on the
+   element, so one dash is the whole line whatever its real length: AniRank's
+   slopegraph, where each crossing appearing is a point being lost. */
+@keyframes line-draw {
+  from { stroke-dashoffset: 1; }
+}
+
+@utility line-draw {
+  stroke-dasharray: 1;
+  animation: line-draw 520ms ease-out backwards;
+}
+
+/* A tile lifting off the board and gone: the one animation here that ends
+   invisible, so it is built inside out. The element's OWN state is the gone
+   one (opacity 0) and the animation runs from the tile sitting in place — so
+   reduced motion or a skip, which remove the animation, leave it already
+   gone rather than a tile stuck over the picture. Only ever on an aria-hidden
+   ghost laid over the real board, never on a tile anyone presses. */
+@keyframes tile-lift {
+  from { opacity: 1; transform: none; }
+  to { opacity: 0; transform: translateY(-30%) rotate(-8deg) scale(1.08); }
+}
+
+@utility tile-lift {
+  opacity: 0;
+  pointer-events: none;
+  animation: tile-lift 460ms cubic-bezier(0.4, 0, 0.6, 1) backwards;
+}
+
+/* A skipped reveal (useStagger's rootProps): a press anywhere in it finishes
+   every piece at once. Same effect as reduced motion, scoped to one reveal. */
+[data-skip] :is(.reveal-row, .curtain-in, .bar-grow, .line-draw, .tile-lift, .stamp-in, .dial-band-in, .dial-marker-in) {
+  animation: none;
+}
+
 /* Nothing above should move for anyone who has asked the OS to stop it. The
    wipe is also skipped in JS (useWipe swaps immediately), so this rule is the
    belt to that pair of braces. */
@@ -616,7 +699,12 @@
   .stamp-in,
   .impact-in,
   .impact-lines,
-  .eq-bar {
+  .eq-bar,
+  .reveal-row,
+  .curtain-in,
+  .bar-grow,
+  .line-draw,
+  .tile-lift {
     animation: none;
   }
   .blurb-overlay {

@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
 import { Badge, Banner, Button, Card, CardRow, GhostButton, Screen } from '../../../shared/ui';
 import { useSoundCue } from '../../../shared/hooks/useSoundCue';
+import { useCountUp } from '../../../shared/hooks/useCountUp';
 import ClueCard from './ClueCard';
 import Dial from './Dial';
 import PlayerFace from '../../../shared/components/PlayerFace';
@@ -32,83 +32,10 @@ function shortLabels(names) {
   return out.map((n, i) => `${n.slice(0, 2)}${i + 1}`);
 }
 
-/**
- * A score that ticks up to its value, the way the bands and the markers land
- * one at a time. Purely presentational: it always settles on `points`.
- *
- * Written against requestAnimationFrame rather than an interval so it tracks
- * real elapsed time — a tab that was throttled mid-reveal resumes at the right
- * number instead of finishing seconds late. The reduced-motion check is the
- * same promise index.css makes for every other animation in the app, made here
- * because a keyframe cannot count.
- */
-/**
- * Should this score just appear at its value?
- *
- * Two reasons, and the second is a bug fix rather than a courtesy. A count-up
- * has to be driven by requestAnimationFrame to track real elapsed time — but a
- * BACKGROUND TAB DOES NOT RUN rAF AT ALL, so a reveal that lands while the
- * player is looking at something else freezes every score at zero and stays
- * there. It self-heals when they come back, which is exactly what makes it
- * dangerous: a screenshot, a shared screen or a second monitor shows a table
- * where nobody scored anything, and it is right again by the time anyone checks.
- *
- * Correctness must not depend on an animation completing. An animation nobody
- * can see is worth nothing anyway, so a hidden document skips straight to the
- * answer — and because this is read once, at mount, a tab that becomes visible
- * later shows the finished number rather than starting a stale count.
- */
-const prefersStill = () => (
-  typeof window === 'undefined'
-  || document.hidden
-  || !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
-);
-
-const startAt = (points) => (prefersStill() ? points : 0);
-
-function useCountUp(points, delayMs) {
-  // Seeded to the finished value when nothing should move, so a reduced-motion
-  // reader never sees a zero at all — not even for the frame before an effect
-  // could correct it.
-  const [shown, setShown] = useState(() => startAt(points));
-
-  // Reset DURING RENDER rather than in an effect, the pattern shared/ui/Avatar.jsx
-  // uses to clear its failed flag when `src` changes. It matters twice over here:
-  // a synchronous setState inside an effect is the cascading-render the
-  // react-hooks rule exists to catch, and these rows are keyed by player id, so
-  // they survive into the next round — without a reset, round two would count up
-  // from round one's score.
-  const [prevPoints, setPrevPoints] = useState(points);
-  if (prevPoints !== points) {
-    setPrevPoints(points);
-    setShown(startAt(points));
-  }
-
-  useEffect(() => {
-    if (prefersStill() || points <= 0) return undefined;
-
-    let frame = 0;
-    let start = 0;
-    const DURATION = 420;
-    const tick = (now) => {
-      if (!start) start = now;
-      const elapsed = now - start - delayMs;
-      // Nothing is set until the delay is up, so the number stays at zero
-      // rather than running ahead of the marker that explains it.
-      if (elapsed < 0) { frame = requestAnimationFrame(tick); return; }
-      const t = Math.min(1, elapsed / DURATION);
-      setShown(Math.round(points * t));
-      if (t < 1) frame = requestAnimationFrame(tick);
-    };
-    frame = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(frame);
-  }, [points, delayMs]);
-
-  return shown;
-}
-
+// The score ticks up as its dial lands (shared/hooks/useCountUp, which began
+// here: the background-tab freeze it guards against is in utils/motion.js).
 function ScoreBadge({ points, delayMs }) {
-  const shown = useCountUp(points, delayMs);
+  const shown = useCountUp(points, { delayMs });
   return <Badge tone={points > 0 ? 'lime' : 'neutral'}>+{shown}</Badge>;
 }
 

@@ -144,11 +144,14 @@ export function snapshotDom(opts = {}) {
   // "4 players" reads "04"). Live regions are skipped: a status line is about
   // THIS device — the host's results bar says "4 players" where a guest's says
   // "Waiting for the host…" — not about the result the devices must share.
+  // A count-up's moving copy (`data-count-up`, shared/components/CountUp.jsx)
+  // is skipped too: it is mid-count on one phone and settled on another, and
+  // its sr-only twin beside it already holds the final number.
   const tally = [];
   const walker = root.ownerDocument.createTreeWalker(root, 4 /* NodeFilter.SHOW_TEXT */);
   for (let n = walker.nextNode(); n; n = walker.nextNode()) {
     const el = n.parentElement;
-    if (!el || el.closest('[aria-live], [role=status], script, style') || !visible(el)) continue;
+    if (!el || el.closest('[aria-live], [role=status], [data-count-up], script, style') || !visible(el)) continue;
     tally.push(...(n.nodeValue.match(/-?\d+/g) ?? []));
   }
 
