@@ -1,4 +1,4 @@
-import { BOARD_SIZE } from './rules';
+import { BOARD_SIZE, DEFAULT_MATCH_ROUNDS, READER_BONUS } from './rules';
 
 // The game's rules sheet (shared/components/HowToSheet.jsx), built from the
 // rules' own constants. The pair count is derived the way scoreBoard counts
@@ -16,6 +16,7 @@ export const HOW_TO = {
         `Everyone gets the same ${BOARD_SIZE} shows or characters, and a question to rank them on: release date, popularity, best to worst and more.`,
         'Slot 1 is the top: the most of whatever the question measures.',
         'Dealt blind, the cards arrive one at a time and a placed card cannot move. Dealt open, you see all of them, arrange them, then lock in.',
+        'On one device, each player places their whole board and then passes it on, or set it to pass after every card.',
       ],
     },
     {
@@ -31,6 +32,8 @@ export const HOW_TO = {
         `Every pair of cards counts: ${PAIRS} pairs on ${BOARD_SIZE} cards, a point for each pair in the right order. Cards with the same value are right either way round.`,
         'On the reveal, every line that crosses another is a pair you had the wrong way round.',
         'In an opinion round, the player whose board was the key scores the average of everyone’s guesses.',
+        `Whoever read them best (the top guess, ties shared) gets ${READER_BONUS} more.`,
+        `A match is ${DEFAULT_MATCH_ROUNDS} rounds by default, then the final scores. Set the rounds to Endless to keep dealing new tens.`,
       ],
     },
     {

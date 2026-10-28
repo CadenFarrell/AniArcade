@@ -6,6 +6,8 @@ import { countShows } from '../../shared/utils/profileStats';
 import OnlineLobby from './components/OnlineLobby';
 import RoomTiers from './RoomTiers';
 import AniRankResults from './components/AniRankResults';
+import AniRankFinal from './components/AniRankFinal';
+import { isFinalRound, matchLabel } from '../../shared/utils/match';
 import RankBoard, { CardTray, CurrentItem, LockInButton, WaitingOn } from './components/RankBoard';
 import RankSeats from './components/RankSeats';
 import { isOpinion, promptFor } from './axes';
@@ -166,7 +168,27 @@ export default function OnlineGame({ onBack, onExit }) {
     );
   }
 
+  if (room.view === 'final') {
+    return shell(
+      <AniRankFinal
+        players={room.players}
+        totalScores={room.totalScores}
+        log={room.matchLog}
+        played={room.matchRound}
+        rounds={room.rounds}
+        scoring={room.scoring}
+        departedIds={room.departedIds}
+        onPlayAgain={room.isHost ? room.returnToLobby : null}
+        againLabel="Back to lobby"
+      />,
+      // The final results: the host may take the table on to another game.
+      { nextGame: true },
+    );
+  }
+
   if (room.view === 'results' && room.game) {
+    // Between rounds now: the host deals the next one or ends the match.
+    const last = isFinalRound(room.matchRound, room.rounds);
     return shell(
       <AniRankResults
         players={room.players}
@@ -180,11 +202,11 @@ export default function OnlineGame({ onBack, onExit }) {
         // player cannot tell what the round they just finished was worth.
         roundScores={room.roundScores}
         departedIds={room.departedIds}
-        onPlayAgain={room.returnToLobby}
-        playAgainLabel="Back to lobby"
+        onPlayAgain={room.isHost ? (last ? room.endMatch : room.nextRound) : null}
+        playAgainLabel={last ? 'Final scores' : 'Next round'}
+        onEndMatch={room.isHost && !last ? room.endMatch : null}
+        matchTag={matchLabel(room.matchRound, room.rounds)}
       />,
-      // The final results: the host may take the table on to another game.
-      { nextGame: true },
     );
   }
 

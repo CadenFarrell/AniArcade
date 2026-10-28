@@ -11,12 +11,12 @@ import { getAxis, isOpinion } from '../axes';
 // head of rules.pendingPlacers, which in an open round means "first player who
 // has not locked in", so locking in passes the device on by itself.
 export function useAniRankRound(players, deck, options = {}) {
-  const { subjectId, scoring = true, blind = true } = options;
+  const { subjectId, scoring = true, blind = true, pace = 'card' } = options;
   // A spec, not an id: a built-in's id or a custom prompt's whole definition.
   const axis = getAxis(options.axis);
   const opinion = isOpinion(axis);
   const [state, setState] = useState(
-    () => rules.startRound(players, deck, opinion ? subjectId : null, { blind })
+    () => rules.startRound(players, deck, opinion ? subjectId : null, { blind, pace })
   );
 
   const playerIds = useMemo(() => players.map((p) => p.id), [players]);
@@ -39,6 +39,9 @@ export function useAniRankRound(players, deck, options = {}) {
       const who = rules.pendingPlacers(s, playerIds)[0];
       if (!who) return s;
       const placed = { ...s, ...rules.placeItem(s, who, slotIndex).patch };
+      // Seat pace: each board runs on its own card, and the round ends when
+      // every board is full (rules.roundFinished) — no shared cursor to move.
+      if (rules.isSeatPace(placed)) return placed;
       // The device passes on until everyone has committed this show; only then
       // is the next one revealed.
       if (!rules.everyonePlaced(placed, playerIds)) return placed;
@@ -65,9 +68,13 @@ export function useAniRankRound(players, deck, options = {}) {
   return {
     state,
     deck: state.deck,
-    cursor: state.cursor,
+    // At seat pace each board is on its own card, so the counter is the hot
+    // seat's own progress rather than the shared cursor.
+    cursor: rules.isSeatPace(state) && currentPlacer
+      ? rules.placedCount(state.boards[currentPlacer.id]) : state.cursor,
     open: rules.isOpen(state),
-    item: rules.currentItem(state),
+    seatPace: rules.isSeatPace(state),
+    item: rules.currentItem(state, currentPlacer?.id ?? null),
     board,
     // The hot seat's unplaced cards. Empty in a blind round, which has no tray.
     tray: currentPlacer ? rules.unplacedCards(state, currentPlacer.id) : [],

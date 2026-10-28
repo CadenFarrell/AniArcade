@@ -4,6 +4,7 @@ import {
   pendingPlacers, placeItem, everyonePlaced, advanceCursor, trueOrder, scoreBoard,
   explainBoard, finalScores, applyRoundScores, rankMap, truthFor, subjectFor,
   isOpen, placeCard, clearSlot, lockIn, unplacedCards, roundFinished, roundUntouched,
+  READER_BONUS, bestReaders, isSeatPace, matchAwards,
 } from './rules';
 
 const show = (id, value) => ({ id, title: id, value, imageUrl: '' });
@@ -478,7 +479,8 @@ describe('opinion rounds', () => {
       deck: OPINION_DECK, cursor: 10, subjectId: 'p2',
       boards: { p1: boardOf(...ORDER), p2: boardOf(...ORDER) },
     };
-    expect(finalScores(state, ['p1', 'p2'], { opinion: true }).p1).toBe(PERFECT);
+    // The best (here the only) reader also takes READER_BONUS.
+    expect(finalScores(state, ['p1', 'p2'], { opinion: true }).p1).toBe(PERFECT + READER_BONUS);
   });
 
   it('gives the subject the mean of the guesses, not a zero for being picked', () => {
@@ -492,7 +494,7 @@ describe('opinion rounds', () => {
       },
     };
     const scores = finalScores(state, ['p1', 'p2', 'p3'], { opinion: true });
-    expect(scores.p1).toBe(PERFECT);
+    expect(scores.p1).toBe(PERFECT + READER_BONUS);
     expect(scores.p2).toBe(0);
     // round((45 + 0) / 2) — how predictable they were
     expect(scores.p3).toBe(Math.round(PERFECT / 2));
@@ -844,7 +846,7 @@ describe('a whole open round, from deal to score', () => {
     // p1 matched the subject exactly, and the subject takes the mean of the
     // guesses made at them.
     const scores = finalScores(state, ids, { opinion: true, scoring: true });
-    expect(scores.p1).toBe(PERFECT);
+    expect(scores.p1).toBe(PERFECT + READER_BONUS);
     expect(scores.p2).toBe(PERFECT);
   });
 
@@ -868,5 +870,43 @@ describe('a whole open round, from deal to score', () => {
     expect(roundFinished(state, ['p1'])).toBe(true);         // p2 dropped out
     // …and p2's board still exists to be shown at the reveal.
     expect(state.boards.p2).toBeDefined();
+  });
+});
+
+describe('the reader bonus', () => {
+  it('goes to the top guessers, tied together, and never to the subject or a zero', () => {
+    expect(bestReaders({ s: 40, a: 30, b: 30, c: 10 }, 's').sort()).toEqual(['a', 'b']);
+    expect(bestReaders({ s: 40, a: 0 }, 's')).toEqual([]);
+  });
+});
+
+describe('seat pace', () => {
+  it('lets each player place a whole blind board before the next', () => {
+    let state = startRound(players('p1', 'p2'), DECK, null, { blind: true, pace: 'seat' });
+    expect(isSeatPace(state)).toBe(true);
+    for (let i = 0; i < DECK.length; i++) {
+      expect(pendingPlacers(state, ['p1', 'p2'])[0]).toBe('p1');
+      expect(currentItem(state, 'p1').id).toBe(DECK[i].id);
+      state = { ...state, ...placeItem(state, 'p1', i).patch };
+    }
+    // p1 is done; p2 starts on the first card, and the round is not over yet.
+    expect(pendingPlacers(state, ['p1', 'p2'])).toEqual(['p2']);
+    expect(currentItem(state, 'p2').id).toBe(DECK[0].id);
+    expect(roundFinished(state, ['p1', 'p2'])).toBe(false);
+    for (let i = 0; i < DECK.length; i++) state = { ...state, ...placeItem(state, 'p2', i).patch };
+    expect(roundFinished(state, ['p1', 'p2'])).toBe(true);
+  });
+
+  it('is card pace for an open round, whatever was asked', () => {
+    expect(isSeatPace(startRound(players('p1'), DECK, null, { blind: false, pace: 'seat' }))).toBe(false);
+  });
+});
+
+describe('matchAwards', () => {
+  it('names a mind reader and a perfect board when someone clearly earned them', () => {
+    const ps = [{ id: 'a', name: 'A' }, { id: 'b', name: 'B' }];
+    const log = [{ readers: ['a'], perfect: { b: true } }, { readers: ['a', 'b'], perfect: {} }];
+    expect(matchAwards(log, ps).map((x) => [x.title, x.player.id])).toEqual([['Mind reader', 'a'], ['Perfect board', 'b']]);
+    expect(matchAwards([{ readers: ['a', 'b'], perfect: {} }], ps)).toEqual([]);
   });
 });

@@ -31,6 +31,7 @@ export default function OnlineLobby({ room }) {
   const savedAxis = resolveSavedAxis(prefs.axisId, prompts);
   const [axis, setAxis] = useState(savedAxis);
   const [scoring, setScoring] = useState(prefs.scoring);
+  const [rounds, setRounds] = useState(prefs.rounds);
   // Saved `blind` only counts if the axis came back too — see AniRankSetup.
   const [blind, setBlind] = useState(
     () => (axisIdOf(savedAxis) === prefs.axisId ? prefs.blind : getAxis(savedAxis).defaultBlind)
@@ -53,7 +54,7 @@ export default function OnlineLobby({ room }) {
   const comparing = format !== 'round';
   const savedTierFormat = prefs.format !== 'round' ? prefs.format : 'tiers';
 
-  const remembered = { sharedOnly, scoring, blind, format, axisId: axisIdOf(axis) };
+  const remembered = { sharedOnly, scoring, blind, format, rounds, axisId: axisIdOf(axis) };
 
   // The settings card reports every change as (key, value); the axis-coupled
   // state stays here, because an axis change resets `blind`.
@@ -61,11 +62,13 @@ export default function OnlineLobby({ room }) {
     if (key === 'sharedOnly') setSharedOnly(value);
     else if (key === 'blind') setBlind(value);
     else if (key === 'scoring') setScoring(value);
+    else if (key === 'rounds') setRounds(value);
   };
 
   const applyDefaults = () => {
     setSharedOnly(DEFAULT_PREFS.sharedOnly);
     setScoring(DEFAULT_PREFS.scoring);
+    setRounds(DEFAULT_PREFS.rounds);
     setFormat(DEFAULT_PREFS.format);
     handleAxisChange(DEFAULT_PREFS.axisId);
     resetPrefs();
@@ -204,7 +207,7 @@ export default function OnlineLobby({ room }) {
               {/* Never `tiering` here: this card renders only for a round, so it
                   always takes the round wording. */}
               <AniRankSettings
-                values={{ sharedOnly, blind, scoring }}
+                values={{ sharedOnly, blind, scoring, rounds }}
                 onChange={changeSetting}
                 noun={noun}
                 remembered={remembered}
@@ -223,7 +226,7 @@ export default function OnlineLobby({ room }) {
               size="lg"
               onClick={() => {
                 savePrefs(remembered);
-                const settings = { sharedOnly, axis, scoring, blind, format };
+                const settings = { sharedOnly, axis, scoring, blind, format, rounds };
                 if (comparing) room.startCompare(settings);
                 else room.startGame(settings);
               }}

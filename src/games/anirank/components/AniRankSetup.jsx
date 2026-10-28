@@ -37,6 +37,8 @@ export default function AniRankSetup({ onStart, error, onBack }) {
   const savedAxis = resolveSavedAxis(prefs.axisId, prompts);
   const [axis, setAxis] = useState(savedAxis);
   const [scoring, setScoring] = useState(prefs.scoring);
+  const [rounds, setRounds] = useState(prefs.rounds);
+  const [pace, setPace] = useState(prefs.pace);
   // 'round' | 'tiers' | 'ranked' — which half of the game Start opens.
   const [format, setFormat] = useState(prefs.format);
   // The saved `blind` is only trusted when the axis it was saved beside is the
@@ -73,6 +75,8 @@ export default function AniRankSetup({ onStart, error, onBack }) {
   const applyDefaults = () => {
     setSharedOnly(DEFAULT_PREFS.sharedOnly);
     setScoring(DEFAULT_PREFS.scoring);
+    setRounds(DEFAULT_PREFS.rounds);
+    setPace(DEFAULT_PREFS.pace);
     setFormat(DEFAULT_PREFS.format);
     // Through the same handler the picker uses, so `blind` lands on the default
     // axis's defaultBlind rather than on whatever the last axis wanted.
@@ -92,6 +96,8 @@ export default function AniRankSetup({ onStart, error, onBack }) {
     if (key === 'sharedOnly') setSharedOnly(value);
     else if (key === 'blind') setBlind(value);
     else if (key === 'scoring') setScoring(value);
+    else if (key === 'rounds') setRounds(value);
+    else if (key === 'pace') setPace(value);
   };
 
   const resolved = getAxis(axis);
@@ -99,7 +105,7 @@ export default function AniRankSetup({ onStart, error, onBack }) {
   const tiering = format !== 'round';
   // The id, not the spec — persisting a custom prompt's object would freeze a
   // copy of something the player can still edit or delete. See resolveSavedAxis.
-  const remembered = { sharedOnly, scoring, blind, format, axisId: axisIdOf(axis) };
+  const remembered = { sharedOnly, scoring, blind, format, rounds, pace, axisId: axisIdOf(axis) };
 
   // Counted for every axis, not just the selected one, so the picker can show
   // which modes this table can actually play before anyone commits to one.
@@ -216,7 +222,9 @@ export default function AniRankSetup({ onStart, error, onBack }) {
             />
 
             <AniRankSettings
-              values={{ sharedOnly, blind, scoring }}
+              values={{ sharedOnly, blind, scoring, rounds, pace }}
+              local
+              playerCount={players.length}
               onChange={changeSetting}
               noun={noun}
               tiering={tiering}
@@ -232,7 +240,7 @@ export default function AniRankSetup({ onStart, error, onBack }) {
               size="lg"
               onClick={() => {
                 savePrefs(remembered);
-                onStart({ players, sharedOnly, axis, scoring, blind, format });
+                onStart({ players, sharedOnly, axis, scoring, blind, format, rounds, pace });
               }}
               disabled={!canStart}
             >

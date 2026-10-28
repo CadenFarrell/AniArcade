@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { explainBoard, truthFor } from '../rules';
+import { READER_BONUS, bestReaders, explainBoard, truthFor } from '../rules';
+import { useCeremonyTiming } from '../../../shared/context/ceremonyContext';
 import { getAxis, isOpinion } from '../axes';
 import { computeRankedPlayers } from '../../../shared/utils/ranking';
 import { railTone } from '../utils/rail';
@@ -9,7 +10,6 @@ import { Badge, Banner, Button, Card, Icon, PlaceMark } from '../../../shared/ui
 import { KANA } from '../../../shared/ui/kanaText';
 import { useSoundCue } from '../../../shared/hooks/useSoundCue';
 import descriptor from '../index';
-import { useRecordResult } from '../../../shared/hooks/useRecordResult';
 
 // The reveal. Shows the answer key once, then each player's board against it —
 // on a fact axis the `value` is deliberately never rendered before this screen.
@@ -36,6 +36,9 @@ import { useRecordResult } from '../../../shared/hooks/useRecordResult';
 export default function AniRankResults({
   players, boards, deck, axis: axisSpec, subjectId, scoring = true, totalScores,
   roundScores = null, departedIds = [], onPlayAgain, playAgainLabel = 'Play again',
+  // The match's way out early, beside the next round (null on its last round
+  // and for an online guest), and the "Round 2 of 3" tag.
+  onEndMatch = null, matchTag = null,
   // onBack is local-only: online "again" returns to the lobby, and there is no
   // local setup to go back to. Screen omits the row when it is undefined.
   onBack,
@@ -78,11 +81,13 @@ export default function AniRankResults({
     names: winners.map((p) => p.name),
   } : null;
 
-  // Into each seated profile's history (utils/history.js): the best board of
-  // the round wins it, as the headline says. An unscored round is still a
-  // round played. No places — the round's own order is concordant pairs, which
-  // nobody would recognise later as a placing.
-  useRecordResult(descriptor.id, players, scored ? winners.map((p) => p.id) : []);
+  // History is recorded once per MATCH, on AniRankFinal — this screen is the
+  // stop between rounds now (play-history rule: final results only).
+
+  // Who read the subject best (rules.bestReaders), from the guess scores alone,
+  // so the bonus is said beside the board that earned it.
+  const guessScores = Object.fromEntries(contenders.map((p) => [p.id, details[p.id].concordant]));
+  const readers = opinion && scored ? bestReaders(guessScores, subjectId) : [];
 
   // The order coming out. A scored round's splash stamps with its own thud; an
   // unscored one has no splash, so it gets the plain reveal instead of silence.
@@ -92,8 +97,11 @@ export default function AniRankResults({
     <ResultsLayout
       game={descriptor}
       title="Results"
-      subtitle={`${axis.label}${opinion && subject ? ` · as ${subject.name} would` : ''}`}
+      subtitle={[`${axis.label}${opinion && subject ? ` · as ${subject.name} would` : ''}`, matchTag].filter(Boolean).join(' · ')}
       players={players}
+      // The real order lands as a countdown, #10 up to #1, then the best board
+      // is unveiled: the order coming out is the moment the round was for.
+      ceremony={scored ? { rows: truth.length, order: 'reverse' } : null}
       onBack={onBack}
       backLabel="← Back to setup"
       // The splash names the best board OF THIS ROUND (see `headline`), wearing
@@ -114,7 +122,8 @@ export default function AniRankResults({
       )}
       bar={(
         <StartBar width="md" status={axis.label} ready>
-          <Button variant="primary" size="lg" onClick={onPlayAgain}>{playAgainLabel}</Button>
+          {onEndMatch && <Button variant="secondary" size="lg" onClick={onEndMatch}>End match</Button>}
+          {onPlayAgain && <Button variant="primary" size="lg" onClick={onPlayAgain}>{playAgainLabel}</Button>}
         </StartBar>
       )}
     >
@@ -128,7 +137,7 @@ export default function AniRankResults({
         >
           <ol className="flex flex-col gap-1.5">
             {truth.map((item, i) => (
-              <li key={item.id} className="flex items-center gap-3">
+              <TruthRow key={item.id} index={i}>
                 <span className="grid h-7 w-7 flex-shrink-0 place-items-center rounded-pop-sm
                   bg-pop-lime font-display text-sm font-black text-paper">
                   {i + 1}
@@ -141,7 +150,7 @@ export default function AniRankResults({
                 {!opinion && item.value != null && (
                   <Badge tone="neutral">{axis.format(item.value)}</Badge>
                 )}
-              </li>
+              </TruthRow>
             ))}
           </ol>
         </Card>
@@ -155,6 +164,7 @@ export default function AniRankResults({
         </Banner>
       )}
 
+      <AfterSplash>
       <Card title={scored ? 'Scores' : 'Everyone’s boards'} padding="lg" className="mb-6">
         {/* The one thing worth stating, because it turns the picture into the
             arithmetic: crossings are not a metaphor for mistakes, they are
@@ -190,6 +200,7 @@ export default function AniRankResults({
                 </span>
                 {subj && <Badge tone="purple">Subject</Badge>}
                 {detail.perfect && <Badge tone="lime">Perfect!</Badge>}
+                {readers.includes(p.id) && <Badge tone="purple">Best reader +{READER_BONUS}</Badge>}
                 {/* Only online, where the amber badge is the running room total
                     and says nothing about the round just played. */}
                 {scored && delta != null && <Badge tone="lime">+{delta}</Badge>}
@@ -253,6 +264,7 @@ export default function AniRankResults({
           );
         })}
       </Card>
+      </AfterSplash>
 
     </ResultsLayout>
   );
@@ -444,4 +456,22 @@ function BoardDiagram({ detail, axis, size, judged }) {
       )}
     </div>
   );
+}
+
+// One row of the real order, landing in the countdown when the screen is staged
+// (ResultsLayout's ceremony, bottom first).
+function TruthRow({ index, children }) {
+  const staged = useCeremonyTiming();
+  return (
+    <li className={`flex items-center gap-3 ${staged ? 'reveal-row' : ''}`} style={staged?.style(index)}>
+      {children}
+    </li>
+  );
+}
+
+// Everyone's boards, once the best one is out: the tangles would give the
+// headline away before the countdown reached it.
+function AfterSplash({ children }) {
+  const staged = useCeremonyTiming();
+  return <div className={staged ? 'reveal-row' : ''} style={staged?.after(500)}>{children}</div>;
 }

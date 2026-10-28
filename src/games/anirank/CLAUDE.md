@@ -61,6 +61,23 @@ fact axis names a dimension and a custom prompt names a clause and neither says 
 arrow it is trusted to have. `minCount` is a prop for the same class of reason: the count
 badge reddens below what *this screen* needs, which is ten for a round and two for a tier list.
 
+## The match, seat pace and the reader bonus
+
+A round is now one stop in a match (`rounds`, `DEFAULT_MATCH_ROUNDS`; 0 is the old endless
+"New ten"). `AniRankFinal` is the one screen that records history — `AniRankResults` used to
+record every round as its own game. Online the host's "Next round" is `startGame(settings,
+{ next: true })`, keeping totals and `matchLog/{roundIndex}` (written in the same claimed
+write as the totals); a start from the lobby is a new match and clears both.
+
+**Seat pace** (`pace: 'seat'`, local blind only) has each player place a whole board, then
+pass the device — N handoffs instead of 10×N. `isSeatPace` is the one branch: `currentItem`
+takes the player (their own placed count is their cursor), `pendingPlacers` waits on boards
+that are not full, and `roundFinished` asks `everyonePlaced` as an open round does. The
+shared cursor means nothing mid-round there, so nothing reads it.
+
+**`READER_BONUS`** goes to the best guesser(s) of an opinion round, added AFTER the subject's
+average is taken (`bestReaders`), so being read well never inflates the subject's own number.
+
 ## AniRank's other half: tier lists
 
 `anirank/tiers.js` is a second pure module beside `rules.js`, not an extension of it. A

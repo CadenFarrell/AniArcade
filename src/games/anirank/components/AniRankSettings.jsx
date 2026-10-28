@@ -1,8 +1,10 @@
 import SettingsFooter from '../../../shared/components/SettingsFooter';
 import SettingHelp, { DetailToggle } from '../../../shared/components/SettingHelp';
-import { Card, Checkbox } from '../../../shared/ui';
+import MatchLengthSetting from '../../../shared/components/MatchLengthSetting';
+import { Card, Checkbox, Field, Select } from '../../../shared/ui';
 import { SETTING_HELP, sharedOnlyHelp } from '../help';
-import { DEFAULT_PREFS } from '../prefs';
+import { DEFAULT_PREFS, PACES } from '../prefs';
+import { DEFAULT_MATCH_ROUNDS } from '../rules';
 
 /**
  * AniRank's Settings card, rendered by both AniRankSetup and the online
@@ -26,8 +28,10 @@ import { DEFAULT_PREFS } from '../prefs';
  */
 export default function AniRankSettings({
   values, onChange, noun, tiering = false, remembered, onReset, hostNote = false,
+  // One device only: whether a blind round passes per card or per board.
+  local = false, playerCount = 1,
 }) {
-  const { sharedOnly, blind, scoring } = values;
+  const { sharedOnly, blind, scoring, rounds, pace } = values;
   // Both halves depend on the pool AND the format, so they are resolved together
   // rather than branched twice at the call site. See help.js.
   const sharedHelp = sharedOnlyHelp({ noun, tiering });
@@ -45,6 +49,10 @@ export default function AniRankSettings({
       </SettingHelp>
 
       {!tiering && (
+        <MatchLengthSetting id="anirank-rounds" value={rounds} defaultRounds={DEFAULT_MATCH_ROUNDS} onChange={onChange} />
+      )}
+
+      {!tiering && (
         <>
           <Checkbox
             label="Blind ranking"
@@ -55,6 +63,17 @@ export default function AniRankSettings({
           <SettingHelp indent className="mb-4" more={SETTING_HELP.blind.more}>
             {SETTING_HELP.blind.short}
           </SettingHelp>
+
+          {local && blind && playerCount > 1 && (
+            <>
+              <Field label="Passing the device" htmlFor="anirank-pace" className="mb-2 ml-10">
+                <Select id="anirank-pace" value={pace} onChange={(e) => onChange('pace', e.target.value)}>
+                  {PACES.map((o) => <option key={o.id} value={o.id}>{o.label}</option>)}
+                </Select>
+              </Field>
+              <SettingHelp indent className="mb-4">{PACES.find((o) => o.id === pace)?.blurb}</SettingHelp>
+            </>
+          )}
 
           <Checkbox
             label="Keep score"

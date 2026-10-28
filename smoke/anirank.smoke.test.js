@@ -35,11 +35,10 @@ describe('AniRank online', () => {
     const totals1 = A.r.totalScores;
     expect(Object.keys(totals1).length).toBeGreaterThan(0);
 
-    // Second blind round in the same room must bank too (the bankedAt trap).
-    await A.act((r) => r.returnToLobby());
-    await until(() => live.every((d) => d.r.view === 'lobby'), { what: 'back to lobby' });
-    await A.act((r) => r.startGame(settings));
-    await until(() => live.every((d) => d.r.view === 'round' && d.r.cursor === 0), { what: 'round 2' });
+    // Second blind round of the match must bank too (the bankedAt trap), on
+    // top of the first's totals: the host's "Next round" keeps the match.
+    await A.act((r) => r.nextRound());
+    await until(() => live.every((d) => d.r.view === 'round' && d.r.cursor === 0 && d.r.matchRound === 2), { what: 'round 2' });
     for (let step = 0; step < 10; step++) {
       const cursor = live[0].r.cursor;
       for (const d of live) await d.act((r) => r.place(firstEmpty(r)));
@@ -49,6 +48,18 @@ describe('AniRank online', () => {
     const totals2 = A.r.totalScores;
     const sum = (t) => Object.values(t).reduce((s, v) => s + v, 0);
     expect(sum(totals2)).toBeGreaterThan(sum(totals1));
+    // Each round left one line in the match log, banked once.
+    expect(A.r.matchLog).toHaveLength(2);
+
+    // The match ends on the final scores; a new one from the lobby starts clean.
+    await A.act((r) => r.endMatch());
+    await until(() => live.every((d) => d.r.view === 'final'), { what: 'final scores' });
+    await A.act((r) => r.returnToLobby());
+    await until(() => live.every((d) => d.r.view === 'lobby'), { what: 'back to lobby' });
+    await A.act((r) => r.startGame(settings));
+    await until(() => live.every((d) => d.r.view === 'round' && d.r.matchRound === 1), { what: 'a fresh match' });
+    expect(A.r.totalScores).toEqual({});
+    expect(A.r.matchLog).toEqual([]);
     expect(syncErrors(live)).toEqual([]);
   });
 

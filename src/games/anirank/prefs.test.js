@@ -15,7 +15,7 @@ describe('DEFAULT_PREFS', () => {
 
   it('covers every option the settings card can change', () => {
     expect(Object.keys(DEFAULT_PREFS).sort())
-      .toEqual(['axisId', 'blind', 'format', 'scoring', 'sharedOnly']);
+      .toEqual(['axisId', 'blind', 'format', 'pace', 'rounds', 'scoring', 'sharedOnly']);
   });
 
   // mergePrefs backfills a missing key on the next read, so this default reaches

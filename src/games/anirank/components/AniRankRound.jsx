@@ -5,6 +5,7 @@ import { isOpinion, promptFor } from '../axes';
 import { Backdrop, GhostButton, Screen } from '../../../shared/ui';
 import RoundHeader from '../../../shared/components/RoundHeader';
 import RankSeats from './RankSeats';
+import Handoff from '../../../shared/components/Handoff';
 
 // Local round orchestration: hands the pure round hook to the board, and calls
 // onFinish once the round is over.
@@ -14,10 +15,17 @@ import RankSeats from './RankSeats';
 // returning to setup instead of the hub; leaving the game is now LocalGame's
 // one fixed Hub button, over every local view.
 export default function AniRankRound({
-  players, deck, axis: axisSpec, subjectId, scoring, blind, totalScores, onFinish, onQuit,
+  players, deck, axis: axisSpec, subjectId, scoring, blind, pace = 'card', totalScores, onFinish, onQuit,
 }) {
-  const round = useAniRankRound(players, deck, { axis: axisSpec, subjectId, scoring, blind });
-  const { finished, state, scores, axis, open } = round;
+  const round = useAniRankRound(players, deck, { axis: axisSpec, subjectId, scoring, blind, pace });
+  const { finished, state, scores, axis, open, seatPace } = round;
+  // Who has confirmed the device is in their hands. When a whole board is one
+  // player's go (an open round, or a blind one at seat pace) the device passes
+  // once per player, so it is worth a handoff screen — the next player's face
+  // and a "ready" press, so nobody starts placing on someone else's board. At
+  // card pace it passes every card, where a screen each time would double the
+  // taps, so it is not used there.
+  const [readyFor, setReadyFor] = useState(null);
   const subject = players.find((p) => p.id === subjectId) ?? null;
 
   // Which tray card is picked up. Lives here rather than in the hook because it
@@ -45,6 +53,22 @@ export default function AniRankRound({
   }, [finished]);
 
   if (finished) return null;
+
+  if ((open || seatPace) && players.length > 1 && round.currentPlacer && readyFor !== placerId) {
+    return (
+      <>
+        <Backdrop />
+        <Screen width="md">
+          <Handoff
+            player={round.currentPlacer}
+            note="Your board is yours alone — nobody else should see it."
+            cta={`I'm ${round.currentPlacer.name} — ready`}
+            onReady={() => setReadyFor(placerId)}
+          />
+        </Screen>
+      </>
+    );
+  }
 
   // Resolved against the whole deck, not the tray: a card lifted back off the
   // board is held but no longer in the tray, and looking it up there would make
@@ -107,7 +131,7 @@ export default function AniRankRound({
             ? players.length > 1
               ? 'Tap a card then a slot. Tap two slots to swap them. Lock in when you’re happy and pass the device on.'
               : 'Tap a card then a slot. Tap two slots to swap them — nothing counts until you lock in.'
-            : players.length > 1
+            : players.length > 1 && !seatPace
               ? 'Pass the device round — everyone places this card before the next is revealed.'
               : 'Pick a slot. Once it is placed it cannot be moved.'}
         </p>

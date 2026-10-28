@@ -1,4 +1,5 @@
 import { AXES, DEFAULT_AXIS_ID, getAxis } from './axes';
+import { DEFAULT_MATCH_ROUNDS } from './rules';
 
 // Every option AniRank remembers between sessions, at its literal default.
 // One module rather than a literal in each screen — AniRankSetup and OnlineLobby
@@ -35,7 +36,20 @@ export const DEFAULT_PREFS = {
   // deals. Hard-coding it here would silently diverge the first time an axis's
   // defaultBlind is retuned.
   blind: getAxis(DEFAULT_AXIS_ID).defaultBlind,
+  // A match of this many rounds, then the final scoreboard; 0 is the old
+  // endless "New ten" (rules.DEFAULT_MATCH_ROUNDS).
+  rounds: DEFAULT_MATCH_ROUNDS,
+  // One device, blind rounds: 'seat' has each player place their whole board
+  // and then pass the device on; 'card' passes it after every card so the
+  // table sees each card together. Seat by default — one handoff a player
+  // rather than ten (rules.isSeatPace).
+  pace: 'seat',
 };
+
+export const PACES = [
+  { id: 'seat', label: 'Whole board each', blurb: 'Each player places all ten, then passes the device on.' },
+  { id: 'card', label: 'Card by card', blurb: 'Everyone places each card before the next is shown — the device goes round every card.' },
+];
 
 /**
  * The saved axis id turned back into an axis *spec* — a string for a built-in,

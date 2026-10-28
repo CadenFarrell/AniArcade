@@ -40,6 +40,18 @@
 
 export const BOARD_SIZE = 10;
 
+// A match: this many rounds, then a final scoreboard (shared/utils/match.js; 0
+// is the old endless "New ten"). Three, so an opinion round puts three
+// different people in the subject's seat.
+export const DEFAULT_MATCH_ROUNDS = 3;
+
+// What reading the subject best is worth, on an opinion round: added to the
+// guesser (or guessers, tied) whose board came closest to the subject's. The
+// subject's own score stays the average of the guesses — how predictable they
+// were — but the round now has a winner on the guessing side too, and a player
+// who really knows their friend is paid for it rather than just averaged in.
+export const READER_BONUS = 5;
+
 // Realtime Database has no concept of a null array element: a board with one
 // show placed in slot 5 comes back either as a 6-long array with holes or — once
 // it is mostly empty — as an object keyed by index ({ "5": {...} }). Both shapes
@@ -89,12 +101,15 @@ export function placedCount(board) {
 // them, ranks the cards as they would. Null for a fact round, and stored on the
 // round rather than derived so a mid-round roster change cannot silently move
 // the answer key out from under boards already committed against it.
-export function startRound(players, deck, subjectId = null, { blind = true } = {}) {
+export function startRound(players, deck, subjectId = null, { blind = true, pace = 'card' } = {}) {
   return {
     deck,
     cursor: 0,
     subjectId,
     blind,
+    // How a blind round is paced on ONE device (see isSeatPace). Online always
+    // plays card by card — every device places at once, so nothing is passed.
+    pace: blind && pace === 'seat' ? 'seat' : 'card',
     // Who has committed their whole board. Only an open round writes to it — a
     // blind round's progress is derived from the cursor instead, so there is
     // nothing to keep in sync.
@@ -117,11 +132,26 @@ export function isOpen(state) {
   return state?.blind === false;
 }
 
+// Seat pace: a blind round on one device where each player places their WHOLE
+// board, card after card, and then passes the device on — one handoff a player
+// instead of one per card per player (ten times the table, on a ten-card deck).
+// Still blind: each card shows only after the last one is placed, and nobody
+// sees another board. The shared cursor stops meaning anything mid-round, so
+// every rule that reads it asks this first.
+export function isSeatPace(state) {
+  return state?.pace === 'seat' && !isOpen(state);
+}
+
 // The card every player is currently placing. Null in an open round, which has
 // no single current card — every caller already null-guards this, because a
 // blind round returns null once the cursor runs off the end of the deck.
-export function currentItem(state) {
+// `playerId` matters only at seat pace, where each board is on its own card.
+export function currentItem(state, playerId = null) {
   if (isOpen(state)) return null;
+  if (isSeatPace(state)) {
+    if (!playerId) return null;
+    return state.deck?.[placedCount(state.boards?.[playerId])] ?? null;
+  }
   return state.deck?.[state.cursor] ?? null;
 }
 
@@ -133,6 +163,10 @@ export function currentItem(state) {
 // board against the shared cursor; open asks who has not locked in yet.
 export function pendingPlacers(state, playerIds) {
   if (isOpen(state)) return playerIds.filter((id) => !state.locked?.[id]);
+  if (isSeatPace(state)) {
+    const size = state.deck?.length ?? BOARD_SIZE;
+    return playerIds.filter((id) => placedCount(state.boards?.[id]) < size);
+  }
   return playerIds.filter((id) => placedCount(state.boards?.[id]) <= state.cursor);
 }
 
@@ -142,12 +176,14 @@ export function pendingPlacers(state, playerIds) {
 export function placeItem(state, playerId, slotIndex) {
   const size = state.deck?.length ?? BOARD_SIZE;
   const board = normalizeBoard(state.boards?.[playerId], size);
-  const item = currentItem(state);
+  const item = currentItem(state, playerId);
 
   if (!item) return { patch: {} };                                  // round is over
   if (!Number.isInteger(slotIndex) || slotIndex < 0 || slotIndex >= size) return { patch: {} };
   if (board[slotIndex] != null) return { patch: {} };               // slot already taken
-  if (placedCount(board) > state.cursor) return { patch: {} };      // already placed this one
+  // Already placed this one — at card pace, against the shared cursor; at seat
+  // pace the player's own count IS their cursor, so there is nothing to compare.
+  if (!isSeatPace(state) && placedCount(board) > state.cursor) return { patch: {} };
 
   const next = [...board];
   next[slotIndex] = item;
@@ -255,7 +291,7 @@ export function advanceCursor(state) {
 // everyonePlaced does — waiting on a closed tab would hold the reveal forever.
 export function roundFinished(state, activeIds = []) {
   if (!state) return false;
-  if (isOpen(state)) return everyonePlaced(state, activeIds);
+  if (isOpen(state) || isSeatPace(state)) return everyonePlaced(state, activeIds);
   return state.cursor >= (state.deck?.length ?? 0);
 }
 
@@ -535,8 +571,22 @@ export function finalScores(state, playerIds, { opinion = false, scoring = true 
     out[state.subjectId] = guesses.length
       ? Math.round(guesses.reduce((a, b) => a + b, 0) / guesses.length)
       : 0;
+    // The reader bonus goes on AFTER the subject's average is taken, so being
+    // read well never inflates the subject's own number.
+    for (const id of bestReaders(out, state.subjectId)) out[id] += READER_BONUS;
   }
   return out;
+}
+
+// Who read the subject best: the guessers with the top score, tied ones
+// together, and nobody when the best guess scored nothing. `scores` is the
+// round's guess scores keyed by player (the subject's own entry is ignored).
+export function bestReaders(scores, subjectId) {
+  const guesses = Object.entries(scores ?? {}).filter(([id]) => id !== subjectId);
+  if (!guesses.length) return [];
+  const top = Math.max(...guesses.map(([, n]) => n));
+  if (!(top > 0)) return [];
+  return guesses.filter(([, n]) => n === top).map(([id]) => id);
 }
 
 // Folds a round's scores into the running totals. Not idempotent — callers gate
@@ -545,6 +595,57 @@ export function applyRoundScores(totalScores, roundScores) {
   const out = { ...totalScores };
   for (const [id, score] of Object.entries(roundScores)) {
     out[id] = (out[id] || 0) + score;
+  }
+  return out;
+}
+
+// --- the match -----------------------------------------------------------------
+//
+// One line per banked round, for the final screen's awards: the round's scores,
+// who was the subject, who read them best, and the best board's comparisons.
+export function roundLogEntry(state, playerIds, { opinion = false, scoring = true } = {}) {
+  const scores = finalScores(state, playerIds, { opinion, scoring });
+  const truth = scoring ? truthFor(state, { opinion }) : null;
+  let best = null;
+  if (truth) {
+    for (const id of playerIds) {
+      if (opinion && id === state.subjectId) continue;
+      const { score, perfect } = scoreBoard(state.boards?.[id], state.deck, truth);
+      if (!best || score > best.score) best = { id, score, perfect };
+    }
+  }
+  return {
+    subjectId: opinion ? state.subjectId ?? null : null,
+    readers: opinion ? bestReaders(scores, state.subjectId) : [],
+    perfect: Object.fromEntries(playerIds
+      .filter((id) => truth && !(opinion && id === state.subjectId)
+        && scoreBoard(state.boards?.[id], state.deck, truth).perfect)
+      .map((id) => [id, true])),
+    best: best ? best.id : null,
+  };
+}
+
+/**
+ * The final screen's superlatives. A clear leader or nothing.
+ *
+ *   Mind reader    read the subject best the most times (opinion rounds)
+ *   Perfect board  got every comparison right, the rarest thing this game makes
+ */
+export function matchAwards(log = [], players = []) {
+  const lines = (log ?? []).filter(Boolean);
+  const byId = (id) => players.find((p) => p.id === id) ?? null;
+  const out = [];
+  const reads = {};
+  for (const l of lines) for (const id of l.readers ?? []) reads[id] = (reads[id] || 0) + 1;
+  const r = Object.entries(reads).sort((a, b) => b[1] - a[1]);
+  if (r.length && !(r[1] && r[1][1] === r[0][1]) && byId(r[0][0])) {
+    out.push({ title: 'Mind reader', player: byId(r[0][0]), detail: `Read the subject best ${r[0][1]} ${r[0][1] === 1 ? 'time' : 'times'}` });
+  }
+  const perfects = {};
+  for (const l of lines) for (const id of Object.keys(l.perfect ?? {})) perfects[id] = (perfects[id] || 0) + 1;
+  const p = Object.entries(perfects).sort((a, b) => b[1] - a[1]);
+  if (p.length && !(p[1] && p[1][1] === p[0][1]) && byId(p[0][0])) {
+    out.push({ title: 'Perfect board', player: byId(p[0][0]), detail: `Every comparison right${p[0][1] > 1 ? `, ${p[0][1]} times` : ''}` });
   }
   return out;
 }

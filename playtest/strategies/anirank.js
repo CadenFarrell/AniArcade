@@ -97,6 +97,10 @@ export default makeStrategy({
     sharedOnly: [true, false],
     scoring: [true, false],
     blind: [true, false],
+    // A match's length (0 is endless — the bot ends it after a round or two),
+    // and how a blind round passes one device.
+    rounds: [1, 2, 0],
+    pace: ['seat', 'card'],
   },
   // Tier formats rank opinion only (a fact axis has a right answer, and a
   // tier list has no answer key to hold it to), and a lone player with an
@@ -109,7 +113,7 @@ export default makeStrategy({
     return out;
   },
   isDone(snap, ctx) {
-    return Boolean(ctx.memory.tierDone) || /^results$/i.test(snap.heading) && Boolean(find(snap, /new ten|play again|back to lobby/i, { enabled: false }))
+    return Boolean(ctx.memory.tierDone) || /^final scores$/i.test(snap.heading)
       || has(snap, /where two lists agree/i);
   },
   // A stat axis (year, score, popularity) deals only cards that carry the
@@ -126,6 +130,24 @@ export default makeStrategy({
   // A tier comparison is two lists, not the table.
   endRoster: (snap, ctx) => (ctx.scenario.prefs.format === 'round' ? ctx.playing : null),
   act(snap, ctx) {
-    return ctx.scenario.prefs.format === 'round' ? boardAction(snap, ctx) : tierAction(snap, ctx);
+    if (ctx.scenario.prefs.format === 'round') {
+      // Between rounds: the last goes to the final scores, an endless match is
+      // ended after a round or two, otherwise the next ten are dealt.
+      if (/^results$/i.test(snap.heading)) {
+        const m = ctx.memory;
+        if (m.lastResults !== snap.signature) { m.lastResults = snap.signature; m.results = (m.results ?? 0) + 1; }
+        const final = find(snap, /^final scores$/i);
+        if (final) return click(final, 'final scores');
+        const end = find(snap, /^end match$/i);
+        if (end && m.results >= 1 + (ctx.scenario.seed % 2) && !/round \d+ of/i.test(snap.text)) return click(end, 'end the endless match');
+        const next = find(snap, /^next round$/i);
+        if (next) return click(next, 'next round');
+      }
+      // The pass-the-device screen between whole boards.
+      const ready = find(snap, /^I'm .+ — ready$/);
+      if (ready) return click(ready, 'take the device');
+      return boardAction(snap, ctx);
+    }
+    return tierAction(snap, ctx);
   },
 });

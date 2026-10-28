@@ -2,10 +2,12 @@ import { useCallback, useState } from 'react';
 import AniRankSetup from './components/AniRankSetup';
 import AniRankRound from './components/AniRankRound';
 import AniRankResults from './components/AniRankResults';
+import AniRankFinal from './components/AniRankFinal';
+import { isFinalRound, matchLabel } from '../../shared/utils/match';
 import TierMode from './TierMode';
 import { buildDeck } from './utils/deck';
 import { getAxis, isOpinion } from './axes';
-import { applyRoundScores, subjectFor } from './rules';
+import { applyRoundScores, roundLogEntry, subjectFor } from './rules';
 import { HubButton } from '../../shared/ui';
 import TablePortraits from '../../shared/components/TablePortraits';
 
@@ -13,7 +15,7 @@ import TablePortraits from '../../shared/components/TablePortraits';
 // src/games/anitune/LocalGame.jsx: it holds a `view` string and hands the work
 // to dumb screens from components/.
 export default function LocalGame({ onExit, onBack }) {
-  const [view, setView] = useState('setup'); // setup | round | results | tiers
+  const [view, setView] = useState('setup'); // setup | round | results | final | tiers
   const [error, setError] = useState(null);
   const [game, setGame] = useState(null); // { players, deck, axis, subjectId, ... }
   const [finished, setFinished] = useState(null); // { boards, scores }
@@ -27,16 +29,18 @@ export default function LocalGame({ onExit, onBack }) {
   // memory — the same game scored differently depending on how you were playing
   // it. AniFake's LocalGame is the shape being matched here.
   const [totalScores, setTotalScores] = useState({});
+  // One line per finished round (rules.roundLogEntry), for the final awards.
+  const [log, setLog] = useState([]);
 
   // `axis` is a spec — a built-in's id, or the whole definition of a prompt the
   // player wrote, which no lookup could recover. getAxis resolves either.
-  function start({ players, sharedOnly, axis, scoring, blind, format = 'round' }, nextRound = 0) {
+  function start({ players, sharedOnly, axis, scoring, blind, format = 'round', rounds = 0, pace = 'card' }, nextRound = 0) {
     setError(null);
     // Round zero is the only way into a fresh sitting — the setup screen calls
     // start() with the default, "New ten" always passes roundIndex + 1 — so
     // clearing here covers every path back to setup without a second reset to
     // keep in step with this one.
-    if (nextRound === 0) setTotalScores({});
+    if (nextRound === 0) { setTotalScores({}); setLog([]); }
     const resolved = getAxis(axis);
 
     // The tier-list formats have no deck, no subject and no score — they take
@@ -62,7 +66,7 @@ export default function LocalGame({ onExit, onBack }) {
       : null;
     // `blind` rides along in `game` so onPlayAgain, which re-passes the whole
     // object back into start(), deals the next ten the same way.
-    setGame({ players, deck, sharedOnly, axis, scoring, blind, subjectId });
+    setGame({ players, deck, sharedOnly, axis, scoring, blind, subjectId, rounds, pace });
     setRoundIndex(nextRound);
     setFinished(null);
     setView('round');
@@ -73,6 +77,7 @@ export default function LocalGame({ onExit, onBack }) {
   const handleFinish = useCallback((result) => {
     setFinished(result);
     setTotalScores((totals) => applyRoundScores(totals, result.scores));
+    setLog((l) => [...l, result.entry]);
     setView('results');
   }, []);
 
@@ -103,14 +108,38 @@ export default function LocalGame({ onExit, onBack }) {
           subjectId={game.subjectId}
           scoring={game.scoring}
           blind={game.blind}
+          pace={game.pace}
           totalScores={totalScores}
-          onFinish={handleFinish}
+          onFinish={(result) => handleFinish({
+            ...result,
+            entry: roundLogEntry(
+              { deck: game.deck, boards: result.boards, subjectId: game.subjectId },
+              game.players.map((p) => p.id),
+              { opinion: isOpinion(getAxis(game.axis)), scoring: game.scoring !== false },
+            ),
+          })}
           onQuit={() => { setGame(null); setView('setup'); }}
         />
       );
     }
 
+    if (view === 'final' && game) {
+      return (
+        <AniRankFinal
+          players={game.players}
+          totalScores={totalScores}
+          log={log}
+          rounds={game.rounds}
+          scoring={game.scoring !== false}
+          onPlayAgain={() => start(game, 0)}
+          onBack={() => { setGame(null); setView('setup'); }}
+        />
+      );
+    }
+
     if (view === 'results' && game && finished) {
+      // The match (shared/utils/match.js): roundIndex is 0-based.
+      const last = isFinalRound(roundIndex + 1, game.rounds);
       return (
         <AniRankResults
           players={game.players}
@@ -127,13 +156,15 @@ export default function LocalGame({ onExit, onBack }) {
           // Re-draw from the same lists rather than reusing the deck — a second
           // round of the same ten cards is no longer blind — and pass the turn to
           // the next subject.
-          onPlayAgain={() => start(game, roundIndex + 1)}
+          onPlayAgain={last ? () => setView('final') : () => start(game, roundIndex + 1)}
+          onEndMatch={last ? null : () => setView('final')}
+          matchTag={matchLabel(roundIndex + 1, game.rounds)}
           // "New ten" re-deals with the same axis and settings, so this is the
           // only route back to the options. Safe here and nowhere earlier: the
           // round is over and the deck already shown, so there is nothing left
           // to un-reveal.
           onBack={() => { setGame(null); setView('setup'); }}
-          playAgainLabel="New ten"
+          playAgainLabel={last ? 'Final scores' : 'Next round'}
         />
       );
     }

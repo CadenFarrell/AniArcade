@@ -28,6 +28,11 @@ const initialState = (localProfile) => ({
   // landing on the same person every game. Stored on the room, not derived from
   // totalScores, because an unscored round still has to advance the turn.
   roundIndex: 0,
+  // The match (shared/utils/match.js): which round of it this is, and one line
+  // per banked round (rules.roundLogEntry), keyed by roundIndex so it can never
+  // come back as a sparse array.
+  matchRound: 0,
+  matchLog: null,
   players: [localProfile],
 });
 
@@ -68,6 +73,8 @@ const normalizeState = (val) => {
     // unscored round — RTDB does not store `{}`.
     roundScores: val.roundScores ?? {},
     roundIndex: val.roundIndex ?? 0,
+    matchRound: val.matchRound ?? 0,
+    matchLog: val.matchLog ?? {},
     players,
     game: normalizeGame(val.game, players.map((p) => p.id)),
     // The lists players have published to compare. normalizeList is the same
@@ -131,8 +138,10 @@ export function useAniRankRoom() {
     });
   }, [roomCode, setSyncError]);
 
-  const startGame = useCallback(async (settings) => {
-    if (!isHost) return;
+  // `next` is the host's "Next round" from a reveal: the same settings, the
+  // match's totals and log kept. From the lobby it is a new match.
+  const startGame = useCallback(async (settings, { next = false } = {}) => {
+    if (!isHost || !settings) return;
     // Deal from the players actually here — a departed player's list should not
     // shape the deck, least of all under "shared cards only".
     const dealtIn = rosterRef.current.active;
@@ -160,6 +169,9 @@ export function useAniRankRoom() {
       settings,
       game: rules.startRound(dealtIn, deck, subjectId, { blind: settings.blind !== false }),
       roundIndex: roundIndex + 1,
+      ...(next
+        ? { matchRound: (state?.matchRound ?? 0) + 1 }
+        : { matchRound: 1, matchLog: null, totalScores: {}, roundScores: null }),
       // Clearing the banking claim is load-bearing, not tidiness. finishRound
       // claims a round by writing bankedAt only if it differs from the round's
       // cursor, and returnToLobby leaves the old value behind — so a second
@@ -245,6 +257,10 @@ export function useAniRankRoom() {
     return patchState({ view: 'lobby', game: null });
   }, [roomCode, patchState, bestEffort]);
 
+  // The reveal's two host buttons: the next round of the match, or its end.
+  const nextRound = useCallback(() => startGame(state?.settings, { next: true }), [startGame, state?.settings]);
+  const endMatch = useCallback(() => (isHost ? patchState({ view: 'final' }) : undefined), [isHost, patchState]);
+
   // Banks the round into the running totals exactly once, then shows the
   // results. Every device can reach this, so the claim transaction — not
   // ordering — is what stops the scores being applied twice.
@@ -267,6 +283,11 @@ export function useAniRankRoom() {
     if (!claim) return false; // transient — retry on a later render
     if (claim.committed) {
       await patchState({
+        // The match log rides the same claimed write as the totals.
+        [`matchLog/${state.roundIndex ?? 0}`]: rules.roundLogEntry(snapshot, playerIds, {
+          opinion: isOpinion(axis),
+          scoring: state?.settings?.scoring !== false,
+        }),
         totalScores: rules.applyRoundScores(state.totalScores ?? {}, scores),
         // Banked in the same write as the totals, by the one device that won the
         // claim, so the `+N` on the reveal can never disagree with the points it
@@ -354,6 +375,14 @@ export function useAniRankRoom() {
     players,
     settings: state?.settings ?? null,
     totalScores: state?.totalScores ?? {},
+    matchRound: state?.matchRound ?? 0,
+    // In round order. A line's `readers` and `perfect` come back absent when
+    // empty (RTDB stores neither an empty array nor an empty object).
+    matchLog: Object.keys(state?.matchLog ?? {})
+      .sort((a, b) => Number(a) - Number(b))
+      .map((k) => ({ readers: [], perfect: {}, ...state.matchLog[k] })),
+    rounds: state?.settings?.rounds ?? 0,
+    nextRound, endMatch,
     roundScores: state?.roundScores ?? {},
     game,
     // The round's axis and subject, resolved once here so no screen has to
