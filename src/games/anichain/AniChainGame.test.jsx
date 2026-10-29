@@ -91,6 +91,19 @@ async function playTurn(user, how) {
   expect(screen.getByText('It was')).toBeTruthy();
 }
 
+// The Teams card on the final screen agrees with the splash: the winning
+// team's total is the splash's points, and the card holds both teams'.
+// Read from CountUp's screen-reader copy, which is final from the first
+// render (the visible copy counts up from 0, which a screenshot can catch).
+function expectTeamTotals() {
+  const splash = Number(screen.getByText(/^\d+ pts$/).textContent.match(/\d+/)[0]);
+  const card = screen.getByText('Teams').closest('.card-pop');
+  const totals = [...card.querySelectorAll('.sr-only')].map((el) => Number(el.textContent)).filter(Number.isFinite);
+  expect(totals).toHaveLength(2);
+  expect(Math.max(...totals)).toBe(splash);
+  expect(splash).toBeGreaterThan(0);
+}
+
 async function nextOrResults(user) {
   const next = button(/^(next round|next turn|see results)$/i);
   await user.click(next);
@@ -138,6 +151,7 @@ describe('AniChain, one device', () => {
       await nextOrResults(user);
     }
     expect(await screen.findByRole('heading', { name: 'Final Scores' })).toBeTruthy();
+    expectTeamTotals();
     expect(errors).not.toHaveBeenCalled();
   });
 
@@ -150,6 +164,7 @@ describe('AniChain, one device', () => {
       await nextOrResults(user);
     }
     expect(await screen.findByRole('heading', { name: 'Final Scores' })).toBeTruthy();
+    expectTeamTotals();
     expect(errors).not.toHaveBeenCalled();
   });
 });
