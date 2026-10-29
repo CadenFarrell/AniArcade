@@ -32,14 +32,19 @@ describe('dealBoard', () => {
   });
 
   it('favours characters more of the table holds', () => {
+    // The one draw's rng swept evenly over [0, 1), not sampled: a sample of
+    // Math.random once landed on the threshold and failed CI by luck. Swept,
+    // the count IS the weight share, to within a grid step either side.
+    const N = 1280;
     let shared = 0;
-    for (let i = 0; i < 200; i++) {
-      const [first] = dealBoard(players, { size: 1 }, () => Math.random());
+    for (let i = 0; i < N; i++) {
+      const [first] = dealBoard(players, { size: 1 }, () => (i + 0.5) / N);
       if (first.name === 'Naruto Uzumaki' || first.name === 'Sasuke Uchiha') shared += 1;
     }
-    // Two of 62 characters, each with twice the weight: about 6% by chance
-    // alone, so well over that means the weight is doing its job.
-    expect(shared).toBeGreaterThan(8);
+    // Two of 62 mains, held by two players each: weight 2 × 2 against the
+    // rest's 1 × 2, so 8 of 128 — twice their 2-in-62 share unweighted.
+    expect(Math.abs(shared - (N * 8) / 128)).toBeLessThanOrEqual(1);
+    expect(shared).toBeGreaterThan((N * 2) / 62 + 10);
   });
 
   it('deals nothing used again until the lists run short, and never a drafted one', () => {
