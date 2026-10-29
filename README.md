@@ -23,6 +23,7 @@ Play it at **https://aniarcade.web.app/**.
 | **AniOut** | Six characters from your lists. Five share something. Spot the one who's out, and say why. |
 | **AniName** | Bid how many of a category you can name, then name them before the clock runs out. |
 | **AniChain** | Two clue-givers build a sentence one word at a time, without conferring, until someone names the character. |
+| **AniDraft** | Snake-draft a team from everyone's lists into roles — Captain, Final Boss, Comic Relief — then vote on the best pick for each. |
 
 Every game has a local mode and an online mode, and every finished game goes into each
 player's play record. Online, the host can take the whole room on to another game from the

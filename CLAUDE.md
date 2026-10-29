@@ -152,10 +152,12 @@ goals, the winding-route footing and its detours, the two-device claim),
 `src/games/anipeek/CLAUDE.md` (AniPeek: the bid and its score, the pool's three filters, the
 tile board, the skip), `src/games/aniout/CLAUDE.md` (AniOut: the connections, the
 one-answer checks, profile-then-pack facts, the reasons), `src/games/aniname/CLAUDE.md`
-(AniName: the auction, the three verdicts, the table's review, the clock) and
+(AniName: the auction, the three verdicts, the table's review, the clock),
 `src/games/anichain/CLAUDE.md` (AniChain: the three table shapes, the banned words, the guess
-window, the givers' card and judge). Read the relevant one before changing a game's
-behaviour from shared code, where it will not load on its own.
+window, the givers' card and judge) and `src/games/anidraft/CLAUDE.md` (AniDraft: the role
+deck, the board and what is never dealt twice, the snake, the role-by-role vote,
+auto-picks). Read the relevant one before changing a game's behaviour from shared code, where
+it will not load on its own.
 
 ### Online rooms (Firebase Realtime Database)
 

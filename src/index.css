@@ -148,6 +148,11 @@
      plum's wine — redder than the one, bluer than the other — so it reads as
      neither. */
   --color-pop-violet: #652d96; /* AniChain                6.73 / 8.35 */
+  /* Magenta: a deep red-purple, picked by CIELAB distance as the ink furthest
+     from all twelve before it — violet is its nearest (ΔE 20), plum next (24),
+     both further apart than several older pairs already are. Bluer than plum's
+     wine and redder than violet. */
+  --color-pop-magenta: #8a1a80; /* AniDraft                 6.28 / 7.79 */
 
   /* AniTurf's two teams. Their own role, not pop-red and pop-blue: those mean
      wrong and asking, and a claimed square is neither. Kept a hue apart from

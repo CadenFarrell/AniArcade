@@ -16,6 +16,7 @@ export const ACCENT_BG = {
   moss: 'bg-pop-moss',
   umber: 'bg-pop-umber',
   violet: 'bg-pop-violet',
+  magenta: 'bg-pop-magenta',
 };
 
 export const accentBg = (accent) => ACCENT_BG[accent] ?? ACCENT_BG.pink;
@@ -37,6 +38,7 @@ export const ACCENT_VAR = {
   moss: 'var(--color-pop-moss)',
   umber: 'var(--color-pop-umber)',
   violet: 'var(--color-pop-violet)',
+  magenta: 'var(--color-pop-magenta)',
 };
 
 export const accentVar = (accent) => ACCENT_VAR[accent] ?? ACCENT_VAR.pink;

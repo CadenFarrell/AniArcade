@@ -19,6 +19,7 @@ const TONES = {
   moss: 'bg-pop-moss text-paper border-pop-moss',
   umber: 'bg-pop-umber text-paper border-pop-umber',
   violet: 'bg-pop-violet text-paper border-pop-violet',
+  magenta: 'bg-pop-magenta text-paper border-pop-magenta',
   'team-red': 'bg-team-red text-paper border-team-red',
   'team-blue': 'bg-team-blue text-paper border-team-blue',
 };

@@ -1,7 +1,7 @@
 # AniArcade — game ideas not built yet
 
-Context for the new chat: AniArcade (this repo) has 12 games — AniGuess, AniTune, AniRank,
-AniFake, AniWave, AniTag, AniQuiz, AniTurf, AniPeek, AniOut, AniName, AniChain. Every game has
+Context for the new chat: AniArcade (this repo) has 13 games — AniGuess, AniTune, AniRank,
+AniFake, AniWave, AniTag, AniQuiz, AniTurf, AniPeek, AniOut, AniName, AniChain, AniDraft. Every game has
 a local (pass-and-play) and an online (Firebase room) mode, a rules sheet, a playtest bot
 strategy and a smoke test. Read CLAUDE.md first. Things that shape any new game:
 
@@ -10,8 +10,8 @@ strategy and a smoke test. Read CLAUDE.md first. Things that shape any new game:
   role Main/Supporting, gender, portrait, short description, favourites). The fact pack
   (public/facts/) adds ~1000 popular shows: tags, staff, theme songs, Japanese voice
   actors, main/supporting casts. There are NO quotes, synopses or hair/power data anywhere.
-- Big tile words already taken: GUESS TUNE RANK FAKE WAVE TAG QUIZ TURF PEEK OUT NAME CHAIN.
-- All 12 accent inks are taken (the newest is violet, AniChain's); a new game needs a new
+- Big tile words already taken: GUESS TUNE RANK FAKE WAVE TAG QUIZ TURF PEEK OUT NAME CHAIN DRAFT.
+- All 13 accent inks are taken (the newest is magenta, AniDraft's); a new game needs a new
   decorative colour token in src/index.css (+ accents.js, Badge, Wordmark, Lobby,
   OnlineIdentityCard maps). Each token's comment carries its two contrast ratios.
 - No third-party network in local play; anything new (e.g. quotes) ships as a static file.
@@ -27,6 +27,12 @@ shapes (one pair vs everyone, rival givers, team pairs), one guess per word, and
 words (name, show title, other cast). Notes in src/games/anichain/CLAUDE.md.
 Possible follow-ups: an optional typed local mode, a per-word clock for local play.
 
+## Built: AniDraft (was idea 2)
+Every player drafts a team: five roles dealt from a deck of 30, one shared board of
+characters from the table's lists, a snake draft into the roles, then a secret vote per role
+(never your own team), a point per role won. Notes in src/games/anidraft/CLAUDE.md.
+Possible follow-ups: a host-written role deck, a typed "why" line per pick for the vote.
+
 ## 1. Finish the quote
 "I alone am the ___" — finish a famous anime line.
 - Recommendation: make it a question category inside AniQuiz rather than its own game.
@@ -37,16 +43,6 @@ Possible follow-ups: an optional typed local mode, a per-word clock for local pl
 - Famous quotes cluster in ~40 big shows, so it won't follow players' lists closely; filter
   to shows on the table's lists where possible.
 - Open questions: standalone vs AniQuiz category, who curates the quote list, typed vs choice.
-
-## 2. AniDraft — draft a team, the table votes
-A format popular on anime social media.
-- Round: a set of roles (Captain, Rival, Healer, Comic Relief, Final Boss, Best Friend…).
-  Players snake-draft characters from everyone's lists into their roles, then everyone
-  votes on the best team (can't vote for your own).
-- Data: characters + portraits from the lists; no facts needed.
-- Pure opinion and arguments; a good fit for groups, works locally and online.
-- Open questions: role list (fixed, random, or custom), draft order and timer, can a
-  character be taken twice, vote format (single vote vs rank), number of rounds.
 
 ## 3. Redacted bio
 A character's description with names blanked out, revealed one line at a time; guess
