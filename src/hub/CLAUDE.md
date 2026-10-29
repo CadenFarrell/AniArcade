@@ -186,7 +186,9 @@ what `HubScreen.test.jsx`'s `findTile` / `findHub` do. Reduced motion swaps imme
 Every game's `Component` is `shared/utils/lazyGame.js`'s `lazyGame(() => import(...))`. The
 registry used to import all seven eagerly, so the menu could not paint until every game,
 Firebase and dnd-kit had arrived: one ~1 MB file (301 KB gzipped) before the first tile.
-Startup is now ~222 KB (68 KB gzipped, measured 2026-10-26 with the rules sheet and feedback box in it); each game is its own chunk, and Firebase sits in a
+Startup is now ~360 KB (112 KB gzipped, measured 2026-10-28 with AniChain in). Count the entry
+AND every chunk `index.html` preloads: Vite 8.3's Rolldown folds most of them into the entry,
+which took the entry alone from 68 KB to 112 KB with the total unchanged. Each game is its own chunk, and Firebase sits in a
 shared one that only a game pulls in.
 
 **The tap is not slower, because the hub preloads.** `preloadGames` runs once the menu is up

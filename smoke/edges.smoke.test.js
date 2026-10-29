@@ -164,13 +164,18 @@ describe('AniFake edges', () => {
     };
     await devs[0].act((r) => r.startGame(settings));
     await play();
-    const t1 = { ...devs[0].r.totalScores };
     await devs[0].act((r) => r.returnToLobby());
     await until(() => devs.every((d) => d.r.view === 'lobby'), { what: 'lobby' });
     await devs[0].act((r) => r.startGame(settings));
     await play();
-    const sum = (t) => Object.values(t).reduce((s, v) => s + v, 0);
-    expect(sum(devs[0].r.totalScores)).toBeGreaterThanOrEqual(sum(t1));
+    // A start from the lobby is a NEW match (anifake/CLAUDE.md), so the totals
+    // restart rather than grow. This once asserted "total after game 2 >= after
+    // game 1", true only by luck: random votes, so it failed whenever game 2
+    // scored less. Banked again means: exactly this round's scores, and a
+    // scored round always pays someone (+2 an uncaught fake, +1 a catcher).
+    expect(devs[0].r.matchRound).toBe(1);
+    expect(Object.keys(devs[0].r.roundScores).length).toBeGreaterThan(0);
+    expect(devs[0].r.totalScores).toEqual(devs[0].r.roundScores);
     for (const d of devs) expect(d.r.fakeId).toBeTruthy();
     expect(syncErrors(devs)).toEqual([]);
   });

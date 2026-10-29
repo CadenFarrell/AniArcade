@@ -214,6 +214,16 @@ export function auditor(page, { game, project, seen }) {
     await page.screenshot({ path: `${REPORT_DIR}/${file}`, fullPage: true }).catch(() => {});
     await settle();
     (record.shots ??= []).push(file);
+    // Settling cannot hold a screen still that the NETWORK replaces: online,
+    // "Creating…" became the lobby while axe ran, and the lobby's banner was
+    // measured mid screen-in — paper on AniOut's moss at 2.96:1, a colour no
+    // resting screen paints — and filed under "Play Online". If the heading the
+    // bots name a screen by (snapshot.js) moved under the audit, its results
+    // belong to neither screen; the new one is audited on its own when the bot
+    // reaches it.
+    const liveHeading = () => page.evaluate(() => [...document.querySelectorAll('h1, h2, h3, [role=heading]')]
+      .find((h) => h.checkVisibility())?.textContent ?? '').catch(() => null);
+    const before = await liveHeading();
     for (const f of await page.evaluate(measureLayout).catch(() => [])) {
       record.findings.push({ ...f, severity: f.kind === 'overflow-x' || f.kind === 'offscreen' ? 'warn' : 'info', screen, shot: file });
     }
@@ -221,6 +231,7 @@ export function auditor(page, { game, project, seen }) {
       record.findings.push({ kind: 'audit-error', severity: 'info', message: `axe could not run: ${e.message.slice(0, 200)}`, screen });
       return null;
     });
+    if (await liveHeading() !== before) return;
     for (const v of axe?.violations ?? []) {
       // A contrast miss says which colours and how far off, because a bare
       // selector (".mb-1") sent every one of these to a code search first.

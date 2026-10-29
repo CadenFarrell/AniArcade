@@ -99,7 +99,7 @@ available, Component, howTo }`) plus one line added to that array. `Component` r
 
 **`Component` is always `lazyGame(() => import('./<Game>Game'))`, never a static import.**
 Everything else on the descriptor is the menu and stays eager; the game's code downloads on
-demand, so the hub paints after ~68 KB gzipped instead of the whole arcade's ~300 KB. A new
+demand, so the hub paints after ~112 KB gzipped instead of the whole arcade's ~300 KB. A new
 game that imports its component statically pulls itself — and anything only it uses — back
 into the hub's startup bundle, and nothing fails to say so. The mechanics (idle preload,
 the loading screen, the reload-not-reset error) are in `src/hub/CLAUDE.md`.
