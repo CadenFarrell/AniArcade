@@ -43,7 +43,7 @@ export default function AniRankFinal({
       )}
       bar={(
         // Null online for everyone but the host, who alone moves the room on.
-        <StartBar width="md" status={onPlayAgain ? `${players.length} players` : 'Waiting for the host…'} ready>
+        <StartBar width="md" status={onPlayAgain ? `${players.length} ${players.length === 1 ? 'player' : 'players'}` : 'Waiting for the host…'} ready>
           {onPlayAgain && <Button variant="primary" size="lg" onClick={onPlayAgain}>{againLabel}</Button>}
         </StartBar>
       )}

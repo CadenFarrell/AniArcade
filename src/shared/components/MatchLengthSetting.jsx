@@ -18,8 +18,13 @@ export default function MatchLengthSetting({ id, value, defaultRounds, onChange,
       <Field label="Rounds" htmlFor={id} className="mb-2">
         <div className="flex flex-wrap items-center gap-4">
           {!endless && (
+            // w-40: NumberInput's field is w-0 flex-1 (it takes what the two
+            // buttons leave), and as a flex ITEM beside the Endless box the
+            // stepper is sized to its content, which leaves the field 16px:
+            // the round count was invisible on every setup screen.
             <NumberInput
               id={id}
+              className="w-40"
               ariaLabel="Rounds"
               min={1}
               max={MAX_MATCH_ROUNDS}
