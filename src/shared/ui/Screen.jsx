@@ -30,6 +30,11 @@ const WIDTHS = {
   sm: 'max-w-md',
   md: 'max-w-2xl',
   lg: 'max-w-4xl',
+  // The hub's menu, which runs seven across from xl (hub/boardLayout.js): at
+  // 5xl that made the widest screens' tiles the smallest (132px), so it opens
+  // to 6xl there (~151px). The top bar's row matches it, so the brand lines up
+  // with the hero.
+  xl: 'max-w-5xl xl:max-w-6xl',
 };
 
 export default function Screen({

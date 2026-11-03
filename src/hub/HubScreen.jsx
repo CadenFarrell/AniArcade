@@ -7,11 +7,12 @@ import { markHowToSeen, readHowToSeen } from './howToSeen';
 import GameLoading from './GameLoading';
 import { readInvite, stripInvite } from '../shared/utils/inviteLink';
 import PanelWipe from './PanelWipe';
+import RecordButton from './RecordButton';
 import RecordScreen from './RecordScreen';
-import RecordStrip from './RecordStrip';
 import TitleScreen from './TitleScreen';
 import WelcomeModal from './WelcomeModal';
 import { readWelcomeSeen } from './welcomeSeen';
+import { boardColumns } from './boardLayout';
 import { drawTileCharacters } from './tileCharacters';
 import { splitTitle } from '../shared/utils/splitTitle';
 import { useUniformCaptions } from './useUniformCaptions';
@@ -50,6 +51,18 @@ import { KANA } from '../shared/ui/kanaText';
 // body, which the plain label-in-a-block Button API does not cover.
 const GAME_IDS = games.map((g) => g.id);
 
+// How many tiles across at each width, picked from the roster's size so the
+// last row is never one stray game where another count would avoid it
+// (boardLayout.js). Fixed for a build, so worked out once here.
+const COLS = boardColumns(games.length);
+const BOARD_STYLE = {
+  '--cols-base': COLS.base,
+  '--cols-sm': COLS.sm,
+  '--cols-md': COLS.md,
+  '--cols-lg': COLS.lg,
+  '--cols-xl': COLS.xl,
+};
+
 // The open game's rules, from the top bar — the one place on every screen of a
 // game (cover, setup, a round, the lobby, results), so the rules are never more
 // than a press away and no game screen had to grow a button. Icon-only because
@@ -74,7 +87,7 @@ function HowToButton({ onClick }) {
 // `captioned` is the BOARD's answer, not this tile's: the caption hangs half
 // into the tile body, so a tile with one pushes its title down — and if only
 // some tiles did, a small list would leave the titles in a row at two heights.
-function GameCard({ game, character, captioned, onPick }) {
+function GameCard({ game, character, captioned, onPick, className = '' }) {
   const ink = accentBg(game.accent);
   // A portrait URL that fails (a dead link in an old import, the CDN down)
   // falls back to the bare panel rather than a broken-image box. Remembered by
@@ -91,7 +104,7 @@ function GameCard({ game, character, captioned, onPick }) {
       // what clips it back to rounded-pop. That clips descendants only, so
       // focus-pop's ring and btn-pop's shadow — both on this element — survive.
       className={`btn-pop focus-pop group flex flex-col overflow-hidden bg-surface p-0 text-left
-        ${game.available ? 'border-ink' : 'border-line-strong'}`}
+        ${game.available ? 'border-ink' : 'border-line-strong'} ${className}`}
     >
       {/* The panel: a character from YOUR list (tileCharacters.js), drawn
           fresh each visit, so no two players' boards look alike. Greyscale
@@ -302,7 +315,7 @@ export default function HubScreen() {
   // of living inside ProfilePicker.
   const [editingListId, setEditingListId] = useState(null);
   // Whose play record is open, and which way back leads: { id, from } where
-  // `from` is 'hub' (the record strip) or 'picker' (a row's trophy). Null for
+  // `from` is 'hub' (the top bar's trophy) or 'picker' (a row's trophy). Null for
   // the menu. A full view for ListManager's reason.
   const [recordOf, setRecordOf] = useState(null);
   const { profiles, activeProfile, saveProfile } = useProfileStore();
@@ -484,9 +497,22 @@ export default function HubScreen() {
     );
   } else {
     content = (
-      <TopBar end={<ProfileButton profile={activeProfile} onOpen={() => setShowPicker(true)} />}>
+      <TopBar
+        end={(
+          <>
+            {/* The record sits in the bar's corner beside whose it is, so the
+                page under it is the games and nothing else (RecordButton.jsx). */}
+            {activeProfile && (
+              <RecordButton onClick={() => setRecordOf({ id: activeProfile.id, from: 'hub' })} />
+            )}
+            <ProfileButton profile={activeProfile} onOpen={() => setShowPicker(true)} />
+          </>
+        )}
+      >
         <Backdrop />
-        <Screen center width="lg">
+        {/* xl: the top bar's own width (5xl, 6xl on a wide desktop), which
+            seven across needs. */}
+        <Screen center width="xl">
           <Hero />
 
           {/* The only thing left of the old full-width profile card. It points at
@@ -498,28 +524,38 @@ export default function HubScreen() {
             </p>
           )}
 
-          {/* The board. Up to six across, so the roster reads at a glance instead
-              of running off the bottom — a stacked column was already scrolling at
-              six games and the registry is still growing. lg: is the app's first,
-              deliberately: sm: and lg: are the two widths where another column
-              earns its keep.
+          {/* The board: as many across as boardLayout.js picks for this
+              roster at each width (2 on a phone, up to 7 on a wide desktop), so
+              it reads at a glance instead of running off the bottom.
 
-              The ladder is picked so the tile stays roughly 136–155px at every
-              breakpoint instead of ballooning on desktop, which is also why
-              AniList's 230px "large" portraits are sharp enough for it. */}
-          <div ref={boardRef} className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4 lg:grid-cols-6">
+              Flex rather than grid because a short last row is CENTRED, which
+              a grid cannot do — the rows above set the columns and the
+              leftovers sit under the middle. Each tile is an exact fraction of
+              the board's width (less 0.1px, so a rounding error can never wrap
+              a full row early); the BOARD, not the tile, carries the size cap
+              (11.5rem a tile, where AniList's 230px portrait is still sharp),
+              because a capped tile would let a whole extra one fit on a row
+              and undo the count. */}
+          <div
+            ref={boardRef}
+            style={BOARD_STYLE}
+            className="mx-auto flex w-full flex-wrap justify-center gap-[var(--gap)]
+              [--gap:0.75rem] sm:[--gap:1rem]
+              [--cols:var(--cols-base)] sm:[--cols:var(--cols-sm)] md:[--cols:var(--cols-md)]
+              lg:[--cols:var(--cols-lg)] xl:[--cols:var(--cols-xl)]
+              max-w-[calc(var(--cols)*11.5rem_+_(var(--cols)_-_1)*var(--gap))]"
+          >
             {games.map((game) => (
-              <GameCard key={game.id} game={game} character={tiles[game.id]} captioned={captioned} onPick={openGame} />
+              <GameCard
+                key={game.id}
+                game={game}
+                character={tiles[game.id]}
+                captioned={captioned}
+                onPick={openGame}
+                className="shrink-0 grow-0 w-[calc((100%_-_(var(--cols)_-_1)*var(--gap))/var(--cols)_-_0.1px)]"
+              />
             ))}
           </div>
-
-          {/* Below the board, never above it: the hub's height is spent on
-              games first (see src/hub/CLAUDE.md). */}
-          <RecordStrip
-            profile={activeProfile}
-            games={games}
-            onOpen={() => setRecordOf({ id: activeProfile.id, from: 'hub' })}
-          />
 
           <p className="mt-8 flex flex-wrap items-center justify-center gap-x-2 text-xs text-fg-subtle">
             <span>Characters from your own list · prints from the Met · sounds by Kenney.</span>

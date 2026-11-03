@@ -16,11 +16,11 @@ const PAGE = 20;
 // One profile's whole play record: totals and streaks, a card per game, who
 // they play with and how that goes, and every game logged. A full hub view
 // rather than a dialog, for ListManager's reason — it is a page of its own
-// length. Opened from the record strip (the main profile) and from any row of
+// length. Opened from the top bar's trophy (the main profile) and from any row of
 // the profile picker, since every profile seated on this device is recorded.
 //
-// Read once per mount, like the strip: nothing records while the hub is on
-// screen, so there is nothing to keep fresh.
+// Read once per mount: nothing records while the hub is on screen, so there is
+// nothing to keep fresh.
 export default function RecordScreen({ profile, games, onBack, backLabel }) {
   const [history] = useState(readHistory);
   const [shown, setShown] = useState(PAGE);
@@ -62,8 +62,8 @@ export default function RecordScreen({ profile, games, onBack, backLabel }) {
             </p>
           )}
 
-          {/* A card per game in that game's ink, menu order: the strip's chips
-              grown up, so the two sort the same way. */}
+          {/* A card per game in that game's ink, menu order: the tiles' title-bar
+              colours, so the cards sort the way the board does. */}
           <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             {record.games.map((g) => {
               const game = gameOf(g.id);

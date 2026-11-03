@@ -1,12 +1,12 @@
 // @vitest-environment jsdom
 //
 // Play history end to end on one device: a final results screen records the
-// game for every seated profile (useRecordResult), and the hub's strip shows
-// the main profile's record. A results screen is mounted directly — playing a
+// game for every seated profile (useRecordResult), and the record page shows
+// it. A results screen is mounted directly — playing a
 // whole game here would test the game, not the history.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, screen } from '@testing-library/react';
-import RecordStrip from './RecordStrip';
+import RecordScreen from './RecordScreen';
 import { games } from './registry';
 import QuizResults from '../games/aniquiz/components/QuizResults';
 import { HistoryScopeContext } from '../shared/context/historyScopeContext';
@@ -47,21 +47,17 @@ describe('play history', () => {
     expect(Object.keys(stored())).toEqual(['ayu']);
   });
 
-  it('shows the main profile\'s record under the board', () => {
+  it('shows the game just finished on the record page', () => {
     seedProfiles([makeProfile('Caden')]);
     finishQuiz();
     cleanup();
-    renderArcade(<RecordStrip profile={{ id: 'caden', name: 'Caden' }} games={games} />);
-    expect(screen.getByText(/1 game/i)).toBeTruthy();
-    expect(screen.getByText('AniQuiz: 1 of 1 won')).toBeTruthy();
+    renderArcade(
+      <RecordScreen profile={{ id: 'caden', name: 'Caden' }} games={games} onBack={() => {}} backLabel="← Hub" />,
+    );
+    expect(screen.getByRole('heading', { level: 1, name: 'Caden' }).nextElementSibling.textContent)
+      .toMatch(/^1 game · 1 win/);
+    expect(screen.getByRole('heading', { name: 'AniQuiz' })).toBeTruthy();
+    expect(screen.getByText('1 of 1')).toBeTruthy();
     expect(screen.getByText('with Ayu')).toBeTruthy();
-  });
-
-  it('says so when there is nothing yet, and stays out of the way with no profile', () => {
-    const { container } = renderArcade(<RecordStrip profile={null} games={games} />);
-    expect(container.textContent).toBe('');
-    cleanup();
-    renderArcade(<RecordStrip profile={{ id: 'caden', name: 'Caden' }} games={games} />);
-    expect(screen.getByText(/no games yet/i)).toBeTruthy();
   });
 });

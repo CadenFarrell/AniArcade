@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 //
 // The full play record: the screen itself over a seeded history, and the two
-// ways into it from the hub — the record strip (the main profile) and a row of
+// ways into it from the hub — the top bar's trophy (the main profile) and a row of
 // the profile picker (anyone on this device), each with its own way back.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, screen, waitFor, within } from '@testing-library/react';
@@ -87,17 +87,24 @@ describe('RecordScreen', () => {
 });
 
 describe('the ways in', () => {
-  it('opens the main profile from the strip, and goes back to the hub', async () => {
+  it("opens the main profile from the bar's trophy, and goes back to the hub", async () => {
     const user = userEvent.setup();
     seedProfiles([caden, ayu]);
     seedGames(2, 1);
     renderArcade(<HubScreen />);
     await afterWipe();
 
-    await user.click(await screen.findByRole('button', { name: /see full record/i }));
+    // The record is not on the menu page any more — the board is games only.
+    expect(screen.queryByRole('heading', { name: /your record/i })).toBeNull();
+    await user.click(await screen.findByRole('button', { name: 'Your record' }));
     expect(await screen.findByRole('heading', { level: 1, name: 'Caden' })).toBeTruthy();
     await user.click(screen.getByRole('button', { name: '← Hub' }));
-    expect(await screen.findByRole('button', { name: /see full record/i })).toBeTruthy();
+    expect(await screen.findByRole('button', { name: 'Your record' })).toBeTruthy();
+  });
+
+  it('has no trophy without a main profile — there is nobody whose record it would be', () => {
+    renderArcade(<HubScreen />);
+    expect(screen.queryByRole('button', { name: 'Your record' })).toBeNull();
   });
 
   it("opens a friend's record from the profile picker, and goes back to the picker", async () => {

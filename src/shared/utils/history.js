@@ -1,6 +1,6 @@
 // Play history: one line per finished game, per profile, kept on this device.
 // The pure half — the hook that records (hooks/useRecordResult.js) and the
-// hub's record strip (hub/RecordStrip.jsx) are thin over it.
+// hub's record page (hub/RecordScreen.jsx) are thin over it.
 //
 // Stored under one arcade-wide key, `{ [profileId]: Entry[] }`, newest last:
 //

@@ -57,13 +57,13 @@ const DENY_START = [
 ];
 // A name ending in a disclosure triangle opens or closes a panel and never
 // moves a game on; pressed at random it is the commonest way to look busy. And
-// the record screen's two ways in (the hub strip, a profile row's trophy) lead
+// the record screen's two ways in (the top bar's trophy, a profile row's) lead
 // off to a page with no game on it.
 // The host's picks under an online room's final results ("Play AniTune next",
 // src/shared/utils/handoff.js) carry the whole table off into another game;
 // browser/online.spec.js presses one on purpose.
 const DENY_ANYWHERE = [
-  /add .* to this game/i, /^take .* out of/i, /import .*'s list/i, /[▸▾]$/, /^see full record$/i, /'s record$/i,
+  /add .* to this game/i, /^take .* out of/i, /import .*'s list/i, /[▸▾]$/, /^your record$/i, /'s record$/i,
   /^play .+ next$/i,
 ];
 const lead = /^[^\p{L}\p{N}←✕×ⓘ]+/u;

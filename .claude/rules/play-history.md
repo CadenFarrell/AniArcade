@@ -24,7 +24,7 @@ paths:
 - **A results screen can mount twice for one game** (a refresh, AniGuess's leaderboard → list →
   back), so the same fingerprint (game, table, winners, places, running totals) within 30
   minutes is dropped.
-- No provider: the readers (`RecordStrip`, `RecordScreen`) mount with the menu, which is never on
+- No provider: the reader (`RecordScreen`) mounts from the menu, which is never on
   screen while a game writes. The key is in `PRESERVED_KEYS` — it cannot be rebuilt.
 - **Each line carries everyone else's result** (`others: [{ name, place, won }]`), which the
   head-to-head counts. It is ABSENT on lines written before it existed, and those count as games

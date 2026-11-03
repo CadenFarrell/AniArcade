@@ -6,15 +6,28 @@ presence, settings, profiles, styling).
 
 ## The board
 
-**The menu is a board rather than a list, and the tile sizing is the whole of it.**
-`HubScreen.jsx` lays the roster out `grid-cols-2 sm:grid-cols-4 lg:grid-cols-6` inside a
-`max-w-4xl` shell. A stacked column was already running off a laptop at six games and the
-registry only grows. The ladder is picked so a tile stays roughly 136–155px at *every*
-breakpoint rather than ballooning on desktop — which is why the print inside it needs only
-one size of file. `lg:` is the app's only one; everything else here is `sm:`-only.
+**The menu is a board rather than a list, and how many go across is worked out from the
+roster.** `boardLayout.js`'s `boardColumns(n)` gives each width a RANGE of column counts its
+tiles can live with — 2 on a phone, 3–4 at `sm`, 4–5 at `md`, 5–6 at `lg`, 6–7 at `xl` (tiles
+roughly 130–185px at each tier's narrowest viewport) — and picks the count whose last row holds
+the most tiles, more columns on a tie. A fixed 2/4/6 ladder came first, and at 13 games it left
+one game alone on its last row at every width; 13 now lays out 7+6 on a desktop and 5+5+3 on a
+laptop or tablet. A phone is only ever 2 across (3 is ~105px tiles), so an odd roster leaves one
+tile there, centred. `boardLayout.test.js` fails the registry if a tablet or wider would ever
+leave a lone tile, so a new game that does gets a decision rather than a stray tile. This is the
+app's only use of `md:` and `xl:`; everything else is `sm:`/`lg:`.
 
-Six across rather than four also keeps each portrait sharp: AniList's "large" character
-image is 230×345, about 1.5x a ~155px panel, and a wider tile would start to blur it.
+**The board is flex, not grid, because a short last row is centred**, which a grid cannot do.
+`HubScreen` puts the per-tier counts in `--cols-*` custom properties, picks the live one with
+breakpoint classes, and sizes each tile an exact fraction of the board less 0.1px (so rounding
+can never wrap a full row early). The size cap — 11.5rem a tile — is on the BOARD's max-width,
+never the tile: a capped tile lets a whole extra one fit on a row and undoes the count. The hub's
+Screen is `width="xl"`: `max-w-5xl`, then `max-w-6xl` from `xl` — at 5xl seven across made
+the widest screens' tiles the smallest (132px against ~151). The top bar's row follows the same
+two widths so its brand stays over the hero's edge.
+
+Capping at 11.5rem also keeps each portrait sharp: AniList's "large" character image is
+230×345, and a much wider tile would start to blur it.
 
 **The panel is square, not 4:3, because the art is portraits.** AniList's character images
 are 2:3, so a 4:3 panel could only show a slice of face cut off at the chin — players read it
@@ -117,23 +130,23 @@ repeats the tile's game-ink block and split title at banner size (the accent cla
 `shared/ui/accents.js` and the split is `shared/utils/splitTitle.js`, shared by both so they
 cannot drift). Change one, check the other.
 
-## Under the board: the record strip
+## The record: a trophy in the bar
 
-`RecordStrip.jsx` is the main profile's play history (see
-`.claude/rules/play-history.md`): games and wins, a chip per game in that game's ink — the tile bar's colour, so
-the chips sort the way the board does — and the last five games. It sits BELOW the board,
-never above it, for the hero's reason: the hub's height belongs to the games. It reads
-storage once per mount, which is enough because the menu branch unmounts while a game is
-open, so returning from a game is a fresh read. It shows the main profile only.
+The hub page is the games and nothing else; everything else sits in the top bar's corners. The
+main profile's play history (see `.claude/rules/play-history.md`) opens from `RecordButton.jsx`,
+an icon-only trophy just left of the profile pill, shown only when there is a main profile. It
+replaced a "Your record" card under the board (the record strip), removed because it was page
+content that was not a game.
 
 **`RecordScreen.jsx` is the whole record**, a full hub view like ListManager's (`recordOf` in
 `HubScreen`, `{ id, from }`): totals, streaks, a card per game in its ink, head-to-head, and
-every game, 20 at a time. It opens from the strip's "See full record" and from a trophy on
+every game, 20 at a time. It opens from the bar's trophy ("Your record") and from a trophy on
 every profile-picker row — any profile, because every profile seated at a local game here is
-recorded — and its back step returns where it came from ("← Hub" or "← Profiles"). The
-strip's rows and the log's are one component, `RecordLine.jsx`. The trophy is a bare glyph like
-delete's rather than a block like edit's: a third block squeezed the name to a few letters on a
-phone. The playtest fallback denies both ways in.
+recorded — and its back step returns where it came from ("← Hub" or "← Profiles"). It reads
+storage once per mount, which is enough because nothing records while the hub is on screen. Its
+log rows are `RecordLine.jsx`. The picker's trophy is a bare glyph like delete's rather than a
+block like edit's: a third block squeezed the name to a few letters on a phone. The playtest
+fallback denies both ways in.
 
 ## Invite links skip the front door
 

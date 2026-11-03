@@ -18,6 +18,9 @@ import MuteToggle from './MuteToggle';
 //
 // h-14 and fixed. Screen.jsx's top padding (pt-20) is what clears it, so a
 // change to the height is a change there too.
+//
+// Its row is as wide as the hub's menu (Screen's `xl`: 5xl, then 6xl from xl),
+// so the brand sits over the hero's left edge; change one, change the other.
 
 export default function TopBar({ title = null, kana = null, end = null, children }) {
   // Callback refs into state, so a consumer re-renders once the node exists.
@@ -31,7 +34,7 @@ export default function TopBar({ title = null, kana = null, end = null, children
         className={`fixed inset-x-0 top-0 z-40 h-14 border-b-2 border-ink bg-surface/95
           backdrop-blur-sm`}
       >
-        <div className="mx-auto flex h-full max-w-5xl items-center gap-2 px-2 sm:gap-3 sm:px-4">
+        <div className="mx-auto flex h-full max-w-5xl items-center xl:max-w-6xl gap-2 px-2 sm:gap-3 sm:px-4">
           {/* Empty on the hub menu (there is nowhere to go "home" to), so it
               collapses to nothing and the brand sits flush left. */}
           <div ref={setLeft} className="flex items-center empty:hidden" />
