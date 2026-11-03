@@ -24,8 +24,9 @@ export const HOW_TO = {
       items: [
         'Name one character or show. Your judge, the next player round, says whether it fits your category.',
         'The seat moves on after every name, so it comes back round quickly.',
-        'When you think you know your category, declare it. The judge says whether you got it.',
+        'When you think you know your category, declare it. The judge checks it against the real one: the same rule in other words counts, close does not.',
         `A wrong declaration costs you ${WRONG_DECLARATION_COST} names.`,
+        'When your names run out, you hear the answer to your last one and then get one final guess.',
       ],
     },
     {

@@ -472,17 +472,23 @@ export function judge(state, judgeId, verdict, requiredIds = [], playerIds = [],
  * banked and the round moves on, which is the same escape passTurn and
  * abandonTurn reach by hand.
  *
- * THREE OUTCOMES, and only one of them ends anybody's round:
+ * FOUR OUTCOMES:
  *
  *   a correct declaration  ends the declarer's round with the points. It never
  *                          enters the trail — it is the thing the trail was for.
  *   anything else          lands in the trail as { text, verdicts } (plus `kind`
- *                          on a miss) and THE SEAT MOVES ON. A
- *                          `no` is worth exactly as much as a `yes`, which is
- *                          why both are stored the same way and neither is
- *                          filtered out of the count.
- *   …unless that spent the cap, in which case the same entry is written and the
- *                          player's round ends with it.
+ *                          on a miss) and THE SEAT MOVES ON. A `no` is worth
+ *                          exactly as much as a `yes`, which is why both are
+ *                          stored the same way and neither is filtered out of
+ *                          the count.
+ *   …a NAME that spent     is written the same way, but THE SEAT STAYS: the
+ *    the cap               player has just heard the answer to their last name,
+ *                          and the go they are still holding is their final
+ *                          guess (or a give-up). Ending the round here showed
+ *                          them the answer before they could use that last
+ *                          piece of evidence, which is the bug this replaced.
+ *   …a MISS that spent     ends the player's round with it — the floor under
+ *    the cap               the softened miss rule.
  *
  * `results` is still the record of who has finished, which is why the last case
  * writes one even though nothing was solved: omitting it would hand that player
@@ -545,6 +551,12 @@ export function settlePending(state, requiredIds = [], playerIds = [], skipIds =
         seatId: seatFrom(state, state.results, playerIds, skipIds) ?? seatId,
       },
     };
+  }
+  if (pending.kind === 'proposal') {
+    // Out of names, not out of the round: the seat keeps the go for a final
+    // guess. proposeName refuses at zero left, so declaring or passing are the
+    // only ways on from here.
+    return { patch: { phase: 'naming', pending: null, trails, lastPlayed, seatId } };
   }
   return endRound(
     { solved: false, guess: pending.kind === 'declaration' ? pending.text : '', used },

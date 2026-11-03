@@ -63,9 +63,10 @@ export default function TurnScreen({
   }
 
   // A new go opens on the naming box, never on a declaration box the previous
-  // player left open — and never carrying their half-typed guess into it. Keyed on the seat, which now changes after
-  // every single name rather than once a turn, so this fires far more often and
-  // matters far more: on a shared device the box is handed straight over.
+  // player left open — and never carrying their half-typed guess into it. Keyed
+  // on the seat, which changes after every single name rather than once a turn,
+  // so this fires far more often and matters far more: on a shared device the
+  // box is handed straight over.
   const turnKey = `${roundNumber} ${seatName}`;
   const [lastTurn, setLastTurn] = useState(turnKey);
   if (lastTurn !== turnKey) {
@@ -74,10 +75,16 @@ export default function TurnScreen({
     setDraft('');
   }
 
+  // OUT OF NAMES IS THE FINAL GUESS. The go stays with the seat after their
+  // last name is answered (rules.settlePending), and naming is no longer
+  // possible — so the box simply IS the guess box, with no way back to naming.
+  const finalGuess = canName && left <= 0;
+  const guessing = declaring || finalGuess;
+
   const submit = () => {
     const text = draft.trim();
     if (!text) return;
-    if (!declaring) { onPropose(text); return; }
+    if (!guessing) { onPropose(text); return; }
     onDeclare(text);
   };
 
@@ -100,9 +107,16 @@ export default function TurnScreen({
     .map((p) => p.name)
     .join(', ');
 
+  const judgingGuess = waitingOnJudge && pending?.kind === 'declaration';
+
+  // The judge's line first: `rulers` is only non-empty while something is being
+  // judged, and on a shared device `canName` is always true, so checking the
+  // seat's lines first told the judge to make a final guess.
   const instruction = () => {
-    if (canName) return `Name one ${noun}. The judge will tell you yes or no.`;
+    if (iRule && judgingGuess) return `Only say yes if ${seatName}'s guess means the same thing as their category.`;
     if (iRule) return `Answer ${seatName} honestly.`;
+    if (finalGuess && !waitingOnJudge) return 'Out of names — make your final guess at your category, or give up.';
+    if (canName) return `Name one ${noun}. The judge will tell you yes or no.`;
     if (laterNames || ruler) return 'Watch, and say nothing.';
     return `${seatName} is naming. Watch, and say nothing.`;
   };
@@ -137,7 +151,10 @@ export default function TurnScreen({
       {/* The seat's clause, absent entirely on their own device. A strip
           rather than a panel — it is a thing to consult, not the thing being
           asked. */}
-      {category && (peek
+      {/* Hidden while a GUESS is being judged: the judging card carries its own
+          copy, right beside the guess, so the two are compared rather than
+          remembered. */}
+      {category && !judgingGuess && (peek
         ? <CategoryPeek label={category.label} seatName={seatName} bare className="mb-5" />
         : (
           <div className="mb-5 rounded-pop-sm bg-wash-soft px-3 py-2">
@@ -161,6 +178,37 @@ export default function TurnScreen({
             {pending.text}
           </SpeechBubble>
 
+          {/* A GUESS IS JUDGED AGAINST THE REAL CATEGORY, ON SCREEN. A judge
+              answering from memory with a bare Yes said yes to guesses that
+              were only in the neighbourhood, and a yes pays full marks. So the
+              category sits right under the guess — behind a peek on a shared
+              device, where the guesser is sitting there — and the buttons say
+              what a yes means. */}
+          {judgingGuess && category && (peek ? (
+            <CategoryPeek
+              label={category.label}
+              seatName={seatName}
+              openLabel="Their real category"
+              closedLabel={`Compare with the real category — ${seatName} looks away`}
+              bare
+              className="mb-3 text-left"
+            />
+          ) : (
+            <div className="mb-3 rounded-pop-sm bg-wash-soft px-3 py-2 text-left">
+              <p className="font-display text-xs font-extrabold uppercase tracking-widest text-fg-helper">
+                Their real category
+              </p>
+              <p className="mt-0.5 font-display text-xl font-extrabold text-fg-strong">
+                {category.label}
+              </p>
+            </div>
+          ))}
+          {judgingGuess && ruler && (
+            <p className="mb-3 text-sm text-fg-helper">
+              Same rule in other words counts. Close, or only part of it, is a no.
+            </p>
+          )}
+
           {ruler && (
             <>
               {/* Named whenever the device is shared, so the person holding it
@@ -172,10 +220,10 @@ export default function TurnScreen({
               )}
               <div className="flex gap-3">
                 <Button variant="success" size="lg" sound="yes" fullWidth onClick={() => onRule(ruler.id, true)}>
-                  <Icon name="check" /> Yes
+                  <Icon name="check" /> {judgingGuess ? 'Yes — same category' : 'Yes'}
                 </Button>
                 <Button variant="danger" size="lg" sound="no" fullWidth onClick={() => onRule(ruler.id, false)}>
-                  <Icon name="cross" /> No
+                  <Icon name="cross" /> {judgingGuess ? 'No — not it' : 'No'}
                 </Button>
               </div>
             </>
@@ -200,40 +248,42 @@ export default function TurnScreen({
             onKeyDown={(e) => e.key === 'Enter' && submit()}
             maxLength={MAX_PROPOSAL_LEN}
             autoFocus
-            aria-label={declaring ? 'Your guess at the category' : `A ${noun} to try`}
-            placeholder={declaring ? 'e.g. wears glasses' : `Name a ${noun}…`}
+            aria-label={guessing ? 'Your guess at the category' : `A ${noun} to try`}
+            placeholder={guessing ? 'e.g. wears glasses' : `Name a ${noun}…`}
             className="mb-3"
           />
           <Button
-            variant={declaring ? 'success' : 'primary'}
+            variant={guessing ? 'success' : 'primary'}
             size="lg"
             fullWidth
-            disabled={declaring ? !draft.trim() : (!draft.trim() || left <= 0)}
+            disabled={!draft.trim()}
             onClick={submit}
           >
-            {declaring ? 'That is my category' : 'Ask — then pass'}
+            {guessing ? 'That is my category' : 'Ask — then pass'}
           </Button>
 
           {/* DECLARING IS A REAL BUTTON, NOT A GHOST LINK. It is the win
               condition of the game and it used to sit at the same dim weight as
               "give up", on the same row, which said the two were alternatives of
               equal standing. Always reachable, including with no names spent —
-              scoreTurn caps what a blind guess pays rather than forbidding it —
-              and it is the ONLY thing still reachable once the names run out. */}
-          <Button
-            variant={declaring ? 'neutral' : 'secondary'}
-            size="md"
-            fullWidth
-            className="mt-3"
-            onClick={() => { setDeclaring((v) => !v); setDraft(''); }}
-          >
-            {declaring ? `← Back to naming ${noun}s` : 'I know the category'}
-          </Button>
+              scoreTurn caps what a blind guess pays rather than forbidding it.
+              Gone on the final guess, where there is no naming to go back to. */}
+          {!finalGuess && (
+            <Button
+              variant={declaring ? 'neutral' : 'secondary'}
+              size="md"
+              fullWidth
+              className="mt-3"
+              onClick={() => { setDeclaring((v) => !v); setDraft(''); }}
+            >
+              {declaring ? `← Back to naming ${noun}s` : 'I know the category'}
+            </Button>
+          )}
 
-          {!declaring && (
+          {(!declaring || finalGuess) && (
             <p className="mt-3 text-sm text-fg-subtle">
-              {left <= 0
-                ? 'Out of names — say what you think it is, or sit out the round.'
+              {finalGuess
+                ? 'Your last chance this round — your category is shown after this guess.'
                 : `A wrong guess costs ${WRONG_DECLARATION_COST} names, not your round.`}
             </p>
           )}

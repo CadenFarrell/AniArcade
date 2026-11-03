@@ -40,7 +40,7 @@ export const SETTING_HELP = {
            scores more — a solve is worth the cap minus the names you spent — so this
            sets the size of the prize as well as the length of a round. A wrong
            declaration costs ${WRONG_DECLARATION_COST} of them rather than ending your
-           round. Below about six, an unlucky
+           round, and when they run out you still get one final guess. Below about six, an unlucky
            opening leaves nothing to reason from.`,
   },
 

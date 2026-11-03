@@ -45,6 +45,14 @@ const withLaps = (state, laps, verdict = false, ids = IDS) => (
   withNames(state, laps * ids.length, verdict, ids)
 );
 
+// Every player spends every name, and 'a' — who holds the go for their final
+// guess once their last name is answered — gives up instead. The shortest
+// route to one player having FINISHED while everyone else plays on.
+const aFinished = () => {
+  const s = withLaps(startRound(IDS, { cap: MIN_CAP }), MIN_CAP);
+  return apply(s, passTurn(s, 'a'));
+};
+
 // A table-picked round with the picking phase already done, for the tests about
 // what comes after it.
 const tableRound = (opts = {}) => {
@@ -277,14 +285,36 @@ describe('judging a name', () => {
     expect(proposalsUsed(s, 'c')).toBe(1);
   });
 
-  // A round that ran out still has to write a result, because `results` is what
-  // seatFrom reads as "has finished".
-  it('ends the player’s round — with a result — on their last name', () => {
+  // The answer to your last name is evidence, so the go stays with you for a
+  // final guess instead of the round ending and showing you the category.
+  it('keeps the go after the last name, for a final guess', () => {
     const s = withLaps(startRound(IDS, { cap: MIN_CAP }), MIN_CAP);
-    expect(s.phase).toBe('turnEnd');
-    expect(s.results.a).toEqual({ solved: false, guess: '', used: MIN_CAP });
-    // …and only theirs. Everyone else is still playing.
-    expect(s.results.b).toBeUndefined();
+    expect(s.phase).toBe('naming');
+    expect(s.seatId).toBe('a');
+    expect(proposalsLeft(s, 'a')).toBe(0);
+    expect(s.results.a).toBeUndefined();
+    // Nothing more to name — only a guess or a give-up.
+    expect(proposeName(s, 'a', 'one more').patch).toEqual({});
+    expect(declareCategory(s, 'a', 'wears glasses').patch).not.toEqual({});
+  });
+
+  it('pays a right final guess, and ends the round on a wrong one', () => {
+    const s = withLaps(startRound(IDS, { cap: MIN_CAP }), MIN_CAP);
+    const guessed = apply(s, declareCategory(s, 'a', 'wears glasses'));
+    const right = ruleAll(guessed, true);
+    expect(right.phase).toBe('turnEnd');
+    expect(right.results.a).toEqual({ solved: true, guess: 'wears glasses', used: MIN_CAP });
+    expect(finalScores(right, IDS).a).toBeGreaterThan(0);
+    // A result is written either way, because `results` is what seatFrom reads
+    // as "has finished" — and only for them; everyone else plays on.
+    const wrong = ruleAll(guessed, false);
+    expect(wrong.phase).toBe('turnEnd');
+    expect(wrong.results.a).toMatchObject({ solved: false, guess: 'wears glasses' });
+    expect(wrong.results.b).toBeUndefined();
+  });
+
+  it('lets the player give up instead of guessing', () => {
+    expect(aFinished().results.a).toEqual({ solved: false, guess: '', used: MIN_CAP });
   });
 
   // The tail of a round: once everybody else has finished, there is nobody to
@@ -486,7 +516,7 @@ describe('passing', () => {
 // inside settlePending, and this only picks it up after somebody has finished.
 describe('picking the rotation up after somebody finishes', () => {
   it('moves to the next player who has not finished', () => {
-    const s0 = withLaps(startRound(IDS, { cap: MIN_CAP }), MIN_CAP);
+    const s0 = aFinished();
     const s1 = apply(s0, nextTurn(s0, IDS));
     expect(s1.seatId).toBe('b');
     expect(s1.phase).toBe('naming');
@@ -495,7 +525,7 @@ describe('picking the rotation up after somebody finishes', () => {
   it('ends the round when everyone has finished', () => {
     let s = startRound(IDS, { cap: MIN_CAP });
     for (let i = 0; i < IDS.length; i++) {
-      s = withNames(s, MIN_CAP * IDS.length);
+      s = apply(s, passTurn(s, s.seatId));
       s = apply(s, nextTurn(s, IDS));
     }
     expect(s.phase).toBe('roundEnd');
@@ -503,7 +533,7 @@ describe('picking the rotation up after somebody finishes', () => {
   });
 
   it('steps over a player who left rather than offering them the seat', () => {
-    const s0 = withLaps(startRound(IDS, { cap: MIN_CAP }), MIN_CAP);
+    const s0 = aFinished();
     expect(apply(s0, nextTurn(s0, IDS, ['b'])).seatId).toBe('c');
   });
 
@@ -514,7 +544,7 @@ describe('picking the rotation up after somebody finishes', () => {
   // Counts the active roster, not results.length: a player who left mid-round
   // will never finish and would hold the round open forever.
   it('is complete once everyone STILL HERE has finished', () => {
-    const s = withLaps(startRound(IDS, { cap: MIN_CAP }), MIN_CAP);
+    const s = aFinished();
     expect(roundComplete(s, IDS)).toBe(false);
     expect(roundComplete(s, ['a'])).toBe(true);
   });

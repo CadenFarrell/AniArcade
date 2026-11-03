@@ -99,6 +99,19 @@ penalty (and `used` already flows into `scoreTurn`, so it is priced in the curre
 had), and a row the table can read. A miss that *spends* the cap does end the round, which is
 the floor under the rule — without it a player one name from the cap could guess for free.
 
+**Running out of names is not the end of your round: the go stays with you for one final
+guess.** `settlePending` keeps the seat after a NAME that spends the cap, so the player hears the
+answer to their last name and then declares or gives up (`proposeName` refuses at zero left, and
+`TurnScreen` opens straight on the guess box with no way back to naming). It used to end the
+round there and show the category, which spent the player's last piece of evidence for nothing.
+A MISS that spends the cap still ends the round.
+
+**A guess is judged against the real category, on screen.** The judging card for a declaration
+shows the seat's clause under the guess (behind a `CategoryPeek` on a shared device, where the
+guesser is sitting there) and its buttons say "Yes — same category" / "No — not it", with a line
+that close is a no. A bare Yes judged from memory let near-misses through, and a yes pays full
+marks.
+
 **Two named fields exist only because a miss no longer stops the round to announce itself.**
 `normalizeTrail` has to carry `kind` — an entry that came back as a plain name would silently
 refund two thirds of the penalty — and `lastPlayed` is one overwritten slot holding what the

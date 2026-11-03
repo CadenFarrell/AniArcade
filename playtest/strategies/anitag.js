@@ -71,13 +71,14 @@ export default makeStrategy({
     // The seat is named by the round's heading ("Liam's go"); online on the
     // seat's own phone it is "Your go", and ctx.seat says who that is.
     const seatName = snap.text.match(/([A-Z][a-z]+)'s go/)?.[1] ?? ctx.seat?.name ?? null;
-    const yes = find(snap, /^yes$/i);
-    const no = find(snap, /^no$/i);
+    // "Yes" / "No" on a name; "Yes — same category" / "No — not it" on a guess.
+    const yes = find(snap, /^yes\b/i);
+    const no = find(snap, /^no\b/i);
     if (yes && no) {
       // Locally the seat's category is behind a peek the judge may open.
       const peek = find(snap, /looks away$/i);
       if (peek && rng.chance(0.5)) return click(peek, 'judge peeks at the category');
-      const guess = snap.text.match(/Their guess at the category(.+?)(?:Judging —|[A-Z][a-z]+, your answer|[A-Z][a-z]+'s category|Yes)/);
+      const guess = snap.text.match(/Their guess at the category(.+?)(?:Compare with|Their real category|Same rule|[A-Z][a-z]+, your answer|Yes)/);
       if (guess && seatName) {
         const right = memory.cat[seatName] && guess[1].trim().toLowerCase().includes(memory.cat[seatName].toLowerCase());
         return click(right || rng.chance(0.1) ? yes : no, right ? 'judge: that is the category' : 'judge a guess');
