@@ -2,6 +2,7 @@ import { useState } from 'react';
 import QuizSetup from './components/QuizSetup';
 import LocalRound from './components/LocalRound';
 import { buildDeal } from './deal';
+import { readRecent, rememberDeal } from './recent';
 import { useFactPack } from '../../shared/hooks/useFactPack';
 import { HubButton } from '../../shared/ui';
 import TablePortraits from '../../shared/components/TablePortraits';
@@ -20,8 +21,9 @@ export default function LocalGame({ onExit, onBack }) {
   const [error, setError] = useState(null);
 
   const start = ({ players, settings }) => {
-    const res = buildDeal(pack.pack, players, settings);
+    const res = buildDeal(pack.pack, players, settings, { recent: readRecent() });
     if (res.error) { setError(res.error); return; }
+    rememberDeal(res.deal);
     setError(null);
     // `n` remounts the round on "play again", so its hook deals a fresh game
     // instead of keeping the finished one's state.

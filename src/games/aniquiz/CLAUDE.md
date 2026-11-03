@@ -80,6 +80,35 @@ a wall nobody reads. Three decisions worth keeping:
   The card shows the count beside switched-off topics too, which is what makes turning one
   back on an informed choice, and flags a topic too thin for a column.
 
+**A deal spreads across shows, and across games, softly.** Every deal was random and still a
+handful of shows kept coming back (measured 2026-11-03, 20 boards over a 25-show shared pool,
+the real pack: JoJo asked 39 times against an average of 21, one show filling 5 cells of one
+board, 22% of wrong options repeating within a board). Three causes, three fixes:
+
+- **A clue spends a SHOW** (`showOf`): its subject, or for a character clue the character's
+  show (`show` on the clue — internal to the deal; `normalizeClue` drops it). Character clues
+  are built per character, and pack-v5's JoJo has 35 against a median show's 4, so counted by
+  subject one big cast filled the voice and cast columns. `drawByShow` picks a show, then a clue
+  of it; the quiz's queues are `spreadByShow` (every show once before any twice).
+- **`tiers`**, strongest first: show unused this game + clue not dealt lately + show not in the
+  last game; show unused + clue unseen; show unused; subject unused + unseen; subject unused;
+  anything (the board only — a quiz never repeats a subject). A fresh show outranks an unseen
+  clue because the same show three times in one sitting is the louder repeat. Every tier ends
+  in what the deal did before, so a pool that dealt then deals now. `ladder` works on a copy of
+  the spread state, committed only when the column fills.
+- **`recent.js` remembers what this device dealt** (`aniquiz_recent`, not in `PRESERVED_KEYS`):
+  three games of clue ids, the LAST game's shows only — a 26-clue board on a 20-show list spends
+  nearly every show, so a longer show memory would empty the top tier every time.
+  `dedupeBySubject` keeps an unseen clue per subject when there is one, or the tiers would
+  never see it. Only the dealer remembers (online, the host); nothing reaches room state.
+- **Wrong options**: the table's unshown names, then the pack's unshown, then repeats (the
+  table's first), with `ctx.shownOptions` as the deal's record. A small pool therefore reaches
+  into the pack before it repeats itself. Character and voice-actor options are sampled show
+  first (`localGroups`), for the big-cast reason.
+
+After: 1–2 cells per show a board, 1% of clues repeated from the last three games, 4% of
+wrong options repeated; a whole-pack board deals in ~70ms.
+
 **Options are built only for clues actually dealt.** Building them for every candidate (~10k
 over the whole pack) took a deal twenty seconds; the reverse-clue lookups are bucketed once per
 pack (`lookups`, memoized on the index object) for the same reason.

@@ -8,8 +8,11 @@ import { showKeysFor } from './utils/pool';
  * Returns { deal } or { error } — the error a sentence the setup screen can
  * show as-is, because the only failure here is "this pool cannot fill what was
  * asked for", and the fix is always a setting.
+ *
+ * `recent` is recent.js's readRecent(): what this device dealt lately, which
+ * the deal prefers around. Passed in rather than read here, so this stays pure.
  */
-export function buildDeal(index, players, settings, rng = Math.random) {
+export function buildDeal(index, players, settings, { rng = Math.random, recent = null } = {}) {
   if (!index) return { error: 'The fact pack has not loaded yet.' };
   const keys = showKeysFor(players, settings.pool, index);
   const answerStyle = settings.answerStyle === TYPED ? TYPED : CHOICE;
@@ -18,7 +21,7 @@ export function buildDeal(index, players, settings, rng = Math.random) {
   if (!topics.length) return { error: NO_TOPICS };
 
   if (settings.format === QUIZ) {
-    const res = dealQuiz(index, keys, { count: settings.quizLength, choices, topics, rng });
+    const res = dealQuiz(index, keys, { count: settings.quizLength, choices, topics, rng, recent });
     if (res.error) return { error: NOT_ENOUGH };
     return {
       deal: {
@@ -34,6 +37,7 @@ export function buildDeal(index, players, settings, rng = Math.random) {
     finalRound: settings.finalRound,
     topics,
     rng,
+    recent,
   });
   if (res.error) return { error: NOT_ENOUGH };
   return {

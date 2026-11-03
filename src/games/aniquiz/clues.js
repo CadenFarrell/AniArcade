@@ -256,6 +256,10 @@ export function buildContext(index, showKeys) {
     index, packShows, packChars, shows, characters, showObscurity, charObscurity,
     ...lookups(index),
     domains: new Map(),
+    // Every wrong option this deal has already shown, by domain, so the next
+    // clue's options prefer names the table has not just ruled out. A context
+    // lives for one deal, so this is "earlier in this game" and nothing more.
+    shownOptions: new Map(),
   };
 }
 
@@ -777,6 +781,7 @@ const CHARACTER_BUILDERS = {
       topic: 'voices',
       field: 'voiceActor',
       subject: c.key,
+      show: c.home,
       prompt: `Who voices ${c.name} from ${quote(show?.title ?? c.home)} in Japanese?`,
       answer: c.voiceActorJp,
       kind: 'name',
@@ -803,6 +808,7 @@ const CHARACTER_BUILDERS = {
       topic: 'voices',
       field: 'voiceActorReverse',
       subject: c.key,
+      show: c.home,
       prompt: `${c.voiceActorJp} voices which main character in ${quote(show?.title ?? c.home)}?`,
       answer: c.name,
       kind: 'character',
@@ -831,6 +837,8 @@ const CHARACTER_BUILDERS = {
       topic: 'cast',
       field: 'appearsIn',
       subject: c.key,
+      // The show this clue spends is the one its answer names.
+      show: lead,
       prompt: mainHomes.length
         ? `Which show is ${c.name} a main character in?`
         : `Which show is ${c.name} from?`,
@@ -957,22 +965,53 @@ function numberDistractors(ctx, clue, rng) {
   return shuffle(pool, rng).slice(0, CHOICES - 1).map(String);
 }
 
-// Up to `want` values from `values`, at random, skipping anything whose fold is
-// in `seen` (and adding what it takes). Samples by index rather than shuffling,
-// because `values` can be every voice actor in the pack and this runs once per
+// Up to `want` values from `groups` (a list of value lists), at random, skipping
+// anything whose fold is in any of `skip` (and adding what it takes to every
+// set in `skip`). A group is picked first, then a value in it: grouped by show,
+// that is what stops one big cast supplying most of the names — JoJo has 35
+// characters in pack-v5 against a median show's 4, so a flat draw over every
+// character in play was mostly JoJo. Samples by index rather than shuffling,
+// because a group can be every voice actor in the pack and this runs once per
 // clue dealt.
-function sample(values, want, seen, fold, rng) {
+function sample(groups, want, skip, fold, rng) {
   const out = [];
-  if (!values.length) return out;
+  const live = groups.filter((g) => g.length);
+  if (!live.length) return out;
   for (let tries = 0; out.length < want && tries < want * 25; tries++) {
-    const v = values[Math.floor(rng() * values.length)];
+    const g = live[Math.floor(rng() * live.length)];
+    const v = g[Math.floor(rng() * g.length)];
     if (typeof v !== 'string' || !v.trim()) continue;
     const k = fold(v);
-    if (!k || seen.has(k)) continue;
-    seen.add(k);
+    if (!k || skip.some((s) => s.has(k))) continue;
+    for (const s of skip) s.add(k);
     out.push(v);
   }
   return out;
+}
+
+// The shows in play's own values for a domain, grouped by show where one show
+// can hold many (its cast, its cast's voices); one flat group otherwise, since
+// a show has one studio, one magazine, a handful of staff.
+function localGroups(ctx, domain) {
+  const byHome = (pick) => {
+    const groups = new Map();
+    for (const c of ctx.characters) {
+      if (!groups.has(c.home)) groups.set(c.home, []);
+      groups.get(c.home).push(pick(c));
+    }
+    return [...groups.values()];
+  };
+  if (domain === 'character') return byHome((c) => c.name);
+  if (domain === 'voiceActor') return byHome((c) => c.voiceActorJp);
+  const flat = [];
+  if (domain === 'show') flat.push(...ctx.shows.map((s) => s.title));
+  if (domain === 'studio') flat.push(...ctx.shows.map((s) => s.studio));
+  if (domain === 'staff') for (const s of ctx.shows) for (const f of STAFF_FIELDS) flat.push(s[f]);
+  if (domain === 'artist') for (const s of ctx.shows) for (const t of themesOf(s)) flat.push(...(t.artists ?? []));
+  if (domain === 'magazine') flat.push(...ctx.shows.map((s) => s.serializedIn));
+  if (domain === 'publisher') flat.push(...ctx.shows.filter((s) => s.source === 'MANGA').map((s) => s.originalPublisher));
+  if (domain === 'imprint') flat.push(...ctx.shows.filter((s) => s.source === 'LIGHT_NOVEL').map((s) => s.originalPublisher));
+  return [flat];
 }
 
 function domainFor(ctx, domain) {
@@ -984,35 +1023,51 @@ function domainFor(ctx, domain) {
 // the table recognises is a real choice, while four strangers is a coin toss
 // between names. Anything the clue would ACCEPT is excluded, or a "wrong"
 // option could be marked right.
+//
+// Within that, a name already shown as a wrong option earlier in this game is
+// a last resort: on a small shared pool the same dozen titles were coming back
+// on clue after clue, and a player who has ruled a name out twice has learned
+// the options, not the answer. So the order is the table's unshown names, the
+// pack's unshown names, then repeats (the table's first). A small pool will
+// therefore reach into the pack before it repeats itself — deliberately.
 function domainDistractors(ctx, clue, rng) {
   const fold = FOLDS[clue.kind] ?? foldName;
   const seen = new Set(clue.accept);
   seen.add(fold(clue.answer));
-  // The closed sets are small enough to use whole.
+  // The closed sets are small enough to use whole, and four seasons or a few
+  // source kinds cannot be spread anyway.
   if (clue.domain === 'source' || clue.domain === 'season') {
     return shuffle(domainFor(ctx, clue.domain).filter((v) => !seen.has(fold(v))), rng).slice(0, CHOICES - 1);
   }
 
-  const local = [];
-  if (clue.domain === 'show') local.push(...ctx.shows.map((s) => s.title));
-  if (clue.domain === 'character') local.push(...ctx.characters.map((c) => c.name));
-  if (clue.domain === 'studio') local.push(...ctx.shows.map((s) => s.studio));
-  if (clue.domain === 'staff') for (const s of ctx.shows) for (const f of STAFF_FIELDS) local.push(s[f]);
-  if (clue.domain === 'voiceActor') local.push(...ctx.characters.map((c) => c.voiceActorJp));
-  if (clue.domain === 'artist') for (const s of ctx.shows) for (const t of themesOf(s)) local.push(...(t.artists ?? []));
-  if (clue.domain === 'magazine') local.push(...ctx.shows.map((s) => s.serializedIn));
-  if (clue.domain === 'publisher') local.push(...ctx.shows.filter((s) => s.source === 'MANGA').map((s) => s.originalPublisher));
-  if (clue.domain === 'imprint') local.push(...ctx.shows.filter((s) => s.source === 'LIGHT_NOVEL').map((s) => s.originalPublisher));
-
-  const picked = sample(local, CHOICES - 1, seen, fold, rng);
-  picked.push(...sample(domainFor(ctx, clue.domain), CHOICES - 1 - picked.length, seen, fold, rng));
+  const local = localGroups(ctx, clue.domain);
+  const pack = [domainFor(ctx, clue.domain)];
+  // A copy: the "unshown" passes add their picks to it, and the deal's own
+  // record is written by withChoices only once the clue is actually used.
+  const avoid = new Set(ctx.shownOptions.get(clue.domain) ?? []);
+  const picked = [];
+  const pass = (groups, skip) => picked.push(...sample(groups, CHOICES - 1 - picked.length, skip, fold, rng));
+  pass(local, [seen, avoid]);
+  pass(pack, [seen, avoid]);
+  pass(local, [seen]);
+  pass(pack, [seen]);
   return picked;
 }
 
-/** The clue with `options` attached, or null when four honest options cannot be made. */
+/**
+ * The clue with `options` attached, or null when four honest options cannot be
+ * made. Records the wrong options on the context, so later clues in the same
+ * deal prefer others (see domainDistractors).
+ */
 export function withChoices(ctx, clue, rng = Math.random) {
   const wrong = clue.kind === 'number' ? numberDistractors(ctx, clue, rng) : domainDistractors(ctx, clue, rng);
   if (wrong.length < CHOICES - 1) return null;
+  if (clue.kind !== 'number' && ctx.shownOptions) {
+    const fold = FOLDS[clue.kind] ?? foldName;
+    if (!ctx.shownOptions.has(clue.domain)) ctx.shownOptions.set(clue.domain, new Set());
+    const shown = ctx.shownOptions.get(clue.domain);
+    for (const w of wrong) shown.add(fold(w));
+  }
   return { ...clue, options: shuffle([clue.answer, ...wrong], rng) };
 }
 
@@ -1024,11 +1079,15 @@ export function withChoices(ctx, clue, rng = Math.random) {
 // thirty clues.
 
 // One clue per subject per topic: two "Air Dates" clues about the same show in
-// one column is a column about that show.
-function dedupeBySubject(clues, rng) {
+// one column is a column about that show. The one kept is a clue this device
+// has not dealt lately when the subject has one (recent.js) — dropped here, an
+// unseen way to ask about a show would never reach the tiers that prefer it.
+function dedupeBySubject(clues, rng, recentIds = new Set()) {
   const seen = new Set();
   const out = [];
-  for (const c of shuffle(clues, rng)) {
+  const mixed = shuffle(clues, rng);
+  const ordered = [...mixed.filter((c) => !recentIds.has(c.id)), ...mixed.filter((c) => recentIds.has(c.id))];
+  for (const c of ordered) {
     if (seen.has(c.subject)) continue;
     seen.add(c.subject);
     out.push(c);
@@ -1036,37 +1095,125 @@ function dedupeBySubject(clues, rng) {
   return out;
 }
 
-// A random member of `pool` that survives `finish`, or null. Rejects are
-// dropped from the pool so a retry cannot pick them again.
-function draw(pool, finish, rng) {
-  const left = [...pool];
-  while (left.length) {
-    const i = Math.floor(rng() * left.length);
-    const done = finish(left[i]);
-    if (done) return { source: left[i], clue: done };
-    left.splice(i, 1);
+// ── Spread ──
+//
+// A clue SPENDS a show: its subject when it is about a show, the character's
+// show when it is about a character. Counting character clues by character
+// (their subject) let one big cast fill a board — JoJo has 35 characters in
+// pack-v5, the median show 4, and a deal over a 25-show shared list asked about
+// JoJo nearly twice as often as the average show (measured 2026-11-03).
+export const showOf = (clue) => clue?.show ?? clue?.subject ?? '';
+
+// What a deal tries to avoid, and what it has already spent. `recent` comes
+// from recent.js (the dealing device's last few games): `ids` are clues asked
+// recently, `shows` the shows the last game featured.
+function spreadState(recent) {
+  return {
+    usedShows: new Set(),
+    usedSubjects: new Set(),
+    recentIds: recent?.ids instanceof Set ? recent.ids : new Set(),
+    recentShows: recent?.shows instanceof Set ? recent.shows : new Set(),
+  };
+}
+
+function spend(st, clue) {
+  st.usedShows.add(showOf(clue));
+  st.usedSubjects.add(clue.subject);
+}
+
+// Preferences, strongest first; a draw takes the first tier that yields a clue.
+// Every one is SOFT — the last tier is what the deal did before any of this, so
+// a pool that dealt then deals now; it is only drawn from in a better order.
+// A show unused this game outranks a clue unseen in recent games: the same show
+// three times in one sitting is the louder repeat.
+function tiers(st, { allowRepeatSubject = true } = {}) {
+  const newShow = (c) => !st.usedShows.has(showOf(c));
+  const unseen = (c) => !st.recentIds.has(c.id);
+  const newSubject = (c) => !st.usedSubjects.has(c.subject);
+  const out = [
+    (c) => newShow(c) && unseen(c) && !st.recentShows.has(showOf(c)),
+    (c) => newShow(c) && unseen(c),
+    newShow,
+    (c) => newSubject(c) && unseen(c),
+    newSubject,
+  ];
+  if (allowRepeatSubject) out.push(() => true);
+  return out;
+}
+
+// A random member of `pool` that survives `finish`, or null — drawn show first,
+// then a clue of that show, so a show's chance does not grow with its cast.
+// Rejects are dropped so a retry cannot pick them again.
+function drawByShow(pool, finish, rng) {
+  const groups = new Map();
+  for (const c of pool) {
+    const s = showOf(c);
+    if (!groups.has(s)) groups.set(s, []);
+    groups.get(s).push(c);
+  }
+  const shows = [...groups.keys()];
+  while (shows.length) {
+    const si = Math.floor(rng() * shows.length);
+    const group = groups.get(shows[si]);
+    const ci = Math.floor(rng() * group.length);
+    const done = finish(group[ci]);
+    if (done) return { source: group[ci], clue: done };
+    group.splice(ci, 1);
+    if (!group.length) shows.splice(si, 1);
+  }
+  return null;
+}
+
+function drawTiered(pool, st, finish, rng) {
+  for (const ok of tiers(st)) {
+    const hit = drawByShow(pool.filter(ok), finish, rng);
+    if (hit) return hit;
   }
   return null;
 }
 
 // Five clues, one from each fifth of the difficulty range, easiest first. A
-// board column is a ladder, and a random draw is not one.
-function ladder(candidates, usedSubjects, finish, rng) {
+// board column is a ladder, and a random draw is not one. Works on a copy of
+// the spread state, committed only if the whole column fills, so a column that
+// fails does not leave its shows marked spent.
+function ladder(candidates, st, finish, rng) {
   const sorted = [...candidates].sort((a, b) => a.difficulty - b.difficulty);
+  const local = { ...st, usedShows: new Set(st.usedShows), usedSubjects: new Set(st.usedSubjects) };
   const picks = [];
   const taken = new Set();
   for (let r = 0; r < ROWS; r++) {
     const lo = Math.floor((r * sorted.length) / ROWS);
     const hi = Math.floor(((r + 1) * sorted.length) / ROWS);
     const band = sorted.slice(lo, Math.max(hi, lo + 1)).filter((c) => !taken.has(c));
-    const fresh = band.filter((c) => !usedSubjects.has(c.subject));
-    const hit = draw(fresh, finish, rng) ?? draw(band, finish, rng);
+    const hit = drawTiered(band, local, finish, rng);
     if (!hit) return null;
     taken.add(hit.source);
+    // Spent per pick, not per column, so one column cannot take two of a
+    // show's characters while other shows are left.
+    spend(local, hit.clue);
     picks.push(hit.clue);
   }
-  for (const p of picks) usedSubjects.add(p.subject);
+  st.usedShows = local.usedShows;
+  st.usedSubjects = local.usedSubjects;
   return { picks, taken };
+}
+
+// A topic's clues in an order that visits every show before any show twice:
+// grouped by show, groups shuffled, then dealt round-robin. The quiz takes its
+// queues in order, so this is its version of drawByShow.
+function spreadByShow(clues, rng) {
+  const groups = new Map();
+  for (const c of shuffle(clues, rng)) {
+    const s = showOf(c);
+    if (!groups.has(s)) groups.set(s, []);
+    groups.get(s).push(c);
+  }
+  const lists = shuffle([...groups.values()], rng);
+  const out = [];
+  for (let i = 0; out.length < clues.length; i++) {
+    for (const l of lists) if (i < l.length) out.push(l[i]);
+  }
+  return out;
 }
 
 const finisher = (ctx, choices, rng) => (clue) => (choices ? withChoices(ctx, clue, rng) : clue);
@@ -1081,13 +1228,18 @@ const finisher = (ctx, choices, rng) => (clue) => (choices ? withChoices(ctx, cl
  * The Daily Double never sits in the top row. A wager on a 200-point clue is a
  * wager on the easiest question on the board, which turns the one high-stakes
  * moment in the game into free money.
+ *
+ * `recent` ({ ids, shows } Sets, from recent.js) is what this device dealt
+ * lately; every draw prefers around it and the shows already on the board
+ * (see `tiers`), never strictly.
  */
 export function dealBoard(index, showKeys, {
   categories = 5, choices = true, dailyDouble = true, finalRound = true, topics = TOPICS, rng = Math.random,
+  recent = null,
 } = {}) {
   const ctx = buildContext(index, showKeys);
   const finish = finisher(ctx, choices, rng);
-  const usedSubjects = new Set();
+  const st = spreadState(recent);
   const columns = [];
   const leftovers = [];
 
@@ -1095,12 +1247,12 @@ export function dealBoard(index, showKeys, {
   // `categories` simply deals a narrower board; the final draws from them too,
   // so a switched-off topic cannot sneak back in as the last question.
   for (const topic of shuffle(topics, rng)) {
-    const pool = dedupeBySubject(candidatesFor(ctx, topic), rng);
+    const pool = dedupeBySubject(candidatesFor(ctx, topic), rng, st.recentIds);
     if (columns.length >= categories || pool.length < ROWS) {
       leftovers.push(...pool);
       continue;
     }
-    const hit = ladder(pool, usedSubjects, finish, rng);
+    const hit = ladder(pool, st, finish, rng);
     if (!hit) { leftovers.push(...pool); continue; }
     columns.push({
       id: topic.id,
@@ -1112,14 +1264,18 @@ export function dealBoard(index, showKeys, {
 
   if (columns.length < 2) return { error: 'not-enough' };
 
-  // The final is a hard clue about a subject the board did not already use —
-  // otherwise the last question of the night is a re-run.
+  // The final is a hard clue about a show the board did not already use —
+  // otherwise the last question of the night is a re-run. "Hard" is the top
+  // fifth of whatever is fresh, so a show the board spent is never the reason a
+  // fresh one is passed over.
   let final = null;
   if (finalRound) {
-    const fresh = leftovers.filter((c) => !usedSubjects.has(c.subject));
-    const hard = [...(fresh.length ? fresh : leftovers)].sort((a, b) => b.difficulty - a.difficulty);
-    const hit = draw(hard.slice(0, Math.max(1, Math.ceil(hard.length / 5))), finish, rng)
-      ?? draw(hard, finish, rng);
+    const freshShow = leftovers.filter((c) => !st.usedShows.has(showOf(c)));
+    const freshSubject = leftovers.filter((c) => !st.usedSubjects.has(c.subject));
+    const base = freshShow.length ? freshShow : freshSubject.length ? freshSubject : leftovers;
+    const hard = [...base].sort((a, b) => b.difficulty - a.difficulty);
+    const hit = drawTiered(hard.slice(0, Math.max(1, Math.ceil(hard.length / 5))), st, finish, rng)
+      ?? drawTiered(hard, st, finish, rng);
     if (hit) final = { ...hit.clue, value: 0, categoryTitle: topicTitle(hit.clue.topic) };
   }
 
@@ -1154,27 +1310,41 @@ export function quizValue(difficulty) {
  * and a straight draw would be a voice-acting quiz.
  */
 export function dealQuiz(index, showKeys, {
-  count = 10, choices = true, topics = TOPICS, rng = Math.random,
+  count = 10, choices = true, topics = TOPICS, rng = Math.random, recent = null,
 } = {}) {
   const ctx = buildContext(index, showKeys);
   const finish = finisher(ctx, choices, rng);
+  const st = spreadState(recent);
   const queues = shuffle(topics, rng)
-    .map((t) => dedupeBySubject(candidatesFor(ctx, t), rng))
+    .map((t) => spreadByShow(dedupeBySubject(candidatesFor(ctx, t), rng, st.recentIds), rng))
     .filter((q) => q.length);
-  const usedSubjects = new Set();
+  // A quiz never asks about one subject twice, however small the pool — it is
+  // short enough that a repeat would be noticed — so its tiers stop there.
+  const prefs = tiers(st, { allowRepeatSubject: false });
+  // The first clue in `q` the strongest possible tier accepts. A clue `finish`
+  // rejects is dropped for good (it cannot make four options), and so is one
+  // whose subject is spent, since no tier will take it again.
+  const next = (q) => {
+    for (const ok of prefs) {
+      for (let i = 0; i < q.length;) {
+        const c = q[i];
+        if (st.usedSubjects.has(c.subject)) { q.splice(i, 1); continue; }
+        if (!ok(c)) { i++; continue; }
+        q.splice(i, 1);
+        const done = finish(c);
+        if (done) return done;
+      }
+    }
+    return null;
+  };
   const picks = [];
   while (picks.length < count && queues.some((q) => q.length)) {
     for (const q of queues) {
       if (picks.length >= count) break;
-      while (q.length) {
-        const c = q.shift();
-        if (usedSubjects.has(c.subject)) continue;
-        const done = finish(c);
-        if (!done) continue;
-        usedSubjects.add(c.subject);
-        picks.push(done);
-        break;
-      }
+      const done = next(q);
+      if (!done) continue;
+      spend(st, done);
+      picks.push(done);
     }
   }
   if (!picks.length) return { error: 'not-enough' };

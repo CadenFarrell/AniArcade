@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { indexPack } from '../../shared/utils/facts';
 import {
   BOARD_VALUES, CHOICES, ROWS, buildContext, candidatesFor, dealBoard, dealQuiz, domainValues, enabledTopics,
-  foldAnswer, isCorrect, normalizeClue, parseCell, poolSummary, TOPICS, withChoices,
+  foldAnswer, isCorrect, normalizeClue, parseCell, poolSummary, showOf, TOPICS, withChoices,
 } from './clues';
 
 // Deterministic, so a failure reproduces.
@@ -234,6 +234,135 @@ describe('dealQuiz', () => {
 
   it('errors on an empty pool', () => {
     expect(dealQuiz(index, [], {})).toEqual({ error: 'not-enough' });
+  });
+});
+
+// Ten shows, the first with a 30-strong main cast — pack-v5's JoJo has 35
+// against a median show's 4, which is what let one show crowd the deal.
+function bigCastIndex() {
+  const raw = makePack({ shows: 10 });
+  for (let c = 3; c < 30; c++) {
+    raw.characters[`hero 0 ${c}`] = {
+      name: `Hero 0 ${c}`, voiceActorJp: `Actor 0 ${c}`, favourites: 500 - c, appearsIn: ['show 0'],
+    };
+  }
+  return indexPack(raw);
+}
+
+describe('spread across shows', () => {
+  const boardClues = (b) => [...b.categories.flatMap((c) => c.clues), ...(b.final ? [b.final] : [])];
+
+  it('counts a character clue against its show', () => {
+    const ctx = buildContext(index, ['show 3']);
+    const voice = candidatesFor(ctx, TOPICS.find((t) => t.id === 'voices'));
+    expect(voice.length).toBeGreaterThan(0);
+    for (const c of voice) expect(showOf(c)).toBe('show 3');
+    const cast = candidatesFor(ctx, TOPICS.find((t) => t.id === 'cast'));
+    for (const c of cast) expect(showOf(c)).toBe('show 3');
+  });
+
+  it('gives a big cast no more chances than a small one', () => {
+    // A five-question voice quiz over ten shows: even, each show is in about
+    // half of them. Drawn per character, the 30-strong show was in nearly all.
+    const big = bigCastIndex();
+    const keys = [...big.shows.keys()];
+    const voices = TOPICS.filter((t) => t.id === 'voices');
+    let withBig = 0;
+    const N = 200;
+    for (let seed = 1; seed <= N; seed++) {
+      const { questions } = dealQuiz(big, keys, { count: 5, topics: voices, rng: seeded(seed) });
+      expect(questions).toHaveLength(5);
+      if (questions.some((q) => showOf(q) === 'show 0')) withBig++;
+    }
+    expect(withBig / N).toBeLessThan(0.65);
+    expect(withBig / N).toBeGreaterThan(0.35);
+  });
+
+  it('uses each show once on a board while the pool has shows to spare', () => {
+    const wide = indexPack(makePack({ shows: 40 }));
+    const keys = [...wide.shows.keys()];
+    for (let seed = 1; seed <= 10; seed++) {
+      const clues = boardClues(dealBoard(wide, keys, { categories: 5, rng: seeded(seed) }));
+      expect(clues).toHaveLength(26);
+      expect(new Set(clues.map(showOf)).size).toBe(26);
+    }
+  });
+
+  it('still deals when the pool is too small for every show to be fresh', () => {
+    const small = [...index.shows.keys()].slice(0, 6);
+    const board = dealBoard(index, small, { categories: 5, rng: seeded(3) });
+    expect(board.categories).toHaveLength(5);
+    expect(new Set(boardClues(board).map(showOf)).size).toBe(6);
+  });
+});
+
+describe('recent games', () => {
+  const boardClues = (b) => [...b.categories.flatMap((c) => c.clues), ...(b.final ? [b.final] : [])];
+  const ctx = buildContext(index, allKeys);
+  const ids = TOPICS.flatMap((t) => candidatesFor(ctx, t)).map((c) => c.id);
+  const half = new Set(ids.filter((_, i) => i % 2 === 0));
+
+  it('avoids clues dealt lately when the rest can fill the game', () => {
+    const recent = { ids: half, shows: new Set() };
+    let dealt = 0;
+    let repeats = 0;
+    for (let seed = 1; seed <= 10; seed++) {
+      const { questions } = dealQuiz(index, allKeys, { count: 10, rng: seeded(seed), recent });
+      expect(questions).toHaveLength(10);
+      for (const q of questions) expect(half.has(q.id), q.id).toBe(false);
+      // A board may take a recent clue rather than spend a show twice — a fresh
+      // show outranks an unseen clue — so it is held to a rate, not a ban.
+      // Blind to memory, half of these would be repeats.
+      const clues = boardClues(dealBoard(index, allKeys, { categories: 5, rng: seeded(seed), recent }));
+      dealt += clues.length;
+      repeats += clues.filter((c) => half.has(c.id)).length;
+    }
+    expect(repeats / dealt).toBeLessThan(0.15);
+  });
+
+  it('still deals when everything was dealt lately', () => {
+    const recent = { ids: new Set(ids), shows: new Set(allKeys) };
+    expect(dealQuiz(index, allKeys, { count: 10, rng: seeded(2), recent }).questions).toHaveLength(10);
+    expect(dealBoard(index, allKeys, { categories: 5, rng: seeded(2), recent }).categories).toHaveLength(5);
+  });
+});
+
+describe('wrong options across a deal', () => {
+  it('does not repeat a wrong option while the domain has fresh ones', () => {
+    // These domains hold 60–80 values in the synthetic pack, more than a board
+    // asks of them. Show titles (20, and most clues on a board answer with a
+    // show), studios (six) and the closed sets must repeat, so are left out.
+    const spread = ['character', 'staff', 'voiceActor'];
+    for (let seed = 1; seed <= 10; seed++) {
+      const board = dealBoard(index, allKeys, { categories: 6, rng: seeded(seed) });
+      const clues = [...board.categories.flatMap((c) => c.clues), board.final];
+      const shown = new Map();
+      for (const c of clues.filter((x) => spread.includes(x.domain))) {
+        for (const o of c.options.filter((x) => x !== c.answer)) {
+          const k = `${c.domain}|${foldAnswer(c.kind, o)}`;
+          expect(shown.has(k), `${k} (seed ${seed})`).toBe(false);
+          shown.set(k, true);
+        }
+      }
+    }
+  });
+
+  it('draws character options show by show, not character by character', () => {
+    const big = bigCastIndex();
+    const keys = [...big.shows.keys()];
+    const fromBig = (name) => /^Hero 0 /.test(name);
+    let total = 0;
+    let big0 = 0;
+    for (let seed = 1; seed <= 100; seed++) {
+      // A fresh context each time, so the deal-wide "already shown" record
+      // does not steer the sample.
+      const c = buildContext(big, keys);
+      const clue = candidatesFor(c, TOPICS.find((t) => t.id === 'cast')).find((x) => x.field === 'mainCast' && x.subject === 'show 5');
+      const mc = withChoices(c, clue, seeded(seed));
+      for (const o of mc.options.filter((x) => x !== mc.answer)) { total++; if (fromBig(o)) big0++; }
+    }
+    // Even by show: about one in nine. Flat over characters it was 30 in 54.
+    expect(big0 / total).toBeLessThan(0.25);
   });
 });
 

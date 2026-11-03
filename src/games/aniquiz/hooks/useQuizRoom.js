@@ -4,6 +4,7 @@ import { getFirebaseDb } from '../../../shared/services/firebase';
 import { useRoomCore } from '../../../shared/hooks/useRoomCore';
 import { useDeadline } from '../../../shared/hooks/useDeadline';
 import { buildDeal } from '../deal';
+import { readRecent, rememberDeal } from '../recent';
 import * as rules from '../rules';
 
 // Per-game, so a saved AniQuiz room cannot clobber another game's.
@@ -95,11 +96,13 @@ export function useQuizRoom() {
   const startGame = useCallback(async (settings, pack) => {
     if (!isHost) return;
     const dealtIn = rosterRef.current.active;
-    const res = buildDeal(pack, dealtIn, settings);
+    // Only the host deals, so only the host's device remembers what it dealt.
+    const res = buildDeal(pack, dealtIn, settings, { recent: readRecent() });
     if (res.error) {
       setSyncError(res.error);
       return;
     }
+    rememberDeal(res.deal);
     const db = getFirebaseDb();
     await bestEffort(set(ref(db, `rooms/${roomCode}/open`), false));
     await patchState({
