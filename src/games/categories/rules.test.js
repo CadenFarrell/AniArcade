@@ -1,11 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import {
   DEFAULT_CAP, MAX_CAP, MAX_PROPOSAL_LEN, MIN_CAP, MIN_PLAYERS, WRONG_DECLARATION_COST,
-  CATEGORY_SOURCES, applyRoundScores, beginNaming, declareCategory, everyonePicked,
+  CATEGORY_SOURCES, applyRoundScores, beginNaming, declarationPasses, declareCategory, everyonePicked,
   explainRound, finalScores, hasPicked, isTablePicked, judge, judgeIdFor, nextSeatId,
   nextTurn, normalizeGame, normalizePending, normalizeResults, normalizeTrail,
   normalizeTrails, passTurn, pickingFor, proposalsLeft, proposalsUsed, proposeName,
-  recordPick, requiredJudges, roundComplete, scoreTurn, skipDepartedSeat, startRound,
+  recordPick, requiredJudges, roundComplete, scoreTurn, settlePending, skipDepartedSeat, startRound,
   toSpec, trailFor, turnOrder, verdictsOf,
 } from './rules';
 
@@ -133,9 +133,7 @@ describe('nextSeatId', () => {
     expect(nextSeatId([], {}, [])).toBeNull();
   });
 
-  // Chosen mode makes turn order worth money: every verdict is public, so the
-  // last seat has heard (N-1) x cap answers about clauses they may declare and
-  // the first heard none. Rotating spreads that across the session.
+  // Whoever opens moves between rounds, so nobody always goes first.
   it('rotates the opening seat with the round number, wrapping', () => {
     expect(startRound(IDS, { round: 0 }).seatId).toBe('a');
     expect(startRound(IDS, { round: 1 }).seatId).toBe('b');
@@ -163,7 +161,7 @@ describe('nextSeatId', () => {
   });
 });
 
-describe('judgeIdFor (dealt mode)', () => {
+describe('judgeIdFor', () => {
   it('is the next active player after the hot seat, wrapping', () => {
     const s = startRound(IDS);
     expect(judgeIdFor(s, IDS)).toBe('b');
@@ -191,12 +189,20 @@ describe('judgeIdFor (dealt mode)', () => {
 });
 
 describe('requiredJudges', () => {
-  it('is the derived judge, for either kind of pending', () => {
+  it('is the derived judge alone for a name', () => {
     const s0 = startRound(IDS);
     const named = apply(s0, proposeName(s0, 'a', 'Nezuko'));
     expect(requiredJudges(named, IDS)).toEqual(['b']);
+  });
+
+  // A guess pays out, so the whole table — everyone who can see the category —
+  // votes on it, and a departed player stops being asked.
+  it('is everyone else still here for a guess', () => {
+    const s0 = startRound(IDS);
     const declared = apply(s0, declareCategory(s0, 'a', 'wears glasses'));
-    expect(requiredJudges(declared, IDS)).toEqual(['b']);
+    expect(requiredJudges(declared, IDS)).toEqual(['b', 'c']);
+    expect(requiredJudges(declared, IDS, ['c'])).toEqual(['b']);
+    expect(requiredJudges(declared, IDS, ['b', 'c'])).toEqual([]);
   });
 
   it('is empty with nothing pending', () => {
@@ -476,7 +482,7 @@ describe('declaring the category', () => {
     const s0 = startRound(IDS, { cap: 10 });
     const done = ruleAll(apply(s0, declareCategory(s0, 'a', 'is blond')), false);
     expect(trailFor(done, 'a')).toEqual([
-      { text: 'is blond', kind: 'declaration', verdicts: { b: false } },
+      { text: 'is blond', kind: 'declaration', verdicts: { b: false, c: false } },
     ]);
   });
 
@@ -492,6 +498,61 @@ describe('declaring the category', () => {
     expect(declareCategory(s0, 'a', '  ').patch).toEqual({});
   });
 
+});
+
+// A guess counts when MORE THAN HALF of the players asked say yes.
+describe('the table voting on a guess', () => {
+  const FOUR = ['a', 'b', 'c', 'd'];
+  const vote = (verdicts) => {
+    const s0 = startRound(FOUR, { cap: 10 });
+    let s = apply(s0, declareCategory(s0, 'a', 'wears glasses'));
+    const required = requiredJudges(s, FOUR);
+    for (const id of required) s = apply(s, judge(s, id, verdicts[id], required, FOUR));
+    return s;
+  };
+
+  it('counts a majority yes as right', () => {
+    const s = vote({ b: true, c: true, d: false });
+    expect(s.phase).toBe('turnEnd');
+    expect(s.results.a.solved).toBe(true);
+  });
+
+  it('counts a minority yes as a miss, with every vote on the trail', () => {
+    const s = vote({ b: true, c: false, d: false });
+    expect(s.results.a).toBeUndefined();
+    expect(trailFor(s, 'a')[0].verdicts).toEqual({ b: true, c: false, d: false });
+    expect(proposalsUsed(s, 'a')).toBe(WRONG_DECLARATION_COST);
+  });
+
+  // Half the table refusing it means it is not the category.
+  it('counts a tie as a no', () => {
+    expect(declarationPasses({ b: true, c: false }, ['b', 'c'])).toBe(false);
+    expect(declarationPasses({ b: true, c: true }, ['b', 'c'])).toBe(true);
+    expect(declarationPasses({ b: true }, ['b'])).toBe(true);
+    expect(declarationPasses({}, [])).toBe(false);
+  });
+
+  it('waits for every vote before it settles', () => {
+    const s0 = startRound(FOUR, { cap: 10 });
+    let s = apply(s0, declareCategory(s0, 'a', 'wears glasses'));
+    const required = requiredJudges(s, FOUR);
+    s = apply(s, judge(s, 'b', true, required, FOUR));
+    s = apply(s, judge(s, 'c', true, required, FOUR));
+    // Already a majority, but 'd' has not voted yet.
+    expect(s.phase).toBe('judging');
+  });
+
+  // A voter who leaves stops counting, and the vote settles on who is left.
+  it('settles on the votes of the players still here', () => {
+    const s0 = startRound(FOUR, { cap: 10 });
+    let s = apply(s0, declareCategory(s0, 'a', 'wears glasses'));
+    const required = requiredJudges(s, FOUR);
+    s = apply(s, judge(s, 'b', true, required, FOUR));
+    s = apply(s, judge(s, 'c', true, required, FOUR));
+    const left = requiredJudges(s, FOUR, ['d']);
+    const settled = apply(s, settlePending(s, left, FOUR, ['d']));
+    expect(settled.results.a.solved).toBe(true);
+  });
 });
 
 describe('passing', () => {
@@ -594,8 +655,8 @@ describe('skipDepartedSeat', () => {
     expect(skipDepartedSeat(s0, IDS, []).patch).toEqual({});
   });
 
-  // A departed JUDGE is judgeIdFor's problem in dealt mode and settlePending's
-  // in chosen mode. Neither is this function's.
+  // A departed judge is judgeIdFor's problem for a name and settlePending's for
+  // a guess the table is voting on. Neither is this function's.
   it('does not fire for a departed judge', () => {
     const s0 = startRound(IDS);
     expect(skipDepartedSeat(s0, IDS, ['b']).patch).toEqual({});

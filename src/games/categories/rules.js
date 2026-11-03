@@ -6,7 +6,9 @@
 //
 // ONE GAME: YOU HOLD A CLAUSE YOU CANNOT SEE AND EVERYONE ELSE CAN. On your go
 // you name ONE thing — "Nezuko?" — and one derived judge answers yes or no
-// against your hidden clause, so the rule you are inducing is your own.
+// against your hidden clause, so the rule you are inducing is your own. A
+// GUESS at the clause is voted on by everyone else, and counts on a majority
+// (see requiredJudges and declarationPasses).
 //
 // WHERE THE CLAUSE COMES FROM is the only choice a session makes (`source`):
 //
@@ -265,12 +267,16 @@ export function judgeIdFor(state, playerIds = [], skipIds = []) {
 }
 
 /**
- * WHO MUST RULE ON THE PENDING ITEM: the derived judge, as a list.
+ * WHO MUST RULE ON THE PENDING ITEM.
  *
- * A LIST OF ONE RATHER THAN AN ID, because judge and settlePending were built
- * around "every required judge has answered" and that reads the same for one.
- * Keeping the shape means a second judge — should a table ever want the whole
- * table to rule — is a change here and nowhere else.
+ *   a name         the derived judge alone (judgeIdFor). A name is a quick
+ *                  yes/no about one character, and the seat moving after every
+ *                  one is what keeps the game fast; asking the whole table each
+ *                  time would undo that.
+ *   a guess        EVERYONE ELSE STILL HERE. A yes ends the guesser's round and
+ *                  pays out, and one judge answering alone let near-misses
+ *                  through; every other player can see the category, so every
+ *                  other player votes, and declarationPasses counts them.
  *
  * Takes `skipIds` for the same reason every readiness gate in the arcade does:
  * a closed tab must not be able to hold a turn open forever. A required list
@@ -279,8 +285,23 @@ export function judgeIdFor(state, playerIds = [], skipIds = []) {
 export function requiredJudges(state, playerIds = [], skipIds = []) {
   const pending = state?.pending;
   if (!pending || !state?.seatId) return [];
+  if (pending.kind === 'declaration') {
+    return playerIds.filter((id) => id !== state.seatId && !skipIds.includes(id));
+  }
   const judgeId = judgeIdFor(state, playerIds, skipIds);
   return judgeId ? [judgeId] : [];
+}
+
+/**
+ * Whether the table's votes make a guess right: MORE THAN HALF of the players
+ * who were asked said yes. A tie is a no — a guess half the table will not
+ * accept is not the category. Counted over `requiredIds`, the players still
+ * here, so a player who left mid-vote neither helps nor blocks.
+ */
+export function declarationPasses(verdicts = {}, requiredIds = []) {
+  if (!requiredIds.length) return false;
+  const yes = requiredIds.filter((id) => verdicts?.[id] === true).length;
+  return yes * 2 > requiredIds.length;
 }
 
 /** One player's trail this round, oldest first. Always an array. */
@@ -519,7 +540,7 @@ export function settlePending(state, requiredIds = [], playerIds = [], skipIds =
   }
   if (!requiredIds.every((id) => typeof verdicts[id] === 'boolean')) return { patch: {} };
 
-  if (pending.kind === 'declaration' && requiredIds.every((id) => verdicts[id] === true)) {
+  if (pending.kind === 'declaration' && declarationPasses(verdicts, requiredIds)) {
     return endRound({ solved: true, guess: pending.text, used: proposalsUsed(state, seatId) });
   }
 

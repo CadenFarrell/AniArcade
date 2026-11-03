@@ -114,6 +114,26 @@ describe('AniTag online', () => {
     const other = devs[1];
     const hostSlot = await get(ref(other.db, `rooms/${code}/assignments/eve`));
     expect(hostSlot.val()?.forRound).toBe(0);
+
+    // A guess is voted on by everyone else: a 1–1 tie is a miss…
+    await seat.act((r) => r.declare('wears glasses'));
+    await until(() => devs.every((d) => d.r.game?.phase === 'judging'), { what: 'guess pending' });
+    const voters = devs.filter((d) => d !== seat);
+    await until(() => voters.every((d) => d.r.iMustRule), { what: 'every other player asked' });
+    expect(seat.r.iMustRule).toBe(false);
+    await voters[0].act((r) => r.rule(true));
+    await voters[1].act((r) => r.rule(false));
+    await until(() => devs.every((d) => d.r.game?.phase === 'naming'), { what: 'tied vote settled as a miss' });
+    expect(A.r.game.results[seat.r.myPlayerId]).toBeUndefined();
+    expect(A.r.game.trails[seat.r.myPlayerId]?.[0]?.kind).toBe('declaration');
+
+    // …and a majority yes solves it.
+    const seat2 = devs.find((d) => d.r.iAmSeat);
+    await seat2.act((r) => r.declare('is a villain'));
+    await until(() => devs.filter((d) => d !== seat2).every((d) => d.r.iMustRule), { what: 'second vote asked' });
+    for (const d of devs.filter((x) => x !== seat2)) await d.act((r) => r.rule(true));
+    await until(() => devs.every((d) => d.r.game?.phase === 'turnEnd'), { what: 'majority yes solved' });
+    expect(A.r.game.results[seat2.r.myPlayerId]?.solved).toBe(true);
     expect(syncErrors(devs)).toEqual([]);
   });
 });

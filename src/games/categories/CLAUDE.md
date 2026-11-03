@@ -28,8 +28,8 @@ plus one**, so a name hands on to the person sitting next. `nextTurn` is now the
 fires only from `turnEnd`, which only a *finished* player produces.
 
 **One game; the only choice is where each clause comes from.** You hold a category everyone
-can see except you, one derived judge answers your names against it, and the rule you are
-inducing is your own. `categorySource` in `prefs.js` (copied onto the round as `source`):
+can see except you, one derived judge answers your names against it, everyone else votes on your
+guesses, and the rule you are inducing is your own. `categorySource` in `prefs.js` (copied onto the round as `source`):
 
 | | `table` (the default) | `random` |
 | --- | --- | --- |
@@ -106,11 +106,15 @@ answer to their last name and then declares or gives up (`proposeName` refuses a
 round there and show the category, which spent the player's last piece of evidence for nothing.
 A MISS that spends the cap still ends the round.
 
-**A guess is judged against the real category, on screen.** The judging card for a declaration
-shows the seat's clause under the guess (behind a `CategoryPeek` on a shared device, where the
-guesser is sitting there) and its buttons say "Yes — same category" / "No — not it", with a line
-that close is a no. A bare Yes judged from memory let near-misses through, and a yes pays full
-marks.
+**A guess is voted on by the whole table, against the real category, on screen.** A name has
+one judge; a declaration has everyone else still here (`requiredJudges`), and it counts when
+MORE THAN HALF say yes — a tie is a no (`declarationPasses`). It settles only once every voter
+still here has voted; a voter who leaves stops counting, and the online settler effect commits
+the vote on who is left. Locally each player taps in turn ("<name>, your answer"); online every
+phone votes, and the trail keeps each vote by name. The card shows the seat's clause under the
+guess (behind a `CategoryPeek` on a shared device, where the guesser is sitting there) and its
+buttons say "Yes — same category" / "No — not it", with a line that close is a no. One judge
+answering a bare Yes from memory let near-misses through, and a yes pays full marks.
 
 **Two named fields exist only because a miss no longer stops the round to announce itself.**
 `normalizeTrail` has to carry `kind` — an entry that came back as a plain name would silently
@@ -124,10 +128,11 @@ Passing 0 reproduces plain roster order exactly.
 
 **The judge is derived, never stored,** and that is what makes a judge who walks out a non-event:
 `judgeIdFor` returns the next active player on the next render, with no write, and they rule
-instead. Do not "fix" this by storing a `judgeId`. `requiredJudges` still returns a LIST (of one)
-and `settlePending` is still a separate pure function from `judge` — the shape "pick your own"
-needed, where the whole table answered; it costs nothing, and an empty required list (nobody left
-to answer) ends that player's round rather than inventing a verdict. Only a departed **hot
+instead. Do not "fix" this by storing a `judgeId`. `requiredJudges` returns a LIST — one judge for a
+name, the whole table for a guess — and `settlePending` is a separate pure function from
+`judge`, because a departure can make a pending settleable with no new verdict, and only an
+effect notices that. An empty required list (nobody left to answer) ends that player's round
+rather than inventing a verdict. Only a departed **hot
 seat** needs `skipDepartedSeat`, because only they hold a go nobody else can finish — and it
 keeps the round in `picking` if that is where it was, or it would open a go before the table has
 clauses to answer with.
@@ -149,8 +154,8 @@ telling them whether to name a show or a character is the only thing that says w
 about, and a per-player pool would turn that prompt into a clue. When the table picks, the pool
 also tells them what kind of clause to pick.
 
-**A trail entry carries a verdict *map*, not a boolean** (`{ text, verdicts: { [judgeId]: bool } }`,
-a map of one), left over from "pick your own" where which player said no was the fact.
+**A trail entry carries a verdict *map*, not a boolean** (`{ text, verdicts: { [judgeId]: bool } }`):
+one entry for a name, one per voter for a missed guess, where who said no is worth seeing.
 `verdictsOf` is the one place that flattens the stored shapes, including the unattributed scalar
 an older build wrote, so no screen branches.
 

@@ -113,7 +113,7 @@ export default function TurnScreen({
   // judged, and on a shared device `canName` is always true, so checking the
   // seat's lines first told the judge to make a final guess.
   const instruction = () => {
-    if (iRule && judgingGuess) return `Only say yes if ${seatName}'s guess means the same thing as their category.`;
+    if (iRule && judgingGuess) return `Vote: only say yes if ${seatName}'s guess means the same thing as their category.`;
     if (iRule) return `Answer ${seatName} honestly.`;
     if (finalGuess && !waitingOnJudge) return 'Out of names — make your final guess at your category, or give up.';
     if (canName) return `Name one ${noun}. The judge will tell you yes or no.`;
@@ -203,9 +203,13 @@ export default function TurnScreen({
               </p>
             </div>
           ))}
-          {judgingGuess && ruler && (
+          {/* The whole table votes on a guess (rules.requiredJudges) and a
+              majority decides (rules.declarationPasses) — said on every device,
+              the guesser's included, so nobody reads one no as the verdict. */}
+          {judgingGuess && (
             <p className="mb-3 text-sm text-fg-helper">
-              Same rule in other words counts. Close, or only part of it, is a no.
+              Everyone else votes, and it counts if more than half say yes. The same rule
+              in other words counts; close, or only part of it, is a no.
             </p>
           )}
 
