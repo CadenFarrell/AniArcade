@@ -21,9 +21,9 @@ const SHOWN_ALTERNATIVES = 4;
 // so the "+400" on screen and the total on the scoreboard are one number.
 export default function ClueReveal({ clue, players, answers, required = null, myId = null, staged = false, children }) {
   // The reveal's sound, once as it appears. Online (`myId`) it is MY answer —
-  // right, wrong, or the plain reveal when I had no stake in this clue (a Daily
-  // Double somebody else wagered); on the one local device it is the table's:
-  // anybody right is a cheer, nobody is a miss.
+  // right, wrong, or the plain reveal when the clue was somebody else's; on the
+  // one local device it is the table's: anybody right is a cheer, nobody is a
+  // miss.
   const mine = myId ? answers?.[myId] : undefined;
   const anyRight = players.some((p) => answers?.[p.id]?.correct);
   const cue = myId
@@ -71,6 +71,9 @@ export default function ClueReveal({ clue, players, answers, required = null, my
             {also.length > shown.length && ` and ${also.length - shown.length} more`}
           </p>
         )}
+        {/* A comparison clue's proof: every option with its year, score or
+            member count, best first (clues.js's compareDetail). */}
+        {clue?.detail && <p className="mt-2 text-sm text-fg-helper">{clue.detail}</p>}
       </div>
 
       <Card padding="sm" className="mb-6">
@@ -87,7 +90,7 @@ export default function ClueReveal({ clue, players, answers, required = null, my
               <span className="min-w-0 flex-1">
                 <span className="block truncate font-display font-extrabold text-fg-strong">{p.name}</span>
                 <span className="block truncate text-sm text-fg-helper">
-                  {!a ? 'no answer' : a.aloud ? (a.correct ? 'said it' : 'missed it') : text || 'passed'}
+                  {!a ? 'no answer' : text || 'passed'}
                 </span>
               </span>
               <span

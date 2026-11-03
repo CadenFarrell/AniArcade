@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   BOARD, QUIZ, DD_FLOOR, advance, currentClue, expireClue, isDailyDouble, normalizeDeal, normalizeGame,
   pickCell, placeWager, requiredIds, revealNow, settleIfComplete, skipPicker, standings, startGame,
-  selfReport, stillToAct, submitAnswer, wagerLimit,
+  stillToAct, submitAnswer, wagerLimit,
 } from './rules';
 
 // A hand-built deal: grading only ever reads `accept`, so a clue here needs
@@ -28,7 +28,7 @@ const IDS = ['ann', 'bo', 'cy'];
 const apply = (game, { patch }) => ({ ...game, ...patch });
 
 describe('the board', () => {
-  it('opens a normal cell to the whole table and spends it immediately', () => {
+  it('opens a normal cell to its picker alone and spends it immediately', () => {
     const deal = boardDeal();
     let g = startGame(IDS, deal);
     expect(g.phase).toBe('board');
@@ -37,7 +37,8 @@ describe('the board', () => {
     expect(g.phase).toBe('answering');
     expect(g.used['0-1']).toBe(true);
     expect(currentClue(g, deal).answer).toBe('a1');
-    expect(requiredIds(g, IDS)).toEqual(IDS);
+    expect(requiredIds(g, IDS)).toEqual(['ann']);
+    expect(g.solo).toBe('ann');
   });
 
   it('refuses a pick out of turn, a spent cell, and a cell off the board', () => {
@@ -50,17 +51,26 @@ describe('the board', () => {
     expect(pickCell(back, deal, 'ann', '0-0').patch).toEqual({});
   });
 
-  it('pays face value for right, nothing for wrong, and reveals when everyone is in', () => {
+  it('takes the picker’s answer only, and reveals on it', () => {
     const deal = boardDeal();
-    let g = apply(startGame(IDS, deal), pickCell(startGame(IDS, deal), deal, 'ann', '0-3'));
-    g = apply(g, submitAnswer(g, deal, 'ann', 'A3', IDS));
-    expect(g.phase).toBe('answering');
-    g = apply(g, submitAnswer(g, deal, 'bo', 'nope', IDS));
-    g = apply(g, submitAnswer(g, deal, 'cy', 'a3', IDS));
-    expect(g.phase).toBe('revealed');
-    expect(g.scores).toEqual({ ann: 800, bo: 0, cy: 800 });
-    expect(g.answers.ann.delta).toBe(800);
-    expect(g.answers.bo.delta).toBe(0);
+    const g = apply(startGame(IDS, deal), pickCell(startGame(IDS, deal), deal, 'ann', '0-3'));
+    expect(submitAnswer(g, deal, 'bo', 'a3', IDS).patch).toEqual({});
+    const done = apply(g, submitAnswer(g, deal, 'ann', 'A3', IDS));
+    expect(done.phase).toBe('revealed');
+    expect(done.scores).toEqual({ ann: 800, bo: 0, cy: 0 });
+    expect(done.answers.ann.delta).toBe(800);
+  });
+
+  it('charges a miss and a pass the clue’s value, into the negatives', () => {
+    const deal = boardDeal();
+    let g = apply(startGame(IDS, deal), pickCell(startGame(IDS, deal), deal, 'ann', '0-2'));
+    g = apply(g, submitAnswer(g, deal, 'ann', 'nope', IDS));
+    expect(g.scores.ann).toBe(-600);
+    expect(g.answers.ann.delta).toBe(-600);
+    g = apply(g, advance(g, deal, IDS));
+    g = apply(g, pickCell(g, deal, 'bo', '0-0'));
+    g = apply(g, submitAnswer(g, deal, 'bo', '', IDS));
+    expect(g.scores).toEqual({ ann: -600, bo: -200, cy: 0 });
   });
 
   it('will not take a second answer from the same player', () => {
@@ -100,15 +110,23 @@ describe('the clock', () => {
     expect(pickCell(untimed, deal, 'ann', '0-0', 1000).patch.deadlineAt).toBeNull();
   });
 
-  it('records a blank for everyone still owing an answer when it runs out', () => {
+  it('charges a blank at the clock as a miss', () => {
     const deal = boardDeal();
     let g = startGame(IDS, deal, { timed: true, answerSeconds: 20 });
-    g = apply(g, pickCell(g, deal, 'ann', '0-0', 0));
-    g = apply(g, submitAnswer(g, deal, 'ann', 'a0', IDS));
+    g = apply(g, pickCell(g, deal, 'ann', '0-1', 0));
     g = apply(g, expireClue(g, deal, IDS));
     expect(g.phase).toBe('revealed');
-    expect(g.answers.bo).toEqual({ text: '', correct: false, delta: 0 });
-    expect(g.scores.ann).toBe(200);
+    expect(g.answers.ann).toEqual({ text: '', correct: false, delta: -400 });
+    expect(g.answers.bo).toBeUndefined();
+    expect(g.scores).toEqual({ ann: -400, bo: 0, cy: 0 });
+  });
+
+  it('lets a clue whose player left go uncharged', () => {
+    const deal = boardDeal();
+    let g = apply(startGame(IDS, deal), pickCell(startGame(IDS, deal), deal, 'ann', '0-1'));
+    g = apply(g, settleIfComplete(g, deal, ['bo', 'cy']));
+    expect(g.phase).toBe('revealed');
+    expect(g.scores).toEqual({ ann: 0, bo: 0, cy: 0 });
   });
 
   it('does nothing on an untimed clue', () => {
@@ -170,12 +188,15 @@ describe('the Daily Double', () => {
 describe('the final', () => {
   const deal = boardDeal({ categories: [{ id: 'a', title: 'A', clues: [200, 400, 600, 800, 1000].map((v, r) => clue(`a${r}`, v)) }], dailyDouble: null });
 
-  // Plays the whole one-column board with ann answering everything right.
+  // Plays the whole one-column board: the turn goes ann, bo, cy, ann, bo, and
+  // ann answers right while the others miss — ann +200 +800, bo −400 −1000,
+  // cy −600.
   function clearBoard() {
     let g = startGame(IDS, deal);
     for (let r = 0; r < 5; r++) {
-      g = apply(g, pickCell(g, deal, g.pickerId, `0-${r}`));
-      for (const id of IDS) g = apply(g, submitAnswer(g, deal, id, id === 'ann' ? `a${r}` : 'x', IDS));
+      const turn = g.pickerId;
+      g = apply(g, pickCell(g, deal, turn, `0-${r}`));
+      g = apply(g, submitAnswer(g, deal, turn, turn === 'ann' ? `a${r}` : 'x', IDS));
       g = apply(g, advance(g, deal, IDS));
     }
     return g;
@@ -186,8 +207,10 @@ describe('the final', () => {
     expect(g.round).toBe('final');
     expect(g.phase).toBe('wager');
     expect(currentClue(g, deal).answer).toBe('fin');
+    expect(g.scores).toEqual({ ann: 1000, bo: -1400, cy: -600 });
     expect(stillToAct(g, IDS)).toEqual(IDS);
-    expect(wagerLimit(g, 'ann')).toBe(3000);
+    expect(wagerLimit(g, 'ann')).toBe(1000);
+    // Below zero there is nothing to stake, but the final is still theirs.
     expect(wagerLimit(g, 'bo')).toBe(0);
   });
 
@@ -202,7 +225,7 @@ describe('the final', () => {
     g = apply(g, submitAnswer(g, deal, 'bo', 'fin', IDS));
     g = apply(g, submitAnswer(g, deal, 'cy', 'fin', IDS));
     expect(g.phase).toBe('revealed');
-    expect(g.scores.ann).toBe(2000);
+    expect(g.scores.ann).toBe(0);
     g = apply(g, advance(g, deal, IDS));
     expect(g.phase).toBe('finished');
   });
@@ -229,29 +252,33 @@ describe('the final', () => {
 });
 
 describe('quiz', () => {
-  it('opens on the first question and runs to the end', () => {
+  it('hands each question to the next seat, and runs to the end', () => {
     const deal = quizDeal();
     let g = startGame(['ann', 'bo'], deal, { timed: true, answerSeconds: 5 }, 100);
     expect(g.phase).toBe('answering');
     expect(g.deadlineAt).toBe(5100);
+    expect(requiredIds(g, ['ann', 'bo'])).toEqual(['ann']);
+    expect(submitAnswer(g, deal, 'bo', 'q0', ['ann', 'bo']).patch).toEqual({});
     g = apply(g, submitAnswer(g, deal, 'ann', 'q0', ['ann', 'bo']));
-    g = apply(g, submitAnswer(g, deal, 'bo', 'q0', ['ann', 'bo']));
-    expect(g.scores).toEqual({ ann: 100, bo: 100 });
+    expect(g.scores).toEqual({ ann: 100, bo: 0 });
     g = apply(g, advance(g, deal, ['ann', 'bo'], 200));
     expect(currentClue(g, deal).answer).toBe('q1');
+    expect(g.solo).toBe('bo');
     expect(g.deadlineAt).toBe(5200);
-    g = apply(g, revealNow(g, deal));
+    g = apply(g, submitAnswer(g, deal, 'bo', 'nope', ['ann', 'bo']));
+    expect(g.scores).toEqual({ ann: 100, bo: -300 });
     g = apply(g, advance(g, deal, ['ann', 'bo']));
     expect(g.phase).toBe('finished');
   });
 
-  it('reveals when the last player still waited on leaves', () => {
+  it('reveals when the player answering leaves, and moves on past them', () => {
     const deal = quizDeal();
-    let g = startGame(['ann', 'bo'], deal);
-    g = apply(g, submitAnswer(g, deal, 'ann', 'q0', ['ann', 'bo']));
-    g = apply(g, settleIfComplete(g, deal, ['ann']));
+    let g = startGame(['ann', 'bo', 'cy'], deal);
+    g = apply(g, settleIfComplete(g, deal, ['bo', 'cy']));
     expect(g.phase).toBe('revealed');
-    expect(g.answers.bo).toBeUndefined();
+    expect(g.scores.ann).toBe(0);
+    g = apply(g, advance(g, deal, ['bo', 'cy']));
+    expect(g.solo).toBe('bo');
   });
 });
 
@@ -286,27 +313,5 @@ describe('standings', () => {
   it('shares a place on a tie', () => {
     const rows = standings([{ id: 'a' }, { id: 'b' }, { id: 'c' }], { a: 5, b: 9, c: 5 });
     expect(rows.map((r) => [r.id, r.position])).toEqual([['b', 1], ['a', 2], ['c', 2]]);
-  });
-});
-
-describe('answering out loud', () => {
-  it('scores the ticked players at face value and marks every answer as said aloud', () => {
-    const deal = boardDeal();
-    let g = startGame(IDS, deal);
-    g = apply(g, pickCell(g, deal, 'ann', '0-1'));
-    g = apply(g, selfReport(g, deal, ['bo'], IDS));
-    expect(g.phase).toBe('revealed');
-    expect(g.scores).toEqual({ ann: 0, bo: 400, cy: 0 });
-    expect(Object.values(g.answers).every((a) => a.aloud)).toBe(true);
-    expect(g.answers.bo).toMatchObject({ correct: true, delta: 400 });
-  });
-
-  it('never takes an honour tick on a wagered clue', () => {
-    const deal = boardDeal();
-    let g = startGame(IDS, deal);
-    g = apply(g, pickCell(g, deal, 'ann', '1-2'));
-    g = apply(g, placeWager(g, deal, 'ann', 1000, IDS));
-    expect(g.phase).toBe('answering');
-    expect(selfReport(g, deal, ['ann'], IDS).patch).toEqual({});
   });
 });

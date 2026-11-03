@@ -42,7 +42,8 @@ describe('AniQuiz online', () => {
     await A.act((r) => r.startGame(BASE, PACK));
     await until(() => devs.every((d) => d.r.view === 'round' && d.r.game?.phase === 'board'), { what: 'board dealt' });
 
-    // Ann answers everything right, Ben everything wrong, Cat passes.
+    // Each clue is its picker's alone (the final is everyone's). Ann answers
+    // right, Ben wrong, Cat passes — and a miss or a pass costs the value.
     const expected = { ann: 0, ben: 0, cat: 0 };
     let sawDD = false;
     let sawFinal = false;
@@ -70,7 +71,7 @@ describe('AniQuiz online', () => {
           if (g.solo && g.solo !== id) continue;
           const text = id === 'ann' ? clue.answer : id === 'ben' ? 'definitely wrong' : '';
           const stake = wagered ? (A.r.game.wagers[id] ?? 0) : clue.value;
-          expected[id] += id === 'ann' ? stake : (wagered ? -stake : 0);
+          expected[id] += id === 'ann' ? stake : -stake;
           await d.act((r) => r.answer(text));
         }
         await until(() => devs.every((d) => d.r.game.phase === 'revealed'), { what: 'revealed' });
@@ -99,19 +100,27 @@ describe('AniQuiz online', () => {
     await A.act((r) => r.startGame({ ...BASE, dailyDouble: false }, PACK));
     await until(() => devs.every((d) => d.r.game?.phase === 'board'), { what: 'board' });
 
-    // Dan picks; Eve answers; Fay vanishes before answering.
+    // Dan's clue is Dan's alone: his answer reveals it.
     await A.act((r) => r.pick('0-0'));
     await until(() => devs.every((d) => d.r.game.phase === 'answering'), { what: 'open' });
     await A.act((r) => r.answer('x'));
-    await B.act((r) => r.answer('x'));
-    await C.crash();
-    await sleep(GRACE_WAIT);
-    await until(() => [A, B].every((d) => d.r.game.phase === 'revealed'), { what: 'revealed without Fay', timeout: 15_000 });
+    await until(() => devs.every((d) => d.r.game.phase === 'revealed'), { what: 'Dan answered' });
 
-    // Next pick would be Eve's; she leaves too — the room ends rather than wedging.
+    // Eve picks, then vanishes before answering: the clue reveals without her,
+    // uncharged, and the turn moves on to Fay.
     await A.act((r) => r.next());
-    await until(() => A.r.game.phase === 'board' && A.r.game.pickerId === 'eve', { what: 'Eve to pick' });
+    await until(() => B.r.game.phase === 'board' && B.r.game.pickerId === 'eve', { what: 'Eve to pick' });
+    await B.act((r) => r.pick('0-1'));
+    await until(() => [A, C].every((d) => d.r.game.phase === 'answering'), { what: 'Eve’s clue open' });
     await B.crash();
+    await sleep(GRACE_WAIT);
+    await until(() => [A, C].every((d) => d.r.game.phase === 'revealed'), { what: 'revealed without Eve', timeout: 15_000 });
+    expect(A.r.game.scores.eve).toBe(0);
+    await A.act((r) => r.next());
+    await until(() => A.r.game.phase === 'board' && A.r.game.pickerId === 'fay', { what: 'Fay to pick' });
+
+    // Fay leaves too — the room ends rather than wedging.
+    await C.crash();
     await sleep(GRACE_WAIT);
     await until(() => A.r.view === 'results', { what: 'room ends below two players', timeout: 15_000 });
     expect(syncErrors([A])).toEqual([]);
@@ -124,9 +133,12 @@ describe('AniQuiz online', () => {
     await A.act((r) => r.startGame({ ...BASE, format: 'quiz', timed: true, answerSeconds: 2 }, PACK));
     await until(() => devs.every((d) => d.r.game?.phase === 'answering' && d.r.game.deadlineAt != null), { what: 'quiz open' });
     await until(() => devs.every((d) => d.r.game.phase === 'revealed'), { what: 'expired', timeout: 10_000 });
-    expect(A.r.game.answers.gus).toEqual({ text: '', correct: false, delta: 0 });
+    // Gus's question, so a blank at the clock is Gus's miss; Hal was never asked.
+    expect(A.r.game.answers.gus).toEqual({ text: '', correct: false, delta: -clueOf(A.r).value });
+    expect(A.r.game.answers.hal).toBeUndefined();
     await A.act((r) => r.next());
     await until(() => devs.every((d) => d.r.game.index === 1 && d.r.game.phase === 'answering'), { what: 'q2' });
+    expect(A.r.game.solo).toBe('hal');
     expect(syncErrors(devs)).toEqual([]);
   });
 
@@ -140,7 +152,7 @@ describe('AniQuiz online', () => {
     const dd = A.r.deal.dailyDouble;
     const other = ['0-0', '1-0'].find((c) => c !== dd);
     await A.act((r) => r.pick(other));
-    for (const d of devs) await d.act((r) => r.answer('x'));
+    await A.act((r) => r.answer('x'));
     await until(() => devs.every((d) => d.r.game.phase === 'revealed'), { what: 'r1' });
     await A.act((r) => r.next());
     await until(() => B.r.game.phase === 'board' && B.r.game.pickerId === 'jo', { what: 'Jo picks' });

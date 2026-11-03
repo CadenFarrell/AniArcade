@@ -146,7 +146,7 @@ network.
 **Per-game design notes live beside each game and load only when Claude works in that folder:**
 `src/games/anirank/CLAUDE.md` (board direction, Kendall-tau scoring, the pool toggle, tier
 lists), `src/games/wavelength/CLAUDE.md` (AniWave), `src/games/categories/CLAUDE.md` (AniTag),
-`src/games/aniquiz/CLAUDE.md` (AniQuiz), `src/games/anifake/CLAUDE.md` (AniFake: the deal and
+`src/games/aniquiz/CLAUDE.md` (AniQuiz: the turn and the miss penalty, the casual topics), `src/games/anifake/CLAUDE.md` (AniFake: the deal and
 the card check, hidden-role patterns, fame coverage), `src/games/aniturf/CLAUDE.md` (AniTurf: crossing
 goals, the winding-route footing and its detours, the two-device claim),
 `src/games/anipeek/CLAUDE.md` (AniPeek: the bid and its score, the pool's three filters, the

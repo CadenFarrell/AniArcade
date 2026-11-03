@@ -1,8 +1,8 @@
 import { POOLS, needsLists } from '../utils/pool';
 import {
-  ANSWER_SECONDS_RANGE, ANSWER_STYLES, CATEGORY_RANGE, FORMATS, LOCAL_ANSWERS, QUIZ_RANGE,
+  ANSWER_SECONDS_RANGE, ANSWER_STYLES, CATEGORY_RANGE, FORMATS, QUIZ_RANGE,
 } from '../prefs';
-import { BOARD } from '../rules';
+import { BOARD, TYPED } from '../rules';
 import { ROWS, TOPICS } from '../clues';
 import MoreSettings from '../../../shared/components/MoreSettings';
 import SettingHelp, { DetailToggle } from '../../../shared/components/SettingHelp';
@@ -23,7 +23,7 @@ import {
 // hand-kept copies of a settings card are a promise to drift. Changes go out as
 // one onChange(key, value), the convention CLAUDE.md sets for settings cards.
 export default function QuizSettings({
-  values, onChange, report, packStatus, onRetryPack, players, disabled = false, local = false,
+  values, onChange, report, packStatus, onRetryPack, players, disabled = false,
 }) {
   const board = values.format === BOARD;
 
@@ -64,27 +64,6 @@ export default function QuizSettings({
         <SettingHelp className="mb-5">
           {ANSWER_STYLES.find((s) => s.id === values.answerStyle)?.blurb}
         </SettingHelp>
-
-        {/* One device only: online everyone already has their own. With more
-            than one player on a shared device this is the difference between
-            a game and a hundred handoffs, so it sits up front. */}
-        {local && (players?.length ?? 0) > 1 && (
-          <>
-            <Field label="On one device" htmlFor="aniquiz-local-answers" className="mb-2">
-              <Select
-                id="aniquiz-local-answers"
-                value={values.localAnswers}
-                disabled={disabled}
-                onChange={(e) => onChange('localAnswers', e.target.value)}
-              >
-                {LOCAL_ANSWERS.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
-              </Select>
-            </Field>
-            <SettingHelp className="mb-5">
-              {LOCAL_ANSWERS.find((s) => s.id === values.localAnswers)?.blurb}
-            </SettingHelp>
-          </>
-        )}
 
         {board ? (
           <Field label="Categories" htmlFor="aniquiz-categories">
@@ -142,7 +121,7 @@ export default function QuizSettings({
               <SettingHelp
                 indent
                 className="mb-5"
-                more="Wagers go in after the category is shown and before the clue. A wrong answer loses the stake — the only place besides the Daily Double that a miss costs anything."
+                more="Wagers go in after the category is shown and before the clue, and everyone answers it in private. A wrong answer loses the stake."
               >
                 After the board, everyone bets on one last hard clue.
               </SettingHelp>
@@ -159,7 +138,7 @@ export default function QuizSettings({
           <SettingHelp
             indent
             className="mb-3"
-            more="Running out the clock counts as a blank. Online, an untimed clue waits for everyone — the host can reveal early."
+            more="Running out the clock counts as a miss and costs the clue’s points. Online, an untimed clue waits for its player — the host can reveal early."
           >
             A countdown on every clue.
           </SettingHelp>
@@ -208,16 +187,21 @@ export default function QuizSettings({
   );
 }
 
-// One switch per topic (a board column), on by default. The value is the list
-// of ids switched OFF — see enabledTopics in clues.js for why that way round.
+// One switch per topic (a board column). The value is the list of ids switched
+// OFF — see enabledTopics in clues.js for why that way round — and the default
+// list is the `hard` topics, which wear a "Harder" tag here so a table looking
+// for a tougher game knows what to turn on.
 //
 // Each switch carries what the pool gives that topic — distinct subjects, a
 // show or a character depending on the topic, so the card calls them
 // "questions" — because a player deciding whether Theme Songs is worth turning
 // back on wants to see it before pressing Start, and a topic that cannot fill a
-// board column should say so instead of quietly never appearing.
+// board column should say so instead of quietly never appearing. A
+// choice-only topic under typed answers says THAT instead of a count, since
+// the deal leaves it out whatever the pool holds.
 function TopicSwitches({ values, onChange, report, disabled }) {
   const board = values.format === BOARD;
+  const typed = values.answerStyle === TYPED;
   const off = new Set(values.topicsOff ?? []);
   const countFor = new Map((report?.topics ?? []).map((t) => [t.id, t.clues]));
   const set = (id, on) => {
@@ -239,8 +223,8 @@ function TopicSwitches({ values, onChange, report, disabled }) {
       padding="lg"
       className="mb-6"
     >
-      {/* Every topic is on by default, and most tables never switch one off,
-          so the switches fold away; the warnings below stay out of the fold. */}
+      {/* Most tables never touch these, so the switches fold away; the
+          warnings below stay out of the fold. */}
       <p className="text-sm text-fg-helper">{enabled} of {TOPICS.length} categories on</p>
       <MoreSettings about="categories">
         <SettingHelp className="mb-4">
@@ -252,7 +236,8 @@ function TopicSwitches({ values, onChange, report, disabled }) {
         <div className="grid gap-3 sm:grid-cols-2">
           {TOPICS.map((t) => {
             const count = countFor.get(t.id);
-            const thin = board && count != null && count < ROWS;
+            const typedOut = typed && t.choiceOnly;
+            const thin = board && !typedOut && count != null && count < ROWS;
             return (
               <Checkbox
                 key={t.id}
@@ -261,10 +246,16 @@ function TopicSwitches({ values, onChange, report, disabled }) {
                 onChange={(e) => set(t.id, e.target.checked)}
                 label={(
                   <span className="min-w-0">
-                    <span className="block font-bold text-fg-strong">{t.title}</span>
+                    <span className="block font-bold text-fg-strong">
+                      {t.title}
+                      {t.hard && <span className="ml-2 text-xs font-bold uppercase tracking-wide text-pop-amber">Harder</span>}
+                    </span>
                     <span className="block text-sm text-fg-subtle">
                       {t.blurb}
-                      {count != null && (
+                      {typedOut && (
+                        <>{' · '}<span className="text-pop-amber">multiple choice only</span></>
+                      )}
+                      {!typedOut && count != null && (
                         <>
                           {' · '}
                           <span className={thin ? 'text-pop-amber' : ''}>

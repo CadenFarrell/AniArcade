@@ -6,9 +6,9 @@ import * as rules from '../rules';
 // screens never branch on where the state lives.
 //
 // No shared clock here, deliberately — every rule is called with `now = null`.
-// On one device the clock belongs to whoever is holding it and starts when they
-// take it, which only the screen knows; LocalRound runs it per player and
-// submits a blank when it runs out.
+// On one device the clock starts when the clue is in front of its player
+// (after the final's handoff, the moment it opens otherwise), which only the
+// screen knows; LocalRound runs it and submits a blank when it runs out.
 export function useQuizRound(players, deal, settings) {
   const ids = useMemo(() => players.map((p) => p.id), [players]);
   const [game, setGame] = useState(() => rules.startGame(ids, deal, settings, null));
@@ -27,10 +27,6 @@ export function useQuizRound(players, deal, settings) {
     ),
     answer: useCallback(
       (playerId, text) => apply((g) => rules.submitAnswer(g, deal, playerId, text, ids)),
-      [apply, deal, ids],
-    ),
-    selfReport: useCallback(
-      (gotIds) => apply((g) => rules.selfReport(g, deal, gotIds, ids)),
       [apply, deal, ids],
     ),
     next: useCallback(() => apply((g) => rules.advance(g, deal, ids, null)), [apply, deal, ids]),

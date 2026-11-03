@@ -117,7 +117,7 @@ describe('AniQuiz, played locally', { timeout: 60000 }, () => {
     expect(seen.filter((s) => s === 'choice')).toHaveLength(11);
   });
 
-  it('passes the device for every typed answer when two are playing', async () => {
+  it('gives each typed question to one player in turn, with no handoffs', async () => {
     seedProfiles([makeProfile('Caden'), makeProfile('Ayu')]);
     seedPrefs({ format: 'quiz', pool: 'everything', quizLength: 5, timed: false, answerStyle: 'typed' });
     const user = userEvent.setup();
@@ -128,8 +128,8 @@ describe('AniQuiz, played locally', { timeout: 60000 }, () => {
     await user.click(start);
 
     const seen = await playToEnd(user);
-    expect(seen.filter((s) => s === 'handoff')).toHaveLength(10);
-    expect(seen.filter((s) => s === 'typed')).toHaveLength(10);
+    expect(seen).not.toContain('handoff');
+    expect(seen.filter((s) => s === 'typed')).toHaveLength(5);
   });
 
   it('deals the board from only the categories left switched on, and remembers them', async () => {
@@ -140,8 +140,8 @@ describe('AniQuiz, played locally', { timeout: 60000 }, () => {
     // The switches fold away under the Categories card (MoreSettings).
     await openMoreSettings(user);
 
-    // Everything but Theme Songs and Studio Credits.
-    const off = ['The Director’s Chair', 'Who Scored It?', 'Source Material', 'Air Dates', 'Voice Cast', 'Who’s Who'];
+    // Everything but Theme Songs and Studio Credits (the hard three start off).
+    const off = ['The Squad', 'Name That Character', 'Who’s Who', 'Which Came First?', 'Fan Favourites', 'Air Dates', 'Voice Cast'];
     for (const title of off) {
       const name = new RegExp(`^${title.replace(/[?]/g, '\\?')}`);
       await user.click(screen.getByRole('checkbox', { name }));
@@ -153,12 +153,12 @@ describe('AniQuiz, played locally', { timeout: 60000 }, () => {
     expect(screen.getByText('Studio Credits')).toBeTruthy();
     expect(screen.queryByText('Voice Cast')).toBeNull();
     const saved = JSON.parse(localStorage.getItem('aniarcade_game_prefs')).aniquiz;
-    expect(saved.topicsOff).toEqual(['staff', 'music', 'origins', 'calendar', 'voices', 'cast']);
+    expect(saved.topicsOff).toEqual(['squad', 'portraits', 'cast', 'firsts', 'favourites', 'calendar', 'voices', 'staff', 'music', 'origins']);
   });
 
   it('will not start with every category switched off', async () => {
     seedProfiles([makeProfile('Caden')]);
-    seedPrefs({ format: 'quiz', pool: 'everything', topicsOff: ['studios', 'staff', 'music', 'origins', 'themes', 'calendar', 'voices'] });
+    seedPrefs({ format: 'quiz', pool: 'everything', topicsOff: ['squad', 'portraits', 'firsts', 'favourites', 'themes', 'calendar', 'studios', 'voices', 'staff', 'music', 'origins'] });
     const user = userEvent.setup();
     const start = await openSetup(user);
     await openMoreSettings(user);

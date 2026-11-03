@@ -6,10 +6,10 @@ presence, settings, profiles, styling).
 
 ## AniQuiz: the fact pack's game
 
-`games/aniquiz/` (id `aniquiz`) is trivia built from the credits: studios, directors,
-composers, source material, theme songs, air dates, voice actors and casts, all out of the
-fact pack. It
-has two formats over one clue generator — a **board** (category columns, a Daily Double, a
+`games/aniquiz/` (id `aniquiz`) is anime trivia, one player per clue: casts, portraits,
+premiere order and fan favourites for casual fans, and the credits (studios, directors,
+composers, source material, theme songs, air dates, voice actors) for the rest, all out of the
+fact pack bar the portraits. It has two formats over one clue generator — a **board** (category columns, a Daily Double, a
 wagered final) and a **quick quiz** (a straight run, easiest first) — and two answer styles,
 multiple choice and typed.
 
@@ -62,6 +62,32 @@ playing the song is AniTune. Three fairness rules, each with a test:
   `imprint`): mixed, a player could discard every option of the wrong kind without knowing
   anything. The magazine prompt says "where was it serialized", because Shōnen Jump+ and
   Pixiv are websites, and a source year later than the premiere is never asked.
+
+**Casual topics, and the hard ones off by default** (2026-11-03: the credits topics were too
+hard for casual fans). TOPICS is listed easiest first, and four topics ask what a viewer knows
+from WATCHING rather than from the end roll:
+
+- **The Squad** (`squad`): name the show from its three best-known leads, accepting every pack
+  show they all lead. A lead sharing a 3+ letter word with the title ("Naruto Uzumaki", "Haruhi
+  Suzumiya", "Frieren") is skipped (`nameInTitle`) — it would answer the clue in the asking.
+- **Name That Character** (`portraits`): a portrait, name them or their show. The pack has no
+  images, so the pictures are the PLAYERS' own (`utils/portraits.js`, from every seated list,
+  keyed by the pack's character fold, `https` only) — the topic is as wide as the table's lists
+  and empty with none. Neither the prompt nor the `<img>` alt ever names the character.
+  `image` survives `normalizeClue`.
+- **Which Came First?** (`firsts`) and **Fan Favourites** (`favourites`): four shows, one clearly
+  the most of something (`COMPARE`: earliest/latest premiere year, highest averageScore, most
+  popular). "Clearly" is a margin (`trails`): a year, 3 score points, 1.25× members — two shows
+  of one year or a 1-point score gap is a coin toss. Their options ARE the question, so they are
+  **`choiceOnly`**: `dealableTopics` leaves them out of a typed deal, `finisher` refuses one that
+  arrives anyway, and the card says "multiple choice only" instead of a count. Their wrong
+  options come from `compareDistractors` (same table-first, unshown-first order), and `detail`
+  carries every option's value for the reveal, best first.
+
+The credits topics (`staff`, `music`, `origins`) are flagged **`hard`**, badged "Harder" on the
+card, and are `DEFAULT_PREFS.topicsOff` — so a table that never opened the card plays the
+watchable ones, while one that ever touched the switches keeps its saved list (mergePrefs).
+`clues.test.js` pins the default to the `hard` flags.
 
 **A table can switch whole topics off** (QuizSettings' "Categories" card), never individual
 clue shapes — a topic is what a player sees as a column, and seventeen shape switches would be
@@ -117,16 +143,28 @@ pack (`lookups`, memoized on the index object) for the same reason.
 their accept lists and options) is written once; every answer is a transaction on `game`
 alone, so those writes stay small. Every rule therefore takes the deal as an argument.
 
-**Everyone answers every clue, privately, and the pick rotates round the table.** There is no
-buzzer and no "whoever got it picks": with everyone answering at once that is usually several
-people, and breaking the tie by speed would make the board a race. **A wrong answer costs
-nothing unless it was wagered** — with simultaneous answers a miss penalty mostly punishes a
-guess. A wager is different in kind: the player chose the stake. A blank at the clock on a
-wagered clue loses the stake too, or sitting out the clock would be the safe play.
+**One player answers each clue: whoever's turn it is** (changed 2026-11-03 at the user's
+request; it was "everyone answers every clue privately, a miss is free"). On the board the turn
+picks a cell and answers it; in a quiz each question goes to the next seat. Both set the clue's
+`solo` — the field the Daily Double always used — so every gate that waited on one player for a
+Daily Double (`requiredIds`, `settleIfComplete`'s departed-solo reveal) now covers every clue
+with no new code path. Everyone else watches: online they see the clue, clock and a read-only
+`OptionsList`; locally the clue is answered in front of the table, so only the final still uses
+`Handoff`. **The turn rotates whatever happened** — "keep picking while you're right" would let
+one strong player run the board.
+
+**A miss costs the clue's value**, and a pass and a blank at the clock are misses: the player
+took the clue, so sitting it out is never the safe play. Scores go below zero. The old rule had
+no penalty because with everyone answering at once a penalty mostly punished guessing; with one
+answerer that argument is gone. `riskLine` (roundText.js) prints the stakes under every clue,
+because "Pass costs points" is the one rule nobody would guess. A clue whose player LEFT reveals
+uncharged (`revealNow`): walking away is not letting the clock run out. Online the host's
+"Reveal now" shows as soon as an untimed clue is somebody else's, the AFK escape.
 
 The Daily Double never sits in the top row (a wager on the easiest clue is free money), and
-its stake floors at `DD_FLOOR` so a player on zero can still make it a swing. The final waits
-only on players who wagered on it.
+its stake floors at `DD_FLOOR` so a player on zero (or below) can still make it a swing. **The
+final is everyone's, privately** — each wagers up to their score (0 when at or below zero, and
+they still answer) — and waits only on players who wagered on it.
 
 **The answer key is in `state/`, and that is a stated concession.** Neither read-gated node
 fits: `secrets/` and `assignments/` both hide a value from SOME players, and this one is hidden
@@ -142,23 +180,20 @@ a deck card's id IS `franchiseTitleKey`, the fold the pack is keyed on. The setu
 the first number a long shared list that is mostly absent looks like the game ignoring it.
 
 **Local play has no shared clock:** every rule is called with `now = null`, and `LocalClock`
-runs one per player from the moment the handoff hands them the device — AniTune's
-`beginEntry` rule. Online runs AniWave's two clocks: the displayed one drains to the real
+starts when the clue is in front of its player — as it opens, or after the final's handoff
+(AniTune's `beginEntry` rule). Online runs AniWave's two clocks: the displayed one drains to the real
 deadline, and a second offset by `REVEAL_GRACE_MS` gates `expireClue`, so an answer sent in the
 last instant lands before the clue closes on it. Local play is not resumable; the Hub button
 says so rather than pretending.
 
-**One device can answer out loud** (`localAnswers: 'aloud'`, local only): the clue goes up once,
-everyone says their answer, "Show the answer" shows it, and the table ticks who got it in
-`SelfReport` — `rules.selfReport` scores the ticks at face value and marks each answer `aloud`.
-It replaced about a hundred handoffs a board. **Never on a wagered clue** (Daily Double, final):
-an honour tick placed after seeing the answer would let a player decide whether they had
-"really" known it, so those keep the private handoff whatever the option says.
+The local "Say it out loud" option (`localAnswers`, `rules.selfReport`) was removed with the
+turn change: with one answerer there is nothing to hide and nothing to pass round.
+`mergePrefs` drops the stale key from saved prefs.
 
 A fresh board lands a column at a time and the final's reveal is staged row by row
 (`useStagger`), each over complete markup, so the bots and a quick pick are never held up.
 
 `AniQuizGame.test.jsx` plays whole games through the real screens against the real pack — a
-solo quiz with no list, a full board through both wagers, two players passing the device for
-typed answers. Red is AniQuiz's accent as hub identity only: in-game, red still means wrong,
+solo quiz with no list, a full board through both wagers, two players taking typed questions in
+turn with no handoff. Red is AniQuiz's accent as hub identity only: in-game, red still means wrong,
 and the primary actions stay pink.

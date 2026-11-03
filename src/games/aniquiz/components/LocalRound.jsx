@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useQuizRound } from '../hooks/useQuizRound';
-import { currentClue, isWagered, requiredIds, stillToAct, wagerLimit } from '../rules';
-import SelfReport from '../../../shared/components/SelfReport';
+import { currentClue, requiredIds, stillToAct, wagerLimit } from '../rules';
 import Board from './Board';
 import ClueCard from './ClueCard';
 import AnswerEntry from './AnswerEntry';
@@ -10,27 +9,25 @@ import Scoreboard from './Scoreboard';
 import WagerEntry from './WagerEntry';
 import QuizResults from './QuizResults';
 import LocalClock from '../../../shared/components/LocalClock';
-import { categoryFor, nextLabel, stakeLabelFor } from '../roundText';
-import { Backdrop, Button, Card, Icon, Screen } from '../../../shared/ui';
+import { categoryFor, nextLabel, riskLine, stakeLabelFor } from '../roundText';
+import { Backdrop, Button, Card, Screen } from '../../../shared/ui';
 import Handoff from '../../../shared/components/Handoff';
 import WagerBanner from './WagerBanner';
 
-// One device, passed round the table. The screen sequence is DERIVED from the
-// game, never stored: whoever is next is `stillToAct(...)[0]`, and the only
-// local state is `holding` — which player has confirmed the device is in their
-// hands. A handoff screen shows whenever the next player is not the one holding
-// it, so a submit hands the device on with no extra bookkeeping.
+// One device, on the table. The screen sequence is DERIVED from the game, never
+// stored: whoever is next is `stillToAct(...)[0]`, and the only local state is
+// `holding` — which player has confirmed the device is in their hands.
 //
-// The handoff is skipped when exactly one player is required (a solo game, a
-// Daily Double): there is nobody to hand to and nothing to hide.
+// Every clue but the final belongs to one player (rules.js), and their answer
+// is no secret — the table watches them give it — so those clues need no
+// handoff: the screen names whose clue it is and they answer in front of
+// everyone. Only the final, which everyone wagers on and answers privately,
+// still passes the device, one player at a time.
 export default function LocalRound({ players, deal, settings, pack, onPlayAgain, onBack }) {
   const round = useQuizRound(players, deal, settings);
   const { game } = round;
   const ids = players.map((p) => p.id);
   const [holding, setHolding] = useState(null);
-  // Out-loud play: which clue the table has asked to see the answer to. Keyed
-  // by the clue, so the next one starts covered with no reset to run.
-  const [shownFor, setShownFor] = useState(null);
 
   const clue = currentClue(game, deal);
   const category = categoryFor(game, deal);
@@ -40,9 +37,7 @@ export default function LocalRound({ players, deal, settings, pack, onPlayAgain,
   const shared = requiredIds(game, ids).length > 1;
   const needsHandoff = shared && current != null && holding !== current;
   const clueKey = `${game.round}:${game.cell ?? game.index}`;
-  // Said out loud rather than passed round: only for a clue the whole table
-  // answers and nobody has a stake on (see rules.selfReport).
-  const aloud = settings?.localAnswers === 'aloud' && shared && !isWagered(game, deal);
+  const table = players.length > 1;
 
   if (game.phase === 'finished') {
     return <QuizResults players={players} scores={game.scores} onPlayAgain={onPlayAgain} onBack={onBack} />;
@@ -70,7 +65,7 @@ export default function LocalRound({ players, deal, settings, pack, onPlayAgain,
     body = (
       <>
         <h2 className="mb-4 text-center font-display text-2xl font-bold uppercase tracking-wide text-fg-strong sm:text-3xl">
-          {players.length > 1 ? `${nameOf(game.pickerId)}, pick a clue` : 'Pick a clue'}
+          {table ? `${nameOf(game.pickerId)}, pick a clue` : 'Pick a clue'}
         </h2>
         <Board deal={deal} game={game} canPick onPick={round.pick} />
       </>
@@ -94,53 +89,8 @@ export default function LocalRound({ players, deal, settings, pack, onPlayAgain,
           )}
       </>
     );
-  } else if (game.phase === 'answering' && aloud) {
-    const showing = shownFor === clueKey;
-    body = (
-      <>
-        <ClueCard clue={clue} category={category} stakeLabel={stakeLabelFor(game, deal)} className="mb-6" />
-        {!showing ? (
-          <>
-            {game.timed && (
-              <LocalClock key={clueKey} ms={game.answerMs} label="Time to answer" onExpire={() => setShownFor(clueKey)} />
-            )}
-            {/* The options, to read from — nobody picks here. */}
-            {clue?.options?.length > 0 && (
-              <Card padding="sm" className="mb-6">
-                <ol className="grid gap-2 sm:grid-cols-2">
-                  {clue.options.map((o, i) => (
-                    <li key={o} className="border-2 border-ink bg-surface-2 px-3 py-2 font-display text-lg font-bold text-fg-strong">
-                      <span className="mr-2 text-fg-subtle">{String.fromCharCode(65 + i)}</span>{o}
-                    </li>
-                  ))}
-                </ol>
-              </Card>
-            )}
-            <p className="mb-4 text-center text-fg-helper">Everyone say your answer out loud.</p>
-            <Button variant="primary" size="xl" fullWidth onClick={() => setShownFor(clueKey)}>
-              Show the answer
-            </Button>
-          </>
-        ) : (
-          <>
-            <div className="relative mb-6 border-[3px] border-ink bg-surface px-5 pt-8 pb-5 text-center shadow-pop-sm">
-              <span className="absolute -top-[3px] -left-[3px] border-[3px] border-ink bg-ink px-2.5 py-1 font-display text-xs font-bold uppercase tracking-[0.15em] text-paper">
-                The answer
-              </span>
-              <p className="font-display text-3xl font-bold uppercase tracking-wide text-fg-strong [overflow-wrap:anywhere]">
-                {clue?.answer}
-              </p>
-            </div>
-            <SelfReport
-              key={clueKey}
-              players={players.filter((p) => requiredIds(game, ids).includes(p.id))}
-              onDone={(got) => round.selfReport(got)}
-            />
-          </>
-        )}
-      </>
-    );
   } else if (game.phase === 'answering') {
+    const risk = riskLine(game, deal);
     body = (
       <>
         <ClueCard clue={clue} category={category} stakeLabel={stakeLabelFor(game, deal)} className="mb-6" />
@@ -148,9 +98,10 @@ export default function LocalRound({ players, deal, settings, pack, onPlayAgain,
           ? handoff('Answers stay hidden until everyone is in.')
           : current && (
             <div key={`${clueKey}:${current}`}>
-              {shared && (
-                <p className="mb-3 text-center font-display text-xl font-extrabold text-fg-strong">{nameOf(current)}, your answer</p>
+              {table && (
+                <p className="mb-1 text-center font-display text-xl font-extrabold text-fg-strong">{nameOf(current)}, your answer</p>
               )}
+              {risk && <p className="mb-3 text-center text-sm text-fg-helper">{risk}</p>}
               {game.timed && (
                 <LocalClock ms={game.answerMs} onExpire={() => { round.answer(current, ''); setHolding(null); }} />
               )}

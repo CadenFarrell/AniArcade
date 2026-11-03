@@ -1,8 +1,9 @@
 // Settings + players + pack → the deal rules.js plays. One function so local
 // play and the online host deal identically; everything it calls is pure.
-import { dealBoard, dealQuiz, enabledTopics } from './clues';
+import { dealBoard, dealQuiz, dealableTopics, enabledTopics } from './clues';
 import { BOARD, QUIZ, CHOICE, TYPED } from './rules';
 import { showKeysFor } from './utils/pool';
+import { portraitsFrom } from './utils/portraits';
 
 /**
  * Returns { deal } or { error } — the error a sentence the setup screen can
@@ -17,11 +18,15 @@ export function buildDeal(index, players, settings, { rng = Math.random, recent 
   const keys = showKeysFor(players, settings.pool, index);
   const answerStyle = settings.answerStyle === TYPED ? TYPED : CHOICE;
   const choices = answerStyle === CHOICE;
-  const topics = enabledTopics(settings.topicsOff);
-  if (!topics.length) return { error: NO_TOPICS };
+  if (!enabledTopics(settings.topicsOff).length) return { error: NO_TOPICS };
+  // Typed answers leave out the choice-only topics ("which of these came
+  // first?"), which can leave nothing at all.
+  const topics = dealableTopics(settings.topicsOff, { choices });
+  if (!topics.length) return { error: CHOICE_ONLY };
+  const portraits = portraitsFrom(players);
 
   if (settings.format === QUIZ) {
-    const res = dealQuiz(index, keys, { count: settings.quizLength, choices, topics, rng, recent });
+    const res = dealQuiz(index, keys, { count: settings.quizLength, choices, topics, rng, recent, portraits });
     if (res.error) return { error: NOT_ENOUGH };
     return {
       deal: {
@@ -38,6 +43,7 @@ export function buildDeal(index, players, settings, { rng = Math.random, recent 
     topics,
     rng,
     recent,
+    portraits,
   });
   if (res.error) return { error: NOT_ENOUGH };
   return {
@@ -55,3 +61,4 @@ export function buildDeal(index, players, settings, { rng = Math.random, recent 
 const NOT_ENOUGH = 'Not enough of these shows are in the fact pack to fill a game. '
   + 'Widen the pool — “Shows anyone has” or “The whole fact pack” — or switch more categories on.';
 const NO_TOPICS = 'Every category is switched off. Switch at least one back on.';
+const CHOICE_ONLY = 'The categories left on need multiple choice. Switch to multiple choice, or switch another category on.';

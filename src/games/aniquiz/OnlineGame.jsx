@@ -1,6 +1,7 @@
 import { useQuizRoom } from './hooks/useQuizRoom';
 import { useFactPack } from '../../shared/hooks/useFactPack';
-import { currentClue, requiredIds, wagerLimit } from './rules';
+import { currentClue, isDailyDouble, requiredIds, wagerLimit } from './rules';
+import OptionsList from './components/OptionsList';
 import RoomSetup from '../../shared/components/RoomSetup';
 import descriptor from './index';
 import { countShows } from '../../shared/utils/profileStats';
@@ -12,7 +13,7 @@ import ClueReveal from './components/ClueReveal';
 import Scoreboard from './components/Scoreboard';
 import WagerEntry from './components/WagerEntry';
 import QuizResults from './components/QuizResults';
-import { categoryFor, nextLabel, stakeLabelFor } from './roundText';
+import { categoryFor, nextLabel, riskLine, stakeLabelFor } from './roundText';
 import WaitingScreen from '../../shared/components/WaitingScreen';
 import RoomShell from '../../shared/components/RoomShell';
 import { useSoundCue } from '../../shared/hooks/useSoundCue';
@@ -23,21 +24,26 @@ import WagerBanner from './components/WagerBanner';
 // a way out pinned to the corners, connection problems in a banner, and
 // room.view choosing the screen.
 //
-// Every player answers on their own device, so there is no handoff here — a
-// player who has answered sees who the table is still waiting on, and nobody
-// sees an answer until the reveal.
+// Each clue but the final is ONE player's (rules.js): they answer on their own
+// device while everyone else watches the same clue, options and clock on
+// theirs. The final is everyone's, privately: a player who has answered sees
+// who the table is still waiting on, and nobody sees an answer until the
+// reveal.
 export default function OnlineGame({ onBack, onExit }) {
   const room = useQuizRoom();
   const pack = useFactPack();
 
-  // My pick coming round on the board, once per pick: the count of cells
-  // already opened moves on with every clue, so it names this pick.
+  // My turn coming round, once per turn: on the board the count of cells
+  // already opened names the pick, in a quiz the question's index does.
   const g = room.view === 'lobby' ? null : room.game ?? null;
+  const quizTurn = g?.phase === 'answering' && g.round !== 'final' && room.deal?.format === 'quiz';
   useSoundCue(
     'turn',
-    g?.phase === 'board' && g.pickerId === room.myPlayerId && g.order?.length > 1
-      ? Object.keys(g.used ?? {}).length
-      : null,
+    g?.order?.length > 1 && g.phase === 'board' && g.pickerId === room.myPlayerId
+      ? `pick:${Object.keys(g.used ?? {}).length}`
+      : g?.order?.length > 1 && quizTurn && g.solo === room.myPlayerId
+        ? `quiz:${g.index}`
+        : null,
   );
 
   if (!room.roomCode) {
@@ -132,24 +138,37 @@ export default function OnlineGame({ onBack, onExit }) {
     );
   } else if (game.phase === 'answering') {
     const answered = Boolean(game.answers?.[me]);
+    const risk = game.solo === me ? riskLine(game, deal) : null;
+    // The host's escape for an untimed clue somebody has stopped answering —
+    // on a one-player clue, as soon as it is somebody else's; on the final,
+    // once anyone has answered. A timed clue ends itself, so it never needs it.
+    const canForce = room.isHost && game.deadlineAt == null && (
+      game.solo ? game.solo !== me : Object.keys(game.answers ?? {}).length > 0
+    );
     body = (
       <>
         <ClueCard clue={clue} category={category} stakeLabel={stakeLabelFor(game, deal)} className="mb-6" />
         {timer}
         {iMustAct && !answered && (
-          <AnswerEntry key={clueKey} clue={clue} options={clue?.options} pack={pack.pack} onSubmit={room.answer} />
+          <>
+            {risk && <p className="mb-3 text-center text-sm text-fg-helper">{risk}</p>}
+            <AnswerEntry key={clueKey} clue={clue} options={clue?.options} pack={pack.pack} onSubmit={room.answer} />
+          </>
         )}
         {iMustAct && answered && waiting(waitingOn((id) => game.answers?.[id]))}
         {!iMustAct && (
-          <Card padding="lg" className="text-center">
-            <p className="text-lg text-fg-body">
-              {game.solo ? `${nameOf(game.solo)} is answering the Daily Double…` : 'You sat this one out.'}
-            </p>
-          </Card>
+          <>
+            <Card padding="lg" className="mb-4 text-center">
+              <p className="text-lg text-fg-body">
+                {game.solo
+                  ? `${nameOf(game.solo)} is answering${isDailyDouble(game, deal) ? ' the Daily Double' : ''}…`
+                  : 'You sat this one out.'}
+              </p>
+            </Card>
+            <OptionsList options={clue?.options} />
+          </>
         )}
-        {/* The host's escape for an untimed clue somebody has stopped
-            answering. A timed clue ends itself, so it never needs this. */}
-        {room.isHost && game.deadlineAt == null && Object.keys(game.answers ?? {}).length > 0 && (
+        {canForce && (
           <Button variant="neutral" size="md" fullWidth className="mt-4" onClick={room.revealNow}>
             Reveal now
           </Button>

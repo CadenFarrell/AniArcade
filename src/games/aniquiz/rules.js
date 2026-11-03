@@ -15,16 +15,20 @@
 // small. Every rule therefore takes the deal as an argument rather than
 // finding the clue inside the game.
 //
-// **Everyone answers every clue, privately.** There is no buzzer: the picker
-// chooses, then the whole table answers on their own device (or, locally, in
-// turn on the one device), and nobody sees anybody's answer until it is
-// revealed. The two exceptions are both wagers — a Daily Double belongs to
-// whoever found it, and the final belongs to everyone who wagered on it.
+// **One player answers each clue: whoever's turn it is.** On the board the
+// turn picks a cell and answers it; in a quick quiz each question goes to the
+// next seat. Everyone else watches. The clue's `solo` names that player, the
+// same field the Daily Double always used, so every gate that already waited
+// on one player for a Daily Double now does so for every clue. The final is
+// the exception: everyone with a stake wagers and answers it, privately.
 //
-// **A wrong answer costs nothing unless it was wagered.** With everyone
-// answering at once, a penalty for missing mostly punishes trying, which on a
-// multiple-choice clue means punishing a guess. A wager is different in kind:
-// the player chose the stake, so losing it is the bet working as offered.
+// **A miss costs the clue's value.** Classic quiz-show scoring, and it works
+// here because the answer is one player's choice: they took the clue, so a
+// wrong answer, a pass and a blank at the clock all lose what a right answer
+// would have won (sitting out the clock is never the safe play). Scores can go
+// below zero. It replaced "everyone answers, a miss is free" (2026-11-03) —
+// with the whole table answering at once a penalty mostly punished guessing,
+// which is why the old rule had none.
 //
 // **Time.** Nothing here reads a clock. A rule that needs "now" takes it as an
 // argument, already corrected for server skew, and stores absolute instants —
@@ -82,7 +86,7 @@ export function startGame(playerIds, deal, { timed = false, answerSeconds = 30 }
     ...clueReset(),
   };
   if (deal.format === QUIZ) {
-    return { ...game, phase: 'answering', deadlineAt: deadlineFor(game, now) };
+    return { ...game, phase: 'answering', solo: game.pickerId, deadlineAt: deadlineFor(game, now) };
   }
   return { ...game, phase: 'board' };
 }
@@ -147,8 +151,8 @@ export function wagerLimit(game, playerId) {
 // ── The board ──────────────────────────────────────────────────────────────
 
 /**
- * The picker takes a cell. A Daily Double goes to a wager first; anything else
- * opens straight to the whole table.
+ * The picker takes a cell, and the clue is theirs to answer. A Daily Double
+ * goes to their wager first; anything else opens straight away.
  *
  * The cell is marked used the moment it is picked, not when it is revealed: a
  * cell is spent by being opened, and marking it later would leave a window in
@@ -163,7 +167,9 @@ export function pickCell(game, deal, playerId, cell, now = null) {
   if (cell === deal.dailyDouble) {
     return { patch: { ...clueReset(), phase: 'wager', cell, used, solo: playerId } };
   }
-  return { patch: { ...clueReset(), phase: 'answering', cell, used, deadlineAt: deadlineFor(game, now) } };
+  return {
+    patch: { ...clueReset(), phase: 'answering', cell, used, solo: playerId, deadlineAt: deadlineFor(game, now) },
+  };
 }
 
 /**
@@ -200,8 +206,10 @@ function settle(game, deal, answers) {
   const scores = { ...game.scores };
   const graded = {};
   for (const [id, a] of Object.entries(answers)) {
+    // The same either way now: a wager is the stake the player chose, a clue's
+    // face value the stake they took by answering it.
     const stake = wagered ? (game.wagers?.[id] ?? 0) : (clue?.value ?? 0);
-    const delta = a.correct ? stake : (wagered ? -stake : 0);
+    const delta = a.correct ? stake : -stake;
     scores[id] = (scores[id] ?? 0) + delta;
     graded[id] = { ...a, delta };
   }
@@ -222,29 +230,9 @@ export function submitAnswer(game, deal, playerId, text, activeIds) {
 }
 
 /**
- * A one-device table that answers OUT LOUD (the local "Say it out loud" option):
- * the clue goes up, everyone says their answer, the answer is shown, and the
- * table ticks who got it (shared/components/SelfReport). `gotIds` is that tick
- * list. Each required player gets an answer marked `aloud`, so the reveal says
- * "said it" rather than quoting text nobody typed.
- *
- * Never on a wagered clue: a wager is a private stake, and an honour tick on a
- * Daily Double or the final would let a player decide after seeing the answer
- * whether they had "really" known it. Those keep the private handoff.
- */
-export function selfReport(game, deal, gotIds = [], activeIds = []) {
-  if (game.phase !== 'answering' || isWagered(game, deal)) return { patch: {} };
-  const answers = {};
-  for (const id of requiredIds(game, activeIds)) {
-    answers[id] = { text: '', correct: gotIds.includes(id), delta: 0, aloud: true };
-  }
-  return { patch: settle(game, deal, answers) };
-}
-
-/**
- * The clock ran out. Everyone still owing an answer is recorded as blank — and
- * a blank on a wagered clue loses the stake, or sitting out the clock would be
- * the safe play on every Daily Double.
+ * The clock ran out. Everyone still owing an answer is recorded as blank, and
+ * a blank is a miss — it loses the clue's value (or the stake), or sitting out
+ * the clock would be the safe play on every clue.
  */
 export function expireClue(game, deal, activeIds) {
   if (game.phase !== 'answering' || game.deadlineAt == null) return { patch: {} };
@@ -256,10 +244,10 @@ export function expireClue(game, deal, activeIds) {
 }
 
 /**
- * Reveal with whatever is in. The escape hatch for an untimed clue somebody
- * has stopped answering, and for a Daily Double whose finder has left — which
- * is why it accepts the wager phase too. Charges nobody who has not answered:
- * walking away is not the same act as letting the clock run out.
+ * Reveal with whatever is in. The escape hatch for an untimed clue its player
+ * has stopped answering, and for a clue whose player has left — which is why
+ * it accepts a Daily Double's wager phase too. Charges nobody who has not
+ * answered: walking away is not the same act as letting the clock run out.
  */
 export function revealNow(game, deal) {
   if (game.phase !== 'answering' && !(game.phase === 'wager' && game.solo)) return { patch: {} };
@@ -316,10 +304,10 @@ export function skipPicker(game, activeIds) {
  * Past a revealed clue: the next quiz question, back to the board, into the
  * final, or the end.
  *
- * The pick rotates round the table rather than going to whoever answered
- * right. With everyone answering every clue, "whoever got it" is usually
- * several people, and a tie-break by speed would make the board a race the
- * rules otherwise go out of their way not to be.
+ * The turn rotates round the table whatever happened, rather than staying with
+ * a player who got it right. "Keep picking while you're right" lets one strong
+ * player run the board while everyone else watches, which is the opposite of
+ * what one-player-per-clue is for.
  */
 export function advance(game, deal, activeIds, now = null) {
   if (game.phase !== 'revealed') return { patch: {} };
@@ -329,7 +317,12 @@ export function advance(game, deal, activeIds, now = null) {
   if (deal.format === QUIZ) {
     const index = game.index + 1;
     if (index >= (deal.questions?.length ?? 0)) return { patch: { phase: 'finished' } };
-    return { patch: { ...clueReset(), index, phase: 'answering', deadlineAt: deadlineFor(game, now) } };
+    const turn = nextPicker(game.order, game.pickerId, activeIds);
+    return {
+      patch: {
+        ...clueReset(), index, phase: 'answering', pickerId: turn, solo: turn, deadlineAt: deadlineFor(game, now),
+      },
+    };
   }
 
   if (cellsLeft(game, deal) > 0) {

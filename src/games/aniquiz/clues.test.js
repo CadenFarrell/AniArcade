@@ -1,9 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import { indexPack } from '../../shared/utils/facts';
 import {
-  BOARD_VALUES, CHOICES, ROWS, buildContext, candidatesFor, dealBoard, dealQuiz, domainValues, enabledTopics,
-  foldAnswer, isCorrect, normalizeClue, parseCell, poolSummary, showOf, TOPICS, withChoices,
+  BOARD_VALUES, CHOICES, ROWS, buildContext, candidatesFor, dealBoard, dealQuiz, dealableTopics, domainValues, enabledTopics,
+  foldAnswer, isCorrect, normalizeClue, parseCell, poolSummary, showOf, TOPICS, trails, withChoices,
 } from './clues';
+import { portraitsFrom } from './utils/portraits';
+import { DEFAULT_PREFS } from './prefs';
 
 // Deterministic, so a failure reproduces.
 function seeded(seed = 1) {
@@ -41,6 +43,10 @@ function makePack({ shows = 20 } = {}) {
       episodes: 12 + (i % 3),
       genres: ['Action'],
       popularityRank: i + 1,
+      // Distinct, and spread wide enough that Fan Favourites' margins leave
+      // every show something it clearly beats or trails.
+      averageScore: 50 + ((i * 7) % 40),
+      popularity: 400000 - i * 9000,
       // pack-v5's outside fields. Every manga gets its own magazine and every
       // source its own publisher, so each domain has honest distractors.
       themes: [
@@ -301,6 +307,13 @@ describe('recent games', () => {
   const ctx = buildContext(index, allKeys);
   const ids = TOPICS.flatMap((t) => candidatesFor(ctx, t)).map((c) => c.id);
   const half = new Set(ids.filter((_, i) => i % 2 === 0));
+  // Forty shows, so a 26-clue board can find a fresh show AND an unseen clue;
+  // on twenty, every show is spent anyway and the board's preference for a
+  // fresh show over an unseen clue decides most picks.
+  const wide = indexPack(makePack({ shows: 40 }));
+  const wideKeys = [...wide.shows.keys()];
+  const wideIds = TOPICS.flatMap((t) => candidatesFor(buildContext(wide, wideKeys), t)).map((c) => c.id);
+  const wideHalf = new Set(wideIds.filter((_, i) => i % 2 === 0));
 
   it('avoids clues dealt lately when the rest can fill the game', () => {
     const recent = { ids: half, shows: new Set() };
@@ -313,9 +326,9 @@ describe('recent games', () => {
       // A board may take a recent clue rather than spend a show twice — a fresh
       // show outranks an unseen clue — so it is held to a rate, not a ban.
       // Blind to memory, half of these would be repeats.
-      const clues = boardClues(dealBoard(index, allKeys, { categories: 5, rng: seeded(seed), recent }));
+      const clues = boardClues(dealBoard(wide, wideKeys, { categories: 5, rng: seeded(seed), recent: { ids: wideHalf, shows: new Set() } }));
       dealt += clues.length;
-      repeats += clues.filter((c) => half.has(c.id)).length;
+      repeats += clues.filter((c) => wideHalf.has(c.id)).length;
     }
     expect(repeats / dealt).toBeLessThan(0.15);
   });
@@ -324,6 +337,26 @@ describe('recent games', () => {
     const recent = { ids: new Set(ids), shows: new Set(allKeys) };
     expect(dealQuiz(index, allKeys, { count: 10, rng: seeded(2), recent }).questions).toHaveLength(10);
     expect(dealBoard(index, allKeys, { categories: 5, rng: seeded(2), recent }).categories).toHaveLength(5);
+  });
+});
+
+describe('recent games, the old twenty-show check', () => {
+  // Kept for the quiz, which never repeats a subject and so honours memory
+  // strictly on the smaller pack too.
+  const boardClues = (b) => [...b.categories.flatMap((c) => c.clues), ...(b.final ? [b.final] : [])];
+  const ctx = buildContext(index, allKeys);
+  const half = new Set(TOPICS.flatMap((t) => candidatesFor(ctx, t)).map((c) => c.id).filter((_, i) => i % 2 === 0));
+
+  it('still does better than chance on a board', () => {
+    const recent = { ids: half, shows: new Set() };
+    let dealt = 0;
+    let repeats = 0;
+    for (let seed = 1; seed <= 10; seed++) {
+      const clues = boardClues(dealBoard(index, allKeys, { categories: 5, rng: seeded(seed), recent }));
+      dealt += clues.length;
+      repeats += clues.filter((c) => half.has(c.id)).length;
+    }
+    expect(repeats / dealt).toBeLessThan(0.4);
   });
 });
 
@@ -417,7 +450,8 @@ describe('topic switches', () => {
   });
 
   it('deals a narrower board when fewer topics are on than columns asked for', () => {
-    const board = dealBoard(index, allKeys, { categories: 6, topics: enabledTopics(['voices', 'cast', 'calendar', 'music', 'staff']), rng: seeded(4) });
+    const off = ['squad', 'portraits', 'cast', 'firsts', 'favourites', 'voices', 'calendar', 'music', 'staff'];
+    const board = dealBoard(index, allKeys, { categories: 6, topics: enabledTopics(off), rng: seeded(4) });
     expect(board.categories.map((c) => c.id).sort()).toEqual(['origins', 'studios', 'themes']);
   });
 
@@ -590,5 +624,142 @@ describe('supporting cast', () => {
 
   it('puts a show in play through its alias', () => {
     expect(buildContext(idx, ['show zero the movie']).shows.map((s) => s.key)).toEqual(['show 0']);
+  });
+});
+
+// ── The casual topics ──────────────────────────────────────────────────────
+
+describe('The Squad', () => {
+  const squadOf = (pack, key) => {
+    const ix = indexPack(pack);
+    return candidatesFor(buildContext(ix, [key]), TOPICS.find((t) => t.id === 'squad'))[0] ?? null;
+  };
+
+  it('names the show from its three best-known leads, accepting only shows they all lead', () => {
+    const c = squadOf(makePack(), 'show 4');
+    expect(c.prompt).toBe('Hero 4 0, Hero 4 1 and Hero 4 2 are main characters in which show?');
+    expect(c.accept).toEqual(['show 4']);
+    expect(c.domain).toBe('show');
+  });
+
+  it('never names a lead whose name gives the title away', () => {
+    const raw = makePack();
+    raw.shows['show 2'].title = 'The Saga of Hero';
+    const c = squadOf(raw, 'show 2');
+    // All three leads are "Hero 2 …": every one shares a word with the title.
+    expect(c).toBeNull();
+    raw.characters['hero 2 0'].name = 'Mika Tanaka';
+    raw.characters['hero 2 1'].name = 'Ren Sato';
+    const two = squadOf(raw, 'show 2');
+    expect(two.prompt).toBe('Mika Tanaka and Ren Sato are main characters in which show?');
+  });
+});
+
+describe('Which Came First? and Fan Favourites', () => {
+  const ctx = buildContext(index, allKeys);
+  const compareClues = TOPICS.filter((t) => t.choiceOnly).flatMap((t) => candidatesFor(ctx, t));
+
+  it('makes every wrong option clearly trail the answer, and shows the values in the reveal', () => {
+    expect(new Set(compareClues.map((c) => c.field))).toEqual(new Set(['firstAired', 'lastAired', 'topScore', 'mostPopular']));
+    const rng = seeded(12);
+    for (const clue of compareClues) {
+      const mc = withChoices(buildContext(index, allKeys), clue, rng);
+      expect(mc, clue.id).not.toBeNull();
+      const answer = index.shows.get(clue.subject);
+      for (const o of mc.options.filter((x) => x !== mc.answer)) {
+        const other = [...index.shows.values()].find((s) => s.title === o);
+        expect(trails(clue.field, answer, other), `${clue.id}: ${o}`).toBe(true);
+      }
+      expect(mc.options.filter((o) => isCorrect(mc, o))).toHaveLength(1);
+      expect(mc.detail.split(' · ')).toHaveLength(CHOICES);
+      expect(mc.detail.startsWith(answer.title)).toBe(true);
+    }
+  });
+
+  it('never asks about the show with nothing to beat', () => {
+    // The newest show has no later one, so it cannot be "first" — but can be "newest".
+    const ids = compareClues.map((c) => c.id);
+    expect(ids).not.toContain('firstAired:show 19');
+    expect(ids).toContain('lastAired:show 19');
+    expect(ids).not.toContain('lastAired:show 0');
+  });
+
+  it('reads a margin, not just an order', () => {
+    const a = { seasonYear: 2010, averageScore: 80, popularity: 1000 };
+    expect(trails('firstAired', a, { seasonYear: 2010 })).toBe(false);
+    expect(trails('firstAired', a, { seasonYear: 2011 })).toBe(true);
+    expect(trails('topScore', a, { averageScore: 78 })).toBe(false);
+    expect(trails('topScore', a, { averageScore: 77 })).toBe(true);
+    expect(trails('mostPopular', a, { popularity: 900 })).toBe(false);
+    expect(trails('mostPopular', a, { popularity: 800 })).toBe(true);
+    expect(trails('topScore', a, {})).toBe(false);
+  });
+
+  it('is left out of a typed deal, and refused if one arrives anyway', () => {
+    expect(dealableTopics([], { choices: false }).some((t) => t.choiceOnly)).toBe(false);
+    expect(dealableTopics([], { choices: true }).filter((t) => t.choiceOnly)).toHaveLength(2);
+    const firsts = TOPICS.filter((t) => t.id === 'firsts');
+    expect(dealQuiz(index, allKeys, { count: 5, topics: firsts, choices: false, rng: seeded(1) })).toEqual({ error: 'not-enough' });
+    expect(dealQuiz(index, allKeys, { count: 5, topics: firsts, choices: true, rng: seeded(1) }).questions).toHaveLength(5);
+  });
+
+  it('counts a choice-only topic under typed answers, but not toward Start', () => {
+    const typed = poolSummary(index, allKeys, [], { choices: false });
+    const chosen = poolSummary(index, allKeys, [], { choices: true });
+    expect(typed.topics.find((t) => t.id === 'firsts')).toMatchObject({ typedOut: true, usable: false });
+    expect(chosen.topics.find((t) => t.id === 'firsts')).toMatchObject({ typedOut: false, usable: true });
+    expect(typed.playableTopics).toBe(chosen.playableTopics - 2);
+  });
+});
+
+describe('Name That Character', () => {
+  const portraits = new Map([['hero 3 0', 'https://img.example/hero-3-0.png'], ['hero 5 1', 'https://img.example/hero-5-1.png']]);
+  const topic = TOPICS.find((t) => t.id === 'portraits');
+
+  it('asks only about characters a list pictured, carrying the picture', () => {
+    const clues = candidatesFor(buildContext(index, allKeys, { portraits }), topic);
+    expect(new Set(clues.map((c) => c.subject))).toEqual(new Set(['hero 3 0', 'hero 5 1']));
+    const name = clues.find((c) => c.field === 'portraitName' && c.subject === 'hero 3 0');
+    expect(name).toMatchObject({ prompt: 'Who is this character?', answer: 'Hero 3 0', image: 'https://img.example/hero-3-0.png' });
+    // The prompt must never name them.
+    for (const c of clues) expect(c.prompt).not.toMatch(/Hero/);
+    const show = clues.find((c) => c.field === 'portraitShow' && c.subject === 'hero 5 1');
+    expect(show).toMatchObject({ answer: 'Show 5', accept: ['show 5'], kind: 'show' });
+  });
+
+  it('has nothing to ask without any portraits', () => {
+    expect(candidatesFor(buildContext(index, allKeys), topic)).toEqual([]);
+  });
+
+  it('keeps the picture and the comparison detail through Realtime Database', () => {
+    const back = normalizeClue(JSON.parse(JSON.stringify({ prompt: 'x', accept: ['a'], image: 'https://a/b.png', detail: 'A 2009 · B 2011' })));
+    expect(back.image).toBe('https://a/b.png');
+    expect(back.detail).toBe('A 2009 · B 2011');
+    expect(normalizeClue({ prompt: 'x', accept: ['a'] })).toMatchObject({ image: null, detail: null });
+  });
+
+  it('collects portraits from every seated list, keyed as the pack keys characters', () => {
+    const players = [
+      { animeList: [{ characters: [{ name: 'Hero 3 0', imageUrl: 'https://img.example/a.png' }, { name: 'No Picture' }] }] },
+      { animeList: [{ characters: [{ name: 'hero 3 0', imageUrl: 'https://img.example/b.png' }, { name: 'Hero 4 0', imageUrl: 'javascript:alert(1)' }] }] },
+      { animeList: [] },
+      {},
+    ];
+    const map = portraitsFrom(players);
+    expect([...map.entries()]).toEqual([['hero 3 0', 'https://img.example/a.png']]);
+  });
+});
+
+describe('default categories', () => {
+  it('switches off exactly the topics marked hard, so casual tables start with the watchable ones', () => {
+    expect(DEFAULT_PREFS.topicsOff).toEqual(TOPICS.filter((t) => t.hard).map((t) => t.id));
+    expect(DEFAULT_PREFS.topicsOff.length).toBeGreaterThan(0);
+  });
+
+  it('still deals a full board from the defaults alone', () => {
+    const portraits = portraitsFrom([{ animeList: [{ characters: [...index.characters.values()].map((c) => ({ name: c.name, imageUrl: `https://img.example/${c.name}.png` })) }] }]);
+    const board = dealBoard(index, allKeys, { categories: 6, topics: enabledTopics(DEFAULT_PREFS.topicsOff), rng: seeded(3), portraits });
+    expect(board.categories).toHaveLength(6);
+    for (const col of board.categories) expect(TOPICS.find((t) => t.id === col.id).hard).toBeFalsy();
   });
 });

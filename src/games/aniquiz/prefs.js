@@ -14,10 +14,21 @@ import { DEFAULT_POOL } from './utils/pool';
 //   pool: shared      — clues about shows everybody at the table has seen.
 //   timed: true       — online, an untimed clue waits on the slowest player
 //                       forever, and the clock is what ends it.
-//   topicsOff: []     — every topic on. The list names what a table switched
-//                       OFF, so a topic added later is on for everyone; see
-//                       enabledTopics in clues.js. Only the deal reads it — it
-//                       never enters room state, because only the host deals.
+//   topicsOff: the hard ones — the topics clues.js marks `hard` (directors,
+//                       composers, source material: end-roll trivia most casual
+//                       fans never read), so a table that never opens the card
+//                       plays the watchable ones. The list names what is OFF,
+//                       so a topic added later is on for everyone; see
+//                       enabledTopics in clues.js. A table that ever touched
+//                       the switches has its own list saved, which mergePrefs
+//                       keeps — this default reaches only the untouched.
+//                       prefs.test.js pins it to TOPICS' `hard` flags. Only the
+//                       deal reads it; it never enters room state, because only
+//                       the host deals.
+//
+// There used to be a local-only `localAnswers` ("Say it out loud"). With one
+// player answering each clue there is no answer to hide and nothing to pass
+// round, so it went; mergePrefs drops the stale key from saved blobs.
 export const DEFAULT_PREFS = {
   format: BOARD,
   answerStyle: CHOICE,
@@ -28,19 +39,8 @@ export const DEFAULT_PREFS = {
   finalRound: true,
   timed: true,
   answerSeconds: 30,
-  topicsOff: [],
-  // Local only: 'private' passes the device to each player for every clue (the
-  // original, and still the default — typed answers need it); 'aloud' puts the
-  // clue up once, everyone says their answer, and the table ticks who got it.
-  // About a hundred handoffs a board become none. Wagered clues stay private
-  // either way (rules.selfReport).
-  localAnswers: 'private',
+  topicsOff: ['staff', 'music', 'origins'],
 };
-
-export const LOCAL_ANSWERS = [
-  { id: 'private', label: 'Pass the device', blurb: 'Everyone answers in private, one at a time.' },
-  { id: 'aloud', label: 'Say it out loud', blurb: 'Everyone says their answer, then the table ticks who got it. Bets stay private.' },
-];
 
 export const FORMATS = [
   {

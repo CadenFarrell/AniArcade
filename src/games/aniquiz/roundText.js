@@ -23,6 +23,20 @@ export function stakeLabelFor(game, deal) {
   return currentClue(game, deal)?.value ?? '';
 }
 
+/**
+ * The stakes, under a clue its player is about to answer: what a right answer
+ * wins and a miss costs. Said every time because "a pass costs points" is the
+ * one rule here a player would not guess, and the Pass button would otherwise
+ * look free. Null on the final, whose wager screen already said it.
+ */
+export function riskLine(game, deal) {
+  if (game?.round === 'final') return null;
+  const stake = isDailyDouble(game, deal) ? game.wagers?.[game.solo] : currentClue(game, deal)?.value;
+  if (!stake) return null;
+  const n = stake.toLocaleString('en-US');
+  return `Right: +${n}. Wrong, a pass or out of time: −${n}.`;
+}
+
 /** The label for the button past a revealed clue — says where it goes. */
 export function nextLabel(game, deal) {
   if (game?.round === 'final') return 'See results →';

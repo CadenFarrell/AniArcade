@@ -156,8 +156,21 @@ const sourceYearOf = (s) => {
 const OBSCURITY_WEIGHT = 0.55;
 
 // 0 = anyone who has seen the show knows it; 1 = credits trivia.
+//
+// The casual topics (The Squad, Name That Character, Which Came First?, Fan
+// Favourites) sit at the easy end on purpose: they ask what a viewer knows
+// from WATCHING — faces, names, roughly when it aired, whether it was a hit —
+// where the credits topics ask what a viewer would only know from reading the
+// end roll. Obscurity still prices them, so an obscure show's squad is a 600.
 const FIELD_WEIGHT = {
+  portraitShow: 0.05,
+  squad: 0.05,
   source: 0.05,
+  portraitName: 0.15,
+  lastAired: 0.3,
+  firstAired: 0.3,
+  mostPopular: 0.35,
+  topScore: 0.4,
   appearsIn: 0.1,
   mainCast: 0.2,
   studio: 0.25,
@@ -216,7 +229,7 @@ function percentiles(keys, measure) {
  * consulted for what a clue may ACCEPT and for distractors, because neither of
  * those is a statement about what the table has watched.
  */
-export function buildContext(index, showKeys) {
+export function buildContext(index, showKeys, { portraits = null } = {}) {
   const packShows = index?.shows ?? new Map();
   const packChars = index?.characters ?? new Map();
 
@@ -256,6 +269,9 @@ export function buildContext(index, showKeys) {
     index, packShows, packChars, shows, characters, showObscurity, charObscurity,
     ...lookups(index),
     domains: new Map(),
+    // Character key → portrait URL, from the players' own lists (see
+    // utils/portraits.js). Empty for a table with no lists.
+    portraits: portraits instanceof Map ? portraits : new Map(),
     // Every wrong option this deal has already shown, by domain, so the next
     // clue's options prefer names the table has not just ruled out. A context
     // lives for one deal, so this is "earlier in this game" and nothing more.
@@ -344,18 +360,27 @@ function lookups(index) {
  *
  * A topic's count is SUBJECTS, not candidates: a column takes one clue per
  * show, so a show that could be asked about three ways is still one row.
+ *
+ * `usable` is enabled AND dealable in this answer style: a choice-only topic
+ * switched on under typed answers is reported (`typedOut`) but not totalled,
+ * because the deal will leave it out. `portraits` is utils/portraits.js's map,
+ * without which Name That Character counts nothing.
  */
-export function poolSummary(index, showKeys, topicsOff = []) {
-  const ctx = buildContext(index, showKeys);
+export function poolSummary(index, showKeys, topicsOff = [], { choices = true, portraits = null } = {}) {
+  const ctx = buildContext(index, showKeys, { portraits });
   const on = new Set(enabledTopics(topicsOff).map((t) => t.id));
   const topics = TOPICS.map((t) => ({
     id: t.id,
     title: t.title,
     blurb: t.blurb,
+    hard: Boolean(t.hard),
+    choiceOnly: Boolean(t.choiceOnly),
     enabled: on.has(t.id),
+    typedOut: Boolean(t.choiceOnly) && !choices,
+    usable: on.has(t.id) && (choices || !t.choiceOnly),
     clues: new Set(candidatesFor(ctx, t).map((c) => c.subject)).size,
   }));
-  const live = topics.filter((t) => t.enabled);
+  const live = topics.filter((t) => t.usable);
   return {
     requested: new Set(showKeys ?? []).size,
     shows: ctx.shows.length,
@@ -771,8 +796,177 @@ const BUILDERS = {
   },
 };
 
+// ── casual: what a viewer knows from watching ──
+
+// "A, B and C" — the squad's spelling.
+function andList(names) {
+  if (names.length <= 1) return names[0] ?? '';
+  return `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
+}
+
+// A name that shares a word with the title answers the squad clue in the
+// asking: "Naruto Uzumaki" for NARUTO, "Haruhi Suzumiya" for The Melancholy of
+// Haruhi Suzumiya, "Frieren" for Frieren: Beyond Journey's End. Whole words of
+// three letters or more, so "Ai" or "Rin" cannot rule a name out by accident.
+function nameInTitle(name, title) {
+  const t = new Set(words(title).trim().split(' '));
+  return words(name).trim().split(' ').some((w) => w.length >= 3 && t.has(w));
+}
+
+// The best-known leads a squad clue names. Three is a fair handful: one name
+// can be a guess, three are a cast.
+const SQUAD_SIZE = 3;
+
+// The comparison clues: four shows, one of which is clearly the most of
+// something. "Clearly" is the margin — every wrong option must lose by at
+// least this much, or the clue is a coin toss between two near-ties, and the
+// ORDER of shows sharing a premiere year is not something anybody watched.
+//
+//   by      the show field compared
+//   want    'min' (the smallest wins) or 'max'
+//   margin  how far every other option must trail — years, score points, or a
+//           ratio for popularity (a member count, where 10% of a hit is a lot)
+//   show    how the reveal prints each option's value
+export const COMPARE = {
+  firstAired: { by: 'seasonYear', want: 'min', margin: 1, show: (v) => String(v) },
+  lastAired: { by: 'seasonYear', want: 'max', margin: 1, show: (v) => String(v) },
+  topScore: { by: 'averageScore', want: 'max', margin: 3, show: (v) => `${v}%` },
+  mostPopular: { by: 'popularity', want: 'max', ratio: 1.25, show: (v) => `${Number(v).toLocaleString('en-US')} members` },
+};
+
+const compareValue = (s, field) => {
+  const v = s?.[COMPARE[field].by];
+  return Number.isFinite(v) && v > 0 ? v : null;
+};
+
+/** Whether `other` loses to `answer` on this comparison, by a clear margin. */
+export function trails(field, answer, other) {
+  const spec = COMPARE[field];
+  const a = compareValue(answer, field);
+  const o = compareValue(other, field);
+  if (a == null || o == null) return false;
+  if (spec.ratio) return spec.want === 'max' ? a >= o * spec.ratio : o >= a * spec.ratio;
+  return spec.want === 'max' ? a - o >= spec.margin : o - a >= spec.margin;
+}
+
+const COMPARE_PROMPTS = {
+  firstAired: 'Which of these premiered first?',
+  lastAired: 'Which of these premiered most recently?',
+  topScore: 'Which of these has the highest AniList score?',
+  mostPopular: 'Which of these is the most popular on AniList?',
+};
+
+// The options ARE the clue here, so these are choice-only (their topic says
+// `choiceOnly`) and their wrong options are drawn by compareDistractors, never
+// the generic domain sampler. A subject with too few shows it beats in the
+// whole pack cannot be asked, and is not.
+const compareShow = (field, topic) => (ctx, s) => {
+  if (compareValue(s, field) == null) return null;
+  let beaten = 0;
+  for (const o of ctx.packShows.values()) {
+    if (trails(field, s, o) && ++beaten >= CHOICES - 1) break;
+  }
+  if (beaten < CHOICES - 1) return null;
+  return {
+    id: `${field}:${s.key}`,
+    topic,
+    field,
+    subject: s.key,
+    prompt: COMPARE_PROMPTS[field],
+    answer: s.title,
+    kind: 'show',
+    accept: [s.key],
+    domain: 'show',
+    compare: field,
+    difficulty: blend(ctx.showObscurity.get(s.key) ?? 1, field),
+  };
+};
+
+const CASUAL_SHOW_BUILDERS = {
+  // Named from its best-known leads, accepting every pack show they all lead —
+  // a sequel season keyed apart, or a shared-universe spin-off.
+  squad: (ctx, s) => {
+    const cast = (ctx.castByShow.get(s.key) ?? []).filter((c) => !nameInTitle(c.name, s.title));
+    if (cast.length < 2) return null;
+    const named = [...cast].sort((a, b) => b.favourites - a.favourites).slice(0, SQUAD_SIZE);
+    const leads = named.map((c) => new Set(ctx.packChars.get(c.key)?.appearsIn ?? []));
+    const matches = [...leads[0]]
+      .filter((k) => ctx.packShows.has(k) && leads.every((set) => set.has(k)))
+      .map((k) => ({ key: k, title: ctx.packShows.get(k).title }));
+    if (!matches.some((m) => m.key === s.key)) return null;
+    const answer = showAnswer(ctx, s, matches);
+    if (!answer) return null;
+    return {
+      id: `squad:${s.key}`,
+      topic: 'squad',
+      field: 'squad',
+      subject: s.key,
+      prompt: `${andList(named.map((c) => c.name))} are main characters in which show?`,
+      ...answer,
+      difficulty: blend(ctx.showObscurity.get(s.key) ?? 1, 'squad'),
+    };
+  },
+  firstAired: compareShow('firstAired', 'firsts'),
+  lastAired: compareShow('lastAired', 'firsts'),
+  topScore: compareShow('topScore', 'favourites'),
+  mostPopular: compareShow('mostPopular', 'favourites'),
+};
+
+// Portraits come from the PLAYERS' imported lists (ctx.portraits, built by
+// utils/portraits.js), not the pack, which carries no images. So the topic is
+// as wide as the table's lists: a character nobody's list pictured cannot be
+// asked about this way, and a table with no lists has no such clues at all.
+// The prompt never names the character, and neither does the image's alt text
+// (ClueCard) — either would answer the clue.
+const PORTRAIT_BUILDERS = {
+  portraitName: (ctx, c) => {
+    const image = ctx.portraits.get(c.key);
+    if (!image) return null;
+    return {
+      id: `portraitName:${c.key}`,
+      topic: 'portraits',
+      field: 'portraitName',
+      subject: c.key,
+      show: c.home,
+      prompt: 'Who is this character?',
+      image,
+      answer: c.name,
+      kind: 'character',
+      accept: [c.key],
+      domain: 'character',
+      difficulty: blend(ctx.charObscurity.get(c.key) ?? 1, 'portraitName'),
+    };
+  },
+
+  // "From", so it accepts every show they are in, lead or supporting — the
+  // appearsIn clue's weaker wording, for its reason.
+  portraitShow: (ctx, c) => {
+    const image = ctx.portraits.get(c.key);
+    if (!image) return null;
+    const homes = [...new Set([...(c.appearsIn ?? []), ...(c.supportingIn ?? [])])].filter((k) => ctx.packShows.has(k));
+    if (!homes.includes(c.home)) return null;
+    const rest = homes.filter((k) => k !== c.home);
+    return {
+      id: `portraitShow:${c.key}`,
+      topic: 'portraits',
+      field: 'portraitShow',
+      subject: c.key,
+      show: c.home,
+      prompt: 'Which show is this character from?',
+      image,
+      answer: ctx.packShows.get(c.home).title,
+      kind: 'show',
+      accept: [c.home, ...rest],
+      alsoAccepted: rest.map((k) => ctx.packShows.get(k).title),
+      domain: 'show',
+      difficulty: blend(ctx.charObscurity.get(c.key) ?? 1, 'portraitShow'),
+    };
+  },
+};
+
 // ── character clues ──
 const CHARACTER_BUILDERS = {
+  ...PORTRAIT_BUILDERS,
   voiceActor: (ctx, c) => {
     if (!c.voiceActorJp) return null;
     const show = ctx.packShows.get(c.home);
@@ -885,20 +1079,38 @@ function mainCast(ctx, s) {
 //
 // `blurb` is what the settings card's on/off list says a topic covers, since
 // a title like "The Director's Chair" is a board heading, not a description.
+//
+// Listed roughly easiest first, which is the order the settings card shows.
+// Two flags:
+//
+//   choiceOnly  the options ARE the question ("which of these came first?"),
+//               so a typed deal leaves the topic out (buildDeal) and the card
+//               says why
+//   hard        credits trivia most casual fans never read. Switched OFF in
+//               DEFAULT_PREFS.topicsOff — a table that never opened the card
+//               plays the watchable topics — and badged "Harder" on the card
 export const TOPICS = [
-  { id: 'studios', title: 'Studio Credits', blurb: 'Which studio animated it', show: ['studio', 'studioYear'] },
+  { id: 'squad', title: 'The Squad', blurb: 'Name the show from its main characters', show: ['squad'] },
   {
-    id: 'staff',
-    title: 'The Director’s Chair',
-    blurb: 'Directors and series writers',
-    show: ['director', 'seriesComposition', 'directorReverse'],
+    id: 'portraits',
+    title: 'Name That Character',
+    blurb: 'Character portraits from your imported lists',
+    character: ['portraitName', 'portraitShow'],
   },
-  { id: 'music', title: 'Who Scored It?', blurb: 'Soundtrack composers', show: ['composer', 'composerReverse'] },
+  { id: 'cast', title: 'Who’s Who', blurb: 'Main characters and their shows', show: ['mainCast'], character: ['appearsIn'] },
   {
-    id: 'origins',
-    title: 'Source Material',
-    blurb: 'Original creators, magazines and publishers',
-    show: ['source', 'originalCreator', 'creatorReverse', 'magazine', 'originalPublisher', 'originalYear', 'magazineReverse'],
+    id: 'firsts',
+    title: 'Which Came First?',
+    blurb: 'Pick the oldest or newest of four shows',
+    show: ['firstAired', 'lastAired'],
+    choiceOnly: true,
+  },
+  {
+    id: 'favourites',
+    title: 'Fan Favourites',
+    blurb: 'Pick the best-rated or most popular of four shows',
+    show: ['topScore', 'mostPopular'],
+    choiceOnly: true,
   },
   {
     id: 'themes',
@@ -907,8 +1119,23 @@ export const TOPICS = [
     show: ['themeShow', 'themeArtist', 'artistReverse'],
   },
   { id: 'calendar', title: 'Air Dates', blurb: 'Premiere years, seasons and episode counts', show: ['seasonYear', 'season', 'episodes'] },
+  { id: 'studios', title: 'Studio Credits', blurb: 'Which studio animated it', show: ['studio', 'studioYear'] },
   { id: 'voices', title: 'Voice Cast', blurb: 'Japanese voice actors', character: ['voiceActor', 'voiceActorReverse'] },
-  { id: 'cast', title: 'Who’s Who', blurb: 'Main characters and their shows', show: ['mainCast'], character: ['appearsIn'] },
+  {
+    id: 'staff',
+    title: 'The Director’s Chair',
+    blurb: 'Directors and series writers',
+    show: ['director', 'seriesComposition', 'directorReverse'],
+    hard: true,
+  },
+  { id: 'music', title: 'Who Scored It?', blurb: 'Soundtrack composers', show: ['composer', 'composerReverse'], hard: true },
+  {
+    id: 'origins',
+    title: 'Source Material',
+    blurb: 'Original creators, magazines and publishers',
+    show: ['source', 'originalCreator', 'creatorReverse', 'magazine', 'originalPublisher', 'originalYear', 'magazineReverse'],
+    hard: true,
+  },
 ];
 
 const TOPIC_BY_ID = new Map(TOPICS.map((t) => [t.id, t]));
@@ -928,7 +1155,16 @@ export function enabledTopics(topicsOff) {
   return TOPICS.filter((t) => !off.has(t.id));
 }
 
-const SHOW_BUILDERS = { ...BUILDERS, mainCast };
+/**
+ * The topics a deal may use: the ones switched on, less the choice-only ones
+ * when answers are typed — "which of these came first?" with no "these" is
+ * not a question.
+ */
+export function dealableTopics(topicsOff, { choices = true } = {}) {
+  return enabledTopics(topicsOff).filter((t) => choices || !t.choiceOnly);
+}
+
+const SHOW_BUILDERS = { ...BUILDERS, ...CASUAL_SHOW_BUILDERS, mainCast };
 
 /** Every clue a topic can make from the pool in play. Unordered, undeduped by subject. */
 export function candidatesFor(ctx, topic) {
@@ -1054,12 +1290,59 @@ function domainDistractors(ctx, clue, rng) {
   return picked;
 }
 
+// A comparison clue's wrong options: shows that clearly trail the answer
+// (`trails`), drawn in domainDistractors' order — the table's shows, then the
+// pack's, unshown names before repeats. Returned as show records, because the
+// reveal prints each one's value beside it.
+function compareDistractors(ctx, clue, rng) {
+  const answer = ctx.packShows.get(clue.subject);
+  if (!answer) return [];
+  const fold = FOLDS.show;
+  const seen = new Set(clue.accept);
+  const avoid = new Set(ctx.shownOptions.get('show') ?? []);
+  const byTitle = new Map();
+  const titles = (shows) => shows.filter((s) => trails(clue.compare, answer, s)).map((s) => {
+    byTitle.set(s.title, s);
+    return s.title;
+  });
+  const local = [titles(ctx.shows)];
+  const pack = [titles([...ctx.packShows.values()])];
+  const picked = [];
+  const pass = (groups, skip) => picked.push(...sample(groups, CHOICES - 1 - picked.length, skip, fold, rng));
+  pass(local, [seen, avoid]);
+  pass(pack, [seen, avoid]);
+  pass(local, [seen]);
+  pass(pack, [seen]);
+  return picked.map((t) => byTitle.get(t));
+}
+
+// "Steins;Gate 2011 · Fullmetal Alchemist: Brotherhood 2009 · …", best first:
+// the reveal's proof, since "which came first" is only convincing with the
+// years beside the names.
+function compareDetail(field, shows) {
+  const spec = COMPARE[field];
+  const sorted = [...shows].sort((a, b) => (spec.want === 'max' ? 1 : -1) * (compareValue(b, field) - compareValue(a, field)));
+  return sorted.map((s) => `${s.title} ${spec.show(compareValue(s, field))}`).join(' · ');
+}
+
 /**
  * The clue with `options` attached, or null when four honest options cannot be
  * made. Records the wrong options on the context, so later clues in the same
  * deal prefer others (see domainDistractors).
  */
 export function withChoices(ctx, clue, rng = Math.random) {
+  if (clue.compare) {
+    const rivals = compareDistractors(ctx, clue, rng);
+    if (rivals.length < CHOICES - 1) return null;
+    if (!ctx.shownOptions.has('show')) ctx.shownOptions.set('show', new Set());
+    for (const r of rivals) ctx.shownOptions.get('show').add(FOLDS.show(r.title));
+    const answer = ctx.packShows.get(clue.subject);
+    return {
+      ...clue,
+      options: shuffle([clue.answer, ...rivals.map((r) => r.title)], rng),
+      detail: compareDetail(clue.compare, [answer, ...rivals]),
+    };
+  }
   const wrong = clue.kind === 'number' ? numberDistractors(ctx, clue, rng) : domainDistractors(ctx, clue, rng);
   if (wrong.length < CHOICES - 1) return null;
   if (clue.kind !== 'number' && ctx.shownOptions) {
@@ -1216,7 +1499,13 @@ function spreadByShow(clues, rng) {
   return out;
 }
 
-const finisher = (ctx, choices, rng) => (clue) => (choices ? withChoices(ctx, clue, rng) : clue);
+// A comparison clue has no typed form; dealableTopics keeps its topics out of a
+// typed deal, and this refuses one that arrives anyway rather than ship a
+// "which of these" with nothing to choose from.
+const finisher = (ctx, choices, rng) => (clue) => {
+  if (choices) return withChoices(ctx, clue, rng);
+  return clue.compare ? null : clue;
+};
 
 /**
  * A board: `categories` columns of five, a Daily Double and a final clue.
@@ -1235,9 +1524,9 @@ const finisher = (ctx, choices, rng) => (clue) => (choices ? withChoices(ctx, cl
  */
 export function dealBoard(index, showKeys, {
   categories = 5, choices = true, dailyDouble = true, finalRound = true, topics = TOPICS, rng = Math.random,
-  recent = null,
+  recent = null, portraits = null,
 } = {}) {
-  const ctx = buildContext(index, showKeys);
+  const ctx = buildContext(index, showKeys, { portraits });
   const finish = finisher(ctx, choices, rng);
   const st = spreadState(recent);
   const columns = [];
@@ -1310,9 +1599,9 @@ export function quizValue(difficulty) {
  * and a straight draw would be a voice-acting quiz.
  */
 export function dealQuiz(index, showKeys, {
-  count = 10, choices = true, topics = TOPICS, rng = Math.random, recent = null,
+  count = 10, choices = true, topics = TOPICS, rng = Math.random, recent = null, portraits = null,
 } = {}) {
-  const ctx = buildContext(index, showKeys);
+  const ctx = buildContext(index, showKeys, { portraits });
   const finish = finisher(ctx, choices, rng);
   const st = spreadState(recent);
   const queues = shuffle(topics, rng)
@@ -1390,6 +1679,10 @@ export function normalizeClue(raw) {
     value: Number(raw.value) || 0,
     options: raw.options == null ? null : asArray(raw.options),
     categoryTitle: raw.categoryTitle ?? null,
+    // Name That Character's portrait, and a comparison clue's values for the
+    // reveal. Null on every other clue.
+    image: typeof raw.image === 'string' && raw.image ? raw.image : null,
+    detail: typeof raw.detail === 'string' && raw.detail ? raw.detail : null,
   };
 }
 

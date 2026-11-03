@@ -3,6 +3,12 @@ import { Badge } from '../../../shared/ui';
 // The clue on screen: a big paper panel, its category on an ink tab across the
 // top-left edge and its stake stamped top-right in the score ink, the prompt in
 // display type between them. Ink-ruled, not crimson, for Board's reason.
+//
+// A Name That Character clue carries a portrait from a player's own list
+// (utils/portraits.js), drawn in colour above the prompt — greyscale is the
+// hub's look, but hair and eye colour are half of recognising somebody. Its alt
+// text must not name them, or a screen reader reads the answer out; it says
+// what the picture is FOR instead. AniList's CDN, no referrer, like Portrait.
 export default function ClueCard({ clue, category, stakeLabel, className = '' }) {
   if (!clue) return null;
   return (
@@ -16,6 +22,15 @@ export default function ClueCard({ clue, category, stakeLabel, className = '' })
         </span>
       )}
       <Badge tone="amber" className="absolute top-2 right-2">{stakeLabel ?? clue.value}</Badge>
+      {clue.image && (
+        <img
+          src={clue.image}
+          alt="The character this clue asks about"
+          referrerPolicy="no-referrer"
+          decoding="async"
+          className="mx-auto mb-4 aspect-[2/3] w-32 border-[3px] border-ink bg-surface-2 object-cover object-[50%_15%] shadow-pop-sm sm:w-40"
+        />
+      )}
       <p className="font-display text-2xl font-bold leading-snug text-fg-strong sm:text-3xl">
         {clue.prompt}
       </p>
