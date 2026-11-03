@@ -15,19 +15,15 @@ import { verdictsOf } from '../rules';
  * every name and TrailBoard stacks one of these per player, so a card each would
  * be cards inside a card. The wrapper owns the surface, this owns the rows.
  *
- * ONE NAME CARRIES ONE VERDICT OR SEVERAL, and the difference is the mode. In
- * dealt mode a single judge answers about the seat's own clause, so the badge
- * needs no owner — there is only one thing it could be about. In chosen mode
- * every player answers about THEIRS, so an unattributed row of yes/no would be
- * worthless: which player said no is the entire fact. verdictsOf is the one
- * place that flattens the three stored shapes (a map, a map of one, and a
- * pre-attribution scalar from an older build) so this only has to count them.
+ * ONE NAME CARRIES ONE VERDICT: a single judge answers about the seat's own
+ * clause, so the badge needs no owner. verdictsOf is the one place that
+ * flattens the stored shapes (a verdict map, and a pre-attribution scalar from
+ * an older build); if a row ever carries more than one, each is named.
  *
  * A MISS IS A ROW LIKE ANY OTHER, and that is the point of storing it in the
- * trail: "you already tried 'wears glasses' at Sam" is exactly the thing a
- * player forgets, and it is also the record that stops them aiming there again
- * (rules.declaredTargets). It is marked rather than merely listed, because it
- * cost three names and the row has to say why the count jumped.
+ * trail: "you already tried 'wears glasses'" is exactly the thing a player
+ * forgets. It is marked rather than merely listed, because it cost three names
+ * and the row has to say why the count jumped.
  *
  * A NO IS DRAWN AS LOUDLY AS A YES, and that is a deliberate reversal of the
  * arcade's usual palette rule. index.css assigns lime to yes/correct and red to
@@ -69,15 +65,12 @@ export default function TrailList({ trail = [], nameFor, className = '' }) {
             <span className="min-w-0 flex-1 truncate text-lg text-fg-strong">
               {missed && <span className="text-fg-subtle">guessed </span>}
               {entry.text}
-              {missed && entry.targetId && (
-                <span className="text-fg-subtle"> at {nameFor?.(entry.targetId) ?? 'someone'}</span>
-              )}
             </span>
             <span className="flex flex-shrink-0 flex-wrap justify-end gap-1.5">
               {verdicts.length ? verdicts.map(({ judgeId, verdict }) => (
-                // Named only when more than one person answered, which is
-                // chosen mode. A lone "YES" needs no owner and a labelled one is
-                // noise on every row. A stamped ✓/✗, never a coloured word.
+                // Named only when more than one person answered. A lone "YES"
+                // needs no owner and a labelled one is noise on every row. A
+                // stamped ✓/✗, never a coloured word.
                 <Mark
                   key={judgeId ?? 'only'}
                   yes={verdict}

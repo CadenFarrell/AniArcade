@@ -11,25 +11,23 @@ import PlayerFace from '../../../shared/components/PlayerFace';
 /**
  * One go, on whatever device is looking at it.
  *
- * ONE COMPONENT FOR LOCAL AND ONLINE AND FOR BOTH MODES, because the go
- * genuinely is the same go: somebody names one thing, somebody answers, the
- * trail is public, and a clause is hidden from somebody. What differs is only
- * which controls this particular device may use and which way the hiding runs,
- * so those arrive as props rather than as a second copy of the screen.
+ * ONE COMPONENT FOR LOCAL AND ONLINE, because the go genuinely is the same go:
+ * somebody names one thing, the judge answers, the trail is public, and the
+ * seat's clause is hidden from the seat. What differs is only which controls
+ * this particular device may use, so those arrive as props rather than as a
+ * second copy of the screen.
  *
  *   canName    this device is the hot seat
  *   rulers     the players this device answers FOR, in the order they will be
  *              asked. Online that is [me] when I owe an answer and [] otherwise;
  *              locally it is everyone who still owes one, because one device is
  *              all of them. ONE IS SHOWN AT A TIME — see the judging block.
- *   peek       a clause is on a device that its owner can see (local dealt
- *              mode), so it sits behind CategoryPeek instead of plainly
+ *   peek       the clause is on a device its owner can see (local play), so
+ *              it sits behind CategoryPeek instead of plainly
  *
- * `category` is DEALT MODE's hidden value — the hot seat's clause, null on
- * their own device. Online that is a Firebase rule rather than a prop decision;
- * the value never reaches the device at all. `myCategory` is CHOSEN MODE's, and
- * it is the exact mirror: null on everyone else's device, and shown to its
- * owner only as a reminder, since they picked it and already know it.
+ * `category` is the hidden value — the hot seat's clause, null on their own
+ * device. Online that is a Firebase rule rather than a prop decision; the value
+ * never reaches the device at all.
  *
  * THE SCREEN IS A HEADER, ONE CARD, AND THE TRAIL — down from six panels of
  * identical weight, which is what it was when a turn was an uninterrupted block
@@ -41,14 +39,13 @@ import PlayerFace from '../../../shared/components/PlayerFace';
 export default function TurnScreen({
   seatName, roundNumber, totalRounds, noun,
   phase, pending, trails = {}, order = [], cap, left, lastPlayed = null,
-  chosen = false, category = null, myCategory = null, peek = false,
-  canName = false, rulers = [], declarable = [], pendingJudges = [],
-  myPlayerId = null, nameFor, usedFor, remindFor,
+  category = null, peek = false,
+  canName = false, rulers = [], pendingJudges = [],
+  myPlayerId = null, nameFor, usedFor,
   onPropose, onDeclare, onRule, onPass, onAbandon = null,
 }) {
   const [draft, setDraft] = useState('');
   const [declaring, setDeclaring] = useState(false);
-  const [target, setTarget] = useState(null);
 
   // Both resets happen DURING RENDER rather than in an effect — React's
   // documented way to adjust state when a prop changes, and the pattern
@@ -66,8 +63,7 @@ export default function TurnScreen({
   }
 
   // A new go opens on the naming box, never on a declaration box the previous
-  // player left open — and never carrying their half-typed guess, or the person
-  // they had aimed it at, into it. Keyed on the seat, which now changes after
+  // player left open — and never carrying their half-typed guess into it. Keyed on the seat, which now changes after
   // every single name rather than once a turn, so this fires far more often and
   // matters far more: on a shared device the box is handed straight over.
   const turnKey = `${roundNumber} ${seatName}`;
@@ -76,23 +72,13 @@ export default function TurnScreen({
     setLastTurn(turnKey);
     setDeclaring(false);
     setDraft('');
-    setTarget(null);
   }
-
-  // Only ever one candidate at two players, so making them tap it would be a
-  // step that never carries information. Derived rather than stored, so a
-  // player who gets claimed mid-round cannot leave a stale id selected.
-  const aimedAt = chosen
-    ? (declarable.find((p) => p.id === target) ?? (declarable.length === 1 ? declarable[0] : null))
-    : null;
-  const canSubmitDeclaration = !!draft.trim() && (!chosen || !!aimedAt);
 
   const submit = () => {
     const text = draft.trim();
     if (!text) return;
     if (!declaring) { onPropose(text); return; }
-    if (chosen && !aimedAt) return;
-    onDeclare(text, aimedAt?.id ?? null);
+    onDeclare(text);
   };
 
   // "Your go" only where there is a "you". Online this device is one player, so
@@ -115,11 +101,7 @@ export default function TurnScreen({
     .join(', ');
 
   const instruction = () => {
-    if (canName && chosen) {
-      return `Name one ${noun}. Everyone answers against their own category — you are working out theirs.`;
-    }
     if (canName) return `Name one ${noun}. The judge will tell you yes or no.`;
-    if (iRule && chosen) return 'Answer against your own category, honestly.';
     if (iRule) return `Answer ${seatName} honestly.`;
     if (laterNames || ruler) return 'Watch, and say nothing.';
     return `${seatName} is naming. Watch, and say nothing.`;
@@ -152,7 +134,7 @@ export default function TurnScreen({
         <LastPlayed entry={lastPlayed} nameFor={nameFor} myPlayerId={myPlayerId} />
       )}
 
-      {/* DEALT: the seat's clause, absent entirely on their own device. A strip
+      {/* The seat's clause, absent entirely on their own device. A strip
           rather than a panel — it is a thing to consult, not the thing being
           asked. */}
       {category && (peek
@@ -168,19 +150,6 @@ export default function TurnScreen({
           </div>
         ))}
 
-      {/* CHOSEN: my own clause, and only mine. Behind the same toggle even
-          though I picked it — the device may be on a table, and a reminder I
-          asked for is different from one printed above the trail all round. */}
-      {myCategory && (
-        <CategoryPeek
-          label={myCategory.label}
-          openLabel="Your category"
-          closedLabel="Your category — everyone else looks away"
-          bare
-          className="mb-5"
-        />
-      )}
-
       {/* THE ONE CARD. Judging and naming cannot both be true, so whichever one
           is asking gets the whole surface. */}
       {waitingOnJudge && pending && (
@@ -194,25 +163,12 @@ export default function TurnScreen({
 
           {ruler && (
             <>
-              {/* Named only when this device answers for more than one person —
-                  which is local chosen mode, and nothing else. */}
-              {rulers.length > 1 && (
+              {/* Named whenever the device is shared, so the person holding it
+                  knows the answer is theirs to give. */}
+              {!myPlayerId && (
                 <p className="mb-2 font-display text-base font-extrabold text-pop-purple">
                   {ruler.name}, your answer
                 </p>
-              )}
-              {/* LOCAL CHOSEN MODE ONLY: a reminder of this ruler's own clause,
-                  behind the same toggle everything hidden goes behind. Online
-                  there is nothing to offer — one device holds one clause, which
-                  `myCategory` already covers — so remindFor is simply absent. */}
-              {remindFor?.(ruler.id) && (
-                <CategoryPeek
-                  label={remindFor(ruler.id).label}
-                  openLabel={`${ruler.name}'s category`}
-                  closedLabel={`${ruler.name} only — everyone else looks away`}
-                  bare
-                  className="mb-3 text-left"
-                />
               )}
               <div className="flex gap-3">
                 <Button variant="success" size="lg" sound="yes" fullWidth onClick={() => onRule(ruler.id, true)}>
@@ -238,71 +194,25 @@ export default function TurnScreen({
 
       {canName && !waitingOnJudge && (
         <Card padding="md" className="mb-5">
-          {/* WHOSE rule you are claiming, and it comes before the box: typing a
-              clause and only then being asked who it belongs to gets the answer
-              wrong, because the guess and the person are one thought. Hidden at
-              two players, where there is only ever one candidate. */}
-          {declaring && chosen && declarable.length > 1 && (
-            <div className="mb-4">
-              <p className="mb-2 font-display text-sm font-extrabold uppercase tracking-widest text-fg-helper">
-                Whose category?
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {declarable.map((p) => (
-                  <button
-                    key={p.id}
-                    type="button"
-                    aria-pressed={aimedAt?.id === p.id}
-                    onClick={() => setTarget(p.id)}
-                    className={`focus-pop rounded-pop-sm border-2 px-3 py-2 font-display text-base
-                      font-bold transition-colors ${aimedAt?.id === p.id
-                        ? 'border-pop-purple bg-pop-purple/25 text-fg-strong'
-                        : 'border-line bg-wash-soft text-fg-body hover:text-fg-strong'}`}
-                  >
-                    {p.name}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {declaring && chosen && !declarable.length ? (
-            <p className="text-base text-pop-amber">
-              Nobody left to claim — everyone else has either been solved or is somebody
-              you have already missed at. Keep naming, or sit out the round.
-            </p>
-          ) : (
-            <>
-              <Input
-                value={draft}
-                onChange={(e) => setDraft(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && submit()}
-                maxLength={MAX_PROPOSAL_LEN}
-                autoFocus
-                aria-label={declaring ? 'Your guess at the category' : `A ${noun} to try`}
-                placeholder={declaring ? 'e.g. wears glasses' : `Name a ${noun}…`}
-                className="mb-3"
-              />
-              <Button
-                variant={declaring ? 'success' : 'primary'}
-                size="lg"
-                fullWidth
-                disabled={declaring ? !canSubmitDeclaration : (!draft.trim() || left <= 0)}
-                onClick={submit}
-              >
-                {/* Names the person, because "that is my category" is the DEALT
-                    claim and would be a lie here. With nobody picked the label
-                    says what is missing rather than restating the goal — the
-                    button is disabled at that point, and a disabled button that
-                    does not explain itself reads as broken. */}
-                {!declaring && 'Ask — then pass'}
-                {declaring && !chosen && 'That is my category'}
-                {declaring && chosen && (aimedAt
-                  ? `That is ${aimedAt.name}'s category`
-                  : 'Pick whose category first')}
-              </Button>
-            </>
-          )}
+          <Input
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && submit()}
+            maxLength={MAX_PROPOSAL_LEN}
+            autoFocus
+            aria-label={declaring ? 'Your guess at the category' : `A ${noun} to try`}
+            placeholder={declaring ? 'e.g. wears glasses' : `Name a ${noun}…`}
+            className="mb-3"
+          />
+          <Button
+            variant={declaring ? 'success' : 'primary'}
+            size="lg"
+            fullWidth
+            disabled={declaring ? !draft.trim() : (!draft.trim() || left <= 0)}
+            onClick={submit}
+          >
+            {declaring ? 'That is my category' : 'Ask — then pass'}
+          </Button>
 
           {/* DECLARING IS A REAL BUTTON, NOT A GHOST LINK. It is the win
               condition of the game and it used to sit at the same dim weight as
@@ -317,9 +227,7 @@ export default function TurnScreen({
             className="mt-3"
             onClick={() => { setDeclaring((v) => !v); setDraft(''); }}
           >
-            {declaring
-              ? `← Back to naming ${noun}s`
-              : (chosen ? 'I know someone’s category' : 'I know the category')}
+            {declaring ? `← Back to naming ${noun}s` : 'I know the category'}
           </Button>
 
           {!declaring && (
@@ -394,9 +302,6 @@ function LastPlayed({ entry, nameFor, myPlayerId }) {
       <span className="min-w-0 font-display text-base font-extrabold text-fg-strong">
         {entry.text}
       </span>
-      {missed && entry.targetId && (
-        <span className="text-base text-fg-body">at {nameFor?.(entry.targetId) ?? 'someone'}</span>
-      )}
       <span className="flex flex-wrap gap-1.5">
         {verdicts.map(({ judgeId, verdict }) => (
           <Mark

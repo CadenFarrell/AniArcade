@@ -11,29 +11,34 @@ const ROOM_KEY = 'anitag_online_room';
 // The Firebase-backed twin of useCategoriesRound. Same pure rules; the room
 // lifecycle comes from shared/hooks/useRoomCore.js.
 //
-// WHICH NODE A CLAUSE LIVES IN IS DECIDED BY WHO MUST NOT SEE IT, which is
-// CLAUDE.md's stated question, and AniTag now answers it BOTH WAYS — one mode
-// per row of that table. It is the worked example, so it is worth being exact:
+// A CLAUSE LIVES IN assignments/{playerId}: read AND write denied to the
+// assignee, allowed to everyone else. A value about you that you alone must not
+// learn — the AniGuess shape, already deployed, so no database.rules.json
+// change was needed. (secrets/ is the opposite row of CLAUDE.md's table — only
+// the owner reads it — and putting a clause there would show it to exactly the
+// one player it is hidden from.)
 //
-//   dealt   assignments/{playerId}. Read AND write denied to the assignee,
-//           allowed to everyone else. A value about you that you alone must not
-//           learn — the AniGuess shape.
-//   chosen  secrets/{playerId}. Read allowed ONLY to the owner, write allowed
-//           to any member. A value only you may learn — the AniFake/AniWave
-//           shape, except that here the owner is also the one writing it.
+// THE TABLE PICKS (the default): ONE SHARED PROPOSAL PER TARGET, in the
+// target's own slot. AniGuess's OnlineCharacterAssignment, applied to a rule:
+// every device but the target's watches assignments/{target}, anyone may write
+// a proposal there (which wipes the approvals, because what was approved is no
+// longer what is on the table), and the pick locks once every OTHER active
+// player has approved it. The proposal's `category` field is the very field the
+// round reads, so locking is only a flag in state/ (rules.recordPick) — the
+// clause is already where it needs to be, and the target's device never wrote
+// or read it. The proposer's approval rides in with the proposal, so at two
+// players a pick is one tap.
 //
-// Both rules were already deployed, so neither mode needed a
-// database.rules.json change. Reaching for the wrong one is silent: a chosen
-// clause written to assignments/ would be readable by every player it is meant
-// to be hidden from, and a dealt one written to secrets/ would be readable by
-// precisely the one player the mode is built around keeping in the dark.
+// Each proposal carries a fresh `nonce` and an approval records the nonce it
+// approved, so an approval that lands just after somebody else's
+// counter-proposal counts for nothing rather than for the new one.
 //
-// DEALT: NOBODY DEALS THEIR OWN, and the deal is split across two devices to
+// RANDOM: NOBODY DEALS THEIR OWN, and the deal is split across two devices to
 // guarantee it. The host writes every slot except its own; the first other
 // seated player writes the host's. Both writes are legal under the deployed
 // rule and the forbidden one is rejected by Firebase rather than by a
 // client-side check, so a bug there is a PERMISSION_DENIED in the console
-// instead of a silent leak. That is where this mode escapes AniFake's "whoever
+// instead of a silent leak. That is where this game escapes AniFake's "whoever
 // computes the deal learns it" concession rather than inheriting it.
 //
 // ONE RESIDUAL LIMIT OF THAT SPLIT, recorded rather than designed around: the
@@ -43,14 +48,7 @@ const ROOM_KEY = 'anitag_online_room';
 // end a round holding the same clause. Unfixable without a server — any device
 // able to exclude every dealt category would by construction know its own.
 //
-// CHOSEN: THERE IS NO DEAL AT ALL, which is strictly stronger and much less
-// machinery. Every device writes its own clause to its own secrets/ node and
-// nothing else, so no device ever holds a value it is not entitled to and there
-// is no dealer to be careful about. The round waits in `picking` until every
-// ACTIVE player has committed one — the active roster, so a closed tab cannot
-// hold the table on the opening screen forever.
-//
-// A PLAYER'S WRITTEN CATEGORIES NEVER ENTER ROOM STATE, in either mode. Each
+// A PLAYER'S WRITTEN CATEGORIES NEVER ENTER ROOM STATE, either way. Each
 // device draws or offers from the built-ins plus ITS OWN local list, and only
 // the clause actually in play is published — the same rule AniWave applies to
 // written spectra. Putting them in state/settings would have been simpler and
@@ -99,8 +97,8 @@ export function useCategoriesRoom() {
   const settings = state?.settings ?? null;
   // Read off the ROUND, not off settings: the round is what rules.js acts on,
   // and a lobby that could still write settings mid-game would otherwise change
-  // which mode a turn already in flight is being judged under.
-  const chosen = rules.isChosen(game);
+  // how a round already in flight is being set up.
+  const tablePicks = rules.isTablePicked(game);
   // Memoized because it feeds two effects' dependency arrays: the bare
   // conditional mints a new [] every render when the setting is off, which
   // re-runs both deal effects forever.
@@ -115,8 +113,8 @@ export function useCategoriesRoom() {
   const seatId = game?.seatId ?? null;
   const iAmSeat = !!seatId && seatId === myPlayerId;
 
-  // WHO OWES AN ANSWER — the one branch, resolved once here and passed
-  // everywhere else. See rules.requiredJudges.
+  // WHO OWES AN ANSWER — resolved once here and passed everywhere else. See
+  // rules.requiredJudges.
   const judgeIds = useMemo(
     () => (game ? rules.requiredJudges(game, playerIds, departedIds) : []),
     [game, playerIds, departedIds],
@@ -127,7 +125,7 @@ export function useCategoriesRoom() {
     && typeof game?.pending?.verdicts?.[myPlayerId] !== 'boolean'
   );
 
-  // --- dealt mode: the hot seat's category -------------------------------------
+  // --- the hot seat's category ------------------------------------------------
   //
   // assignments/ is a SIBLING of state/, so useRoomCore's subscription never
   // sees it and this needs its own. Precedent: useRoom.js's assignments listener
@@ -143,12 +141,12 @@ export function useCategoriesRoom() {
     // on any dependency change, and it starts null. Setting it here as well is
     // the synchronous-setState-in-an-effect that react-hooks forbids, and it
     // would be a redundant cascading render even where it is legal.
-    if (!roomCode || !seatId || seatId === myPlayerId || chosen) return undefined;
+    if (!roomCode || !seatId || seatId === myPlayerId) return undefined;
     const db = getFirebaseDb();
     const node = ref(db, `rooms/${roomCode}/assignments/${seatId}`);
     const unsub = onValue(node, (snap) => setSeatSpec(snap.val() ?? null), () => setSeatSpec(null));
     return () => { unsub(); setSeatSpec(null); };
-  }, [roomCode, seatId, myPlayerId, chosen]);
+  }, [roomCode, seatId, myPlayerId]);
 
   // A category from a previous round is still sitting in that node. The stamp is
   // what makes it invisible rather than wrong — assignments are STAMPED, never
@@ -156,36 +154,92 @@ export function useCategoriesRoom() {
   // previous answer readable. Same trick as AniGuess's assignment stamp and
   // AniFake's forRound/forDeal pair.
   const seatCategory = (
-    !chosen && game && seatSpec && seatSpec.forRound === game.round
+    game && game.phase !== 'picking' && seatSpec && seatSpec.forRound === game.round
       && rules.toSpec(seatSpec.category)
       ? getCategory(seatSpec.category)
       : null
   );
 
-  // --- chosen mode: my own category --------------------------------------------
+  // --- the table picks: the shared proposal ----------------------------------
   //
-  // The mirror of the block above, and the difference is the whole mode: there
-  // this device watches somebody ELSE's node because its own is forbidden; here
-  // it watches its own because every other one is. Same stamp rule — written
-  // once per round, never cleared, so last round's clause is invisible rather
-  // than wrong with no extra write.
-  const [mySecret, setMySecret] = useState(null);
+  // Whose clause the table is picking right now. Derived from the picks and the
+  // ACTIVE roster on every render — a target who closes their tab is simply
+  // skipped, and nobody can be stuck waiting on a pick for somebody absent.
+  const pickTargetId = game ? rules.pickingFor(game, playerIds, departedIds) : null;
+  const iAmPickTarget = !!pickTargetId && pickTargetId === myPlayerId;
+
+  // The live proposal, on every device EXCEPT the target's — whose device is
+  // refused the node, so the subscription is simply never opened there, exactly
+  // as the seat's own clause is never read on the seat's device.
+  const [proposalRaw, setProposalRaw] = useState(null);
   useEffect(() => {
-    if (!roomCode || !myPlayerId || !chosen) return undefined;
+    if (!roomCode || !pickTargetId || pickTargetId === myPlayerId) return undefined;
     const db = getFirebaseDb();
-    const node = ref(db, `rooms/${roomCode}/secrets/${myPlayerId}`);
-    const unsub = onValue(node, (snap) => setMySecret(snap.val() ?? null), () => setMySecret(null));
-    return () => { unsub(); setMySecret(null); };
-  }, [roomCode, myPlayerId, chosen]);
+    const node = ref(db, `rooms/${roomCode}/assignments/${pickTargetId}`);
+    const unsub = onValue(node, (snap) => setProposalRaw(snap.val() ?? null), () => setProposalRaw(null));
+    return () => { unsub(); setProposalRaw(null); };
+  }, [roomCode, pickTargetId, myPlayerId]);
 
-  const mySpec = (
-    chosen && game && mySecret && mySecret.forRound === game.round
-      ? rules.toSpec(mySecret.category)
+  // Stamped with the round like every assignment, so last round's clause in
+  // the same slot reads as "nothing proposed yet" rather than as a proposal.
+  // Memoized because it feeds a callback and an effect: a fresh object on
+  // every render would rebuild both every time.
+  const currentRound = game?.round;
+  const proposal = useMemo(() => (
+    currentRound != null && proposalRaw && proposalRaw.forRound === currentRound
+      && rules.toSpec(proposalRaw.category) && typeof proposalRaw.nonce === 'string'
+      ? {
+        spec: rules.toSpec(proposalRaw.category),
+        by: typeof proposalRaw.by === 'string' ? proposalRaw.by : null,
+        nonce: proposalRaw.nonce,
+        approvals: proposalRaw.approvals ?? {},
+      }
       : null
+  ), [proposalRaw, currentRound]);
+  // Everybody whose approval the pick needs: every active player but the
+  // target. A departure shrinks it, so a closed tab cannot hold a pick open.
+  const approverIds = useMemo(
+    () => (pickTargetId ? activeIds.filter((id) => id !== pickTargetId) : []),
+    [activeIds, pickTargetId],
   );
-  const myCategory = mySpec ? getCategory(mySpec) : null;
+  // Approvals count only against the nonce they were given for — see the
+  // header — and only from players still here.
+  const approvedIds = proposal
+    ? approverIds.filter((id) => proposal.approvals[id] === proposal.nonce)
+    : [];
+  const allApproved = !!proposal && approverIds.length > 0
+    && approvedIds.length === approverIds.length;
 
-  // --- dealing (dealt mode only) -----------------------------------------------
+  // The clauses already locked in this round that this device can read, so
+  // "Deal one at random" does not hand two players the same one. Read once per
+  // target rather than subscribed: a locked clause does not change, and the
+  // set only grows when the target moves on.
+  //
+  // Keyed on primitives (a joined id list, the round) rather than on `game`,
+  // which is a new object on every write and would re-read them all each time.
+  const [takenLabels, setTakenLabels] = useState([]);
+  const picking = game?.phase === 'picking';
+  const pickRound = game?.round ?? 0;
+  const pickedKey = game ? Object.keys(game.picked ?? {}).sort().join(',') : '';
+  useEffect(() => {
+    if (!roomCode || !picking || iAmPickTarget) return undefined;
+    const ids = pickedKey.split(',').filter((id) => id && id !== myPlayerId);
+    let live = true;
+    const db = getFirebaseDb();
+    Promise.all(ids.map((id) => get(ref(db, `rooms/${roomCode}/assignments/${id}`))))
+      .then((snaps) => {
+        if (!live) return;
+        setTakenLabels(snaps
+          .map((snap) => snap.val())
+          .filter((v) => v?.forRound === pickRound && rules.toSpec(v.category))
+          .map((v) => getCategory(v.category).label));
+      })
+      // A failed read only means the random button might repeat a clause.
+      .catch(() => {});
+    return () => { live = false; };
+  }, [roomCode, picking, pickRound, pickedKey, iAmPickTarget, myPlayerId]);
+
+  // --- dealing (a random deal only) --------------------------------------------
 
   const seated = useMemo(
     () => (roster.activeIds.length ? roster.activeIds : playerIds),
@@ -198,7 +252,7 @@ export function useCategoriesRoom() {
 
   // The host deals every slot but its own.
   useEffect(() => {
-    if (!roomCode || !game || !isHost || state?.view !== 'round' || chosen) return;
+    if (!roomCode || !game || !isHost || state?.view !== 'round' || tablePicks) return;
     const others = seated.filter((id) => id !== hostId);
     if (!others.length) return;
     // Keyed on the round: useRoomCore clears its one-shots on a VIEW change and
@@ -220,11 +274,11 @@ export function useCategoriesRoom() {
         { category: dealt[id], forRound: game.round },
       )));
     });
-  }, [roomCode, game, chosen, isHost, hostId, seated, settings, extraCategories, state?.view, once]);
+  }, [roomCode, game, tablePicks, isHost, hostId, seated, settings, extraCategories, state?.view, once]);
 
   // One other device deals the host's, because the host may not deal its own.
   useEffect(() => {
-    if (!roomCode || !game || state?.view !== 'round' || chosen) return;
+    if (!roomCode || !game || state?.view !== 'round' || tablePicks) return;
     if (!hostId || myPlayerId !== secondDealerId) return;
     // Keyed on this dealer as well as the round, so a dealer who leaves before
     // writing hands the job on rather than latching it closed.
@@ -251,7 +305,7 @@ export function useCategoriesRoom() {
       });
       await set(hostSlot, { category: dealt[hostId], forRound: game.round });
     });
-  }, [roomCode, game, chosen, hostId, myPlayerId, secondDealerId, seated, settings,
+  }, [roomCode, game, tablePicks, hostId, myPlayerId, secondDealerId, seated, settings,
       extraCategories, state?.view, once]);
 
   // --- round mutations --------------------------------------------------------
@@ -285,46 +339,53 @@ export function useCategoriesRoom() {
       game: rules.startRound(ids.length ? ids : playerIds, {
         round: 0,
         cap: nextSettings.proposalCap,
-        mode: nextSettings.categoryMode,
+        source: nextSettings.categorySource,
       }),
       view: 'round',
     });
   }, [isHost, patchState, roster, playerIds]);
 
   /**
-   * CHOSEN MODE: this device commits the clause only it will ever read.
+   * THE TABLE PICKS: this device proposes a clause for the current target.
    *
-   * Two writes and they are deliberately not one: the clause goes to a node
-   * outside state/ that nobody else may read, and the FLAG saying a pick
-   * happened goes into state/ where the table can see who it is waiting on.
-   * Merging them would put the clause in the subtree every member subscribes to.
-   *
-   * Stamped with the round and never cleared, for the reason every stamp in the
-   * arcade exists: a clear is a write that can fail and leave the previous
-   * answer readable, while a stale stamp is invisible for free.
+   * ONE WRITE OF THE WHOLE NODE, deliberately: it replaces the previous
+   * proposal AND its approvals in one go, so nothing approved for one clause can
+   * survive onto another. Carries this device's own approval, under a fresh
+   * nonce — proposing is approving.
    */
-  const pickCategory = useCallback(async (spec) => {
+  const proposeCategory = useCallback(async (spec) => {
     const category = rules.toSpec(spec);
-    if (!category || !roomCode || !myPlayerId || !game) return;
+    if (!category || !roomCode || !myPlayerId || !game || !pickTargetId) return;
+    if (pickTargetId === myPlayerId) return;
+    const nonce = Math.random().toString(36).slice(2, 10);
     try {
-      const db = getFirebaseDb();
+      await set(ref(getFirebaseDb(), `rooms/${roomCode}/assignments/${pickTargetId}`), {
+        category, by: myPlayerId, forRound: game.round, nonce, approvals: { [myPlayerId]: nonce },
+      });
+    } catch (e) {
+      setSyncError(e?.message || 'Could not save that category — check your connection.');
+    }
+  }, [roomCode, myPlayerId, game, pickTargetId, setSyncError]);
+
+  /** Approves — or takes back approval of — the proposal on screen. */
+  const approveProposal = useCallback(async (approve) => {
+    if (!roomCode || !myPlayerId || !pickTargetId || !proposal) return;
+    try {
       await set(
-        ref(db, `rooms/${roomCode}/secrets/${myPlayerId}`),
-        { category, forRound: game.round },
+        ref(getFirebaseDb(), `rooms/${roomCode}/assignments/${pickTargetId}/approvals/${myPlayerId}`),
+        approve ? proposal.nonce : null,
       );
     } catch (e) {
-      setSyncError(e?.message || 'Could not save your category — check your connection.');
-      return;
+      setSyncError(e?.message || 'Could not save your approval — check your connection.');
     }
-    await applyRound((g) => rules.recordPick(g, myPlayerId));
-  }, [applyRound, game, myPlayerId, roomCode, setSyncError]);
+  }, [roomCode, myPlayerId, pickTargetId, proposal, setSyncError]);
 
   const propose = useCallback((text) => (
     applyRound((g) => rules.proposeName(g, myPlayerId, text))
   ), [applyRound, myPlayerId]);
 
-  const declare = useCallback((guess, targetId = null) => (
-    applyRound((g) => rules.declareCategory(g, myPlayerId, guess, targetId))
+  const declare = useCallback((guess) => (
+    applyRound((g) => rules.declareCategory(g, myPlayerId, guess))
   ), [applyRound, myPlayerId]);
 
   /**
@@ -374,7 +435,7 @@ export function useCategoriesRoom() {
         // Both from the ROUND rather than from settings, so neither can drift
         // mid-session if the lobby is ever able to write settings again.
         cap: game.cap,
-        mode: game.mode,
+        source: game.source,
       }),
     });
   }, [isHost, game, patchState, roster, playerIds]);
@@ -389,19 +450,41 @@ export function useCategoriesRoom() {
     isHost ? patchState({ view: 'lobby', game: null, bankedRound: null }) : undefined
   ), [isHost, patchState]);
 
-  // --- opening the first turn (chosen mode) ------------------------------------
+  // --- locking a pick ------------------------------------------------------------
   //
-  // The host flips the round out of `picking` once every ACTIVE player has
-  // committed a clause. Active rather than everyone, so a closed tab cannot
-  // hold the table on the opening screen forever — and the latch is safe
-  // against that shrinking, because "everyone here has picked" over a smaller
-  // roster is still true.
+  // Once every other active player has approved the proposal on screen, any
+  // device that can see it locks it in — not only the host, who may be the
+  // target and so cannot see it at all. Keyed on the nonce, so a
+  // counter-proposal re-arms it, and the transaction re-checks that the target
+  // is still the one being picked for, so two devices racing lock it once.
+  // Opening the round rides in the same write when this was the last pick.
   useEffect(() => {
-    if (!chosen || !isHost || !game || state?.view !== 'round') return;
+    if (!game || state?.view !== 'round' || game.phase !== 'picking') return;
+    if (!allApproved || !pickTargetId || iAmPickTarget) return;
+    const target = pickTargetId;
+    once(`pick:${game.round}:${target}:${proposal.nonce}`, () => applyRound((g) => {
+      if (rules.pickingFor(g, playerIds, departedIds) !== target) return { patch: {} };
+      const picked = rules.recordPick(g, target);
+      if (!Object.keys(picked.patch).length) return picked;
+      const begun = rules.beginNaming({ ...g, ...picked.patch }, activeIds);
+      return { patch: { ...picked.patch, ...begun.patch } };
+    }));
+  }, [game, state?.view, allApproved, pickTargetId, iAmPickTarget, proposal, once, applyRound,
+      playerIds, departedIds, activeIds]);
+
+  // --- opening the first go ------------------------------------------------------
+  //
+  // Normally the last lock opens it (above). This is the backstop for the one
+  // case that does not: the last player still waiting for a clause LEAVES, so
+  // "everyone here has one" becomes true with no pick at all. Host-only and
+  // latched; the latch is safe against the roster shrinking further, because
+  // "everyone here has a clause" over a smaller roster is still true.
+  useEffect(() => {
+    if (!isHost || !game || state?.view !== 'round') return;
     if (game.phase !== 'picking') return;
     if (!rules.everyonePicked(game, activeIds)) return;
     once(`begin:${game.round}`, () => applyRound((g) => rules.beginNaming(g, activeIds)));
-  }, [chosen, isHost, game, state?.view, activeIds, once, applyRound]);
+  }, [isHost, game, state?.view, activeIds, once, applyRound]);
 
   // --- settling a pending nobody is left to answer ------------------------------
   //
@@ -431,34 +514,20 @@ export function useCategoriesRoom() {
 
   // --- publishing the answer --------------------------------------------------
   //
-  // DEALT: the hot seat's own device is DENIED their category, so at the end of
-  // their turn they are the one person who still does not know what it was. Any
+  // The hot seat's own device is DENIED their category, so at the end of their
+  // round they are the one person who still does not know what it was. Any
   // other device may say, and the first to notice does — which is why this is
   // not gated on being the judge: a judge who leaves between ruling and
   // revealing costs nothing, and two devices racing write the same value once
   // (attachCategory refuses to overwrite).
   useEffect(() => {
-    if (chosen || !game || game.phase !== 'turnEnd' || !seatId) return;
+    if (!game || game.phase !== 'turnEnd' || !seatId) return;
     if (iAmSeat || !seatCategory) return;
     if (game.results?.[seatId]?.category) return;
     once(`tell:${game.round}:${seatId}`, () => (
       applyRound((g) => rules.attachCategory(g, seatId, seatSpec?.category))
     ));
-  }, [chosen, game, seatId, iAmSeat, seatCategory, seatSpec, once, applyRound]);
-
-  // CHOSEN: the exact mirror. My clause is in a node only I can read, so I am
-  // the only device that CAN publish it — AniFake's publishCard shape, where
-  // every device publishes its own and nothing else. rules.publishCategory
-  // decides when it is safe (I have been claimed, or the round is over), so
-  // this effect never has to know about the free-points hole that rule exists
-  // to close. Idempotent and self-limiting for the same reason as the settler
-  // above: once `reveal` holds my key, the guard returns early.
-  useEffect(() => {
-    if (!chosen || !game || !myPlayerId || !mySpec || state?.view !== 'round') return;
-    if (game.reveal?.[myPlayerId]) return;
-    if (!rules.revealAllowed(game, myPlayerId)) return;
-    applyRound((g) => rules.publishCategory(g, myPlayerId, mySpec));
-  }, [chosen, game, myPlayerId, mySpec, state?.view, applyRound]);
+  }, [game, seatId, iAmSeat, seatCategory, seatSpec, once, applyRound]);
 
   // --- banking ----------------------------------------------------------------
   //
@@ -489,11 +558,11 @@ export function useCategoriesRoom() {
   //
   // The generic half (host migration, the one-shot itself) is useRoomCore's.
   // What stays here is deciding what an absence BROKE — and for AniTag that is
-  // exactly ONE role. A departed JUDGE repairs itself: in dealt mode judgeIdFor
-  // derives the role from the roster on every render, and in chosen mode they
-  // simply stop being required, which the settler above notices. A departed
-  // spectator was never blocking anything. Only the hot seat holds a turn
-  // nobody else can finish.
+  // exactly ONE role. A departed JUDGE repairs itself: judgeIdFor derives the
+  // role from the roster on every render, and a pending they owed is settled by
+  // the settler above. A departed pick TARGET is skipped by pickingFor, and a
+  // departed approver stops being counted. A departed spectator was never
+  // blocking anything. Only the hot seat holds a turn nobody else can finish.
   //
   // Keyed on the seat as well as the round, so handing the turn to a successor
   // who then also leaves re-arms this rather than latching it closed.
@@ -516,13 +585,12 @@ export function useCategoriesRoom() {
     ...core,
     game,
     settings,
-    chosen,
+    tablePicks,
     phase: game?.phase ?? 'naming',
     seatId,
     iAmSeat,
-    // Everyone who still owes an answer on the pending item, and whether this
-    // device is one of them. Replaces the single judgeId/iAmJudge pair, which
-    // could not describe a chosen-mode round where the whole table rules.
+    // Everyone who still owes an answer on the pending item — the one judge, as
+    // a list (see rules.requiredJudges) — and whether this device is it.
     judgeIds,
     iMustRule,
     judges: toPlayers(judgeIds),
@@ -530,26 +598,27 @@ export function useCategoriesRoom() {
       judgeIds.filter((id) => typeof game?.pending?.verdicts?.[id] !== 'boolean'),
     ),
     seat: byId.get(seatId) ?? null,
-    // This device's own name. The pick screen addresses the player by it, and
-    // useRoomCore returns only the id.
+    // This device's own name, which useRoomCore does not return.
     myName: byId.get(myPlayerId)?.name ?? 'You',
-    // DEALT: null on the hot seat's own device, always — and by a Firebase rule
-    // rather than by this line. Every other device holds it from the deal.
+    // Null on the hot seat's own device, always — and by a Firebase rule rather
+    // than by this line. Every other device holds it from the deal or the pick.
     seatCategory,
-    // CHOSEN: null on every device but its owner's, by the mirror rule.
-    myCategory,
-    iHavePicked: !!game && !!myPlayerId && rules.hasPicked(game, myPlayerId),
-    // Who is still being waited on during `picking`, by name, so the screen can
-    // say it rather than showing an anonymous spinner.
-    pendingPickers: toPlayers(activeIds.filter((id) => !rules.hasPicked(game, id))),
-    // Who the seat may still claim. Legitimately empty once every other player
-    // has been solved — the screen has to say so.
-    declarable: toPlayers(game ? rules.declarableIds(game, playerIds, departedIds) : []),
-    // Whether this device has what it needs to play its part of the turn. In
-    // dealt mode the seat needs nothing and everyone else is waiting on the
-    // deal; in chosen mode there is no deal to wait for, so it is always true
-    // and the `picking` phase is the gate instead.
-    dealReady: chosen || iAmSeat || !!seatCategory,
+    // THE TABLE PICKS: who for, the proposal on screen and its approvals. All
+    // null or empty on the target's own device, which is refused the node.
+    pickTarget: byId.get(pickTargetId) ?? null,
+    iAmPickTarget,
+    proposal: proposal ? getCategory(proposal.spec) : null,
+    proposedBy: proposal?.by ? (byId.get(proposal.by)?.name ?? null) : null,
+    approvedNames: toPlayers(approvedIds).map((p) => p.name),
+    approvalsNeeded: approverIds.length,
+    iApproved: !!proposal && !!myPlayerId && proposal.approvals[myPlayerId] === proposal.nonce,
+    takenLabels,
+    pickedCount: game ? activeIds.filter((id) => rules.hasPicked(game, id)).length : 0,
+    // Whether this device has what it needs to play its part of the go. The seat
+    // needs nothing; everyone else waits on the seat's clause, whether it was
+    // dealt or picked. During the pick there is nothing to wait for — PickPhase
+    // is the screen.
+    dealReady: game?.phase === 'picking' || iAmSeat || !!seatCategory,
     pending: game?.pending ?? null,
     trail: game ? rules.trailFor(game, seatId) : [],
     // EVERY trail, not just the seat's — see the local hook for why. Public in
@@ -575,7 +644,8 @@ export function useCategoriesRoom() {
     totalRounds: settings?.rounds ?? 0,
     isFinalRound: (game?.round ?? 0) + 1 >= (settings?.rounds ?? 0),
     startGame,
-    pickCategory,
+    proposeCategory,
+    approveProposal,
     propose,
     declare,
     rule,

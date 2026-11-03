@@ -13,10 +13,9 @@ export default function AniTagGame({ onExit }) {
   return (
     <ModePicker
       game={descriptor}
-      // Mode-neutral on purpose: this screen sits BEFORE the setting that
-      // decides whether the hidden clause is yours or somebody else's, so
-      // naming either half here would be wrong half the time.
-      tagline="Everyone has a secret category. Name things until you work one out."
+      // Source-neutral on purpose: this screen sits BEFORE the setting that
+      // decides whether the table picks the clauses or the game deals them.
+      tagline="Everyone can see your secret category but you. Name things until you work it out."
       onLocal={() => setMode('local')}
       onOnline={() => setMode('online')}
       onExit={onExit}

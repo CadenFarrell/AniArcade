@@ -5,8 +5,8 @@ import { Card, Checkbox, Field, NumberInput } from '../../../shared/ui';
 import OptionRow from './OptionRow';
 import { SETTING_HELP, capHelp, poolCount } from '../help';
 import {
-  CATEGORY_MODES, CATEGORY_POOLS, DEFAULT_PREFS, MAX_ROUNDS, MIN_ROUNDS,
-  MODE_LABELS, POOL_LABELS,
+  CATEGORY_POOLS, CATEGORY_SOURCES, DEFAULT_PREFS, MAX_ROUNDS, MIN_ROUNDS,
+  POOL_LABELS, SOURCE_LABELS,
 } from '../prefs';
 import { MAX_CAP, MIN_CAP } from '../rules';
 import { poolSize } from '../categories';
@@ -34,31 +34,31 @@ import { poolSize } from '../categories';
 export default function AniTagSettings({
   values, onChange, playerCount = 0, customCategories = [], onReset,
 }) {
-  const { rounds, proposalCap, categoryPool, categoryMode, useCustom } = values;
-  const dealt = categoryMode === 'dealt';
+  const { rounds, proposalCap, categoryPool, categorySource, useCustom } = values;
+  const picked = categorySource === 'table';
   const size = poolSize(categoryPool, useCustom ? customCategories : []);
 
   return (
     <>
       <Card title="The game" action={<DetailToggle />} padding="lg" className="mb-6">
-        {/* First, because it is the only setting that changes what the game IS
-            rather than how long it runs — and because the hint under each option
-            is the fastest way to explain a game somebody has not played. */}
-        <Field label="How categories work" className="mb-2">
+        {/* First, because the hint under each option is the fastest way to
+            explain a game somebody has not played — both say the round itself
+            is the same, which is the thing to learn. */}
+        <Field label="Who picks categories" className="mb-2">
           <div className="flex flex-col gap-2">
-            {CATEGORY_MODES.map((m) => (
+            {CATEGORY_SOURCES.map((s) => (
               <OptionRow
-                key={m}
-                active={categoryMode === m}
-                onClick={() => onChange('categoryMode', m)}
-                title={MODE_LABELS[m].label}
-                hint={MODE_LABELS[m].blurb}
+                key={s}
+                active={categorySource === s}
+                onClick={() => onChange('categorySource', s)}
+                title={SOURCE_LABELS[s].label}
+                hint={SOURCE_LABELS[s].blurb}
               />
             ))}
           </div>
         </Field>
-        <SettingHelp className="mb-5" more={SETTING_HELP.categoryMode.more}>
-          {SETTING_HELP.categoryMode.short}
+        <SettingHelp className="mb-5" more={SETTING_HELP.categorySource.more}>
+          {SETTING_HELP.categorySource.short}
         </SettingHelp>
 
         <Field label="Categories about" className="mb-2">
@@ -78,7 +78,7 @@ export default function AniTagSettings({
           {SETTING_HELP.categoryPool.short}
         </SettingHelp>
         <p className="text-sm text-fg-helper">
-          {poolCount({ size, players: playerCount, pool: categoryPool, dealt })}
+          {poolCount({ size, players: playerCount, pool: categoryPool, picked })}
         </p>
       </Card>
 
@@ -118,7 +118,7 @@ export default function AniTagSettings({
           </SettingHelp>
 
           <Checkbox
-            label={dealt ? 'Deal my own categories too' : 'Offer my own categories too'}
+            label={picked ? 'Offer my own categories too' : 'Deal my own categories too'}
             checked={useCustom}
             onChange={(e) => onChange('useCustom', e.target.checked)}
             className="mb-2"

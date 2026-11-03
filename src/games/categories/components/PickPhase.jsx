@@ -4,38 +4,45 @@ import CategoryPicker from './CategoryPicker';
 import Handoff from '../../../shared/components/Handoff';
 
 /**
- * CHOSEN MODE's opening phase: everybody commits a clause before anybody names
- * anything.
+ * THE TABLE PICKS A CATEGORY FOR ONE PLAYER, while that player looks away.
+ *
+ * AniGuess's character assignment applied to a rule — the same moment, the same
+ * words ("Look away", "Pick a category for …", "… is looking away — Ready!"), so
+ * a table that has played one already knows how the other goes. One player at a
+ * time, in rules.pickingFor's order, because a pick is a conversation and six
+ * of them at once is noise.
  *
  * ONE COMPONENT FOR LOCAL AND ONLINE, for the reason TurnScreen is one: the
  * moment genuinely is the same moment, and what differs is only which device is
- * looking. Online this renders once per device and then waits; locally it
- * renders once per player in turn, with `handover` gating each one behind a
- * "pass it over" screen.
+ * looking.
  *
- * THE HANDOVER IS THE ONLY PRIVATE MOMENT LOCAL PLAY HAS, and it is worth being
- * exact about why there is only one. Dealt mode has to hide the hot seat's
- * clause for a whole turn, so it needs CategoryPeek on every judging screen.
- * Here a clause has to be on screen exactly once — while its owner picks it —
- * because from then on every judge rules from memory. So the device is passed
- * round once at the start of a round and then sits in the middle of the table
- * with nothing hidden on it, which is roughly twenty fewer handovers a round
- * than the alternative.
+ *   local   the device stays put and the TARGET turns round: a Handoff with
+ *           their face, then the picker, then the next target's Handoff. The
+ *           last lock opens the round, so nothing is ever left on screen.
+ *   online  every device but the target's shows the one shared proposal, which
+ *           lives in the target's assignments/ slot (unreadable to them), and
+ *           the pick locks once everyone else still here has approved it — the
+ *           shape of AniGuess's OnlineCharacterAssignment. The target's own
+ *           device only says that the table is picking.
  *
- * The gate RESETS DURING RENDER when the player changes, which is React's
+ * The local gate RESETS DURING RENDER when the target changes, which is React's
  * documented way to adjust state on a prop change and the idiom CategoryPeek
- * already uses. An effect would repaint once with the previous player's picker
- * still open — handing the next person a screen the last one was using.
+ * already uses. An effect would repaint once with the previous target's picker
+ * still open — showing the next target the clause just chosen for the last.
  */
 export default function PickPhase({
-  playerName, player = null, suggestions, noun, onPick,
-  handover = false, busy = false,
-  done = false, waitingOn = [], picked = 0, total = 0,
+  target, suggestions, noun, takenLabels = [], picked = 0, total = 0,
+  // local
+  handover = false, onPick,
+  // online
+  online = false, iAmTarget = false, proposal = null, proposedBy = null,
+  approvedNames = [], needed = 0, iApproved = false, onPropose, onApprove, busy = false,
 }) {
+  const name = target?.name ?? 'Someone';
   const [ready, setReady] = useState(!handover);
-  const [lastPlayer, setLastPlayer] = useState(playerName);
-  if (lastPlayer !== playerName) {
-    setLastPlayer(playerName);
+  const [lastTarget, setLastTarget] = useState(name);
+  if (lastTarget !== name) {
+    setLastTarget(name);
     setReady(!handover);
   }
 
@@ -43,67 +50,123 @@ export default function PickPhase({
     <div className="mb-6 flex items-center justify-between gap-3">
       <div className="min-w-0">
         <p className="font-display text-xs font-extrabold uppercase tracking-widest text-fg-helper">
-          Everyone picks a category
+          Picking categories
         </p>
         <h2 className="truncate font-display text-2xl font-extrabold text-fg-strong">
-          {done ? 'Locked in' : `${playerName}, choose yours`}
+          {iAmTarget ? 'The table is picking yours' : `Pick a category for ${name}`}
         </h2>
       </div>
       {total > 0 && (
-        <Badge tone={picked >= total ? 'lime' : 'neutral'} className="flex-shrink-0 text-base">
-          {picked} of {total}
+        <Badge tone="neutral" className="flex-shrink-0 text-base">
+          {Math.min(picked + 1, total)} of {total}
         </Badge>
       )}
     </div>
   );
 
-  // Online, after this device has committed. Nothing to do but say who is left,
-  // by name — a bare spinner here reads as the room having stalled.
-  if (done) {
+  // Online, on the target's own device. Nothing to do and nothing it may see —
+  // the proposal is in a node this device is refused — so it says so by name
+  // rather than showing a spinner that reads as the room having stalled.
+  if (iAmTarget) {
     return (
       <>
         {header}
         <Card padding="lg" className="text-center">
           <p className="font-display text-xl font-extrabold text-fg-strong">
-            {waitingOn.length
-              ? `Waiting on ${waitingOn.map((p) => p.name).join(', ')}…`
-              : 'Starting the round…'}
+            Everyone else is choosing your category…
           </p>
           <p className="mt-3 text-base text-fg-helper">
-            Keep your category to yourself. Everything you answer from here is judged
-            against it, and working it out is the whole game.
+            Don&apos;t look at anyone else&apos;s screen. Working it out is the whole game.
           </p>
         </Card>
       </>
     );
   }
 
-  // Local, between two players. Deliberately says nothing about the clause just
-  // committed — the point of the screen is that the last one is already gone.
+  // Local, before each pick. The device stays put; the target turns round.
   if (!ready) {
     return (
       <>
         {header}
         <Handoff
-          player={player ?? { id: playerName, name: playerName }}
-          note="Everyone else, look away — this is the one screen in the round that is private. After this the device sits in the middle and you each name one thing in turn."
-          cta={`I'm ${playerName} — show me the list`}
+          player={target ?? { id: name, name }}
+          kicker="Look away"
+          note={`Everyone else — get ready to pick a category for ${name}.`}
+          cta={`${name} is looking away — Ready!`}
           onReady={() => setReady(true)}
         />
       </>
     );
   }
 
+  const lead = (
+    <p className="mb-5 text-base text-fg-body">
+      Pick something {name} can work out — any {noun} anyone names has to be a clear yes or no.
+    </p>
+  );
+
+  if (!online) {
+    return (
+      <>
+        {header}
+        {lead}
+        <CategoryPicker
+          suggestions={suggestions}
+          noun={noun}
+          title={`${name}'s category`}
+          commitLabel="Lock in"
+          takenLabels={takenLabels}
+          onPick={onPick}
+          busy={busy}
+        />
+      </>
+    );
+  }
+
+  // Online, everybody but the target: the shared proposal, its approvals, and a
+  // picker for a counter-proposal. Changing the proposal wipes every approval,
+  // because what was approved is no longer what is on the table.
   return (
     <>
       {header}
-      {/* A sentence rather than a panel. It used to be a whole Card holding one
-          line of grey text, which spent a surface on a caption and left the
-          picker below it looking like the second thing on the screen. */}
-      <p className="mb-5 text-base text-fg-body">
-        Pick something you can answer yes or no about instantly, for any {noun} anyone names.
-      </p>
-      <CategoryPicker suggestions={suggestions} noun={noun} onPick={onPick} busy={busy} />
+      {proposal ? (
+        <Card padding="lg" className="mb-6 text-center">
+          <p className="mb-2 text-sm text-fg-helper">
+            Proposed{proposedBy ? ` by ${proposedBy}` : ''}
+          </p>
+          <p className="mb-4 font-display text-2xl font-extrabold text-fg-strong">
+            {proposal.label}
+          </p>
+          <div className="mb-4 flex items-center justify-between font-display font-bold text-fg-strong">
+            <span>Approvals</span>
+            <span>{approvedNames.length} / {needed}</span>
+          </div>
+          {approvedNames.length > 0 && (
+            <p className="mb-4 text-left text-base text-fg-body">
+              <Icon name="check" className="mr-2 text-pop-lime" />
+              {approvedNames.join(', ')}
+            </p>
+          )}
+          <Button
+            variant={iApproved ? 'secondary' : 'success'}
+            size="lg"
+            fullWidth
+            disabled={busy}
+            onClick={() => onApprove(!iApproved)}
+          >
+            {iApproved ? 'Take back my approval' : 'Approve'}
+          </Button>
+        </Card>
+      ) : lead}
+      <CategoryPicker
+        suggestions={suggestions}
+        noun={noun}
+        title={proposal ? 'Propose a different one' : `${name}'s category`}
+        commitLabel="Propose"
+        takenLabels={takenLabels}
+        onPick={onPropose}
+        busy={busy}
+      />
     </>
   );
 }

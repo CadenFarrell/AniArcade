@@ -131,11 +131,11 @@ export const poolSize = (pool, extra = []) => (
 );
 
 /**
- * What to OFFER a player who is picking their own clause (chosen mode).
+ * What to OFFER the table when it is picking a clause for somebody.
  *
  * The same eligible list dealCategories draws from, only handed over whole
- * instead of sampled — which is the entire difference between the two modes at
- * this layer. Written categories come FIRST because a player who wrote one
+ * instead of sampled — which is the entire difference between the two sources
+ * at this layer. Written categories come FIRST because a player who wrote one
  * wrote it to play it, and they are the entries that would otherwise be buried
  * under two dozen built-ins.
  *

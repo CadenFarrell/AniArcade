@@ -40,7 +40,7 @@ export default function AniTagSetup({ onStart, onBack }) {
     rounds: prefs.rounds,
     proposalCap: prefs.proposalCap,
     categoryPool: prefs.categoryPool,
-    categoryMode: prefs.categoryMode,
+    categorySource: prefs.categorySource,
     useCustom: prefs.useCustom,
   }));
   const change = (key, value) => setSettings((s) => ({ ...s, [key]: value }));
@@ -70,7 +70,7 @@ export default function AniTagSetup({ onStart, onBack }) {
     <>
       <SetupLayout
         game={descriptor}
-        tagline="Everyone has a secret category. Name things until you work one out."
+        tagline="Everyone can see your secret category but you. Name things until you work it out."
         onBack={onBack}
         left={(
           <>

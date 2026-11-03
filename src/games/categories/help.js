@@ -16,22 +16,18 @@ export const SETTING_HELP = {
            round ends when you declare a category correctly, run out of names, or give
            up — everyone else keeps playing until they do the same. Every round starts
            on fresh categories, picked again or dealt again, so a longer session is more
-           clauses rather than longer goes. Who opens moves round the table each time,
-           which matters when everyone is answering: the last player to open has heard
-           every answer so far.`,
+           clauses rather than longer goes. Who opens moves round the table each time.`,
   },
 
-  categoryMode: {
-    short: 'Whether you pick your own category or are dealt one you cannot see.',
-    // The two halves people get backwards, said plainly: which way the hiding
-    // runs, and who is doing the answering. Everything else about a turn — the
-    // names, the cap, the declaration, the scoring — is identical.
-    more: `Pick your own: you choose a clause only you can see, and every name anyone
-           offers is answered by the whole table, each against their own. You win your
-           round by declaring somebody else's rule — and each player can only be solved
-           once per round, so it is a race.
-           Dealt blind: you are handed a clause everyone but you can read, one judge
-           answers, and the rule you are working out is your own.`,
+  categorySource: {
+    short: 'Whether the rest of the table picks your category or it is dealt at random.',
+    // The thing people ask first, said plainly: the round itself is identical
+    // either way. Only where the clause comes from differs.
+    more: `The table picks: before the round, each of you looks away in turn while
+           everyone else agrees on a category for you — one of the built-ins, one of
+           their own, or one they make up. Dealt at random: the game deals them. Either
+           way you cannot see yours, everyone else can, one judge answers your names, and
+           the rule you are working out is your own.`,
   },
 
   proposalCap: {
@@ -44,23 +40,21 @@ export const SETTING_HELP = {
            scores more — a solve is worth the cap minus the names you spent — so this
            sets the size of the prize as well as the length of a round. A wrong
            declaration costs ${WRONG_DECLARATION_COST} of them rather than ending your
-           round, and you cannot aim at that player again. Below about six, an unlucky
+           round. Below about six, an unlucky
            opening leaves nothing to reason from.`,
   },
 
   categoryPool: {
     short: 'Whether this session is about characters or about shows.',
-    more: `One pool for the whole table, not one per player. Dealt blind, you cannot see
-           your own category, so the prompt telling you what to name is the only clue you
-           get about it. Picking your own, everybody is answering the SAME name — so one
-           player holding a clause about shows while the table names characters can only
-           ever say no.`,
+    more: `One pool for the whole table, not one per player. You cannot see your own
+           category, so the prompt telling you what to name is the only clue you get about
+           it — and when the table picks, it tells them what kind of category to pick.`,
   },
 
   useCustom: {
     short: 'Put your own written categories in play alongside the built-in ones.',
-    more: `They stay on this device — at the top of the list when you are picking, and in
-           the deal when you are not. Online, only the category actually in play reaches
+    more: `They stay on this device — at the top of the list when you are picking for
+           somebody, and in the deal when it is random. Online, only the category actually in play reaches
            the room, so the rest of your list is never published.`,
   },
 };
@@ -68,14 +62,14 @@ export const SETTING_HELP = {
 // Said under the pool control. Not a warning — every pool ships enough clauses
 // for an ordinary table — but the count is worth showing.
 //
-// THE WARNING ONLY APPLIES TO THE DEALT MODE, because only a deal can hand two
-// people the same clause without either of them knowing. When everybody picks
-// their own, a small list is merely a shorter menu and a duplicate is somebody's
-// own decision, so nagging about it would be nagging about nothing.
-export const poolCount = ({ size, players, pool, dealt = true }) => {
+// THE WARNING ONLY APPLIES TO A RANDOM DEAL, because only a deal can hand two
+// people the same clause without anybody choosing to. When the table picks, a
+// small list is merely a shorter menu and a duplicate is the table's own
+// decision, so nagging about it would be nagging about nothing.
+export const poolCount = ({ size, players, pool, picked = false }) => {
   const noun = POOL_LABELS[pool]?.plural ?? 'cards';
   const base = `${size} categories about ${noun}.`;
-  if (!dealt) return `${base} You can pick one of them or write your own when the round starts.`;
+  if (picked) return `${base} The table can pick one of them or write their own for each player.`;
   return players > size
     ? `${base} With ${players} playing, some of you will share one — write a few of your own to spread it out.`
     : base;

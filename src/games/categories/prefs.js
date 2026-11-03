@@ -1,3 +1,5 @@
+import { CATEGORY_SOURCES } from './rules';
+
 // Every option AniTag remembers between sessions, at its literal default. One
 // module rather than a literal in each screen — AniTagSetup and OnlineLobby
 // offer overlapping sets and both import this — and it doubles as the schema
@@ -17,18 +19,18 @@
 // both lists ship in categories.js. It reaches nobody's profile.
 export const DEFAULT_PREFS = {
   rounds: 3,
-  // 'chosen' | 'dealt'. Copied onto the round node, because rules.js ACTS on it
-  // — requiredJudges branches on nothing else — which is CLAUDE.md's stated
+  // 'table' | 'random' — where each player's hidden category comes from.
+  // Copied onto the round node, because rules.js ACTS on it (startRound opens a
+  // `picking` phase for one and not the other), which is CLAUDE.md's stated
   // test for which prefs reach round state.
   //
-  // DEFAULTING TO 'chosen' MOVES EXISTING PLAYERS, and that is the intent
-  // rather than a side effect. mergePrefs fills a missing key from this literal
-  // on the next read, so everyone who never opens the settings card lands in
-  // the new mode; the dealt game is still one tap away and nothing they saved
-  // is lost. rules.js's own fallback is the opposite ('dealt'), which is not a
-  // contradiction — see toMode there: the only round reaching it without a mode
-  // is one already in flight from the previous build.
-  categoryMode: 'chosen',
+  // A NEW KEY RATHER THAN A RETYPED `categoryMode`, on purpose. The old key
+  // chose between this game and "pick your own", which is gone; a saved
+  // `categoryMode` is now an unknown key that mergePrefs drops on the next
+  // read, so everyone lands on the table pick without a stale value meaning
+  // something it no longer does. rules.js's own fallback is the opposite
+  // ('random'), which is not a contradiction — see toSource there.
+  categorySource: 'table',
   // Names per player, per ROUND — spent one at a time, because the seat moves
   // after every single name. Copied onto the round node, unlike everything else
   // here, because rules.js ACTS on it (see settlePending and proposalsUsed),
@@ -39,37 +41,36 @@ export const DEFAULT_PREFS = {
   // charged against it at WRONG_DECLARATION_COST, so the cap is also the price
   // list for guessing early.
   proposalCap: 10,
-  // 'shows' | 'characters'. One pool per session, in BOTH modes, though for two
-  // different reasons. In dealt mode the hot seat cannot see their clause, so
-  // the prompt telling them what to name is the only thing that says which pool
-  // it is about and a per-player pool would turn that prompt into a clue. In
-  // chosen mode everybody knows their own, but they are all answering the SAME
-  // name — so one player holding a clause about shows while the table names
-  // characters can only ever answer no. See the note on CATEGORIES.
+  // 'shows' | 'characters'. One pool per session, not one per player: the hot
+  // seat cannot see their clause, so the prompt telling them what to name is the
+  // only thing that says which pool it is about, and a per-player pool would
+  // turn that prompt into a clue. See the note on CATEGORIES.
   categoryPool: 'characters',
-  // Whether the player's own written categories are in play. In dealt mode they
-  // join the built-ins in the deal; in chosen mode they head the list of
-  // suggestions you pick your own from. On by default: somebody who has written
-  // one wrote it to play it, and a table with none is unaffected either way.
+  // Whether the player's own written categories are in play. When the table
+  // picks, they head the list of suggestions on this device and can come up
+  // from "Deal one at random"; in a random deal they join the built-ins. On by
+  // default: somebody who has written one wrote it to play it, and a table with
+  // none is unaffected either way.
   useCustom: true,
 };
 
-// The modes a session can play, in the order the screens render them — so the
-// default is the one a player reads first. Exported so a screen cannot invent a
-// third that rules.js has never heard of.
-export const CATEGORY_MODES = ['chosen', 'dealt'];
+// Where a session's clauses come from, in the order the screens render them.
+// Defined in rules.js, which acts on it, and re-exported here beside the other
+// option lists so a screen cannot invent a third.
+export { CATEGORY_SOURCES };
 
-// What each mode is called on screen, and the one line that says how it differs.
-// `blurb` is deliberately about WHERE THE CLAUSE IS rather than about scoring,
-// because that is the only thing a player has to understand before starting.
-export const MODE_LABELS = {
-  chosen: {
-    label: 'Pick your own',
-    blurb: 'You choose a category only you can see. Everyone answers every name against theirs, and you work out somebody else\u2019s.',
+// What each source is called on screen, and the one line that says how it
+// differs. Both blurbs say the same second half on purpose: once the round
+// starts the game is identical, and that is the thing a player coming from the
+// removed "pick your own" needs to read.
+export const SOURCE_LABELS = {
+  table: {
+    label: 'The table picks',
+    blurb: 'Everyone else picks your category while you look away. One judge answers, and you work out your own.',
   },
-  dealt: {
-    label: 'Dealt blind',
-    blurb: 'You are handed a category you cannot see. One judge answers, and you work out your own.',
+  random: {
+    label: 'Dealt at random',
+    blurb: 'You are handed a random category you cannot see. One judge answers, and you work out your own.',
   },
 };
 

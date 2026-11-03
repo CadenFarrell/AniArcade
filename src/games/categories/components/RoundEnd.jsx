@@ -12,15 +12,9 @@ import PlayerFace from '../../../shared/components/PlayerFace';
  * The one screen where every clause is on show at once, which is the whole
  * reason it exists as a stop rather than as a jump straight to the next round:
  * the table spends a round each holding one clause, and this is where "we all
- * had shows about school" turns into a shared joke. In chosen mode it is also
- * the only moment an UNCLAIMED clause is ever shown — until here, revealing one
- * would have been worth full marks to the next player (see rules.revealAllowed).
+ * had shows about school" turns into a shared joke.
  *
- * A CLAUSE IS SHOWN EVEN FOR A PLAYER WHO NEVER GOT A GO, and that is not the
- * same call the badges make. In chosen mode everybody picks one whether or not
- * they ever named anything, and hiding it because `took` is false would blank
- * the row of somebody the whole table spent the round questioning. The score,
- * meanwhile, still separates "played and missed" from "never got going" — both
+ * The score separates "played and missed" from "never got going" — both
  * are zero, and a scoreboard that ran them together would accuse somebody whose
  * tab closed of having played badly.
  *
@@ -36,24 +30,10 @@ import PlayerFace from '../../../shared/components/PlayerFace';
  * session screen this used to sit inside carried.
  */
 export default function RoundEnd({
-  explain, players, roundNumber, totalRounds, isFinalRound, chosen = false,
+  explain, players, roundNumber, totalRounds, isFinalRound,
   canAdvance, hostName, onNext, onFinish, onBack, backLabel,
 }) {
   const nameOf = (id) => players.find((p) => p.id === id)?.name ?? 'Someone';
-
-  // Whose clause the row's player went after, and who went after theirs. Only
-  // chosen mode has either; in dealt mode the only clause in play on your go is
-  // your own, so both are always null and the line collapses to nothing.
-  const story = (row) => {
-    if (!chosen) return null;
-    const parts = [];
-    if (row.solved && row.targetId) parts.push(`solved ${nameOf(row.targetId)}`);
-    else if (row.took && row.guess && row.targetId) parts.push(`missed ${nameOf(row.targetId)}`);
-    if (row.claimedBy) {
-      parts.push(`claimed by ${nameOf(row.claimedBy)}${row.ownerPoints ? ` (+${row.ownerPoints} for the category)` : ''}`);
-    }
-    return parts.length ? parts.join(' · ') : null;
-  };
 
   const best = explain.reduce((n, row) => Math.max(n, row.points), 0);
   const leaders = best > 0
@@ -99,7 +79,8 @@ export default function RoundEnd({
     >
       <Card title="Everyone’s round" padding="lg" className="mb-6">
         {explain.map((row) => {
-          const line = story(row);
+          // What they ended on: the declaration that landed, or the last miss.
+          const line = row.guess ? `${row.solved ? 'Called' : 'Guessed'} “${row.guess}”` : null;
           return (
             <div
               key={row.playerId}

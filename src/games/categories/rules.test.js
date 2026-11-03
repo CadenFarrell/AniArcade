@@ -1,13 +1,12 @@
 import { describe, it, expect } from 'vitest';
 import {
   DEFAULT_CAP, MAX_CAP, MAX_PROPOSAL_LEN, MIN_CAP, MIN_PLAYERS, WRONG_DECLARATION_COST,
-  applyRoundScores, beginNaming, claimedTargets, declarableIds, declareCategory,
-  declaredTargets, everyonePicked, explainRound, finalScores, hasPicked, isChosen,
-  judge, judgeIdFor, nextSeatId, nextTurn, normalizeGame, normalizePending,
-  normalizeResults, normalizeTrail, normalizeTrails, passTurn, proposalsLeft,
-  proposalsUsed, proposeName, publishCategory, recordPick, requiredJudges,
-  revealAllowed, roundComplete, scoreTurn, settlePending, skipDepartedSeat, OWNER_POINTS,
-  startRound, toSpec, trailFor, turnOrder, verdictsOf,
+  CATEGORY_SOURCES, applyRoundScores, beginNaming, declareCategory, everyonePicked,
+  explainRound, finalScores, hasPicked, isTablePicked, judge, judgeIdFor, nextSeatId,
+  nextTurn, normalizeGame, normalizePending, normalizeResults, normalizeTrail,
+  normalizeTrails, passTurn, pickingFor, proposalsLeft, proposalsUsed, proposeName,
+  recordPick, requiredJudges, roundComplete, scoreTurn, skipDepartedSeat, startRound,
+  toSpec, trailFor, turnOrder, verdictsOf,
 } from './rules';
 
 const IDS = ['a', 'b', 'c'];
@@ -46,10 +45,10 @@ const withLaps = (state, laps, verdict = false, ids = IDS) => (
   withNames(state, laps * ids.length, verdict, ids)
 );
 
-// A chosen round with the picking phase already satisfied, which is every test
-// below that is about a turn rather than about the pick itself.
-const chosenRound = (opts = {}) => {
-  let s = startRound(IDS, { mode: 'chosen', ...opts });
+// A table-picked round with the picking phase already done, for the tests about
+// what comes after it.
+const tableRound = (opts = {}) => {
+  let s = startRound(IDS, { source: 'table', ...opts });
   for (const id of IDS) s = apply(s, recordPick(s, id));
   return apply(s, beginNaming(s, IDS));
 };
@@ -68,24 +67,24 @@ describe('startRound', () => {
     expect(s.results).toEqual({});
   });
 
-  // The clause is the one thing this game hides, in either mode, and startRound
-  // is called by the host online. If one could reach round state it would be
-  // readable by every member of the room watching raw RTDB.
-  it('never puts a category anywhere in round state, in either mode', () => {
-    for (const mode of ['dealt', 'chosen']) {
-      const json = JSON.stringify(startRound(IDS, { round: 3, cap: 8, mode }));
-      expect(json, mode).not.toMatch(/categor/i);
-      expect(json, mode).not.toMatch(/assignment|secret/i);
+  // The clause is the one thing this game hides, and startRound is called by
+  // the host online. If one could reach round state it would be readable by
+  // every member of the room watching raw RTDB — the target included.
+  it('never puts a category anywhere in round state, from either source', () => {
+    for (const source of CATEGORY_SOURCES) {
+      const json = JSON.stringify(startRound(IDS, { round: 3, cap: 8, source }));
+      expect(json, source).not.toMatch(/categor/i);
+      expect(json, source).not.toMatch(/assignment|secret/i);
     }
   });
 
-  // The mode has to reach the round, because requiredJudges is the only branch
-  // in the whole module and it reads nothing else.
-  it('opens a chosen round on picking and a dealt one straight onto a turn', () => {
-    expect(startRound(IDS, { mode: 'chosen' }).phase).toBe('picking');
-    expect(isChosen(startRound(IDS, { mode: 'chosen' }))).toBe(true);
-    expect(startRound(IDS, { mode: 'dealt' }).phase).toBe('naming');
-    expect(isChosen(startRound(IDS, { mode: 'dealt' }))).toBe(false);
+  // The source has to reach the round, because it decides whether there is a
+  // picking phase at all.
+  it('opens a table-picked round on picking and a random one straight onto a go', () => {
+    expect(startRound(IDS, { source: 'table' }).phase).toBe('picking');
+    expect(isTablePicked(startRound(IDS, { source: 'table' }))).toBe(true);
+    expect(startRound(IDS, { source: 'random' }).phase).toBe('naming');
+    expect(isTablePicked(startRound(IDS, { source: 'random' }))).toBe(false);
   });
 
   it('clamps the cap into range', () => {
@@ -183,31 +182,13 @@ describe('judgeIdFor (dealt mode)', () => {
   });
 });
 
-// THE ONE BRANCH BETWEEN THE MODES. Everything else in rules.js is shared, so
-// if this is wrong nothing else can be right.
 describe('requiredJudges', () => {
-  it('is the derived judge in dealt mode, for either kind of pending', () => {
+  it('is the derived judge, for either kind of pending', () => {
     const s0 = startRound(IDS);
     const named = apply(s0, proposeName(s0, 'a', 'Nezuko'));
     expect(requiredJudges(named, IDS)).toEqual(['b']);
     const declared = apply(s0, declareCategory(s0, 'a', 'wears glasses'));
     expect(requiredJudges(declared, IDS)).toEqual(['b']);
-  });
-
-  it('is the whole table for a name in chosen mode', () => {
-    const s0 = chosenRound();
-    const named = apply(s0, proposeName(s0, 'a', 'Nezuko'));
-    expect(requiredJudges(named, IDS)).toEqual(['b', 'c']);
-    expect(requiredJudges(named, IDS, ['c'])).toEqual(['b']);
-  });
-
-  // Only the target knows the clause being guessed at, so nobody else COULD
-  // rule and asking anyone else to would leak it.
-  it('is the target alone for a declaration in chosen mode', () => {
-    const s0 = chosenRound();
-    const declared = apply(s0, declareCategory(s0, 'a', 'wears glasses', 'c'));
-    expect(requiredJudges(declared, IDS)).toEqual(['c']);
-    expect(requiredJudges(declared, IDS, ['c'])).toEqual([]);
   });
 
   it('is empty with nothing pending', () => {
@@ -253,11 +234,11 @@ describe('proposing a name', () => {
     expect(proposeName({ ...s, phase: 'naming' }, 'a', 'one more').patch).toEqual({});
   });
 
-  // Nothing can be named until every clause exists to be named against.
-  it('refuses while a chosen round is still picking', () => {
-    const s = startRound(IDS, { mode: 'chosen' });
+  // Nothing can be named until every clause exists to be judged against.
+  it('refuses while the table is still picking', () => {
+    const s = startRound(IDS, { source: 'table' });
     expect(proposeName(s, 'a', 'Nezuko').patch).toEqual({});
-    expect(declareCategory(s, 'a', 'wears glasses', 'b').patch).toEqual({});
+    expect(declareCategory(s, 'a', 'wears glasses').patch).toEqual({});
   });
 });
 
@@ -329,8 +310,9 @@ describe('judging a name', () => {
     const s1 = apply(s0, proposeName(s0, 'a', 'Nezuko'));
     // 'c' is not the derived judge this turn.
     expect(judge(s1, 'c', true, ['b']).patch).toEqual({});
-    const s2 = apply(chosenRound(), proposeName(chosenRound(), 'a', 'Nezuko'));
-    const once = apply(s2, judge(s2, 'b', true, ['b', 'c']));
+    // A judge who has answered cannot answer again, even with a second judge
+    // still owed — the list shape requiredJudges keeps.
+    const once = apply(s1, judge(s1, 'b', true, ['b', 'c']));
     expect(judge(once, 'b', false, ['b', 'c']).patch).toEqual({});
   });
 
@@ -343,71 +325,49 @@ describe('judging a name', () => {
 
 // The half of the game the two-player example is about: everyone answers every
 // name, each against their own clause.
-describe('a name in chosen mode', () => {
-  it('waits for every player before it becomes information', () => {
-    const s0 = chosenRound({ cap: 5 });
-    const named = apply(s0, proposeName(s0, 'a', 'Naruto'));
-    const half = apply(named, judge(named, 'b', false, ['b', 'c']));
-    // Still pending: one answer is not the answer.
-    expect(half.phase).toBe('judging');
-    expect(trailFor(half, 'a')).toEqual([]);
-    expect(proposalsUsed(half, 'a')).toBe(0);
-
-    const done = apply(half, judge(half, 'c', true, ['b', 'c']));
-    expect(done.phase).toBe('naming');
-    expect(trailFor(done, 'a')).toEqual([
-      { text: 'Naruto', verdicts: { b: false, c: true } },
-    ]);
-  });
-
-  // The whole point of attributing them: which player said no IS the fact.
-  it('keeps every answer against the player who gave it', () => {
-    const s = withNames(chosenRound({ cap: 5 }), 1, true);
-    expect(verdictsOf(trailFor(s, 'a')[0])).toEqual([
-      { judgeId: 'b', verdict: true },
-      { judgeId: 'c', verdict: true },
-    ]);
-  });
-
-  // The required set SHRINKS when somebody leaves, so a pending that could not
-  // settle a minute ago settles now with no new verdict at all. Nothing else
-  // notices, because the device that owed the answer is gone.
-  it('settles on the strength of who is left when a judge departs', () => {
-    const s0 = chosenRound({ cap: 5 });
-    const named = apply(s0, proposeName(s0, 'a', 'Naruto'));
-    const half = apply(named, judge(named, 'b', true, ['b', 'c']));
-    expect(settlePending(half, requiredJudges(half, IDS)).patch).toEqual({});
-
-    const settled = apply(half, settlePending(half, requiredJudges(half, IDS, ['c'])));
-    expect(settled.phase).toBe('naming');
-    expect(trailFor(settled, 'a')).toEqual([{ text: 'Naruto', verdicts: { b: true } }]);
-  });
-
-  // Nobody left who could answer: the name is unanswerable and recording a
-  // verdict nobody gave would be inventing one.
-  it('ends the turn when nobody is left to answer at all', () => {
-    const s0 = chosenRound({ cap: 5 });
-    const named = apply(s0, proposeName(s0, 'a', 'Naruto'));
-    const done = apply(named, settlePending(named, []));
-    expect(done.phase).toBe('turnEnd');
-    expect(done.results.a).toEqual({ solved: false, guess: '', used: 0 });
-  });
-});
-
-describe('picking your own category', () => {
-  it('records THAT a player picked and never what', () => {
-    const s0 = startRound(IDS, { mode: 'chosen' });
+describe('the table picking each category', () => {
+  it('records THAT a clause was locked in for a player and never what', () => {
+    const s0 = startRound(IDS, { source: 'table' });
     const s1 = apply(s0, recordPick(s0, 'a'));
     expect(hasPicked(s1, 'a')).toBe(true);
     expect(JSON.stringify(s1)).not.toMatch(/categor|glasses/i);
-    // Idempotent, so a double tap or a replayed write costs nothing.
+    // Idempotent, so a double tap or two devices locking at once costs nothing.
     expect(recordPick(s1, 'a').patch).toEqual({});
+  });
+
+  // One target at a time, the AniGuess way, in roster order from the round.
+  it('picks for one player at a time, in roster order', () => {
+    let s = startRound(IDS, { source: 'table' });
+    expect(pickingFor(s, IDS)).toBe('a');
+    s = apply(s, recordPick(s, 'a'));
+    expect(pickingFor(s, IDS)).toBe('b');
+    s = apply(s, recordPick(s, 'b'));
+    expect(pickingFor(s, IDS)).toBe('c');
+  });
+
+  // Who looks away first moves between rounds, like the opening seat.
+  it('starts from a different player each round', () => {
+    expect(pickingFor(startRound(IDS, { source: 'table', round: 1 }), IDS)).toBe('b');
+    expect(pickingFor(startRound(IDS, { source: 'table', round: 5 }), IDS)).toBe('c');
+  });
+
+  // A target who closes their tab must not wedge the table on their pick.
+  it('skips a player who has left', () => {
+    const s = startRound(IDS, { source: 'table' });
+    expect(pickingFor(s, IDS, ['a'])).toBe('b');
+  });
+
+  it('is nobody outside the picking phase, or once everyone has one', () => {
+    expect(pickingFor(startRound(IDS, { source: 'random' }), IDS)).toBeNull();
+    let s = startRound(IDS, { source: 'table' });
+    for (const id of IDS) s = apply(s, recordPick(s, id));
+    expect(pickingFor(s, IDS)).toBeNull();
   });
 
   // The active roster, so a closed tab cannot hold the table on the opening
   // screen forever.
-  it('opens the first turn once everyone STILL HERE has picked', () => {
-    let s = startRound(IDS, { mode: 'chosen' });
+  it('opens the first go once everyone STILL HERE has a clause', () => {
+    let s = startRound(IDS, { source: 'table' });
     s = apply(s, recordPick(s, 'a'));
     s = apply(s, recordPick(s, 'b'));
     expect(everyonePicked(s, IDS)).toBe(false);
@@ -417,16 +377,24 @@ describe('picking your own category', () => {
   });
 
   it('is never vacuously ready with an empty table', () => {
-    expect(everyonePicked(startRound(IDS, { mode: 'chosen' }), [])).toBe(false);
+    expect(everyonePicked(startRound(IDS, { source: 'table' }), [])).toBe(false);
   });
 
-  // The seat is chosen before anybody has picked, so a seat who leaves during
-  // the pick still has to be replaced — without opening a turn early.
+  // The seat is chosen before anybody has a clause, so a seat who leaves during
+  // the pick still has to be replaced — without opening a go early.
   it('replaces a departed seat without leaving the picking phase', () => {
-    const s0 = startRound(IDS, { mode: 'chosen' });
+    const s0 = startRound(IDS, { source: 'table' });
     const s1 = apply(s0, skipDepartedSeat(s0, IDS, ['a']));
     expect(s1.seatId).toBe('b');
     expect(s1.phase).toBe('picking');
+  });
+
+  // After the pick, the round is exactly the random one.
+  it('plays the same game once the picking is done', () => {
+    const s0 = tableRound();
+    expect(s0.phase).toBe('naming');
+    const named = apply(s0, proposeName(s0, 'a', 'Nezuko'));
+    expect(requiredJudges(named, IDS)).toEqual(['b']);
   });
 });
 
@@ -473,15 +441,13 @@ describe('declaring the category', () => {
     expect(finalScores(done, IDS).a).toBe(0);
   });
 
-  // A miss is stored in the trail, which is what makes it cost anything at all
-  // and what stops the same guess being aimed at the same person twice.
-  it('records the miss in the trail, with who it was aimed at', () => {
-    const s0 = chosenRound({ cap: 10 });
-    const done = ruleAll(apply(s0, declareCategory(s0, 'a', 'is blond', 'c')), false);
+  // A miss is stored in the trail, which is what makes it cost anything at all.
+  it('records the miss in the trail', () => {
+    const s0 = startRound(IDS, { cap: 10 });
+    const done = ruleAll(apply(s0, declareCategory(s0, 'a', 'is blond')), false);
     expect(trailFor(done, 'a')).toEqual([
-      { text: 'is blond', kind: 'declaration', targetId: 'c', verdicts: { c: false } },
+      { text: 'is blond', kind: 'declaration', verdicts: { b: false } },
     ]);
-    expect(declaredTargets(done, 'a')).toEqual(['c']);
   });
 
   it('allows a blind declaration with no names spent', () => {
@@ -496,145 +462,6 @@ describe('declaring the category', () => {
     expect(declareCategory(s0, 'a', '  ').patch).toEqual({});
   });
 
-  it('carries whose rule it is claiming in chosen mode', () => {
-    const s0 = chosenRound();
-    const s1 = apply(s0, declareCategory(s0, 'a', 'wears glasses', 'c'));
-    expect(s1.pending).toEqual({
-      kind: 'declaration', text: 'wears glasses', targetId: 'c', verdicts: {},
-    });
-    const done = ruleAll(s1, true);
-    expect(done.results.a).toEqual({
-      solved: true, guess: 'wears glasses', used: 0, targetId: 'c',
-    });
-  });
-
-  it('refuses a chosen declaration aimed at nobody, or at yourself', () => {
-    const s0 = chosenRound();
-    expect(declareCategory(s0, 'a', 'wears glasses').patch).toEqual({});
-    expect(declareCategory(s0, 'a', 'wears glasses', 'a').patch).toEqual({});
-  });
-});
-
-// scoreTurn pays a solve with zero names spent the MAXIMUM, so once a clause is
-// out in the open a later player could re-declare it for free and outscore
-// whoever actually worked it out. This is what stops that.
-describe('first claim wins', () => {
-  const claimed = () => {
-    const s0 = chosenRound({ cap: 10 });
-    const declared = apply(s0, declareCategory(s0, 'a', 'wears glasses', 'c'));
-    const done = ruleAll(declared, true);
-    return apply(done, nextTurn(done, IDS));
-  };
-
-  it('records a correct declaration as a claim on that player', () => {
-    const s = claimed();
-    expect(claimedTargets(s)).toEqual(['c']);
-    expect(s.seatId).toBe('b');
-    expect(declarableIds(s, IDS)).toEqual(['a']);
-  });
-
-  it('refuses a second declaration at a player already claimed', () => {
-    const s = claimed();
-    expect(declareCategory(s, 'b', 'wears glasses', 'c').patch).toEqual({});
-    // …and the one still standing is fine.
-    expect(declareCategory(s, 'b', 'is a villain', 'a').patch).not.toEqual({});
-  });
-
-  // Guessing at somebody and missing must not lock them away from the players
-  // who could have got them. This is the half that makes the claim rule fair,
-  // and the softened miss makes it matter more rather than less: a missed
-  // player is still worth full marks to everybody else.
-  it('claims nobody on a wrong declaration', () => {
-    const s0 = chosenRound({ cap: 10 });
-    const declared = apply(s0, declareCategory(s0, 'a', 'is blond', 'c'));
-    const done = ruleAll(declared, false);
-    expect(claimedTargets(done)).toEqual([]);
-    // The seat has moved on, and the new seat's options are untouched by
-    // somebody else's miss.
-    expect(done.seatId).toBe('b');
-    expect(declarableIds(done, IDS)).toEqual(['a', 'c']);
-  });
-
-  // The mirror of first-claim-wins, and deliberately NOT the same shape: a
-  // claim is global, a miss is personal. Only the player who spent the names is
-  // barred, because the people who did not are owed the chance.
-  it('bars only the misser from the person they missed at', () => {
-    const s0 = chosenRound({ cap: 10 });
-    let s = ruleAll(apply(s0, declareCategory(s0, 'a', 'is blond', 'c')), false);
-    // 'b' and 'c' take a go each so the seat comes back round to 'a'.
-    s = withNames(s, 2);
-    expect(s.seatId).toBe('a');
-    expect(declarableIds(s, IDS)).toEqual(['b']);
-    expect(declareCategory(s, 'a', 'another guess', 'c').patch).toEqual({});
-    expect(declareCategory(s, 'a', 'another guess', 'b').patch).not.toEqual({});
-  });
-
-  // Which means the list can empty out for a reason that has nothing to do with
-  // anybody being solved — the screen has to say so either way.
-  it('can leave a seat with nobody left to aim at after missing everyone', () => {
-    let s = chosenRound({ cap: 20 });
-    for (const at of ['b', 'c']) {
-      s = ruleAll(apply(s, declareCategory(s, 'a', 'a guess', at)), false);
-      s = withNames(s, 2);
-    }
-    expect(s.seatId).toBe('a');
-    expect(claimedTargets(s)).toEqual([]);
-    expect(declarableIds(s, IDS)).toEqual([]);
-  });
-
-  it('can legitimately leave the last seat with nobody to claim', () => {
-    let s = chosenRound({ cap: 10 });
-    // The two earlier seats claim EACH OTHER, which is the only arrangement at
-    // three players that empties the last seat's list — a and b are its whole
-    // target set. This is why the declare screen has to say so rather than
-    // render a control that cannot do anything.
-    for (const [by, at] of [['a', 'b'], ['b', 'a']]) {
-      const d = apply(s, declareCategory(s, by, 'a clause', at));
-      s = ruleAll(d, true);
-      s = apply(s, nextTurn(s, IDS));
-    }
-    expect(s.seatId).toBe('c');
-    expect(declarableIds(s, IDS)).toEqual([]);
-  });
-
-  it('has no claims at all in dealt mode, where a declaration has no target', () => {
-    const s0 = startRound(IDS);
-    const declared = apply(s0, declareCategory(s0, 'a', 'wears glasses'));
-    const done = ruleAll(declared, true);
-    expect(claimedTargets(done)).toEqual([]);
-    expect(declarableIds(done, IDS)).toEqual([]);
-  });
-});
-
-// The other half of first-claim-wins: a clause that is still worth points must
-// not be shown, and revealing one early is the same hole from the other side.
-describe('revealing a chosen clause', () => {
-  it('refuses while the clause is still worth claiming', () => {
-    const s = chosenRound({ cap: 10 });
-    expect(revealAllowed(s, 'c')).toBe(false);
-    expect(publishCategory(s, 'c', 'glasses').patch).toEqual({});
-  });
-
-  it('allows it the moment its owner is claimed', () => {
-    const s0 = chosenRound({ cap: 10 });
-    const declared = apply(s0, declareCategory(s0, 'a', 'wears glasses', 'c'));
-    const done = ruleAll(declared, true);
-    expect(revealAllowed(done, 'c')).toBe(true);
-    expect(revealAllowed(done, 'b')).toBe(false);
-    expect(apply(done, publishCategory(done, 'c', 'glasses')).reveal).toEqual({ c: 'glasses' });
-  });
-
-  it('lets everything still standing out at the round end', () => {
-    const s = { ...chosenRound(), phase: 'roundEnd' };
-    expect(revealAllowed(s, 'b')).toBe(true);
-    expect(apply(s, publishCategory(s, 'b', 'glasses')).reveal).toEqual({ b: 'glasses' });
-  });
-
-  it('is idempotent and refuses to overwrite', () => {
-    const s = { ...chosenRound(), phase: 'roundEnd', reveal: { b: 'glasses' } };
-    expect(publishCategory(s, 'b', 'villain').patch).toEqual({});
-    expect(publishCategory(s, 'b', null).patch).toEqual({});
-  });
 });
 
 describe('passing', () => {
@@ -704,8 +531,8 @@ describe('turnOrder', () => {
   });
 
   it('separates a player who solved from one who merely finished', () => {
-    let s = chosenRound({ cap: 10 });
-    s = ruleAll(apply(s, declareCategory(s, 'a', 'wears glasses', 'c')), true);
+    let s = tableRound({ cap: 10 });
+    s = ruleAll(apply(s, declareCategory(s, 'a', 'wears glasses')), true);
     s = apply(s, nextTurn(s, IDS));
     const rows = Object.fromEntries(turnOrder(s, IDS, ['c']).map((r) => [r.playerId, r]));
     expect(rows.a).toMatchObject({ done: true, solved: true });
@@ -806,25 +633,16 @@ describe('the round result', () => {
   });
 
   // The published value has to win, because it is the only source that works on
-  // EVERY device: in each mode exactly one device is denied the clause.
+  // EVERY device: the seat's own device is denied the clause.
   it('prefers a published clause to whatever this device happens to hold', () => {
-    const s = { cap: 10, trails: {}, reveal: { a: 'villain' }, results: {} };
+    const s = { cap: 10, trails: {}, results: { a: { solved: true, used: 1, category: 'villain' } } };
     expect(explainRound(s, ['a'], { a: 'glasses' })[0].category).toBe('villain');
   });
 
-  // Showing only who you declared cannot say that somebody got YOU, which is
-  // half of what a chosen round was about.
-  it('reports both who a player went after and who claimed them', () => {
-    const s = {
-      cap: 10,
-      trails: {},
-      results: { a: { solved: true, used: 1, targetId: 'c' }, b: { solved: false, used: 3 } },
-    };
-    const [rowA, rowB, rowC] = explainRound(s, IDS);
-    expect(rowA.targetId).toBe('c');
-    expect(rowA.claimedBy).toBeNull();
-    expect(rowB.targetId).toBeNull();
-    expect(rowC.claimedBy).toBe('a');
+  // Picking somebody's clause earns nothing — only the solver scores.
+  it('pays only the solver', () => {
+    const results = { a: { solved: true, used: 3 }, b: { solved: false, used: 10 } };
+    expect(finalScores({ source: 'table', cap: 10, results }, IDS)).toEqual({ a: 9, b: 0 });
   });
 
   it('adds a round onto the running totals', () => {
@@ -876,15 +694,15 @@ describe('normalizers', () => {
       .toEqual([{ text: 'x', verdicts: {}, verdict: true }]);
   });
 
-  // A miss weighs WRONG_DECLARATION_COST names and bars a target, and both
-  // facts live on the entry — so an entry that came back as a plain name would
-  // silently refund the penalty and unlock the person it was aimed at.
-  it('carries a miss’s kind and target back off the wire', () => {
+  // A miss weighs WRONG_DECLARATION_COST names, and that lives on the entry —
+  // so an entry that came back as a plain name would silently refund the
+  // penalty. A `targetId` from the build that had "pick your own" is dropped.
+  it('carries a miss’s kind back off the wire', () => {
     expect(normalizeTrail([
       { text: 'is blond', kind: 'declaration', targetId: 'c', verdicts: { c: false } },
       { text: 'Nezuko', verdicts: { b: true } },
     ])).toEqual([
-      { text: 'is blond', kind: 'declaration', targetId: 'c', verdicts: { c: false } },
+      { text: 'is blond', kind: 'declaration', verdicts: { c: false } },
       { text: 'Nezuko', verdicts: { b: true } },
     ]);
     // …and a kind it has never heard of is simply not one.
@@ -907,14 +725,6 @@ describe('normalizers', () => {
     expect(results.gone).toEqual({ solved: true, guess: 'g', used: 2 });
   });
 
-  // Dropping a targetId would quietly unlock a player somebody already won.
-  it('keeps the claim on a result', () => {
-    expect(normalizeResults({ a: { solved: true, guess: 'g', used: 1, targetId: 'c' } }).a)
-      .toEqual({ solved: true, guess: 'g', used: 1, targetId: 'c' });
-    expect(normalizeResults({ a: { solved: true, used: 1, targetId: 42 } }).a.targetId)
-      .toBeUndefined();
-  });
-
   it('repairs a result missing every field rather than dropping it', () => {
     expect(normalizeResults({ a: {} }).a).toEqual({ solved: false, guess: '', used: 0 });
     expect(normalizeResults({ a: null })).toEqual({});
@@ -923,8 +733,8 @@ describe('normalizers', () => {
   it('drops a pending ruling that cannot be acted on', () => {
     expect(normalizePending({ kind: 'proposal', text: 'x' }))
       .toEqual({ kind: 'proposal', text: 'x', verdicts: {} });
-    expect(normalizePending({ kind: 'declaration', text: 'x', targetId: 'c', verdicts: { c: true } }))
-      .toEqual({ kind: 'declaration', text: 'x', targetId: 'c', verdicts: { c: true } });
+    expect(normalizePending({ kind: 'declaration', text: 'x', verdicts: { c: true } }))
+      .toEqual({ kind: 'declaration', text: 'x', verdicts: { c: true } });
     expect(normalizePending({ kind: 'nonsense', text: 'x' })).toBeNull();
     expect(normalizePending({ kind: 'proposal', text: '' })).toBeNull();
     expect(normalizePending(undefined)).toBeNull();
@@ -936,18 +746,22 @@ describe('normalizers', () => {
     const g = normalizeGame({ round: 2, cap: 7, seatId: 'a', phase: 'naming', stray: 'nope' });
     expect(g.stray).toBeUndefined();
     expect(g).toEqual({
-      round: 2, cap: 7, mode: 'dealt', seatId: 'a', phase: 'naming',
-      pending: null, picked: {}, trails: {}, results: {}, reveal: {}, lastPlayed: null,
+      round: 2, cap: 7, source: 'random', seatId: 'a', phase: 'naming',
+      pending: null, picked: {}, trails: {}, results: {}, lastPlayed: null,
     });
   });
 
   // The opposite of the pref's default, on purpose: the only round that can
-  // reach here without a mode is one already in flight from the build before
-  // this field existed, and that round is a dealt one by definition.
-  it('reads a round written before modes existed as a dealt one', () => {
-    expect(normalizeGame({ round: 0, seatId: 'a' }).mode).toBe('dealt');
-    expect(normalizeGame({ round: 0, seatId: 'a', mode: 'nonsense' }).mode).toBe('dealt');
-    expect(normalizeGame({ round: 0, seatId: 'a', mode: 'chosen' }).mode).toBe('chosen');
+  // reach here without a source is one already in flight from the build before
+  // this field existed, and its clauses were dealt.
+  it('reads a round written before sources existed as a random one', () => {
+    expect(normalizeGame({ round: 0, seatId: 'a' }).source).toBe('random');
+    expect(normalizeGame({ round: 0, seatId: 'a', source: 'nonsense' }).source).toBe('random');
+    expect(normalizeGame({ round: 0, seatId: 'a', source: 'table' }).source).toBe('table');
+    // The removed mode's fields do not ride back in.
+    const old = normalizeGame({ round: 0, seatId: 'a', mode: 'chosen', reveal: { a: 'x' } });
+    expect(old.mode).toBeUndefined();
+    expect(old.reveal).toBeUndefined();
   });
 
   it('survives everything RTDB drops on the way back', () => {
@@ -955,7 +769,6 @@ describe('normalizers', () => {
     expect(g.trails).toEqual({});
     expect(g.results).toEqual({});
     expect(g.picked).toEqual({});
-    expect(g.reveal).toEqual({});
     expect(g.pending).toBeNull();
     expect(g.cap).toBe(DEFAULT_CAP);
     expect(g.phase).toBe('naming');
@@ -969,28 +782,11 @@ describe('normalizers', () => {
     expect(normalizeGame(JSON.parse(JSON.stringify(s)))).toEqual(s);
   });
 
-  it('round-trips a chosen round carrying picks, a claim and a reveal', () => {
-    let s = chosenRound({ cap: 6 });
+  it('round-trips a table-picked round carrying picks and a solve', () => {
+    let s = tableRound({ cap: 6 });
     s = withLaps(s, 1, true);
-    const declared = apply(s, declareCategory(s, 'a', 'wears glasses', 'c'));
+    const declared = apply(s, declareCategory(s, 'a', 'wears glasses'));
     s = ruleAll(declared, true);
-    s = apply(s, publishCategory(s, 'c', { id: 'x', label: 'Wears glasses', custom: true }));
     expect(normalizeGame(JSON.parse(JSON.stringify(s)))).toEqual(s);
-  });
-});
-
-describe('owner points (chosen mode)', () => {
-  it('pays the owner of a solved clause, once, and only in chosen mode', () => {
-    const results = { a: { solved: true, used: 3, targetId: 'b' }, b: { solved: false, used: 10 } };
-    expect(finalScores({ mode: 'chosen', cap: 10, results }, IDS)).toEqual({ a: 9, b: OWNER_POINTS });
-    expect(finalScores({ mode: 'dealt', cap: 10, results }, IDS)).toEqual({ a: 9, b: 0 });
-    const [rowA, rowB] = explainRound({ mode: 'chosen', cap: 10, trails: {}, results }, ['a', 'b']);
-    expect([rowA.turnPoints, rowA.ownerPoints, rowA.points]).toEqual([9, 0, 9]);
-    expect([rowB.turnPoints, rowB.ownerPoints, rowB.points]).toEqual([0, OWNER_POINTS, OWNER_POINTS]);
-  });
-
-  it('pays an owner who never took a turn too (they still picked the clause)', () => {
-    const results = { a: { solved: true, used: 1, targetId: 'c' } };
-    expect(finalScores({ mode: 'chosen', cap: 10, results }, IDS).c).toBe(OWNER_POINTS);
   });
 });

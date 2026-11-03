@@ -11,40 +11,25 @@ import RoundEnd from './RoundEnd';
 /**
  * A whole local session on one device.
  *
- * HOW MUCH OF THE DEVICE HAS TO BE PASSED AROUND IS THE ONE REAL DIFFERENCE
- * BETWEEN THE MODES HERE, and chosen mode is the cheaper of the two.
- *
- * DEALT: no pass screens at all. The only hidden value is the hot seat's
- * clause, and everything else — the trail, the pending name, the count — is
- * meant to be on the table. So the device sits in the middle all turn and
- * CategoryPeek hides the one thing that has to be hidden behind a control the
- * hot seat is asked not to press. That is the same trust AniGuess's PeekPanel
- * and AniFake's blind mode already ask a table for, and it buys the game
- * roughly twenty fewer handovers per turn than the alternative.
- *
- * CHOSEN: one pass screen per player, once per round, and then none. A clause
- * has to be on screen exactly once — while its owner picks it — because from
- * then on every judge answers from memory. The device goes round the table at
- * the start of a round and then sits in the middle with nothing hidden on it,
- * which is why the picking phase is a handover sequence and the go is not.
- *
- * THE SEAT MOVING EVERY NAME COSTS THIS SCREEN NOTHING, which is worth saying
- * because it is not obvious. Nothing hidden is on the device between picks — the
- * trail, the pending name and the counts are all meant to be on the table — so
- * a go changing hands is somebody leaning over, not a handover. Dealt mode is
- * the same bargain it always was: CategoryPeek hides the one value that must be
- * hidden, and it now re-closes on every name rather than once a turn.
+ * TWO PRIVATE MOMENTS, AND ONLY TWO. When the table picks, each player in turn
+ * looks away while the device shows everyone else the picker (PickPhase, the
+ * AniGuess assignment shape). Then, all round, the hot seat's own clause sits
+ * behind CategoryPeek — a control they are asked not to press — because the
+ * judge has to rule from it. Everything else — the trail, the pending name, the
+ * counts — is meant to be on the table, so the go changing hands is somebody
+ * leaning over rather than a handover. That is the same trust AniGuess's
+ * PeekPanel and AniFake's blind mode already ask a table for.
  *
  * ONE DEVICE ANSWERS FOR EVERYBODY, which is what `rulers` says: online that
  * prop is at most one player (me, when I owe an answer), and here it is
- * everyone who still owes one, so the screen grows a yes/no pair per person.
- * TurnScreen needs no other knowledge of where it is running.
+ * everyone who still owes one. TurnScreen needs no other knowledge of where it
+ * is running.
  */
 export default function LocalSession({
-  players, rounds, proposalCap, categoryPool, categoryMode, customCategories, onFinish, onQuit,
+  players, rounds, proposalCap, categoryPool, categorySource, customCategories, onFinish, onQuit,
 }) {
   const round = useCategoriesRound(players, {
-    rounds, proposalCap, categoryPool, categoryMode, customCategories,
+    rounds, proposalCap, categoryPool, categorySource, customCategories,
   });
   const pool = POOL_LABELS[categoryPool] ?? POOL_LABELS.characters;
   const noun = pool.noun;
@@ -56,23 +41,22 @@ export default function LocalSession({
   );
 
   const body = () => {
-    // CHOSEN MODE only ever reaches this phase; startRound opens a dealt round
-    // straight onto a turn. Roster order rather than a stored index, for the
-    // reason nextSeatId uses it: derived state cannot fall out of step with the
-    // picks it is describing.
+    // Only a table pick reaches this phase; a random deal opens straight onto
+    // a go. Who is being picked for is rules.pickingFor's answer, derived from
+    // the picks so far rather than from a stored index.
     if (round.phase === 'picking') {
-      const picker = players.find((p) => !round.hasPicked(p.id)) ?? null;
-      if (!picker) return null;
+      const target = round.pickingFor;
+      if (!target) return null;
       return (
         <PickPhase
-          playerName={picker.name}
-          player={picker}
+          target={target}
           suggestions={suggestions}
           noun={noun}
+          takenLabels={round.takenLabels}
           handover
           picked={players.filter((p) => round.hasPicked(p.id)).length}
           total={players.length}
-          onPick={(spec) => round.pick(picker.id, spec)}
+          onPick={(spec) => round.pick(target.id, spec)}
         />
       );
     }
@@ -85,7 +69,6 @@ export default function LocalSession({
           roundNumber={round.roundNumber}
           totalRounds={round.totalRounds}
           isFinalRound={round.isFinalRound}
-          chosen={round.chosen}
           canAdvance
           onNext={round.nextRound}
           onFinish={() => onFinish(round.totalScores)}
@@ -99,18 +82,9 @@ export default function LocalSession({
       const seatId = round.state.seatId;
       const result = round.state.results?.[seatId] ?? null;
       const row = round.explain.find((r) => r.playerId === seatId);
-      // CHOSEN: the clause on show is the TARGET's, not the seat's, and only
-      // when the seat claimed them — rules.revealAllowed decides, and this just
-      // reads whatever it let through.
-      const targetRow = round.chosen && row?.targetId
-        ? round.explain.find((r) => r.playerId === row.targetId)
-        : null;
-      const shown = round.chosen ? targetRow?.category : row?.category;
       return (
         <TurnEnd
           seatName={round.seat?.name ?? 'They'}
-          chosen={round.chosen}
-          targetName={row?.targetId ? nameFor(row.targetId) : null}
           order={round.order}
           trails={round.trails}
           seatId={seatId}
@@ -118,7 +92,7 @@ export default function LocalSession({
           // Resolved from the published spec, exactly as online does it, rather
           // than from the hook's own map — one source, one code path, and the
           // reveal gate applies identically in both.
-          category={shown ? getCategory(shown) : null}
+          category={row?.category ? getCategory(row.category) : null}
           result={result}
           points={row?.turnPoints ?? 0}
           cap={round.cap}
@@ -148,19 +122,15 @@ export default function LocalSession({
         cap={round.cap}
         left={round.left}
         usedFor={round.usedFor}
-        chosen={round.chosen}
-        // DEALT: one device holds every slot, so it can both name and rule —
-        // and the seat's clause goes behind a peek rather than being rendered
-        // plainly. Null in chosen mode, where the seat holds nothing hidden.
+        // One device holds every slot, so it can both name and rule — and the
+        // seat's clause goes behind a peek rather than being rendered plainly.
         category={round.seatCategory}
         peek
         canName
         // Everyone who still owes an answer, because this device is all of them.
         rulers={round.pendingJudges}
         pendingJudges={round.pendingJudges}
-        declarable={round.declarable}
         nameFor={nameFor}
-        remindFor={round.categoryFor}
         onPropose={round.propose}
         onDeclare={round.declare}
         onRule={round.rule}

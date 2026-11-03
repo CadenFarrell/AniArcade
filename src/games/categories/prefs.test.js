@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
-  CATEGORY_MODES, CATEGORY_POOLS, DEFAULT_PREFS, MAX_ROUNDS, MIN_ROUNDS,
-  MODE_LABELS, POOL_LABELS,
+  CATEGORY_POOLS, CATEGORY_SOURCES, DEFAULT_PREFS, MAX_ROUNDS, MIN_ROUNDS,
+  POOL_LABELS, SOURCE_LABELS,
 } from './prefs';
 import { DEFAULT_CAP, MAX_CAP, MIN_CAP, normalizeGame } from './rules';
 import { CATEGORIES, poolSize } from './categories';
@@ -39,12 +39,18 @@ describe('DEFAULT_PREFS', () => {
 
   // The default that MOVES EXISTING PLAYERS, which is the intent rather than a
   // side effect: mergePrefs fills a missing key from this literal on the next
-  // read. rules.js's own fallback is deliberately the other one — see toMode
+  // read. rules.js's own fallback is deliberately the other one — see toSource
   // there — so this pins which is which.
-  it('defaults to a mode rules.js knows, and to the chosen one', () => {
-    expect(CATEGORY_MODES).toContain(DEFAULT_PREFS.categoryMode);
-    expect(DEFAULT_PREFS.categoryMode).toBe('chosen');
-    expect(normalizeGame({ round: 0 }).mode).toBe('dealt');
+  it('defaults to a source rules.js knows, and to the table picking', () => {
+    expect(CATEGORY_SOURCES).toContain(DEFAULT_PREFS.categorySource);
+    expect(DEFAULT_PREFS.categorySource).toBe('table');
+    expect(normalizeGame({ round: 0 }).source).toBe('random');
+  });
+
+  // "Pick your own" was removed rather than kept as a second mode. Its key
+  // must stay gone, or a saved value would ride back in through mergePrefs.
+  it('no longer remembers a category mode', () => {
+    expect(DEFAULT_PREFS).not.toHaveProperty('categoryMode');
   });
 
   // DEFAULT_PREFS is the schema mergePrefs type-checks against, so a value of
@@ -66,11 +72,11 @@ describe('the screens agree with the modules they read from', () => {
     }
   });
 
-  it('labels every mode it offers, and offers every mode it labels', () => {
-    expect(Object.keys(MODE_LABELS).sort()).toEqual([...CATEGORY_MODES].sort());
-    for (const mode of CATEGORY_MODES) {
-      expect(MODE_LABELS[mode].label, mode).toBeTruthy();
-      expect(MODE_LABELS[mode].blurb, mode).toBeTruthy();
+  it('labels every source it offers, and offers every source it labels', () => {
+    expect(Object.keys(SOURCE_LABELS).sort()).toEqual([...CATEGORY_SOURCES].sort());
+    for (const source of CATEGORY_SOURCES) {
+      expect(SOURCE_LABELS[source].label, source).toBeTruthy();
+      expect(SOURCE_LABELS[source].blurb, source).toBeTruthy();
     }
   });
 

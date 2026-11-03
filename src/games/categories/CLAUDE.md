@@ -27,23 +27,41 @@ the opening seat moves between rounds; everything mid-round scans from **the sea
 plus one**, so a name hands on to the person sitting next. `nextTurn` is now the rare half — it
 fires only from `turnEnd`, which only a *finished* player produces.
 
-**It comes in two modes, and they are mirror images.** `categoryMode` in `prefs.js`:
+**One game; the only choice is where each clause comes from.** You hold a category everyone
+can see except you, one derived judge answers your names against it, and the rule you are
+inducing is your own. `categorySource` in `prefs.js` (copied onto the round as `source`):
 
-| | `chosen` (the default) | `dealt` |
+| | `table` (the default) | `random` |
 | --- | --- | --- |
-| your clause | you **pick** it; only you know it | you are **handed** one; everyone but you knows it |
-| who answers a name | **every** other player, each against their own | one derived judge, against the seat's |
-| what you declare | somebody **else's** rule, at a named target | **your own** rule |
-| where it lives | `secrets/{playerId}` | `assignments/{playerId}` |
+| who sets your clause | everyone else, while you look away | the deal |
+| round opens on | `picking`, one target at a time | the first go |
+| online | a shared proposal in `assignments/{target}`, approved by every other active player | two dealers write `assignments/` |
+| local | a `Handoff` ("Look away", "<name> is looking away — Ready!"), then the picker | nothing to do |
 
-**`requiredJudges` is the entire branch between them, and keeping it that way is the load-bearing
-decision.** One round shape, one `pending` slot, one `trails` map, one `results` map, one
-`scoreTurn`, one departure story. Every mutator asks the same single question — *who must rule on
-the thing currently pending?* — and nothing else in `rules.js` learns that modes exist. That
-survived the seat starting to move: `judge` and `settlePending` now take `playerIds`/`skipIds`,
-but purely to answer *who sits next*, which is a question neither mode answers differently. It is the
-same move `tiers.js` makes with "a ranked list is exactly one row". Adding a second branch is how
-this becomes two games sharing a folder.
+**The table pick is AniGuess's character assignment applied to a rule**, on purpose and down to
+its words, so a table that has played one knows the other. `rules.pickingFor` is the target:
+the first active player with no pick, counting from the round number, derived rather than stored
+so a target who closes their tab is skipped instead of wedging the table. The picker
+(`CategoryPicker`) offers the built-ins, this device's written ones, anything typed, and **"Deal
+one at random"**, which fills the box (skipping clauses already locked this round) rather than
+committing. Pickers score nothing; only the solver does — a deliberate call, not an omission.
+
+**This replaced "pick your own"** (`chosen`): you picked a clause only you knew, everyone answered
+every name against their own, and you declared somebody else's. It was a different game sharing
+the folder, with its own judges, claims, reveal rule and owner points; all of it is gone. A saved
+`categoryMode` pref is dropped by `mergePrefs` as an unknown key, `normalizeGame` drops a stored
+`mode`/`reveal`/`targetId`, and a room caught mid-way through a `chosen` round across the deploy
+is not repaired (its clauses were in `secrets/`) — returning to the lobby starts it clean.
+
+**Online, the proposal lives in the target's own `assignments/` slot**, under the very
+`category` field the round reads, so locking a pick is only `rules.recordPick`'s flag in
+`state/`: the clause is already where the seat listener looks, and the target's device never
+wrote or read it (the rule refuses both). A proposal is one whole-node write carrying a fresh
+`nonce` and its proposer's approval; an approval records the nonce it approved, so one landing
+just after a counter-proposal counts for nothing rather than for the new clause. Any device that
+can see the proposal locks it once every OTHER active player has approved (not only the host, who
+may be the target), in a transaction that re-checks the target; the last lock also opens the
+round, and a host-only backstop opens it when the last player still waiting for a clause leaves.
 
 **It needs no AniList import, and that is the property to protect.** A profile stores no studios,
 no tags and no show-level genres (see the profile table in the root `CLAUDE.md`), so "wears glasses" is unanswerable by any
@@ -54,14 +72,12 @@ and no minimum list size, and `prefs.test.js` pins that by rejecting any key mat
 property. Adding a pool-shaped option here is adding the requirement itself — decide it out loud
 rather than discover it.
 
-**Neither mode required a `database.rules.json` change**, because both read-gated nodes were
-already deployed. Which one a clause belongs in is decided by *who must not see it*, and AniTag is
-now the worked example on **both** rows of that table — see the node table in `.claude/rules/online-rooms.md`. Reaching for the
-wrong one is silent: a `chosen` clause in `assignments/` is readable by everyone it is hidden
-from, and a `dealt` one in `secrets/` is readable by precisely the one player the mode is built
-around keeping in the dark.
+**No `database.rules.json` change was needed**: `assignments/` (hidden from its owner, readable
+and writable by everyone else) was already deployed for AniGuess. Putting a clause in `secrets/`
+instead would show it to precisely the one player it is hidden from — see the node table in
+`.claude/rules/online-rooms.md`.
 
-**`dealt`: nobody deals their own, and two dealers is what guarantees it.** The host writes every
+**`random`: nobody deals their own, and two dealers is what guarantees it.** The host writes every
 slot but its own; the first other seated player writes the host's. Both writes are legal under the
 deployed rule and the forbidden one is refused by Firebase rather than by a client-side check, so
 a bug there is a `PERMISSION_DENIED` instead of a silent leak. This is where the arcade escapes
@@ -73,118 +89,70 @@ when drawing the host's it cannot exclude the one clause it holds. It excludes e
 *can* see, leaving a roughly one-in-a-dozen chance those two share. It is unfixable without a
 server — any device able to exclude every dealt category would by construction know its own.
 
-**`chosen`: there is no deal at all**, which is strictly stronger and much less machinery. Every
-device writes its own clause to its own `secrets/` node and nothing else, so no device ever holds
-a value it is not entitled to. The round opens in a `picking` phase and waits until every
-**active** player has committed one — active, so a closed tab cannot hold the table on the opening
-screen forever.
-
-**First claim wins, and it plugs a real hole rather than adding flavour.** Verdicts are public —
-the trail *is* the information channel — so the moment P1 correctly declares P2's clause the whole
-table knows it, and `scoreTurn` pays a solve with **zero names spent the maximum**. Without a rule,
-a later seat re-declares it for free and outscores the person who worked it out. So a player can
-be correctly declared exactly once per round: `claimedTargets` records it, `declarableIds` stops
-offering them, `declareCategory` refuses. Three consequences worth keeping:
-
-- **A wrong declaration claims nobody.** Missing at somebody must not lock them away from the
-  players who could have got them — and the softened miss below makes that matter more, not
-  less: a missed player is still worth full marks to everybody else.
-- **`revealAllowed` is the same fact read from the other side.** A clause may be shown once its
-  owner is claimed (it is worth nothing now) or at `roundEnd`, and **never** after a wrong
-  declaration — revealing an unclaimed clause hands the next seat exactly the free points the
-  claim rule exists to deny. `publishCategory` is AniFake's `publishCard` shape: the owner is the
-  only device that can publish, because they are the only one that can read.
-- `declarableIds` **can legitimately come back empty** — at three or more players when everyone
-  else has been claimed, and at any size once a seat has missed at everybody left. The screen has
-  to say so rather than render a dead control.
-
-**A chosen clause pays its owner `OWNER_POINTS` when it is solved** (`ownerPoints`, folded into
-`finalScores` and `explainRound`'s `points`; `turnPoints` is the go alone, which is what a turn's
-end shows). Before it the owner earned nothing for picking, so nobody had a stake in a clause
-being findable. It pays once per round because a clause can be claimed once, and it is
-deliberately small next to a solve, whose floor is half the cap: `scoreTurn` costs a point per
-TWO names, so a single fast solve no longer decides a three-round game on its own.
-
 **A wrong declaration costs `WRONG_DECLARATION_COST` names, not the round, and it is carried by
 the trail with no new state.** It used to end the turn outright, which was right when a turn was
 an uninterrupted block of ten and is a spectator sport now that the seat moves every name — a
 miss on name two would mean watching the rest of the round on a device you are holding. So the
 miss lands in the misser's own trail as an entry with `kind: 'declaration'`, and
-`proposalsUsed` **weighs** that entry rather than counting it. One entry does three jobs: the
+`proposalsUsed` **weighs** that entry rather than counting it. One entry does two jobs: the
 penalty (and `used` already flows into `scoreTurn`, so it is priced in the currency the game
-had), the record `declaredTargets` reads to stop the same person being aimed at twice, and a row
-the table can read. A miss that *spends* the cap does end the round, which is the floor under the
-rule — without it a player one name from the cap could guess for free.
-
-`declaredTargets` is the mirror of `claimedTargets` and deliberately **not** the same shape: a
-claim is global (nobody may declare that player again), a miss is personal (only the player who
-spent the names is barred). Hence one takes a `playerId` and the other does not. Both are
-subtracted by `declarableIds` and refused by `declareCategory`, so a stale screen cannot spend
-names on a declaration that was never going to land.
+had), and a row the table can read. A miss that *spends* the cap does end the round, which is
+the floor under the rule — without it a player one name from the cap could guess for free.
 
 **Two named fields exist only because a miss no longer stops the round to announce itself.**
-`normalizeTrail` has to carry `kind` and `targetId` — an entry that came back as a plain name
-would silently refund two thirds of the penalty *and* unlock the target — and `lastPlayed` is one
-overwritten slot holding what the table just watched, which is what the turn screen says out loud
-now that there is no `turnEnd` screen to say it. Both are the "rebuild from NAMED fields" trap,
-one level apart.
+`normalizeTrail` has to carry `kind` — an entry that came back as a plain name would silently
+refund two thirds of the penalty — and `lastPlayed` is one overwritten slot holding what the
+table just watched, which is what the turn screen says out loud now that there is no `turnEnd`
+screen to say it. Both are the "rebuild from NAMED fields" trap, one level apart.
 
 **Who opens still rotates between rounds** (`startRound` passes the round number as
-`nextSeatId`'s `startAt`). With the whole table answering every name, whoever opens has seen the
-fewest verdicts about clauses they may declare; rotating spreads that across the session. Passing
-0 reproduces plain roster order exactly.
+`nextSeatId`'s `startAt`), and so does who looks away first (`pickingFor` passes it too).
+Passing 0 reproduces plain roster order exactly.
 
-**The judge is derived, never stored,** and that is what makes a judge who walks out a non-event.
-In `dealt` mode `judgeIdFor` returns the next active player on the next render, with no write; in
-`chosen` mode a departed judge simply stops being required. Do not "fix" this by storing a
-`judgeId`. What the second case *does* need is `settlePending` as a **separate** pure function
-from `judge`: the required set shrinks on a departure, so a pending that could not settle a minute
-ago can settle now with no new verdict at all — and the only thing that can notice is an effect,
-which has no verdict to submit. An empty required list ends that player's round rather than
-inventing one. Only a departed **hot seat** needs `skipDepartedSeat`, because only they hold a go
-nobody else can finish — and it keeps the round in `picking` if that is where it was, or it would
-open a go before the table has clauses to answer with.
+**The judge is derived, never stored,** and that is what makes a judge who walks out a non-event:
+`judgeIdFor` returns the next active player on the next render, with no write, and they rule
+instead. Do not "fix" this by storing a `judgeId`. `requiredJudges` still returns a LIST (of one)
+and `settlePending` is still a separate pure function from `judge` — the shape "pick your own"
+needed, where the whole table answered; it costs nothing, and an empty required list (nobody left
+to answer) ends that player's round rather than inventing a verdict. Only a departed **hot
+seat** needs `skipDepartedSeat`, because only they hold a go nobody else can finish — and it
+keeps the round in `picking` if that is where it was, or it would open a go before the table has
+clauses to answer with.
 
-**The hot seat can never publish their own answer in `dealt` mode,** which is the mirror of
-AniFake's `publishCard` and lands in the same place. At the end of their round they are the one
-person who still does not know what their clause was, so `attachCategory` lets *any* non-owner
-write it onto the result — idempotent, refuses to overwrite, so a judge who leaves between ruling
-and revealing costs nothing. `chosen` mode inverts it exactly: only the owner can, because only
-the owner can read.
+**The hot seat can never publish their own answer,** which is the mirror of AniFake's
+`publishCard` and lands in the same place. At the end of their round they are the one person who
+still does not know what their clause was, so `attachCategory` lets *any* non-owner write it onto
+the result — idempotent, refuses to overwrite, so a judge who leaves between ruling and revealing
+costs nothing.
 
-**A player's written categories never enter room state, in either mode.** Each device draws from —
-or offers — the built-ins plus its own local list (`anitag_custom_categories`), and only the clause
-actually in play is published, the same rule AniWave applies to written spectra. The visible
-consequence in `dealt` mode, which is fine: the host can only ever receive a built-in or something
-the second dealer wrote, never one of their own.
+**A player's written categories never enter room state.** Each device draws from — or offers —
+the built-ins plus its own local list (`anitag_custom_categories`), and only the clause actually
+in play is published, the same rule AniWave applies to written spectra. The visible consequence
+in a random deal, which is fine: the host can only ever receive a built-in or something the second
+dealer wrote, never one of their own.
 
-**One pool per session, not one per player** — and the two modes need it for different reasons. In
-`dealt` the hot seat cannot see their clause, so the prompt telling them whether to name a show or
-a character is the only thing that says which pool it is about, and a per-player pool would turn
-that prompt into a clue. In `chosen` everybody knows their own, but they are all answering the
-*same* name, so one player holding a clause about shows while the table names characters can only
-ever say no.
+**One pool per session, not one per player.** The hot seat cannot see their clause, so the prompt
+telling them whether to name a show or a character is the only thing that says which pool it is
+about, and a per-player pool would turn that prompt into a clue. When the table picks, the pool
+also tells them what kind of clause to pick.
 
-**A trail entry carries a verdict *map*, not a boolean** (`{ text, verdicts: { [judgeId]: bool } }`
-— `dealt` is simply a map of one), because in `chosen` mode *which* player said no is the entire
-fact. `verdictsOf` is the one place that flattens the three stored shapes, including the
-unattributed scalar a pre-`chosen` build wrote, so no screen branches.
+**A trail entry carries a verdict *map*, not a boolean** (`{ text, verdicts: { [judgeId]: bool } }`,
+a map of one), left over from "pick your own" where which player said no was the fact.
+`verdictsOf` is the one place that flattens the stored shapes, including the unattributed scalar
+an older build wrote, so no screen branches.
 
 **There is deliberately no "skip my go".** `passTurn` drops you out of the round; nothing passes
 the seat on for free. Now that the seat moves every name, a free skip would be a stalling
 strategy — sit out every go, watch everyone else's verdicts accumulate, then declare off their
 evidence with a full cap in hand. Naming one thing is the price of staying in.
 
-**Local play's handovers differ by mode**, which is the one place the modes really diverge on a
-shared device — and the moving seat costs neither of them anything, which is worth stating
-because it is not obvious. `dealt` has no pass screens: the only hidden value is the seat's
-clause, so the device sits in the middle and `CategoryPeek` hides that one thing behind a toggle
-(it now re-closes on every name rather than once a turn). `chosen` has **one pass screen per
-player per round** and then none at all: a clause has to be on screen exactly once, while its
-owner picks it, because every judge afterwards rules from memory. Between picks nothing hidden is
-on the device, so a go changing hands is somebody leaning over, not a handover. Both use a
-**toggle rather than a hold** for the reason AniRank's tier board gives about dragging: a
-keyboard user cannot hold a button, so the tap path has to be the real one.
+**Local play has two private moments and no pass screens during the round.** When the table
+picks, each target looks away once per round while the device shows everyone else the picker.
+After that the device sits in the middle and `CategoryPeek` hides the seat's clause behind a
+toggle (re-closing on every name), and the moving seat costs nothing: a go changing hands is
+somebody leaning over, not a handover. It is a **toggle rather than a hold** for the reason
+AniRank's tier board gives about dragging: a keyboard user cannot hold a button, so the tap path
+has to be the real one.
 
 **The screens follow from the moving seat, and three of them exist only because of it.**
 `SeatStrip` draws the whole rotation from `turnOrder` (roster order *is* seat order), because

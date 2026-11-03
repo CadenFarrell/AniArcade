@@ -1,14 +1,15 @@
-// AniTag: everyone holds a secret category ("Wears glasses"); on your go you
-// name a character, everyone answers yes or no against their OWN category, and
-// you try to work out somebody else's. A guess is judged by its owner, who is
-// shown their category privately first.
+// AniTag: everyone holds a secret category ("Wears glasses") that everyone can
+// see except them. On your go you name a character, one judge — the next player
+// round — answers yes or no against YOUR category, and you try to work out your
+// own. Before the round the table picks each player's category while that
+// player looks away (or, with the random source, the game deals them).
 //
-// The bot is every seat at once, so it knows every category from the pick
-// phase (chosen mode) and judges guesses the way the owner would: yes when the
-// guess IS their category, otherwise usually no. Guessers aim at a real
-// category about half the time, so solved rows, scoring and the round end all
-// get played — a bot that only ever named random characters would run the
-// clock out on every round and never see a solve.
+// The bot is every seat at once, so it knows every category from the pick (or
+// from the strip a judge reads) and judges guesses the way the table would: yes
+// when the guess IS the seat's category, otherwise usually no. Guessers aim at
+// the real category about half the time, so solved rows, scoring and the round
+// end all get played — a bot that only ever named random characters would run
+// the clock out on every round and never see a solve.
 import { makeStrategy } from './base.js';
 import { find, click, fill, has, DENY } from '../core/generic.js';
 import { FIXTURE_PROFILES } from '../core/scenarios.js';
@@ -20,96 +21,90 @@ export default makeStrategy({
   players: [2, 6],
   axes: {
     rounds: [1, 2, 3],
-    categoryMode: ['chosen', 'dealt'],
+    categorySource: ['table', 'random'],
     proposalCap: [3, 10],
     categoryPool: ['characters', 'shows'],
     useCustom: [true, false],
   },
   act(snap, ctx) {
-    const { rng, memory, scenario } = ctx;
+    const { rng, memory } = ctx;
     // Locally one memory sees every seat; online each seat has its own, and
-    // what the table can see between them (a dealt category is shown to all
-    // but its owner) is pooled in ctx.table.known.
+    // what the table can see between them (a category is shown to all but its
+    // owner) is pooled in ctx.table.known.
     memory.cat = ctx.table?.known ?? (memory.cat ?? {});
     for (const [, who, cat] of snap.text.matchAll(/([A-Z][a-z]+)'s category(?!Hide)(.+?)(?=Your names|[A-Z][a-z]+'s names|$)/g)) {
       if (cat.trim() && cat.length < 60) memory.cat[who] = cat.trim();
     }
 
-    // Pick phase (chosen mode): claim the device, choose or write a category.
-    const claim = find(snap, /^I'm (.+) — show me the list$/);
-    if (claim) { memory.picking = claim.name.match(/^I'm (.+) — show me/)[1]; return click(claim, 'claim the device'); }
-    const lockCat = find(snap, /^lock in “/i);
-    if (lockCat) {
-      if (memory.picking) memory.cat[memory.picking] = lockCat.name.match(/“(.+)”/)?.[1];
-      return click(lockCat, 'lock in category');
-    }
-    // The pick box only — online, "Your category — everyone else looks away"
-    // is a BUTTON with the same opening words.
-    const catBox = find(snap, /^your category/i, { role: 'combobox' }) ?? find(snap, /^your category/i, { role: 'textbox' });
-    if (catBox) {
-      const listed = snap.controls.filter((c) => c.role === 'button' && !c.disabled && /^[A-Z]/.test(c.name)
-        && !DENY.test(c.name) && !/lock it in|quit|hub|^your |^end |^give up|names\d/i.test(c.name) && c.name.length < 50);
-      if (listed.length && rng.chance(0.8)) return click(rng.pick(listed), 'pick a category');
-      return fill(catBox, rng.pick(['Has a pet', 'Wears a hat', 'Can fly', 'Is a teacher']), 'write a category');
+    // --- the table picks ------------------------------------------------------
+    // Local: the target looks away, then everyone else picks.
+    const ready = find(snap, /is looking away — Ready!$/);
+    if (ready) return click(ready, 'target looks away');
+    // Online, on the target's own device: nothing to do but wait.
+    if (has(snap, /Everyone else is choosing your category/)) return null;
+    const pickingFor = snap.text.match(/Pick a category for ([A-Z][a-z]+)/)?.[1] ?? null;
+    if (pickingFor) {
+      // Online: a proposal on the table. Usually approve; sometimes counter.
+      const approve = find(snap, /^approve$/i);
+      if (approve && rng.chance(0.85)) return click(approve, 'approve the proposal');
+      // Already approved: wait for the rest of the table.
+      if (!approve && has(snap, /Take back my approval/)) return null;
+      const commit = find(snap, /^(lock in|propose) “/i);
+      if (commit && !commit.disabled) {
+        memory.cat[pickingFor] = commit.name.match(/“(.+)”/)?.[1];
+        return click(commit, 'commit a category');
+      }
+      const box = find(snap, /'s category — type one|^propose a different one/i, { role: 'combobox' })
+        ?? find(snap, /'s category — type one|^propose a different one/i, { role: 'textbox' });
+      if (box) {
+        const random = find(snap, /^deal one at random$/i);
+        if (random && rng.chance(0.3)) return click(random, 'deal one at random');
+        const listed = snap.controls.filter((c) => c.role === 'button' && !c.disabled && /^[A-Z]/.test(c.name)
+          && !DENY.test(c.name) && !/lock in|propose|approve|take back|deal one|quit|hub|^your |^end |^give up|names\d/i.test(c.name)
+          && c.name.length < 50);
+        if (listed.length && rng.chance(0.7)) return click(rng.pick(listed), 'pick a category');
+        return fill(box, rng.pick(['Has a pet', 'Wears a hat', 'Can fly', 'Is a teacher']), 'write a category');
+      }
     }
 
-    // Judging. A guess at MY category: yes only when it is my category.
+    // --- judging ----------------------------------------------------------------
+    // The seat is named by the round's heading ("Liam's go"); online on the
+    // seat's own phone it is "Your go", and ctx.seat says who that is.
+    const seatName = snap.text.match(/([A-Z][a-z]+)'s go/)?.[1] ?? ctx.seat?.name ?? null;
     const yes = find(snap, /^yes$/i);
     const no = find(snap, /^no$/i);
     if (yes && no) {
-      const show = find(snap, /only — everyone else looks away/i);
-      if (show && rng.chance(0.5)) return click(show, 'owner peeks at their category');
-      const guess = snap.text.match(/Their guess at the category(.+?)(?:[A-Z][a-z]+ only —|[A-Z][a-z]+'s category)/);
-      const owner = snap.text.match(/([A-Z][a-z]+)(?: only — everyone else looks away|'s category)/)?.[1];
-      if (guess && owner) {
-        const right = memory.cat[owner] && guess[1].trim().toLowerCase() === memory.cat[owner].toLowerCase();
-        return click(right || rng.chance(0.1) ? yes : no, right ? 'judge: that is my category' : 'judge a guess');
+      // Locally the seat's category is behind a peek the judge may open.
+      const peek = find(snap, /looks away$/i);
+      if (peek && rng.chance(0.5)) return click(peek, 'judge peeks at the category');
+      const guess = snap.text.match(/Their guess at the category(.+?)(?:Judging —|[A-Z][a-z]+, your answer|[A-Z][a-z]+'s category|Yes)/);
+      if (guess && seatName) {
+        const right = memory.cat[seatName] && guess[1].trim().toLowerCase().includes(memory.cat[seatName].toLowerCase());
+        return click(right || rng.chance(0.1) ? yes : no, right ? 'judge: that is the category' : 'judge a guess');
       }
-      return click(rng.chance(0.5) ? yes : no, 'answer against my category');
+      return click(rng.chance(0.5) ? yes : no, 'answer against the category');
     }
 
-    // Guessing: whose (online dealt mode has no "whose" — it is your own),
-    // then what.
+    // --- my go: declare, or name ---------------------------------------------------
     const guessBox = find(snap, /your guess at the category/i);
-    if (guessBox && !has(snap, /whose category\?/i)) {
+    if (guessBox) {
       if (!guessBox.value) {
-        const right = memory.cat[ctx.seat?.name];
+        const right = seatName && memory.cat[seatName];
         return fill(guessBox, right && rng.chance(0.5) ? right : rng.pick(['Is blond', 'Aired before you were born', rng.word()]), 'guess my category');
       }
-      return click(find(snap, /^that is /i), 'submit guess');
+      return click(find(snap, /^that is my category/i), 'submit guess');
     }
-    if (has(snap, /whose category\?/i)) {
-      const seats = scenario.names.filter((n) => find(snap, new RegExp(`^${n}$`)));
-      // Online, a dealt-mode guesser is guessing their OWN category.
-      const self = ctx.seat?.name;
-      if (self && !seats.length && memory.cat[self]) memory.target = self;
-      memory.target = memory.target && seats.includes(memory.target) ? memory.target : rng.pick(seats);
-      const box = find(snap, /your guess at the category/i);
-      if (box && !box.value) {
-        const right = memory.cat[memory.target];
-        return fill(box, right && rng.chance(0.5) ? right : rng.pick(['Is blond', 'Is a villain', 'Is loud', rng.word()]), 'guess a category');
-      }
-      const go = find(snap, /^that is /i);
-      if (go) { memory.target = null; return click(go, 'submit guess'); }
-      return click(find(snap, new RegExp(`^${memory.target}$`)), 'whose category');
-    }
-
-    // My go: name something, or try a guess once a few names are out.
     const try_ = find(snap, /^a (character|show) to try$/i);
     if (try_) {
       memory.named = (memory.named ?? 0) + 1;
-      const know = find(snap, /i know (someone|the category)/i);
-      if (know && memory.named > 3 && rng.chance(0.3)) return click(know, 'I know a category');
+      const know = find(snap, /^i know the category/i);
+      if (know && memory.named > 3 && rng.chance(0.3)) return click(know, 'I know the category');
       if (rng.chance(0.02)) return click(find(snap, /^give up/i) ?? know, 'give up');
       if (!try_.value) return fill(try_, rng.pick(/show/i.test(try_.name) ? SHOWS : NAMES), 'name one');
       return click(find(snap, /^ask — then pass/i), 'ask and pass');
     }
     const ask = find(snap, /^ask — then pass/i);
     if (ask) return click(ask, 'ask and pass');
-    // "Nobody left to claim": every other row is solved or already missed, so
-    // the only ways on are back to naming or sitting the round out.
-    const back = find(snap, /^back to naming/i);
-    if (back) return click(rng.chance(0.8) ? back : find(snap, /^give up/i) ?? back, 'nobody left to claim');
     return null;
   },
 });

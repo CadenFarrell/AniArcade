@@ -4,7 +4,7 @@ import { useSoundCue } from '../../../shared/hooks/useSoundCue';
 import ResultImpact from '../../../shared/components/ResultImpact';
 
 /**
- * One player's round is over, and — only when it is safe — what the clause was.
+ * One player's round is over, and what their clause was.
  *
  * IT NOW MEANS SOMETHING NARROWER THAN IT USED TO. While a turn was an
  * uninterrupted block of names this screen appeared once per player per round,
@@ -13,35 +13,22 @@ import ResultImpact from '../../../shared/components/ResultImpact';
  * — and a wrong guess does not bring it up at all. That is what makes it worth
  * being a full stop: everything smaller is a line on the turn screen.
  *
- * THE TWO MODES HAVE DIFFERENT AUDIENCES FOR THIS SCREEN, which is why it
- * branches here rather than in a caller.
+ * THE HOT SEAT IS THE AUDIENCE, and they are the only person at the table who
+ * has not already seen the answer. Everyone else watched it all round; this is
+ * the moment the one player it was hidden from finds out. So the clause is the
+ * largest thing here, above the score.
  *
- * DEALT: the hot seat is the audience, and they are the only person at the
- * table who has not already seen the answer. Everyone else watched it all round;
- * this is the moment the one player it was hidden from finds out. So the clause
- * is the largest thing here, above the score.
- *
- * CHOSEN: the whole table is the audience, and a clause only appears if the
- * player CLAIMED somebody. That is not squeamishness, it is the scoring: a solve
- * with zero names spent pays the maximum, so revealing a clause nobody has
- * claimed would hand the next player full marks for a free re-declaration. A
- * correct claim closes that off (first claim wins — the target cannot be
- * declared again), so its clause can come out immediately; everything still
- * standing waits for the round to end. See rules.revealAllowed, which is what
- * actually decides, so this screen only has to say which of the two happened.
- *
- * `category` can legitimately be null for a beat even when it is allowed:
- * whichever device holds it has to publish it first (rules.attachCategory in
- * dealt mode, rules.publishCategory in chosen), and saying so is better than an
- * empty space that reads as the answer having been lost.
+ * `category` can legitimately be null for a beat: some other device has to
+ * publish it first (rules.attachCategory, since the seat cannot read its own),
+ * and saying so is better than an empty space that reads as the answer having
+ * been lost.
  */
 export default function TurnEnd({
-  seatName, isYou = false, chosen = false, category, targetName, result, points,
+  seatName, isYou = false, category, result, points,
   order = [], trails = {}, cap, seatId = null, myPlayerId = null,
   nameFor, usedFor, canAdvance, isLastSeat, onNext,
 }) {
   const solved = result?.solved === true;
-  const claimed = chosen && solved;
 
   // A finished turn's sound, once as it appears: a solve or a missed call. On
   // the one local device it is the table's; online (`myPlayerId` set) it is the
@@ -55,19 +42,13 @@ export default function TurnEnd({
   const turnKey = seatId ?? 'seat';
   useSoundCue(!mineToShow && verdict ? 'reveal' : null, turnKey);
 
-  const heading = () => {
-    if (!chosen) return isYou ? 'Your category was' : `${seatName}'s category was`;
-    if (claimed) return `${isYou ? 'You' : seatName} got ${targetName ?? 'them'}`;
-    if (result?.guess) return `${targetName ?? 'They'} kept it`;
-    return isYou ? 'You are out of this round' : `${seatName} is out of this round`;
-  };
+  const heading = isYou ? 'Your category was' : `${seatName}'s category was`;
 
   // The one line under the badges. Built here rather than as three conditional
   // paragraphs, which is what gave this card six text weights in a column.
   const footnote = () => {
     if (!result?.guess) return isYou ? 'No claim made.' : null;
-    const said = `${solved ? 'Called it as' : 'Guessed'} “${result.guess}”${
-      chosen && targetName ? ` at ${targetName}` : ''}`;
+    const said = `${solved ? 'Called it as' : 'Guessed'} “${result.guess}”`;
     if (!solved) return `${said}.`;
     return `${said}, ${result.used <= 1 ? 'straight out of nowhere' : `in ${result.used} names`}.`;
   };
@@ -79,23 +60,14 @@ export default function TurnEnd({
         <p className="font-display text-sm font-extrabold uppercase tracking-widest text-fg-helper">
           {/* Built here rather than by the caller, which is how "Your" and an
               appended "'s" produced "Your's" the first time round. */}
-          {heading()}
+          {heading}
         </p>
 
-        {/* Dealt always shows it; chosen shows it only on a claim. */}
-        {(!chosen || claimed) && (category ? (
+        {category ? (
           <p className="mt-3 font-display text-3xl font-extrabold text-fg-strong">{category.label}</p>
         ) : (
           <p className="mt-3 font-display text-xl font-extrabold text-fg-subtle">
             Waiting for it to be revealed…
-          </p>
-        ))}
-
-        {chosen && !claimed && (
-          <p className="mt-3 text-base text-fg-helper">
-            {result?.guess
-              ? 'Still anybody’s to claim — it stays secret until the round ends.'
-              : 'Every category is still standing.'}
           </p>
         )}
 

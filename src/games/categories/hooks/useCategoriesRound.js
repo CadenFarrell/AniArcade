@@ -20,15 +20,10 @@ import { DEFAULT_PREFS } from '../prefs';
 // same trust local play already asks for in AniGuess (whose PeekPanel this
 // game's peek strip copies) and in AniFake's blind mode.
 //
-// THE TWO MODES ASK FOR THAT TRUST AT DIFFERENT MOMENTS, WHICH IS WHY CHOSEN
-// MODE IS THE EASIER ONE ON A SHARED DEVICE:
-//
-//   dealt   the hot seat must not see their own clause, and it has to be on
-//           screen all turn for the judge to rule from. Hence CategoryPeek.
-//   chosen  a clause only has to be on screen ONCE, while its owner picks it —
-//           after that every judge rules from memory, so the whole rest of the
-//           turn can sit in the middle of the table with nothing hidden on it.
-//           The pick is the only handover, and it happens once per round.
+// IT ASKS FOR THAT TRUST TWICE: the hot seat must not see their own clause
+// while it is on screen all turn for the judge to rule from (hence
+// CategoryPeek), and when the table picks, each player looks away while
+// everybody else picks theirs — AniGuess's character assignment, unchanged.
 //
 // THE ROUND AND THE SCORE HISTORY ARE ONE useState, and that is load-bearing
 // rather than tidy. Folding a round into the totals must happen exactly once —
@@ -39,31 +34,31 @@ export function useCategoriesRound(players, {
   rounds = DEFAULT_PREFS.rounds,
   proposalCap = DEFAULT_PREFS.proposalCap,
   categoryPool = DEFAULT_PREFS.categoryPool,
-  categoryMode = DEFAULT_PREFS.categoryMode,
+  categorySource = DEFAULT_PREFS.categorySource,
   customCategories = [],
 } = {}) {
   const playerIds = useMemo(() => players.map((p) => p.id), [players]);
-  const chosen = categoryMode === 'chosen';
+  const tablePicks = categorySource === 'table';
 
   /**
-   * A fresh clause for everybody — in dealt mode only.
+   * A fresh clause for everybody — in a random deal only.
    *
    * Called OUTSIDE React's updaters, always: it reaches Math.random, and React
    * is free to invoke an updater more than once (StrictMode does so
-   * deliberately), which would deal a different round each time. Chosen mode
-   * starts empty and fills as each player picks; nothing random happens at all.
+   * deliberately), which would deal a different round each time. When the table
+   * picks, the map starts empty and fills one pick at a time.
    */
-  const deal = useCallback((exclude = []) => (chosen ? {} : dealCategories(playerIds, Math.random, {
+  const deal = useCallback((exclude = []) => (tablePicks ? {} : dealCategories(playerIds, Math.random, {
     pool: categoryPool,
     extra: customCategories,
     exclude,
-  })), [chosen, playerIds, categoryPool, customCategories]);
+  })), [tablePicks, playerIds, categoryPool, customCategories]);
 
   // Lazy initializers, so a re-render can never re-deal the round. Both reach
-  // Math.random in dealt mode.
+  // Math.random in a random deal.
   const [session, setSession] = useState(() => ({
     round: rules.startRound(playerIds, {
-      round: 0, cap: proposalCap, mode: categoryMode,
+      round: 0, cap: proposalCap, source: categorySource,
     }),
     history: [],
   }));
@@ -79,42 +74,19 @@ export function useCategoriesRound(players, {
   }, []);
 
   /**
-   * CHOSEN MODE: publishes every clause the round is now willing to show.
-   *
-   * Online this is one device publishing its own and nobody else's, because
-   * secrets/ is read-gated to its owner. Here one device holds them all, so it
-   * does the same job in a loop — and it is still rules.publishCategory that
-   * decides WHICH may go, so local and online reveal exactly the same set at
-   * exactly the same moments. Threading `cur` through the loop is what makes
-   * the accumulated patch complete rather than each entry overwriting the last.
-   */
-  const revealWhatIsAllowed = useCallback((round, cats) => {
-    let cur = round;
-    let patch = {};
-    for (const id of playerIds) {
-      const { patch: p } = rules.publishCategory(cur, id, cats[id]);
-      if (!Object.keys(p).length) continue;
-      cur = { ...cur, ...p };
-      patch = { ...patch, ...p };
-    }
-    return patch;
-  }, [playerIds]);
-
-  /**
-   * Whatever has to happen alongside a turn or round ending.
-   *
-   * The two modes publish opposite things and this is the one place that knows:
-   * dealt attaches the seat's clause to their result (somebody else's job
-   * online, since the seat is denied it), chosen publishes every clause that is
-   * no longer worth points. Everything else about ending a turn is identical.
+   * Whatever has to happen alongside a player's round ending: their clause is
+   * attached to their result, so the turn's end can show it. Online that is
+   * somebody else's job, since the seat is denied it; here one device holds
+   * every slot.
    */
   const closing = useCallback((next, seatId, cats) => (
-    chosen
-      ? revealWhatIsAllowed(next, cats)
-      : rules.attachCategory(next, seatId, cats[seatId]).patch
-  ), [chosen, revealWhatIsAllowed]);
+    rules.attachCategory(next, seatId, cats[seatId]).patch
+  ), []);
 
-  /** CHOSEN MODE: one player commits the clause only they will know. */
+  /**
+   * The table locks in one player's clause — picked FOR them while they looked
+   * away. The screen passes rules.pickingFor's answer as `playerId`.
+   */
   const pick = useCallback((playerId, spec) => {
     const category = rules.toSpec(spec);
     if (!category || !playerId) return;
@@ -137,8 +109,8 @@ export function useCategoriesRound(players, {
     apply((r) => rules.proposeName(r, r.seatId, text));
   }, [apply]);
 
-  const declare = useCallback((guess, targetId = null) => {
-    apply((r) => rules.declareCategory(r, r.seatId, guess, targetId));
+  const declare = useCallback((guess) => {
+    apply((r) => rules.declareCategory(r, r.seatId, guess));
   }, [apply]);
 
   /**
@@ -174,28 +146,25 @@ export function useCategoriesRound(players, {
   }, [apply, categories, closing]);
 
   // Moves the seat on, and banks the round when there is no seat left to move
-  // to — see the header for why those are one updater. The round ending is also
-  // the moment every clause still standing becomes publishable, which is why
-  // this reaches for `closing` too and not only the turn does.
+  // to — see the header for why those are one updater.
   const nextTurn = useCallback(() => {
     setSession((s) => {
       const { patch } = rules.nextTurn(s.round, playerIds);
       if (!patch || Object.keys(patch).length === 0) return s;
-      let round = { ...s.round, ...patch };
+      const round = { ...s.round, ...patch };
       if (round.phase !== 'roundEnd') return { ...s, round };
-      if (chosen) round = { ...round, ...revealWhatIsAllowed(round, categories) };
       return { ...s, round, history: [...s.history, rules.finalScores(round, playerIds)] };
     });
-  }, [categories, chosen, playerIds, revealWhatIsAllowed]);
+  }, [playerIds]);
 
   /**
-   * Deals — or clears for re-picking — the next round.
+   * Deals — or clears for the table to pick again — the next round.
    *
-   * In dealt mode the categories are drawn OUT HERE and handed to the setter as
-   * a plain value, never computed inside an updater (see deal), and last
+   * In a random deal the categories are drawn OUT HERE and handed to the setter
+   * as a plain value, never computed inside an updater (see deal), and last
    * round's clauses are excluded so a short session cannot hand somebody
-   * straight back the one they just solved. In chosen mode there is nothing to
-   * draw: the map empties and the round opens on `picking`.
+   * straight back the one they just solved. When the table picks there is
+   * nothing to draw: the map empties and the round opens on `picking`.
    */
   const nextRound = useCallback(() => {
     const exclude = Object.values(categories);
@@ -203,10 +172,10 @@ export function useCategoriesRound(players, {
     setSession((s) => ({
       ...s,
       round: rules.startRound(playerIds, {
-        round: s.round.round + 1, cap: proposalCap, mode: categoryMode,
+        round: s.round.round + 1, cap: proposalCap, source: categorySource,
       }),
     }));
-  }, [categories, categoryMode, deal, playerIds, proposalCap]);
+  }, [categories, categorySource, deal, playerIds, proposalCap]);
 
   const totalScores = useMemo(
     () => session.history.reduce((acc, scores) => rules.applyRoundScores(acc, scores), {}),
@@ -221,35 +190,24 @@ export function useCategoriesRound(players, {
 
   return {
     state,
-    chosen,
     seat: byId.get(seatId) ?? null,
-    // Who still owes an answer, in the order they will be asked. Dealt mode's
-    // list is always one long; chosen mode's is everyone but the seat, minus
-    // whoever has already tapped.
+    // Who still owes an answer — the one derived judge, as a list. See
+    // rules.requiredJudges for why it is a list.
     judges: judgeIds.map((id) => byId.get(id)).filter(Boolean),
     pendingJudges: judgeIds
       .filter((id) => typeof state.pending?.verdicts?.[id] !== 'boolean')
       .map((id) => byId.get(id))
       .filter(Boolean),
-    // DEALT MODE's hidden value, and the only way a screen can reach it. Never
-    // spread into anything else on this object — see the header.
-    seatCategory: !chosen && seatId ? getCategory(categories[seatId]) : null,
-    /**
-     * CHOSEN MODE: one player's own clause, for a reminder they ask for.
-     *
-     * A FUNCTION RATHER THAN THE MAP, deliberately. Handing back `categories`
-     * would put every clause in the room on every screen's props and make the
-     * whole hidden half of the game one careless render away from the table;
-     * asking for one by id is a thing a screen has to do on purpose, and there
-     * is exactly one caller (the peek behind a judge's own name).
-     */
-    categoryFor: (playerId) => (
-      chosen && categories[playerId] ? getCategory(categories[playerId]) : null
-    ),
+    // The hidden value, and the only way a screen can reach it. Never spread
+    // into anything else on this object — see the header.
+    seatCategory: seatId && categories[seatId] ? getCategory(categories[seatId]) : null,
     hasPicked: (playerId) => rules.hasPicked(state, playerId),
-    // Who the seat may still claim. Empty in dealt mode, and legitimately empty
-    // in chosen mode once every other player has been solved.
-    declarable: rules.declarableIds(state, playerIds).map((id) => byId.get(id)).filter(Boolean),
+    // Who the table is picking a clause for right now, during `picking`.
+    pickingFor: byId.get(rules.pickingFor(state, playerIds)) ?? null,
+    // The clauses already locked in this round, as labels — so the picker's
+    // "Deal one at random" does not hand two players the same one. Only ever
+    // shown to the people picking, who watched every one of them be chosen.
+    takenLabels: Object.values(categories).map((spec) => getCategory(spec).label),
     pending: state.pending,
     trail: rules.trailFor(state, seatId),
     // EVERY trail, not just the seat's. The seat moves after each name, so a
@@ -271,7 +229,7 @@ export function useCategoriesRound(players, {
     roundNumber: state.round + 1,
     totalRounds: rounds,
     isFinalRound: state.round + 1 >= rounds,
-    explain: rules.explainRound(state, playerIds, chosen ? {} : categories),
+    explain: rules.explainRound(state, playerIds, categories),
     roundScores: rules.finalScores(state, playerIds),
     totalScores,
     pick,

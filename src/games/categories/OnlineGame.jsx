@@ -21,10 +21,10 @@ import { getCategory, suggestionsFor } from './categories';
 // sync-error banner, and room.view picks the screen.
 export default function OnlineGame({ onBack, onExit }) {
   const room = useCategoriesRoom();
-  // This device's own written categories, offered at the top of the picker in
-  // chosen mode. Read here rather than out of the room for the reason the hook
-  // gives: a player's list never enters room state, so only the clause they
-  // actually pick is ever published.
+  // This device's own written categories, offered at the top of the picker
+  // when the table picks. Read here rather than out of the room for the reason the hook
+  // gives: a player's list never enters room state, so only the clause the
+  // table actually picks is ever published.
   const { categories: myCustom } = useCustomCategories();
 
   // Sounds from the room, each on the phone it belongs to. Every settled name
@@ -84,24 +84,32 @@ export default function OnlineGame({ onBack, onExit }) {
     const seatName = room.seat?.name ?? 'Someone';
     const nameFor = (id) => room.players.find((p) => p.id === id)?.name ?? 'Someone';
 
-    // CHOSEN MODE opens here: nobody can name anything until everyone still in
-    // the room has committed a clause. This device picks its own and nothing
-    // else — there is no dealer in this mode — and then waits, by name.
+    // THE TABLE PICKS: the round opens here, one target at a time. Everyone
+    // but the target sees the shared proposal and approves it; the target's
+    // own device only says that the table is choosing.
     if (game.phase === 'picking') {
+      if (!room.pickTarget) return shell(<WaitingScreen title="Starting the round…" />);
       return shell(
         <Screen>
           <PickPhase
-            playerName={room.myName}
+            target={room.pickTarget}
             suggestions={suggestionsFor(
               room.settings?.categoryPool,
               room.settings?.useCustom === false ? [] : myCustom,
             )}
             noun={noun}
-            done={room.iHavePicked}
-            waitingOn={room.pendingPickers}
-            picked={room.activeIds.length - room.pendingPickers.length}
+            takenLabels={room.takenLabels}
+            picked={room.pickedCount}
             total={room.activeIds.length}
-            onPick={room.pickCategory}
+            online
+            iAmTarget={room.iAmPickTarget}
+            proposal={room.proposal}
+            proposedBy={room.proposedBy}
+            approvedNames={room.approvedNames}
+            needed={room.approvalsNeeded}
+            iApproved={room.iApproved}
+            onPropose={room.proposeCategory}
+            onApprove={room.approveProposal}
           />
         </Screen>
       );
@@ -115,7 +123,6 @@ export default function OnlineGame({ onBack, onExit }) {
           roundNumber={room.roundNumber}
           totalRounds={room.totalRounds}
           isFinalRound={room.isFinalRound}
-          chosen={room.chosen}
           // Only the host advances the room. Everyone else reads the same
           // screen with the buttons replaced by a line saying who they are
           // waiting on — rendered here rather than inside RoundEnd so that
@@ -131,33 +138,22 @@ export default function OnlineGame({ onBack, onExit }) {
     if (game.phase === 'turnEnd') {
       const seatId = game.seatId;
       const row = room.explain.find((r) => r.playerId === seatId);
-      // CHOSEN: what may be shown is the TARGET's clause, and only once the
-      // seat claimed them — rules.revealAllowed is what decides, and its owner
-      // is the only device that can publish it. DEALT: the seat's own, which
-      // any other device publishes onto the result.
-      const targetRow = room.chosen && row?.targetId
-        ? room.explain.find((r) => r.playerId === row.targetId)
-        : null;
-      const shown = room.chosen ? targetRow?.category : row?.category;
       return shell(
         <Screen>
           <TurnEnd
             seatName={seatName}
             isYou={room.iAmSeat}
-            chosen={room.chosen}
-            targetName={row?.targetId ? nameFor(row.targetId) : null}
             order={room.order}
             trails={room.trails}
             seatId={seatId}
             myPlayerId={room.myPlayerId}
             usedFor={room.usedFor}
             // From the published value, never from this device's own read:
-            // whichever mode is running, exactly one device is denied the
-            // clause and the published copy is the only source that works on
-            // all of them. Null for a beat while that device publishes it.
+            // the seat's device is denied the clause, and the published copy is
+            // the only source that works on every device. Null for a beat while that device publishes it.
             // Resolved through getCategory because what is stored is a SPEC: a
             // built-in's id or a written category's whole definition.
-            category={shown ? getCategory(shown) : null}
+            category={row?.category ? getCategory(row.category) : null}
             result={game.results?.[seatId] ?? null}
             points={row?.turnPoints ?? 0}
             cap={room.cap}
@@ -174,10 +170,9 @@ export default function OnlineGame({ onBack, onExit }) {
       );
     }
 
-    // DEALT ONLY: everyone but the hot seat is waiting on the deal to land in
-    // assignments/. The seat needs nothing, so they never see this — and in
-    // chosen mode nobody does, because there is no deal and the `picking` phase
-    // above is the gate instead.
+    // Everyone but the hot seat waits on the seat's clause to load from
+    // assignments/ — a random deal landing, or a picked clause being read. The
+    // seat needs nothing, so they never see this.
     if (!room.dealReady) {
       return shell(<WaitingScreen title="Dealing the categories…" />);
     }
@@ -200,20 +195,16 @@ export default function OnlineGame({ onBack, onExit }) {
           left={room.left}
           usedFor={room.usedFor}
           myPlayerId={room.myPlayerId}
-          chosen={room.chosen}
-          // DEALT: null on the hot seat's own device — by a Firebase rule
-          // rather than by this line — and the resolved clause on every other.
-          // CHOSEN: the mirror, null on every device but its owner's. No peek
-          // in either: online, the device that must not show a clause does not
-          // have it, so there is nothing to hide behind a control.
+          // Null on the hot seat's own device — by a Firebase rule rather than
+          // by this line — and the resolved clause on every other. No peek:
+          // online, the device that must not show a clause does not have it, so
+          // there is nothing to hide behind a control.
           category={room.seatCategory}
-          myCategory={room.myCategory}
           canName={room.iAmSeat}
           // At most one, and only while this device actually owes an answer.
           // Locally the same prop carries the whole table — see LocalSession.
           rulers={room.iMustRule ? [{ id: room.myPlayerId, name: room.myName }] : []}
           pendingJudges={room.pendingJudges}
-          declarable={room.declarable}
           nameFor={nameFor}
           onPropose={room.propose}
           onDeclare={room.declare}

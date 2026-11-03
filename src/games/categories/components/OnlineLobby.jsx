@@ -28,10 +28,10 @@ import descriptor from '../index';
 // in the room, so a character picked in this lobby has to be pushed up like any
 // other lobby's import, or only your own phone would ever see it.
 //
-// THE CATEGORY EDITOR IS SHOWN TO EVERYONE, not just the host, and both modes
-// give the same reason. What a player writes stays on their own device: in
-// chosen mode it heads the list they pick their own clause from, and in dealt
-// mode it is drawn from when that device is one of the two dealers (see
+// THE CATEGORY EDITOR IS SHOWN TO EVERYONE, not just the host, and both sources
+// give the same reason. What a player writes stays on their own device: when
+// the table picks it heads the list they pick for somebody else from, and in a
+// random deal it is drawn from when that device is one of the two dealers (see
 // useCategoriesRoom). Either way a guest writing a clause is not a setting they
 // cannot apply — it is content that reaches the table through them. The
 // host-only gate belongs on the settings card and nowhere else.
@@ -48,7 +48,7 @@ export default function OnlineLobby({ room }) {
     rounds: prefs.rounds,
     proposalCap: prefs.proposalCap,
     categoryPool: prefs.categoryPool,
-    categoryMode: prefs.categoryMode,
+    categorySource: prefs.categorySource,
     useCustom: prefs.useCustom,
   }));
   const change = (key, value) => setSettings((s) => ({ ...s, [key]: value }));
@@ -70,7 +70,7 @@ export default function OnlineLobby({ room }) {
   return (
     <SetupLayout
       game={descriptor}
-      tagline="Everyone has a secret category. Name things until you work one out."
+      tagline="Everyone can see your secret category but you. Name things until you work it out."
       aside={<RoomCode code={room.roomCode} />}
       left={(
         <>

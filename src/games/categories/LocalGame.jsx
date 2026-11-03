@@ -10,7 +10,7 @@ import TablePortraits from '../../shared/components/TablePortraits';
 // work to dumb screens from components/.
 export default function LocalGame({ onExit, onBack }) {
   const [view, setView] = useState('setup'); // setup | playing | results
-  // { players, rounds, proposalCap, categoryPool, categoryMode, customCategories }
+  // { players, rounds, proposalCap, categoryPool, categorySource, customCategories }
   const [game, setGame] = useState(null);
   const [totals, setTotals] = useState({});
   // Bumped per session so LocalSession remounts and re-deals rather than reusing
@@ -33,7 +33,7 @@ export default function LocalGame({ onExit, onBack }) {
           rounds={game.rounds}
           proposalCap={game.proposalCap}
           categoryPool={game.categoryPool}
-          categoryMode={game.categoryMode}
+          categorySource={game.categorySource}
           customCategories={game.customCategories}
           onFinish={(totalScores) => { setTotals(totalScores); setView('results'); }}
           onQuit={() => { setGame(null); setView('setup'); }}

@@ -44,20 +44,21 @@ node whose **security rule** — not a client check — hides it. Pick by who mu
 
 | node | read | write | for | used by |
 | --- | --- | --- | --- | --- |
-| `assignments/{playerId}` | everyone **except** the owner | everyone except the owner | a value about you that you alone must not learn | AniGuess (your character), AniTag `dealt` |
-| `secrets/{playerId}` | the owner **only** | any member | a value only you may learn | AniFake (your card), AniWave (target, `readroom`'s card — see its CLAUDE.md), AniTag `chosen`, AniTurf (each team's key, in its clue-giver's node), AniChain (the turn's card, in both givers' nodes) |
+| `assignments/{playerId}` | everyone **except** the owner | everyone except the owner | a value about you that you alone must not learn | AniGuess (your character, and the table's live proposal for it), AniTag (your category, dealt or picked by the table — the proposal lives here too) |
+| `secrets/{playerId}` | the owner **only** | any member | a value only you may learn | AniFake (your card), AniWave (target, `readroom`'s card — see its CLAUDE.md), AniTurf (each team's key, in its clue-giver's node), AniChain (the turn's card, in both givers' nodes) |
 
 `secrets/` write is any member, not "the host", because the host is a `state/` value the rules
-cannot cheaply check and members are already trusted with `state/`. AniTag and AniTurf write
-their own node; **AniTurf's owner also DEALS it**, so no device ever holds a key it was not
+cannot cheaply check and members are already trusted with `state/`. AniTurf writes
+its own node; **AniTurf's owner also DEALS it**, so no device ever holds a key it was not
 dealt — at the price that a claim resolves across two devices, and the dealing effect must wait
 for the first `secrets/` snapshot or it deals over the real key on every refresh
 (`src/games/aniturf/CLAUDE.md`).
 
-**AniTag is the worked example, on both rows:** `dealt` (known to the table, hidden from one) is
-`assignments/`; `chosen` (known to one, hidden from the table) is `secrets/`. Each in the other
-node would expose it to exactly the people it is hidden from, and the round would look normal.
-Ask "who is this hidden from" before reaching for either — both mistakes are silent.
+**Each row in the other node exposes the value to exactly the people it is hidden from**, and
+the round would look normal: an AniTag category (known to the table, hidden from one) in
+`secrets/` is readable by precisely that one. Ask "who is this hidden from" before reaching for
+either — both mistakes are silent. (AniTag once used both rows; its "pick your own" mode, the
+`secrets/` one, was removed for the table picking each player's category.)
 
 What every `secrets/` consumer inherits from AniFake:
 

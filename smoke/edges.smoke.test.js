@@ -3,6 +3,7 @@
 // player coming back after the grace window.
 import { describe, it, expect, afterAll } from 'vitest';
 import { device, profile, seatTable, until, sleep, GRACE_WAIT, syncErrors } from './harness';
+import { pickAll } from './anitagPick';
 
 const all = [];
 const mkFor = (hook) => (n) => { const d = device(n, ...hook); all.push(d); return d; };
@@ -99,19 +100,16 @@ describe('AniWave edges', () => {
 });
 
 describe('AniTag edges', () => {
-  for (const categoryMode of ['chosen', 'dealt']) {
-    it(`${categoryMode}: a full round ends, banks, and round 2 opens and deals`, async () => {
-      const devs = [TAG(`${categoryMode}1`), TAG(`${categoryMode}2`), TAG(`${categoryMode}3`)];
+  for (const categorySource of ['table', 'random']) {
+    it(`${categorySource}: a full round ends, banks, and round 2 opens and deals`, async () => {
+      const devs = [TAG(`${categorySource}1`), TAG(`${categorySource}2`), TAG(`${categorySource}3`)];
       await seatTable(devs, [profile('Oz'), profile('Pip'), profile('Quin')]);
-      await devs[0].act((r) => r.startGame({ rounds: 2, proposalCap: 3, categoryPool: 'characters', useCustom: true, categoryMode }));
-      const pickAll = async (round) => {
-        if (categoryMode !== 'chosen') return;
-        await until(() => devs.every((d) => d.r.game?.round === round && d.r.game?.phase === 'picking'), { what: `picking r${round}` });
-        const ids = ['glasses', 'villain', 'sword'];
-        for (let i = 0; i < devs.length; i++) await devs[i].act((r) => r.pickCategory(ids[i]));
+      await devs[0].act((r) => r.startGame({ rounds: 2, proposalCap: 3, categoryPool: 'characters', useCustom: true, categorySource }));
+      const pickRound = async (round) => {
+        if (categorySource === 'table') await pickAll(devs, round);
       };
       const playRound = async (round) => {
-        await pickAll(round);
+        await pickRound(round);
         await until(() => devs.every((d) => d.r.game?.round === round && d.r.dealReady && ['naming', 'judging'].includes(d.r.game?.phase)), { what: `naming r${round}`, timeout: 15_000 });
         // Everyone passes their go — cheapest route to roundEnd.
         for (let guard = 0; guard < 40 && !devs.every((d) => d.r.game?.phase === 'roundEnd'); guard++) {

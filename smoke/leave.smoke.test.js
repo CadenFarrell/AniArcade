@@ -9,7 +9,7 @@ describe('leaving on purpose vs refreshing', () => {
     const devs = [TAG('l1'), TAG('l2'), TAG('l3'), TAG('l4')];
     await seatTable(devs, [profile('Uma'), profile('Vic'), profile('Wes'), profile('Xia')]);
     const [A] = devs;
-    await A.act((r) => r.startGame({ rounds: 2, proposalCap: 5, categoryPool: 'characters', useCustom: true, categoryMode: 'dealt' }));
+    await A.act((r) => r.startGame({ rounds: 2, proposalCap: 5, categoryPool: 'characters', useCustom: true, categorySource: 'random' }));
     await until(() => devs.every((d) => d.r.dealReady && d.r.game?.phase === 'naming'), { what: 'naming' });
 
     // Host refresh mid-round: same seat, crown kept, nobody marked gone.
@@ -22,6 +22,9 @@ describe('leaving on purpose vs refreshing', () => {
     let seat = devs.find((d) => d.r.iAmSeat);
     if (seat === A) {
       await seat.act((r) => r.propose('Luffy'));
+      // Wait for the judge to SEE the name: looking for them straight after
+      // the propose raced the write under load and found nobody to rule.
+      await until(() => devs.some((d) => d.r.iMustRule), { what: 'judge sees the name' });
       for (const d of devs.filter((x) => x.r.iMustRule)) await d.act((r) => r.rule(false));
       await until(() => devs.every((d) => d.r.game?.phase === 'naming' && !A.r.iAmSeat), { what: 'seat moved off host' });
       seat = devs.find((d) => d.r.iAmSeat);

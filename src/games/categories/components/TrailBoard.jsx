@@ -22,12 +22,11 @@ import PlayerFace from '../../../shared/components/PlayerFace';
  * names" sitting side by side with no way to tell whose the first one is now
  * that the seat moves every name.
  *
- * THE OTHERS ARE COLLAPSED RATHER THAN HIDDEN, and both halves matter. In chosen
- * mode every verdict on somebody else's name was given by the whole table
- * against their own clauses, so those rows are evidence about the very people
- * you are trying to declare — dropping them would remove most of the game. But
- * at four players an expanded board is four twenty-row lists, which is the wall
- * this file is here to avoid. So they are one tappable summary line each.
+ * THE OTHERS ARE COLLAPSED RATHER THAN HIDDEN, and both halves matter. Other
+ * people's trails are how a player learns what the table finds funny to pick,
+ * and the judge reads them to stay consistent — dropping them would lose that.
+ * But at four players an expanded board is four twenty-row lists, which is the
+ * wall this file is here to avoid. So they are one tappable summary line each.
  *
  * Reset DURING RENDER when `open` changes, React's documented way to adjust
  * state on a prop change and the idiom CategoryPeek and TurnScreen already use:

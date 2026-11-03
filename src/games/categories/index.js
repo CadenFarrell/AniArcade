@@ -9,10 +9,9 @@ export default {
   // person, so nothing is ever drawn from anybody's anime list and no mode can
   // change that. A player arriving from the other five assumes the opposite, and
   // a hub card has one line to correct them with.
-  // Describes the DEFAULT mode (chosen), not both — a hub card has one line and
-  // spending it on "or, alternatively…" sells neither game. The dealt variant
-  // is a setting away and its own screen explains it.
-  blurb: 'Everyone picks a secret category. Name things until you work out somebody else’s. No list needed.',
+  // Describes the DEFAULT source (the table picks), not both — a hub card has
+  // one line, and the random deal is a setting away with its own explanation.
+  blurb: 'The table picks you a secret category. Name things until you work out your own. No list needed.',
   accent: 'lime', // drives the hub card's colour — see src/shared/ui/Badge.jsx tones
   available: true,
   // Loaded on demand — see shared/utils/lazyGame.js.

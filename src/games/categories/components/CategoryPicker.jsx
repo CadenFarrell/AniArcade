@@ -10,7 +10,7 @@ import { MAX_LABEL_LEN, normalizeCustomCategory } from '../categories';
 const BROWSE_SIZE = 6;
 
 /**
- * CHOSEN MODE: one player commits the clause only they will know.
+ * The table picks one player's clause while that player looks away.
  *
  * ONE BOX, TWO WAYS IN, ONE COMMIT. Type a clause of your own, or type towards
  * one of the built-ins and take it — and they leave through the same button,
@@ -38,6 +38,12 @@ const BROWSE_SIZE = 6;
  * clause once the table starts answering against it — so a one-tap commit on a
  * phone is a misfire waiting to happen.
  *
+ * "DEAL ONE AT RANDOM" FILLS THE BOX RATHER THAN COMMITTING, for the same
+ * reason: it is a suggestion the table can take or type over, and it leaves
+ * through the same button as everything else. It skips `takenLabels` — the
+ * clauses already locked in this round — and whatever is in the box now, so
+ * pressing it again is always a different one.
+ *
  * A CLAUSE WRITTEN HERE IS NOT SAVED TO THIS DEVICE'S LIST, deliberately.
  * CategoryEditor on the setup screen is where you build a collection you keep;
  * this is one round, mid-game, and quietly growing somebody's saved list every
@@ -47,6 +53,7 @@ const BROWSE_SIZE = 6;
  */
 export default function CategoryPicker({
   suggestions = [], noun = 'card', onPick, busy = false,
+  title = 'Their category', commitLabel = 'Lock in', takenLabels = [],
 }) {
   const [draft, setDraft] = useState('');
   const query = draft.trim().toLowerCase();
@@ -81,11 +88,22 @@ export default function CategoryPicker({
     // the asymmetry getCategory resolves, and the reason is that every device
     // ships every built-in while a written one has been seen by exactly one.
     onPick(exact && exact.id && !exact.custom ? exact.id : spec);
+    // Cleared so that, online, the box is ready for a counter-proposal rather
+    // than still holding the one everybody is now looking at above it.
+    setDraft('');
+  };
+
+  const dealRandom = () => {
+    const skip = new Set([...takenLabels, draft.trim()].map((l) => l.toLowerCase()));
+    const fresh = suggestions.filter((c) => !skip.has(c.label.toLowerCase()));
+    const from = fresh.length ? fresh : suggestions;
+    if (!from.length) return;
+    setDraft(from[Math.floor(Math.random() * from.length)].label);
   };
 
   return (
     <>
-      <Card title="Your category" padding="md" className="mb-6">
+      <Card title={title} padding="md" className="mb-6">
         <Combobox
           value={draft}
           onChange={setDraft}
@@ -100,10 +118,13 @@ export default function CategoryPicker({
             </span>
           )}
           maxLength={MAX_LABEL_LEN}
-          ariaLabel="Your category — type your own or search the list"
+          ariaLabel={`${title} — type one or search the list`}
           placeholder={noun === 'show' ? 'e.g. Has a terrible dub' : 'e.g. Wears a hat'}
           autoFocus
         />
+        <Button variant="secondary" size="md" className="mt-3" onClick={dealRandom}>
+          Deal one at random
+        </Button>
         {/* The cold start. Only while the box is empty, because once somebody is
             typing the dropdown is a better answer to the same need. */}
         {!query && (
@@ -133,7 +154,7 @@ export default function CategoryPicker({
           the game will not play. Same discipline CategoryEditor keeps — and it
           replaces a third card that did nothing but echo the same string. */}
       <Button variant="success" size="lg" fullWidth disabled={!spec || busy} onClick={commit}>
-        {busy ? 'Saving…' : (spec ? `Lock in “${spec.label}”` : 'Lock it in')}
+        {busy ? 'Saving…' : (spec ? `${commitLabel} “${spec.label}”` : commitLabel)}
       </Button>
     </>
   );
