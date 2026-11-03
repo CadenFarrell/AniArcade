@@ -15,8 +15,8 @@
 //   revealed   the whole portrait, the name, and the points.
 //   finished   after the last round.
 //
-// **The score is 16 − the bid, not "tiles still covered".** A hint costs two
-// tiles of budget, so once hints exist the covered count and the bid disagree,
+// **The score is TILES − the bid, not "tiles still covered".** A hint costs
+// HINT_COST tiles of budget, so once hints exist the covered count and the bid disagree,
 // and the bid is the number the bidder chose and the table watched them choose.
 // Stopping early never changes it, which keeps the bid the one decision that
 // prices the round. A wrong answer pays WRONG_BONUS to every other player still
@@ -32,14 +32,25 @@
 // and every rule takes the deal as an argument.
 import { characterNameKey } from '../../shared/utils/character';
 
-export const TILES = 16;
-export const GRID = 4;
-// A bid of 16 would be the whole picture for nothing; the most anyone can ask
-// for is fifteen tiles, which still scores one point.
+// 5 across × 7 down over AniList's 2:3 portrait, so each tile is nearly square
+// (1.05 tall to 1 wide). The board began 4×4: sixteen tall tiles, each a
+// sixteenth of the face, which gave too much away per tile and left bids only
+// 1–15 to work with.
+export const COLS = 5;
+export const ROWS = 7;
+export const TILES = COLS * ROWS;
+// A bid of every tile would be the whole picture for nothing; the most anyone
+// can ask for is one fewer, which still scores one point.
 export const MAX_BID = TILES - 1;
 export const MIN_BID = 1;
-export const HINT_COST = 2;
-export const WRONG_BONUS = 3;
+// Both were tuned on the 16-tile board (a hint 2 tiles, a miss 3 points) and
+// scale with it: on a finer board one tile shows less of the face, so a hint
+// is worth more tiles, and a right name pays more, so a miss has to cost more
+// to keep the lowest bid from being free. 4 and 7 on the 5×7 board.
+export const HINT_COST = Math.round((2 * TILES) / 16);
+export const WRONG_BONUS = Math.round((3 * TILES) / 16);
+// Where the opener's stepper sits before they touch it: half the board.
+export const OPENING_BID = Math.floor(TILES / 2);
 // Cards dealt beyond the rounds, for a portrait that will not load (skipCard).
 export const SPARES = 2;
 export const MIN_PLAYERS = 2;

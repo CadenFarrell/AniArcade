@@ -82,14 +82,22 @@ describe('peeking', () => {
   });
 
   it('sells a hint for HINT_COST tiles, once, only when the card has one', () => {
-    let g = peekFor(3);
+    let g = peekFor(HINT_COST + 1);
     expect(rules.takeHint(g, deal, 'a', 'format').patch).toEqual({}); // not on this card
     g = apply(g, rules.takeHint(g, deal, 'a', 'studio'));
     expect(g.hintsTaken).toEqual(['studio']);
-    expect(rules.budgetLeft(g)).toBe(3 - HINT_COST);
+    expect(rules.budgetLeft(g)).toBe(1);
     expect(rules.takeHint(g, deal, 'a', 'studio').patch).toEqual({});
     // One tile left is not enough for the year.
     expect(rules.takeHint(g, deal, 'a', 'year').patch).toEqual({});
+  });
+
+  it('scales the hint cost and the miss bonus with the board', () => {
+    // Tuned at 2 and 3 on the 16-tile board; 4 and 7 on 5×7.
+    expect(TILES).toBe(rules.COLS * rules.ROWS);
+    expect(HINT_COST).toBe(Math.round((2 * TILES) / 16));
+    expect(WRONG_BONUS).toBe(Math.round((3 * TILES) / 16));
+    expect(MAX_BID).toBe(TILES - 1);
   });
 
   it('refuses hints when the deal has them switched off', () => {
@@ -104,7 +112,7 @@ describe('peeking', () => {
 });
 
 describe('answering and scoring', () => {
-  it('pays 16 minus the bid for a right name, however many tiles were left', () => {
+  it('pays TILES minus the bid for a right name, however many tiles were left', () => {
     const g = peekFor(4);
     const done = apply(g, rules.submitAnswer(g, deal, 'a', 'Levi Ackerman', ids));
     expect(done.phase).toBe('revealed');

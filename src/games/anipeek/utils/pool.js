@@ -8,7 +8,7 @@ import { portraitsFor } from '../../../shared/utils/portrait';
 
 // The no-picture test lives in characterPool.js now (AniOut shares it); it is
 // re-exported because this folder's deal and tests import it from here. A round
-// under AniList's stand-in would be sixteen tiles over a grey silhouette.
+// under AniList's stand-in would be a board of tiles over a grey silhouette.
 export { hasPortrait };
 
 /**

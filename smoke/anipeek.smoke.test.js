@@ -1,5 +1,6 @@
 import { describe, it, expect, afterAll } from 'vitest';
 import { device, profile, seatTable, until, sleep, GRACE_WAIT, syncErrors } from './harness';
+import { HINT_COST, WRONG_BONUS, pointsFor } from '../src/games/anipeek/rules';
 
 const HOOK = ['src/games/anipeek/hooks/usePeekRoom.js', 'usePeekRoom'];
 const BASE = { rounds: 4, answerStyle: 'choice', hints: true, sharedOnly: false };
@@ -36,8 +37,10 @@ describe('AniPeek online', () => {
     // Nothing secret in this game, but the deal must be the same everywhere.
     expect(same(devs, (r) => r.deal)).toBe(true);
 
-    // Each round: the opener bids 6, the next player undercuts to 5, the third
-    // passes, the opener passes. Ann names hers right; Ben and Cat miss.
+    // Each round: the opener bids HINT_COST + 3, the next player undercuts by
+    // one, the third passes, the opener passes — so whoever peeks can buy a hint
+    // and a tile and still name them with budget to spare. Ann names hers
+    // right; Ben and Cat miss.
     const expected = { ann: 0, ben: 0, cat: 0 };
     for (let guard = 0; guard < 120; guard++) {
       const g = A.r.game;
@@ -45,8 +48,8 @@ describe('AniPeek online', () => {
       if (g.phase === 'bidding') {
         const turn = byId(devs, g.turnId);
         const before = JSON.stringify([g.bid, g.passed]);
-        if (!g.bid) await turn.act((r) => r.bid(null, 6));
-        else if (g.bid.n === 6) await turn.act((r) => r.bid(null, 5));
+        if (!g.bid) await turn.act((r) => r.bid(null, HINT_COST + 3));
+        else if (g.bid.n === HINT_COST + 3) await turn.act((r) => r.bid(null, HINT_COST + 2));
         else await turn.act((r) => r.pass());
         await until(() => devs.every((d) => JSON.stringify([d.r.game.bid, d.r.game.passed]) !== before || d.r.game.phase !== 'bidding'), { what: 'bid landed' });
       } else if (g.phase === 'peeking') {
@@ -62,8 +65,8 @@ describe('AniPeek online', () => {
         const by = g.bid.by;
         const right = by === 'ann';
         const text = right ? card(A.r).name : 'definitely wrong';
-        if (right) expected.ann += 16 - g.bid.n;
-        else for (const id of Object.keys(expected)) if (id !== by) expected[id] += 3;
+        if (right) expected.ann += pointsFor(g.bid.n);
+        else for (const id of Object.keys(expected)) if (id !== by) expected[id] += WRONG_BONUS;
         await byId(devs, by).act((r) => r.answer(null, text));
         await until(() => devs.every((d) => d.r.game.phase === 'revealed'), { what: 'revealed' });
         expect(A.r.game.scores).toEqual(expected);

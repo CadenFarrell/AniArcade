@@ -1,11 +1,13 @@
 import { useState } from 'react';
-import { GRID, TILES } from '../rules';
+import { COLS, ROWS, TILES } from '../rules';
 import { Button } from '../../../shared/ui';
 import { useSoundCue } from '../../../shared/hooks/useSoundCue';
 
 // How far apart the last covered tiles lift off at the reveal: fast enough to
 // read as one unveiling, slow enough that the face comes out of the board.
-const CASCADE_MS = 45;
+// Scaled by the tile count so the whole cascade lasts about as long as it did
+// on the 16-tile board at 45ms a tile (~0.7s), however fine the board gets.
+const CASCADE_MS = Math.round((45 * 16) / TILES);
 
 // The portrait under its tiles — every screen of a round draws this one board.
 //
@@ -65,7 +67,7 @@ export default function PeekBoard({ imageUrl, name, uncovered = [], revealAll = 
   const face = (i) => (
     <>
       <span className="halftone pointer-events-none absolute inset-0 opacity-25" />
-      <span className="relative font-display text-sm font-bold text-fg-subtle">{i + 1}</span>
+      <span className="relative font-display text-xs font-bold text-fg-subtle">{i + 1}</span>
     </>
   );
   const look = 'relative grid place-items-center bg-surface shadow-[0_0_0_1px_var(--color-ink)]';
@@ -107,7 +109,7 @@ export default function PeekBoard({ imageUrl, name, uncovered = [], revealAll = 
         <div
           aria-hidden="true"
           className="pointer-events-none absolute inset-0 grid"
-          style={{ gridTemplateColumns: `repeat(${GRID}, 1fr)`, gridTemplateRows: `repeat(${GRID}, 1fr)` }}
+          style={{ gridTemplateColumns: `repeat(${COLS}, 1fr)`, gridTemplateRows: `repeat(${ROWS}, 1fr)` }}
         >
           {Array.from({ length: TILES }, (_, i) => (
             open.has(i) ? <span key={i} /> : ghost(i, 150 + i * CASCADE_MS)
@@ -118,7 +120,7 @@ export default function PeekBoard({ imageUrl, name, uncovered = [], revealAll = 
       {!revealAll && (
         <div
           className="absolute inset-0 grid"
-          style={{ gridTemplateColumns: `repeat(${GRID}, 1fr)`, gridTemplateRows: `repeat(${GRID}, 1fr)` }}
+          style={{ gridTemplateColumns: `repeat(${COLS}, 1fr)`, gridTemplateRows: `repeat(${ROWS}, 1fr)` }}
         >
           {Array.from({ length: TILES }, (_, i) => {
             if (open.has(i)) return lifting.includes(i) ? ghost(i) : <span key={i} aria-hidden="true" />;

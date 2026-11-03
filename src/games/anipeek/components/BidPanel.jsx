@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import { MAX_BID, MIN_BID, pointsFor } from '../rules';
+import { MAX_BID, MIN_BID, OPENING_BID, pointsFor } from '../rules';
 import { Button, Card, NumberInput } from '../../../shared/ui';
 
 // Where a value sits before the bidder touches it: one under the bid to beat,
 // or the middle of the range for an opener. Never a number they cannot bid.
-const startingBid = (bid) => (bid ? Math.max(MIN_BID, bid.n - 1) : 8);
+const startingBid = (bid) => (bid ? Math.max(MIN_BID, bid.n - 1) : OPENING_BID);
 
 // One player's turn to bid: lower than the bid on the table, or pass. The
 // opener cannot pass — somebody has to set the first price — so their Pass is

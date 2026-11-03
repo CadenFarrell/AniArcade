@@ -1,4 +1,4 @@
-// AniPeek: a portrait under sixteen tiles; bid how few you need, then uncover
+// AniPeek: a portrait under a 5×7 board of tiles; bid how few you need, then uncover
 // them (or buy hint cards) and name the character.
 //
 // What the bot has to get right that the generic fallback would not:
@@ -14,6 +14,11 @@
 // rest of the table, which exercises both scoring paths every game.
 import { makeStrategy } from './base.js';
 import { find, findAll, click, fill } from '../core/generic.js';
+
+// rules.js's MAX_BID (5×7 tiles, minus one). Copied, not imported: the browser
+// layer loads strategies in plain Node, where rules.js's extensionless imports
+// do not resolve. A bid past it is still safe — the stepper clamps on blur.
+const MAX_BID = 34;
 
 export default makeStrategy({
   players: [2, 5],
@@ -42,7 +47,7 @@ export default makeStrategy({
       const tiles = find(snap, /^tiles$/i, { role: 'spinbutton' });
       if (tiles && rng.chance(0.4) && !ctx.memory.typedBid) {
         ctx.memory.typedBid = true;
-        return fill(tiles, String(rng.int(1, 15)), 'choose a bid');
+        return fill(tiles, String(rng.int(1, MAX_BID)), 'choose a bid');
       }
       ctx.memory.typedBid = false;
       return click(bid, 'bid');

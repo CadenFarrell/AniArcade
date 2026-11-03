@@ -6,18 +6,25 @@ build on (rules.js, online rooms, presence, settings, profiles, styling) is in t
 
 ## The game
 
-`games/anipeek/` (id `anipeek`) hides a character's portrait under a 4×4 grid of tiles. The
+`games/anipeek/` (id `anipeek`) hides a character's portrait under a 5×7 grid of tiles (`COLS`×`ROWS`, 35). The
 opener (rotating each round) must bid how few tiles they need to name the character; round the
 table, everyone else bids LOWER or passes, and a pass sits out the round's bidding. The lowest
 bidder then spends the bid: a tile costs 1, a hint card (studio, first aired, format, source)
-costs `HINT_COST` (2), and they may name the character at any point. Right scores `16 − bid`;
-wrong pays `WRONG_BONUS` (3) to every other player still here. It is an original design,
+costs `HINT_COST` (4), and they may name the character at any point. Right scores `35 − bid`;
+wrong pays `WRONG_BONUS` (7) to every other player still here. It is an original design,
 settled in a question round — keep the bid-down-then-prove loop as its core.
 
-**The score is `16 − bid`, never "tiles still covered".** With hints in the game the two
+**The score is `TILES − bid`, never "tiles still covered".** With hints in the game the two
 disagree, and the bid is the number the bidder chose in front of the table. Stopping early
 never changes the score, which keeps the bid the one decision that prices a round. The miss
 bonus exists so the lowest bid is never free.
+
+**The board was 4×4 and became 5×7** (16 tiles gave away a sixteenth of the face per tile and
+left bids only 1–15). `HINT_COST` and `WRONG_BONUS` were tuned at 2 and 3 on the 16-tile
+board and are derived from `TILES` (×TILES/16) so a hint and a miss keep their weight on any
+board; the opener's default bid (`OPENING_BID`) and the reveal cascade's per-tile delay follow
+`TILES` too. Retune the board in `COLS`/`ROWS` alone — but the playtest strategy copies
+`MAX_BID` as a literal (Node cannot load `rules.js` there).
 
 **Nothing in this game is private**, which is why local play has no handoff (the device goes
 to whoever the heading names) and online play has no `secrets/` node. Bids are spoken, the

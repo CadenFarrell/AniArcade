@@ -11,7 +11,7 @@ import userEvent from '@testing-library/user-event';
 import { readFile } from 'node:fs/promises';
 import AniPeekGame from './AniPeekGame';
 import { makeProfile, renderArcade, seedProfiles } from '../../shared/testing/arcade';
-import { TILES, WRONG_BONUS } from './rules';
+import { OPENING_BID, TILES, WRONG_BONUS } from './rules';
 
 vi.mock('../../shared/services/firebase', () => ({
   firebaseEnabled: false,
@@ -134,7 +134,7 @@ async function playToEnd(user, opts) {
 // quiet machine — right at vitest's 5s default, so a busy one failed them.
 // AniTurfGame.test.jsx's allowance.
 describe('AniPeek, played locally', { timeout: 60000 }, () => {
-  it('plays a whole game with multiple choice, a hint, and right answers scored 16 minus the bid', async () => {
+  it('plays a whole game with multiple choice, a hint, and right answers scored TILES minus the bid', async () => {
     seedPrefs({ rounds: 4, answerStyle: 'choice', hints: true });
     const user = userEvent.setup();
     await openSetup(user);
@@ -149,9 +149,10 @@ describe('AniPeek, played locally', { timeout: 60000 }, () => {
     expect(did).toContain('hint');
     expect(did.filter((d) => d === 'answer')).toHaveLength(4);
 
-    // Every round: the opener bid the default 8 and the other passed, so each
-    // right answer was worth 16 − 8, two rounds each — a shared win.
-    expect(screen.getAllByText(`${2 * (TILES - 8)} pts`).length).toBeGreaterThan(0);
+    // Every round: the opener bid the default OPENING_BID and the other passed,
+    // so each right answer was worth TILES − OPENING_BID, two rounds each — a
+    // shared win.
+    expect(screen.getAllByText(`${2 * (TILES - OPENING_BID)} pts`).length).toBeGreaterThan(0);
     expect(errors).not.toHaveBeenCalled();
   });
 
