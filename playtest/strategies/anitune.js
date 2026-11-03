@@ -9,6 +9,7 @@
 import { makeStrategy } from './base.js';
 import { find, findAll, click, fill, wait, has } from '../core/generic.js';
 import { animethemesJson } from '../fakes/animethemes.js';
+import { slimThemes } from '../../src/games/anitune/services/buildQuestions.js';
 
 const norm = (s) => (s || '').toLowerCase().replace(/[^a-z0-9]+/g, '');
 
@@ -40,12 +41,12 @@ export default makeStrategy({
         const hit = animethemesJson(`https://api.animethemes.moe/search?q=${encodeURIComponent(a.title)}`)?.search?.anime?.[1];
         if (!hit) { map[`title:${norm(a.title)}`] = null; continue; }
         map[`title:${norm(a.title)}`] = { slug: hit.slug, name: hit.name, mediaFormat: hit.media_format, year: hit.year, matchType: 'exact', confidence: 1 };
-        const anime = animethemesJson(`https://api.animethemes.moe/anime/${hit.slug}`)?.anime;
-        themes[hit.slug] = { themes: anime?.animethemes ?? [], cachedAt: Date.now() };
+        const anime = animethemesJson(`https://api.animethemes.moe/anime?filter[anime][slug]=${encodeURIComponent(hit.slug)}`)?.anime?.[0];
+        themes[hit.slug] = { themes: slimThemes(anime?.animethemes), cachedAt: Date.now() };
       }
     }
     storage.setItem('anitune_animethemes_map', JSON.stringify(map));
-    storage.setItem('anitune_theme_cache_v2', JSON.stringify(themes));
+    storage.setItem('anitune_theme_cache_v3', JSON.stringify(themes));
   },
   act(snap, ctx) {
     const { rng, scenario } = ctx;

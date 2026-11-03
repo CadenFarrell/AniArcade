@@ -1,12 +1,13 @@
 // A canned AnimeThemes API, so AniTune can be played by bots with no network.
 //
-// Answers the three routes animethemesClient.js calls, in the shapes it reads:
+// Answers the routes animethemesClient.js calls, in the shapes it reads:
 //
-//   /search?q=…              → { search: { anime: [{ slug, name, media_format, year }] } }
-//   /resource?filter[…]      → { resources: [] }  (fixture ids are not AniList's,
-//                              so the AniList route always misses and the title
-//                              search does the work — the hand-entered path)
-//   /anime/{slug}?include=…  → { anime: { slug, name, animethemes: [...] } }
+//   /search?q=…                          → { search: { anime: [{ slug, name, media_format, year }] } }
+//   /anime?filter[external_id]=…         → { anime: [], links: { next: null } }  (fixture
+//                                          ids are not AniList's, so the AniList batch
+//                                          always misses and the title search does the
+//                                          work — the hand-entered path)
+//   /anime?filter[anime][slug]=a,b&…     → { anime: [{ slug, name, animethemes: [...] }], links }
 //
 // Shared by both layers: the jsdom runner's fetch stub calls `respondAnimeThemes`,
 // and Playwright's page.route calls `animethemesJson` and fulfils with it. The
@@ -26,7 +27,7 @@ export const isThemeAudio = (url) => url.includes(AUDIO_HOST);
 
 const hash = (s) => [...s].reduce((h, ch) => (Math.imul(h ^ ch.charCodeAt(0), 16777619) >>> 0), 2166136261);
 const slugify = (s) => s.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '') || 'untitled';
-// slugs round-trip back to a display name for the /anime/{slug} route.
+// slugs round-trip back to a display name for the slug list route.
 const nameFor = new Map();
 
 function theme(slug, type, sequence, i) {
@@ -40,6 +41,15 @@ function theme(slug, type, sequence, i) {
       videos: [{ audio: { link: `https://${AUDIO_HOST}/${slug}-${type}${sequence}.ogg` } }],
     }],
   };
+}
+
+function animeRecord(slug) {
+  const h = hash(slug);
+  const themes = h % 9 === 0 ? [] : [
+    theme(slug, 'OP', 1, h), theme(slug, 'ED', 1, h + 1),
+    ...(h % 2 ? [theme(slug, 'OP', 2, h + 2)] : []),
+  ];
+  return { slug, name: nameFor.get(slug) ?? slug, animethemes: themes };
 }
 
 export function animethemesJson(rawUrl) {
@@ -60,16 +70,11 @@ export function animethemesJson(rawUrl) {
       },
     };
   }
-  if (url.pathname === '/resource') return { resources: [] };
-  const m = url.pathname.match(/^\/anime\/(.+)$/);
-  if (m) {
-    const slug = decodeURIComponent(m[1]);
-    const h = hash(slug);
-    const themes = h % 9 === 0 ? [] : [
-      theme(slug, 'OP', 1, h), theme(slug, 'ED', 1, h + 1),
-      ...(h % 2 ? [theme(slug, 'OP', 2, h + 2)] : []),
-    ];
-    return { anime: { slug, name: nameFor.get(slug) ?? slug, animethemes: themes } };
+  if (url.pathname === '/anime') {
+    const slugs = url.searchParams.get('filter[anime][slug]');
+    // Anything else on this route is the AniList-id batch, which never matches.
+    if (!slugs) return { anime: [], links: { next: null } };
+    return { anime: slugs.split(',').map(animeRecord), links: { next: null } };
   }
   return null;
 }

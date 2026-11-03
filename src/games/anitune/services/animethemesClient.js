@@ -18,11 +18,21 @@
 const ENDPOINT = 'https://api.animethemes.moe';
 const FALLBACK_MIN_INTERVAL_MS = 750; // ~80 req/min, under the observed 90 limit
 
-let lastRequestAt = 0;
+let nextSlotAt = 0;
 let minIntervalMs = FALLBACK_MIN_INTERVAL_MS;
 
+// Spaces request STARTS, not request lifetimes: each caller reserves the next
+// free slot synchronously, before it awaits anything. That is what lets
+// buildQuestions keep several batches in flight — a 25-show batch spends ~3s
+// on the server, and waiting for each before starting the next tripled a cold
+// deal — while the per-minute count stays where the limit wants it. The old
+// form read a shared "last request" stamp and wrote it after the wait, so
+// callers arriving together all saw the same stamp and fired at once.
 async function throttle(signal) {
-  const wait = minIntervalMs - (Date.now() - lastRequestAt);
+  const now = Date.now();
+  const slot = Math.max(now, nextSlotAt);
+  nextSlotAt = slot + minIntervalMs;
+  const wait = slot - now;
   if (wait > 0) {
     await new Promise((resolve, reject) => {
       const timer = setTimeout(resolve, wait);
@@ -32,7 +42,6 @@ async function throttle(signal) {
       }, { once: true });
     });
   }
-  lastRequestAt = Date.now();
 }
 
 function updateThrottleFromHeaders(res) {
@@ -44,8 +53,17 @@ function updateThrottleFromHeaders(res) {
 
 // `params` values are encoded as-is; bracketed keys like 'filter[site]' are
 // what the API expects, so callers pass them literally.
+//
+// `path` may also be a whole URL — a list response's `links.next` — but only one
+// on the API's own origin: a next link is data from the response, and following
+// it anywhere else would hand a third party our request.
 export async function animethemesRequest(path, params = {}, { signal } = {}) {
-  const url = new URL(path.startsWith('/') ? path : `/${path}`, ENDPOINT);
+  const url = /^https?:/i.test(path)
+    ? new URL(path)
+    : new URL(path.startsWith('/') ? path : `/${path}`, ENDPOINT);
+  if (url.origin !== new URL(ENDPOINT).origin) {
+    throw new Error(`AnimeThemes: refusing to follow ${url.origin}`);
+  }
   for (const [key, value] of Object.entries(params)) {
     if (value !== undefined && value !== null && value !== '') {
       url.searchParams.set(key, String(value));
@@ -102,37 +120,112 @@ export async function searchAnime(query, { signal } = {}) {
   return json?.search?.anime ?? [];
 }
 
-// Exact lookup by AniList media id. AnimeThemes stores AniList alongside
-// MyAnimeList/AniDB/Kitsu as an external "resource", so no MAL hop is needed.
-export async function findAnimeByAniListId(anilistId, { signal } = {}) {
-  const json = await animethemesRequest('/resource', {
-    'filter[site]': 'AniList',
-    'filter[external_id]': anilistId,
-    include: 'anime',
-  }, { signal });
+// The include every theme-bearing request asks for: the audio file and the
+// song's performers. `animethemes.song.artists` is one extra nesting level on a
+// request we were making anyway, so it costs nothing beyond payload — and it is
+// the difference between a reveal that names the band and one that doesn't.
+// Changing this changes the shape of what buildQuestions caches, which is why
+// that cache key carries a version; bump it alongside any change here.
+const THEMES_INCLUDE = 'animethemes.animethemeentries.videos.audio,animethemes.song.artists';
 
-  // The endpoint returns one row per matching resource and some carry an empty
-  // anime array (the same external id can be attached to non-anime records),
-  // so take the first row that actually resolved to an anime.
-  for (const resource of json?.resources ?? []) {
-    const anime = resource?.anime?.[0];
-    if (anime) return anime;
+// Sparse fieldsets: only what resolvedFromAniList, slimThemes and
+// buildQuestionPool read. A third of the bytes (measured 2026-11-03: 343 KB ->
+// 111 KB for 50 shows, identical themes and audio links) — the full records
+// carry every video's resolution, size, tags and paths, none of which a clip
+// needs, and this is a download a player may be making on phone data. It does
+// not make the server faster; batch size does (below). A field read anywhere
+// downstream that is missing here comes back absent, silently, so add it here
+// first.
+const SPARSE_FIELDS = {
+  'fields[anime]': 'slug,name,media_format,year',
+  'fields[resource]': 'site,external_id',
+  'fields[animetheme]': 'type,slug,sequence',
+  'fields[animethemeentry]': 'version',
+  'fields[video]': 'basename',
+  'fields[audio]': 'link',
+  'fields[song]': 'title',
+  'fields[artist]': 'name',
+};
+
+// How many shows go in one list request. Server time grows with the batch —
+// measured 2.6s for 10 ids, 3.2s for 25, 7.7s for 50 — so 25 a request, with
+// buildQuestions keeping several in flight (the throttle spaces their starts),
+// finishes a 200-show cold deal in ~9s where four sequential 50s took ~31s.
+// page[size]=100 leaves room for the records a split cour adds without usually
+// needing a second page.
+export const BATCH_SIZE = 25;
+
+// Walks a list response's pages. The API pages /anime at 15 by default, and a
+// batch can return more records than ids asked for (one AniList id can sit on
+// several AnimeThemes records), so `links.next` is followed until it runs out.
+async function listAnime(params, { signal }) {
+  const all = [];
+  let next = '/anime';
+  let query = { ...params, ...SPARSE_FIELDS, 'page[size]': 100 };
+  while (next) {
+    const json = await animethemesRequest(next, query, { signal });
+    all.push(...(json?.anime ?? []));
+    next = json?.links?.next ?? null;
+    // The next link already carries every parameter.
+    query = {};
   }
-  return null;
+  return all;
 }
 
-// Themes for one anime, with the audio file and the song's performers attached.
-// Keyed by slug, not by numeric id — /anime/{id} is a 404, the show route wants
-// /anime/{slug}. Returns the raw anime object including `animethemes`.
-//
-// `animethemes.song.artists` is one extra nesting level on a request we were
-// making anyway, so it costs nothing beyond payload — and it is the difference
-// between a reveal that names the band and one that doesn't. Changing this
-// include changes the shape of what buildQuestions caches, which is why that
-// cache key carries a version; bump it alongside any further change here.
-export async function fetchAnimeThemes(slug, { signal } = {}) {
-  const json = await animethemesRequest(`/anime/${encodeURIComponent(slug)}`, {
-    include: 'animethemes.animethemeentries.videos.audio,animethemes.song.artists',
+/**
+ * Up to BATCH_SIZE shows by AniList media id, in ONE request: the match and its
+ * themes together, which used to be a /resource lookup and an /anime/{slug}
+ * fetch per show — two throttled requests each, minutes for a big pool.
+ *
+ * Returns Map<anilistId, anime>. A record can carry several AniList resources (a
+ * split cour), so it serves every requested id among them; an id that matched
+ * nothing is simply absent. Same rule as the generator's fetchBatch. The
+ * `filter[site]`/`filter[external_id]` filters are unscoped on purpose and safe
+ * that way: only resources have those fields, so they narrow the included
+ * resources to the ones we asked about and touch nothing else (verified live
+ * 2026-11-03) — unlike `slug`, below.
+ */
+export async function fetchAnimeByAniListIds(ids, { signal } = {}) {
+  const wanted = new Set(ids.map(Number));
+  const byId = new Map();
+  if (!wanted.size) return byId;
+  const records = await listAnime({
+    'filter[has]': 'resources',
+    'filter[site]': 'AniList',
+    'filter[external_id]': [...wanted].join(','),
+    include: `resources,${THEMES_INCLUDE}`,
   }, { signal });
-  return json?.anime ?? null;
+  for (const anime of records) {
+    for (const r of anime?.resources ?? []) {
+      if (r?.site !== 'AniList') continue;
+      const id = Number(r.external_id);
+      if (wanted.has(id) && !byId.has(id)) byId.set(id, anime);
+    }
+  }
+  return byId;
+}
+
+/**
+ * Up to BATCH_SIZE shows by AnimeThemes slug, with their themes, in one request
+ * — for shows matched by title search, which have a slug but no AniList id.
+ *
+ * **The filter must be scoped to the type: `filter[anime][slug]`.** A bare
+ * `filter[slug]` also applies to every INCLUDED resource that has a slug field,
+ * and themes do ("OP1"), so it comes back with each show and zero themes — a
+ * 200 that looks exactly like "this show has no music". Verified live
+ * 2026-11-03; buildQuestions.test.js holds the line.
+ *
+ * Returns Map<slug, anime>.
+ */
+export async function fetchAnimeBySlugs(slugs, { signal } = {}) {
+  const bySlug = new Map();
+  if (!slugs.length) return bySlug;
+  const records = await listAnime({
+    'filter[anime][slug]': [...new Set(slugs)].join(','),
+    include: THEMES_INCLUDE,
+  }, { signal });
+  for (const anime of records) {
+    if (anime?.slug) bySlug.set(anime.slug, anime);
+  }
+  return bySlug;
 }
