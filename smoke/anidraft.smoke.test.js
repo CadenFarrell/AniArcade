@@ -1,6 +1,6 @@
 import { describe, it, expect, afterAll } from 'vitest';
 import { device, seatTable, until, sleep, GRACE_WAIT, syncErrors } from './harness';
-import { pickOrder } from '../src/games/anidraft/rules';
+import { pickOrder, teamSlots } from '../src/games/anidraft/rules';
 
 const HOOK = ['src/games/anidraft/hooks/useDraftRoom.js', 'useDraftRoom'];
 
@@ -35,7 +35,7 @@ const picksOf = (d) => d.r.game?.picks?.length ?? 0;
 
 // The picker's phone takes the first free card into its first open slot,
 // and every phone sees the pick land.
-async function pickOnce(devs, live = devs) {
+async function pickOnce(devs, live = devs, why = null) {
   const g = live[0].r.game;
   const n = g.picks.length;
   const picker = byId(live, pickOrder(g.order, g.round)[n]);
@@ -43,7 +43,7 @@ async function pickOnce(devs, live = devs) {
   const card = g.board.find((c) => !taken.has(c.key));
   const filled = new Set(g.picks.filter((p) => p.by === picker.r.myPlayerId).map((p) => p.slot));
   const slot = [0, 1, 2, 3, 4].find((i) => !filled.has(i));
-  await picker.act((r) => r.pick(card.key, slot));
+  await picker.act((r) => r.pick(card.key, slot, why));
   // At least: a pick that hands the turn to a departed player is followed at
   // once by the pick made for them, so exactly n + 1 may never be seen.
   await until(() => live.every((d) => picksOf(d) >= n + 1 || d.r.game.phase !== 'draft'), { what: `pick ${n + 1}` });
@@ -73,8 +73,16 @@ describe('AniDraft online', () => {
     await sleep(300);
     expect(picksOf(devs[0])).toBe(0);
 
-    for (let i = 0; i < 15; i++) await pickOnce(devs);
+    // The first pick carries a "why them?" line, which every phone reads
+    // back off the room: on the pick, and on the team the ballot shows.
+    await pickOnce(devs, devs, '  Trust   me  ');
+    for (const d of devs) {
+      expect(d.r.game.picks[0].why).toBe('Trust me');
+      expect(teamSlots(d.r.game, first)[d.r.game.picks[0].slot].why).toBe('Trust me');
+    }
+    for (let i = 1; i < 15; i++) await pickOnce(devs);
     await until(() => devs.every((d) => d.r.game.phase === 'vote'), { what: 'vote open' });
+    expect(devs[0].r.game.picks.filter((p) => p.why)).toHaveLength(1);
 
     // A ballot for your own team is refused; then everyone votes for the next seat.
     const order = devs[0].r.game.order;

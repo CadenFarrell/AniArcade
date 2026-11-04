@@ -81,6 +81,43 @@ describe('picking', () => {
   });
 });
 
+describe('the why line', () => {
+  it('cleans a reason to one capped line, and stores none for a blank', () => {
+    expect(rules.cleanWhy('  he   carried\nthe team  ')).toBe('he carried the team');
+    expect(rules.cleanWhy('x'.repeat(rules.MAX_WHY + 20))).toHaveLength(rules.MAX_WHY);
+    expect(rules.cleanWhy('   ')).toBeNull();
+    expect(rules.cleanWhy(null)).toBeNull();
+    const g = start();
+    expect(rules.makePick(g, 'a', 'k0', 0, { why: '  ' }).patch.picks[0]).not.toHaveProperty('why');
+  });
+
+  it('rides the card onto the ballot and into the log, and never on an auto-pick', () => {
+    let g = start();
+    g = apply(g, rules.makePick(g, 'a', 'k0', 1, { why: 'Always shows up late' }));
+    expect(rules.teamSlots(g, 'a')[1]).toMatchObject({ key: 'k0', why: 'Always shows up late' });
+    // The board card itself is untouched.
+    expect(g.board[0]).not.toHaveProperty('why');
+    g = apply(g, rules.autoPick(g, { activeIds: ['a', 'c'] }));
+    expect(g.picks[1]).not.toHaveProperty('why');
+    g = draftAll(g);
+    for (const id of ids) g = apply(g, rules.castBallot(g, id, ROLES.map((_, i) => ids[(ids.indexOf(id) + 1 + (i % 2)) % 3])));
+    g = apply(g, rules.closeVote(g));
+    expect(rules.lastEntry(g).teams.a[1]).toMatchObject({ key: 'k0', why: 'Always shows up late' });
+  });
+
+  it('survives normalizeGame, picks and log alike', () => {
+    let g = start();
+    g = apply(g, rules.makePick(g, 'a', 'k0', 0, { why: 'Main character energy' }));
+    g = draftAll(g);
+    for (const id of ids) g = apply(g, rules.castBallot(g, id, ROLES.map(() => ids[(ids.indexOf(id) + 1) % 3])));
+    g = apply(g, rules.closeVote(g));
+    const back = rules.normalizeGame(JSON.parse(JSON.stringify(g)));
+    expect(back.picks[0].why).toBe('Main character energy');
+    expect(back.picks[1]).not.toHaveProperty('why');
+    expect(back.log[0].teams.a[0].why).toBe('Main character energy');
+  });
+});
+
 describe('the vote', () => {
   const voted = (ballots) => {
     let g = draftAll(start());

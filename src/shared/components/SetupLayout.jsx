@@ -79,12 +79,18 @@ export function GameBanner({ game, tagline, aside }) {
 // status line, right-aligned, rather than squeezing it to a word per line.
 // `width` matches the screen's column (results screens are one `md` column),
 // so the status line starts where the content above it does.
+//
+// `field` is an optional full-width row above the status line, for one input
+// that belongs with the buttons (AniDraft's "why them?" beside its role
+// buttons). It sits in the row rather than among the buttons, because the
+// button group is sized by its content and a field there has no width to fill.
 const BAR_WIDTHS = { md: 'max-w-2xl', lg: 'max-w-4xl' };
 
-export function StartBar({ status, ready = false, width = 'lg', children }) {
+export function StartBar({ status, ready = false, width = 'lg', field = null, children }) {
   return (
     <div className="fixed inset-x-0 bottom-0 z-30 border-t-2 border-ink bg-surface/95 backdrop-blur-sm">
       <div className={`mx-auto flex w-full ${BAR_WIDTHS[width]} flex-wrap items-center gap-x-4 gap-y-2 px-5 py-3 sm:px-6`}>
+        {field && <div className="basis-full">{field}</div>}
         <p
           className={`min-w-40 flex-1 text-sm leading-snug sm:text-base ${ready ? 'text-fg-body' : 'text-fg-helper'}`}
           aria-live="polite"

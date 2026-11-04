@@ -39,6 +39,18 @@ export const ROLES_PER_ROUND = 5;
  * end, and a card someone was saving can still be sniped.
  */
 export const BOARD_FACTOR = 1.5;
+/**
+ * The optional line a picker types with a pick ("why them?"), which the
+ * voters see on the ballot. One phone line, not an essay: the ballot is a
+ * grid of cards, and the argument is meant to be said at the table anyway.
+ */
+export const MAX_WHY = 60;
+
+/** A typed reason as it is stored: one line, trimmed, capped — or null for none. */
+export function cleanWhy(text) {
+  const line = String(text ?? '').replace(/\s+/g, ' ').trim().slice(0, MAX_WHY).trim();
+  return line || null;
+}
 
 export const picksPerRound = (teams) => teams * ROLES_PER_ROUND;
 export const boardSize = (teams) => Math.ceil(BOARD_FACTOR * picksPerRound(teams));
@@ -82,10 +94,18 @@ export function takenBy(game) {
   return new Map(game.picks.map((p) => [p.card, p.by]));
 }
 
-/** A player's five role slots, in role order: the card drafted into each, or null. */
+/**
+ * A player's five role slots, in role order: the card drafted into each, or
+ * null. A pick's typed reason rides on its card (`why`), so the ballot reads
+ * it from here and closeVote files it in the log with the team, for the reveal.
+ */
 export function teamSlots(game, id) {
   const slots = Array(ROLES_PER_ROUND).fill(null);
-  for (const p of game.picks) if (p.by === id && p.slot >= 0 && p.slot < ROLES_PER_ROUND) slots[p.slot] = cardOf(game, p.card);
+  for (const p of game.picks) {
+    if (p.by !== id || p.slot < 0 || p.slot >= ROLES_PER_ROUND) continue;
+    const card = cardOf(game, p.card);
+    slots[p.slot] = card && p.why ? { ...card, why: p.why } : card;
+  }
   return slots;
 }
 
@@ -148,13 +168,15 @@ function withPick(game, pick, now) {
 /**
  * `by` drafts board card `card` into their role slot `slot`. Refused when it
  * is not their pick, the card is gone (or was never on the board) or the slot
- * is already filled.
+ * is already filled. `why` is the picker's optional reason (cleanWhy); a pick
+ * without one stores no field at all, since RTDB keeps no nulls anyway.
  */
-export function makePick(game, by, card, slot, { now = null } = {}) {
+export function makePick(game, by, card, slot, { now = null, why = null } = {}) {
   if (game.phase !== 'draft' || currentPicker(game) !== by) return { patch: {} };
   if (!cardOf(game, card) || takenBy(game).has(card)) return { patch: {} };
   if (!Number.isInteger(slot) || !openSlots(game, by).includes(slot)) return { patch: {} };
-  return withPick(game, { by, card, slot, auto: false }, now);
+  const line = cleanWhy(why);
+  return withPick(game, { by, card, slot, auto: false, ...(line ? { why: line } : {}) }, now);
 }
 
 /**
@@ -367,7 +389,10 @@ const slotsOf = (raw, n, fn) => Array.from({ length: n }, (_, i) => fn(raw?.[i])
 
 export function normalizeCard(raw) {
   if (!raw || typeof raw !== 'object' || !str(raw.name) || !str(raw.key)) return null;
-  return { key: raw.key, name: raw.name, series: str(raw.series) ?? '', imageUrl: str(raw.imageUrl) ?? '' };
+  const card = { key: raw.key, name: raw.name, series: str(raw.series) ?? '', imageUrl: str(raw.imageUrl) ?? '' };
+  // A drafted card in the log carries its pick's reason (teamSlots).
+  const why = cleanWhy(str(raw.why));
+  return why ? { ...card, why } : card;
 }
 
 const counts = (raw) => {
@@ -409,7 +434,11 @@ export function normalizeGame(raw) {
     board: listOf(raw.board).map(normalizeCard).filter(Boolean),
     picks: listOf(raw.picks)
       .filter((p) => p && typeof p === 'object' && str(p.by) && str(p.card))
-      .map((p) => ({ by: p.by, card: p.card, slot: numberOr(p.slot, -1), auto: p.auto === true })),
+      .map((p) => {
+        const pick = { by: p.by, card: p.card, slot: numberOr(p.slot, -1), auto: p.auto === true };
+        const why = cleanWhy(str(p.why));
+        return why ? { ...pick, why } : pick;
+      }),
     pickAt: numberOr(raw.pickAt, null),
     ballots,
     shown: numberOr(raw.shown, 0),

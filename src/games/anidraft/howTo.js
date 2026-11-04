@@ -1,5 +1,5 @@
 import { CLOCK_OPTIONS, DEFAULT_PREFS } from './prefs';
-import { BOARD_FACTOR, MAX_PLAYERS, MIN_PLAYERS, ROLES_PER_ROUND } from './rules';
+import { BOARD_FACTOR, MAX_PLAYERS, MAX_WHY, MIN_PLAYERS, ROLES_PER_ROUND } from './rules';
 
 const clocks = CLOCK_OPTIONS.filter((o) => o.value > 0).map((o) => o.value).join(' or ');
 
@@ -16,6 +16,7 @@ export const HOW_TO = {
         `One board of characters from the table’s lists goes down, about ${BOARD_FACTOR}× as many as there are picks, so there is still a choice at the end.`,
         `Take turns picking from the board in a snake: first to last, then last to first, ${ROLES_PER_ROUND} times round. The first pick moves one seat each round.`,
         'Each pick goes into one of your empty roles. A character on someone else’s team is gone.',
+        `You can add a line on why you picked them (up to ${MAX_WHY} characters). The voters see it on the ballot.`,
       ],
     },
     {

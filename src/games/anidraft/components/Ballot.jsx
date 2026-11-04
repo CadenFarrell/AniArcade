@@ -16,6 +16,10 @@ import CardFace from './CardFace';
 // named "<character> as <role>" — the drafter's name is visible text beside
 // it — which is what the bots press. The choice is marked by an ink bar and a
 // VOTE tab, never colour alone.
+//
+// A pick's "why them?" line (rules.cleanWhy) prints under the drafter's name.
+// It is the radio's description, not its name: the name stays "<character> as
+// <role>", which the bots press and which reads cleanly in a list of five.
 export default function Ballot({ game, players, voter, onCast, title = 'Your Vote' }) {
   const [choices, setChoices] = useState(() => Array(ROLES_PER_ROUND).fill(null));
   const others = game.order.filter((id) => id !== voter);
@@ -39,6 +43,7 @@ export default function Ballot({ game, players, voter, onCast, title = 'Your Vot
               {others.map((id) => {
                 const card = teamSlots(game, id)[i];
                 const on = choices[i] === id;
+                const whyId = card?.why ? `anidraft-why-${i}-${id}` : undefined;
                 return (
                   <button
                     key={id}
@@ -46,6 +51,7 @@ export default function Ballot({ game, players, voter, onCast, title = 'Your Vot
                     role="radio"
                     aria-checked={on}
                     aria-label={`${card?.name ?? 'Nobody'} as ${role.name}`}
+                    aria-describedby={whyId}
                     onClick={() => choose(i, id)}
                     className={`btn-pop focus-pop relative flex flex-col overflow-hidden rounded-none! p-0! text-left
                       ${on ? 'border-ink bg-ink text-paper' : 'border-ink bg-surface text-fg-strong'}`}
@@ -65,6 +71,13 @@ export default function Ballot({ game, players, voter, onCast, title = 'Your Vot
                       <span className={`block font-display text-xs font-bold uppercase tracking-wide ${on ? '' : 'text-fg-helper'}`}>
                         {nameOf(id)}
                       </span>
+                      {card?.why && (
+                        // Body face, not the button's display caps: it is a
+                        // person's sentence, and Oswald bold read as a label.
+                        <span id={whyId} className={`mt-1 block font-sans text-xs font-normal leading-snug [overflow-wrap:anywhere] ${on ? '' : 'text-fg-body'}`}>
+                          “{card.why}”
+                        </span>
+                      )}
                     </span>
                   </button>
                 );

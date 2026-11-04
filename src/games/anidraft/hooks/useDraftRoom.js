@@ -117,7 +117,7 @@ export function useDraftRoom() {
     return patchState({ view: 'lobby', game: null });
   }, [roomCode, patchState, bestEffort]);
 
-  const pick = useCallback((card, slot) => applyGame((g) => rules.makePick(g, me, card, slot, { now: now() })), [applyGame, me, now]);
+  const pick = useCallback((card, slot, why = null) => applyGame((g) => rules.makePick(g, me, card, slot, { now: now(), why })), [applyGame, me, now]);
   // The host's alone, as the lobby's settings are: two phones shuffling at
   // once would each overwrite the other's roles.
   const reshuffle = useCallback(() => (isHost

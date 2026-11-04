@@ -12,7 +12,12 @@
 // "Shuffle roles" is pressed now and then before a round's first pick, so the
 // reshuffle path is exercised; online only the host sees it.
 import { makeStrategy } from './base.js';
-import { find, findAll, click, has, wait } from '../core/generic.js';
+import { find, findAll, click, fill, has, wait } from '../core/generic.js';
+
+// The optional "why them?" line, typed on some picks so the ballot and the
+// reveal render one (and the longest runs into the cap).
+const WHYS = ['Carried the whole arc', 'Nobody else could pull this off', 'Trust me on this one',
+  'Peak fiction, no notes', 'They would never lose this fight', 'x'.repeat(70)];
 
 export default makeStrategy({
   players: [3, 5],
@@ -35,7 +40,12 @@ export default makeStrategy({
 
     // A role for the card already picked.
     const roles = findAll(snap, /^Draft as /);
-    if (roles.length) return click(rng.pick(roles), 'draft it into a role');
+    if (roles.length) {
+      // One decision a pick: an empty box is either filled now or left.
+      const why = find(snap, /why them/i, { role: 'textbox' });
+      if (why && !why.value && rng.chance(0.2)) return fill(why, rng.pick(WHYS), 'say why them');
+      return click(rng.pick(roles), 'draft it into a role');
+    }
 
     const shuffle = find(snap, /^shuffle roles$/i);
     const board = findAll(snap, /^Take /);

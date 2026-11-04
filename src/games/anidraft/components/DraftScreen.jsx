@@ -2,9 +2,9 @@ import { useState } from 'react';
 import PlayerRow from '../../../shared/components/PlayerRow';
 import RoundHeader from '../../../shared/components/RoundHeader';
 import { StartBar } from '../../../shared/components/SetupLayout';
-import { Button, TimerBar } from '../../../shared/ui';
+import { Button, Input, TimerBar } from '../../../shared/ui';
 import { roleOf } from '../roles';
-import { currentPicker, openSlots, pickNo, pickOrder } from '../rules';
+import { MAX_WHY, currentPicker, openSlots, pickNo, pickOrder } from '../rules';
 import DraftBoard from './DraftBoard';
 import { AllTeams, TeamSheet } from './TeamSheet';
 
@@ -19,12 +19,16 @@ import { AllTeams, TeamSheet } from './TeamSheet';
 //
 // The selection is keyed to the pick it was made in, so it cannot outlive the
 // pick: online, a clock running out picks for you while a card is selected.
+// So is the optional "why them?" line typed with it, which the voters read on
+// the ballot: a reason never carries over to the next picker's card.
 export default function DraftScreen({
   game, players, youId = null, canPick, onPick, onReshuffle = null, clock = null,
 }) {
   const at = `${game.round}:${game.picks.length}`;
   const [sel, setSel] = useState({ at: null, key: null });
   const selected = sel.at === at ? sel.key : null;
+  const [note, setNote] = useState({ at: null, text: '' });
+  const why = note.at === at ? note.text : '';
 
   const picker = currentPicker(game);
   const nameOf = (id) => players.find((p) => p.id === id)?.name ?? 'Someone';
@@ -71,7 +75,27 @@ export default function DraftScreen({
         onSelect={canPick ? (key) => setSel({ at, key }) : null}
       />
       <AllTeams game={game} players={players} youId={youId} activeId={picker} />
-      <StartBar width="md" status={status} ready={canPick}>
+      <StartBar
+        width="md"
+        status={status}
+        ready={canPick}
+        // In the pinned bar beside the role buttons, so it is in reach wherever
+        // on the board the card was; one line, so the bar stays short.
+        field={canPick && card ? (
+          <>
+            <label htmlFor="anidraft-why" className="sr-only">Why them? (optional)</label>
+            <Input
+              id="anidraft-why"
+              value={why}
+              maxLength={MAX_WHY}
+              placeholder="Why them? (optional)"
+              autoComplete="off"
+              className="py-2"
+              onChange={(e) => setNote({ at, text: e.target.value })}
+            />
+          </>
+        ) : null}
+      >
         {/* Only the role on the button, small: the status line already says
             "Draft <name> as…", and five full "Draft as Agent of Chaos"
             buttons stacked five rows deep over half a phone. The accessible
@@ -85,7 +109,7 @@ export default function DraftScreen({
               variant="primary"
               size="sm"
               aria-label={`Draft as ${role}`}
-              onClick={() => { setSel({ at: null, key: null }); onPick(card.key, i); }}
+              onClick={() => { setSel({ at: null, key: null }); setNote({ at: null, text: '' }); onPick(card.key, i, why); }}
             >
               {role}
             </Button>

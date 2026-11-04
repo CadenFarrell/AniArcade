@@ -70,8 +70,8 @@ async function start(user, names, prefs) {
 }
 
 // Every pick of the round: a free card off the board, into a role. Returns
-// what was taken, by its button name.
-async function draftRound(user, n) {
+// what was taken, by its button name. `why` is typed with the first pick.
+async function draftRound(user, n, { why = null } = {}) {
   const taken = [];
   for (let i = 0; i < n * 5; i++) {
     expect(screen.getByRole('heading', { level: 2, name: /'s Pick$/ })).toBeTruthy();
@@ -79,6 +79,10 @@ async function draftRound(user, n) {
     const card = free[i % free.length];
     taken.push(card.getAttribute('aria-label'));
     await user.click(card);
+    // The box is there for every pick, and starts empty each time.
+    const box = screen.getByRole('textbox', { name: /why them/i });
+    expect(box.value).toBe('');
+    if (why && i === 0) await user.type(box, why);
     const roles = screen.getAllByRole('button', { name: /^Draft as / });
     await user.click(roles[roles.length - 1]);
   }
@@ -86,10 +90,17 @@ async function draftRound(user, n) {
 }
 
 // Each voter in turn: the handoff, then one choice per role, then cast.
-async function voteRound(user, names) {
+// `why` is a reason the FIRST seat typed: every other voter sees it, as the
+// description of that pick's radio.
+async function voteRound(user, names, { why = null } = {}) {
   for (const name of names) {
     await user.click(screen.getByRole('button', { name: `I'm ${name} — vote` }));
     expect(screen.getByRole('heading', { level: 2, name: `${name}'s Vote` })).toBeTruthy();
+    if (why) {
+      const shown = screen.queryByText(`“${why}”`);
+      if (name === names[0]) expect(shown).toBeNull();
+      else expect(screen.getAllByRole('radio').some((r) => r.getAttribute('aria-describedby') === shown.id)).toBe(true);
+    }
     const cast = screen.getByRole('button', { name: 'Cast votes' });
     expect(cast.disabled).toBe(true);
     for (const group of screen.getAllByRole('radiogroup')) {
@@ -119,11 +130,13 @@ describe('AniDraft, one device', { timeout: 60000 }, () => {
 
     // The roles can be reshuffled until the first pick, and not after.
     await user.click(screen.getByRole('button', { name: 'Shuffle roles' }));
-    await draftRound(user, names.length);
+    const why = 'Always late, always right';
+    await draftRound(user, names.length, { why });
     expect(screen.queryByRole('button', { name: 'Shuffle roles' })).toBeNull();
 
-    await voteRound(user, names);
+    await voteRound(user, names, { why });
     await revealRound(user);
+    expect(screen.getByText(`“${why}”`)).toBeTruthy();
     await user.click(screen.getByRole('button', { name: 'See results' }));
     expect(await screen.findByRole('heading', { name: 'Final Scores' })).toBeTruthy();
     expect(screen.getByText('Round 1')).toBeTruthy();

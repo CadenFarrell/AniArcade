@@ -47,6 +47,8 @@ export default function RoleReveal({ game, players, youId = null }) {
                         {card?.name ?? 'Nobody'}
                       </p>
                       <p className="truncate text-sm text-fg-helper">{nameOf(id)}</p>
+                      {/* The drafter's "why them?", if they typed one. */}
+                      {card?.why && <p className="text-sm text-fg-body [overflow-wrap:anywhere]">“{card.why}”</p>}
                     </div>
                     <span className="shrink-0 text-sm font-bold text-fg-body">
                       {votes} vote{votes === 1 ? '' : 's'}

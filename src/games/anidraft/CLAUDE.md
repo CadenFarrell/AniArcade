@@ -72,6 +72,12 @@ board ends instead of dealing blanks.
 The board, the picks and the teams are the table's to see. That is what lets one phone in the
 middle run the whole draft with no handoffs, and why there is **no `secrets/` node**.
 
+**A pick's "why them?" line rides on the pick** (`why`, `cleanWhy`: one line, `MAX_WHY`
+characters), in `state/game` with the rest of the draft. It has no setting, because an
+empty box costs nothing, and an auto-pick never writes one. `teamSlots` merges it onto the
+slot's card, so the ballot reads it from there and `closeVote`'s log carries it to the reveal
+with no field of its own. The board's own cards never carry it.
+
 **Ballots sit in `state/game`**, as AniFake's votes do. Screens show who has voted (a lock in
 the row), never what, until the vote closes. A player reading raw room data mid-vote learns
 votes on teams that are already final, so there is nothing to protect.

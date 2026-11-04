@@ -28,7 +28,7 @@ export function useDraftRound(players, settings) {
 
   return {
     game,
-    pick: useCallback((card, slot) => apply((g) => rules.makePick(g, rules.currentPicker(g), card, slot)), [apply]),
+    pick: useCallback((card, slot, why = null) => apply((g) => rules.makePick(g, rules.currentPicker(g), card, slot, { why })), [apply]),
     reshuffle: useCallback(() => apply((g) => rules.reshuffleRoles(g, dealRoles(rules.ROLES_PER_ROUND, Math.random, g.roles))), [apply]),
     // A ballot, and — when it was the last one — the vote's close in the same
     // update, so the reveal follows the last voter without another tap.
