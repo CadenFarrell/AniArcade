@@ -31,7 +31,7 @@ const SESSION_KEY = 'anitune_session';
 const packSession = (game, state) => ({
   playerIds: game.players.map((p) => p.id),
   settings: {
-    mode: game.mode, clipSeconds: game.clipSeconds, playbackRate: game.playbackRate,
+    mode: game.mode, playbackRate: game.playbackRate,
     timed: game.timed, guessSeconds: game.guessSeconds,
     answerSeconds: game.answerSeconds, startingLives: game.startingLives,
   },
@@ -48,7 +48,7 @@ export default function LocalGame({ onExit, onBack }) {
   const [preparing, setPreparing] = useState(false);
   const [progress, setProgress] = useState(null);
   const [error, setError] = useState(null);
-  const [game, setGame] = useState(null); // { players, round, questions, clipSeconds, settings }
+  const [game, setGame] = useState(null); // { players, round, questions, ...settings }
   // { scores, lives, eliminated, playedCount } — the whole standings, not just
   // points, since Lives ranks on survival first and can end a round early.
   const [final, setFinal] = useState({ scores: {}, lives: {}, eliminated: [], playedCount: 0 });
@@ -96,6 +96,7 @@ export default function LocalGame({ onExit, onBack }) {
       scores: state.scores,
       lives: state.lives,
       eliminated: state.eliminated,
+      eliminatedAt: state.eliminatedAt ?? {},
       // The question being resumed into has not been played yet, so the count
       // is the index rather than index + 1.
       playedCount: state.index,
@@ -163,7 +164,6 @@ export default function LocalGame({ onExit, onBack }) {
           players={game.players}
           round={game.round}
           questions={game.questions}
-          clipSeconds={game.clipSeconds}
           playbackRate={game.playbackRate}
           mode={game.mode}
           // Only the settings a rule acts on; the rest decided what was dealt
@@ -205,16 +205,19 @@ export default function LocalGame({ onExit, onBack }) {
           scores={final.scores}
           lives={final.lives}
           eliminated={final.eliminated}
+          eliminatedAt={final.eliminatedAt ?? {}}
           mode={game.mode}
           round={game.round}
           playedCount={final.playedCount}
           log={final.log ?? []}
           roundSize={game.round.length}
-          // Re-deal from the same question pool rather than re-fetching; the
-          // caches make a full rebuild cheap, but this keeps it instant.
+          // A fresh deal through prepareQuestions again. Not a re-fetch in
+          // practice — both of AniTune's caches are warm from this game, so it
+          // rebuilds from storage in moments — but it does run the whole
+          // pipeline, which is what deals a new set rather than replaying this one.
           onPlayAgain={() => start(game)}
-          // "Play again" re-deals from the same question pool, so this is the
-          // only route back to the options. Safe here and nowhere earlier: the
+          // "Play again" deals again with the same options, so this is the
+          // only route back to them. Safe here and nowhere earlier: the
           // round is over and every answer already shown.
           onBack={() => { setGame(null); setView('setup'); }}
         />

@@ -56,6 +56,9 @@ function normalizeGame(game) {
     // "this mode does not use them" anyway.
     lives: game.lives ?? {},
     eliminated: game.eliminated ?? [],
+    // Absent on rounds dealt before it (rankLives falls back to the order), and
+    // dropped by RTDB while nobody is out.
+    eliminatedAt: game.eliminatedAt ?? {},
     // A round dealt before the clock existed carries no timing settings, and an
     // untimed round is exactly what it should then play as.
     timed: game.timed ?? false,
@@ -67,7 +70,7 @@ function normalizeGame(game) {
     finalIndex: game.finalIndex ?? null,
     log: (Array.isArray(game.log) ? game.log : Object.values(game.log ?? {}))
       .filter(Boolean)
-      .map((l) => ({ i: l.i ?? 0, got: l.got ?? {} })),
+      .map((l) => ({ i: l.i ?? 0, got: l.got ?? {}, lost: l.lost ?? [] })),
   };
 }
 

@@ -86,7 +86,8 @@ export default makeStrategy({
     // which is right about as often as a real table is), or a random word.
     const box = find(snap, /which anime is this/i);
     if (box) {
-      const lock = find(snap, /^lock it in/i);
+      // "Lock in" in every mode now (Race said "Lock it in" until the polish pass).
+      const lock = find(snap, /^lock (it )?in/i);
       if (box.value && lock) return click(lock, 'lock in answer');
       const options = snap.controls.filter((c) => c.role === 'option' && !c.disabled);
       if (options.length) return click(rng.pick(options), 'pick a suggestion');

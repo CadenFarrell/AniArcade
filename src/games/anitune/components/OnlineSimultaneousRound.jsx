@@ -47,6 +47,16 @@ export default function OnlineSimultaneousRound({
     </div>
   );
 
+  // The host's escape hatch (onReveal is null for everyone else), for a player
+  // who has wandered off without leaving. On every screen the host can be on —
+  // locked in or knocked out included — since the host who has answered is
+  // exactly the one left waiting on the straggler.
+  const revealNow = onReveal ? (
+    <div className="mt-4 text-center">
+      <GhostButton onClick={onReveal}>Reveal now</GhostButton>
+    </div>
+  ) : null;
+
   // Knocked out, but still in the room. Spectating is a real state rather than a
   // dead screen: they keep watching the clips and the reveals, and the room does
   // not wait on them.
@@ -61,6 +71,7 @@ export default function OnlineSimultaneousRound({
             : 'revealing…'}
         </p>
         {strip}
+        {revealNow}
       </div>
     );
   }
@@ -76,6 +87,7 @@ export default function OnlineSimultaneousRound({
             : 'Revealing…'}
         </p>
         {strip}
+        {revealNow}
       </div>
     );
   }
@@ -107,10 +119,7 @@ export default function OnlineSimultaneousRound({
         onSkip={() => onSubmit('')}
       />
       {strip}
-      {/* Escape hatch so an away player can't freeze the round forever. */}
-      <div className="mt-4 text-center">
-        <GhostButton onClick={onReveal}>Reveal now</GhostButton>
-      </div>
+      {revealNow}
     </div>
   );
 }

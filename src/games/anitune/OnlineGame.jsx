@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useAniTuneRoom } from './hooks/useAniTuneRoom';
-import { isRace, hasLives, isEliminated, livePlayerIds } from './rules';
+import { isRace, hasLives, isEliminated, livePlayerIds, lostOn } from './rules';
 import RoomSetup from '../../shared/components/RoomSetup';
 import descriptor from './index';
 import { countShows } from '../../shared/utils/profileStats';
@@ -20,6 +20,8 @@ import PlayerRow from '../../shared/components/PlayerRow';
 import RoundHeader from '../../shared/components/RoundHeader';
 import SongHints from './components/SongHints';
 import { songMultiplier } from './rules';
+import { usePrimedAudio } from './hooks/usePrimedAudio';
+import { listSuggestionPool } from './utils/titleMatch';
 
 // The online view-router — the Firebase-backed counterpart to AniTuneRound's local
 // orchestration. Modelled on src/games/aniguess/OnlineGame.jsx: a shell() wraps
@@ -34,10 +36,43 @@ export default function OnlineGame({ onBack, onExit }) {
   // reveals the "nobody got it" escape.
   const [clipStarted, setClipStarted] = useState(false);
   const [clipDone, setClipDone] = useState(false);
+  // This phone could not load the clip at all. It still told the room it was
+  // ready (SyncedClipPlayer), so the song starts for everyone else, and this
+  // player answers from the room's speakers once the shared start has passed.
+  const [clipFailed, setClipFailed] = useState(false);
+  // How much of the window this phone has heard, for the hints.
+  const [heard, setHeard] = useState(0);
   useEffect(() => {
     setClipStarted(false);
     setClipDone(false);
+    setClipFailed(false);
+    setHeard(0);
   }, [room.game?.index, room.view]);
+
+  // A phone with no clip has no window of its own to run out, so it takes the
+  // room's: the shared start plus the window, in server time. Same moment the
+  // phones that can hear it reach the end of theirs.
+  const failedClipStartAt = clipFailed ? room.game?.clipStartAt ?? null : null;
+  const failedWindowMs = (room.settings?.guessSeconds ?? 20) * 1000;
+  useEffect(() => {
+    if (failedClipStartAt == null) return undefined;
+    const wait = failedClipStartAt + failedWindowMs - (Date.now() + room.serverOffset);
+    const timer = setTimeout(() => setClipDone(true), Math.max(0, wait));
+    return () => clearTimeout(timer);
+  }, [failedClipStartAt, failedWindowMs, room.serverOffset]);
+
+  // One <audio> for the whole game, so the ready tap is a once-per-game thing
+  // (hooks/usePrimedAudio).
+  const sharedAudio = usePrimedAudio();
+
+  // What the guess box suggests: every show on the table's lists, with the
+  // round's own songs first (they carry the AnimeThemes name as the alternate
+  // line). It used to be only the round's ten dealt songs, which narrowed the
+  // answer to one of ten — locally the box has always offered the whole pool.
+  const suggestionPool = useMemo(
+    () => listSuggestionPool(room.round ?? [], room.players),
+    [room.round, room.players]
+  );
 
   // Warm the next clip — metadata alone took ~2s in testing, which would
   // otherwise be dead air between questions. Delayed rather than immediate: the
@@ -156,7 +191,17 @@ export default function OnlineGame({ onBack, onExit }) {
     const survivors = livePlayerIds(game, room.activeIds);
     const isLast = game.index + 1 >= round.length
       || (lastManStanding && room.players.length > 1 && survivors.length <= 1);
-    const clipSeconds = room.settings?.clipSeconds ?? 10;
+    // The clip plays the whole guessing window (ClipPlayer's note); untimed, the
+    // same number is how long before "Nobody got it" is offered.
+    const windowSeconds = room.settings?.guessSeconds ?? 20;
+    // Answering opens when this phone's clip does — or, on a phone that could
+    // not load it, when the room's shared start has passed.
+    const canAnswer = clipStarted || (clipFailed && game.clipStartAt != null);
+    // Who the ready gate is still waiting on, never this phone itself (it only
+    // shows the line once it is ready, and its own write may still be landing).
+    const waitingOn = room.activePlayers
+      .filter((p) => p.id !== room.myPlayerId && !game.ready?.[p.id])
+      .map((p) => p.name);
     const ranked = [...room.players].sort(
       (a, b) => (game.scores[b.id] || 0) - (game.scores[a.id] || 0)
     );
@@ -194,7 +239,9 @@ export default function OnlineGame({ onBack, onExit }) {
           <SyncedClipPlayer
             key={question.id}
             src={question.audioUrl}
-            seconds={clipSeconds}
+            windowSeconds={windowSeconds}
+            shared={sharedAudio}
+            waitingOn={waitingOn}
             clipFraction={question.clipFraction ?? 0.45}
             playbackRate={room.settings?.playbackRate ?? 1}
             clipStartAt={game.clipStartAt}
@@ -204,7 +251,11 @@ export default function OnlineGame({ onBack, onExit }) {
             onReady={room.markReady}
             onStarted={() => setClipStarted(true)}
             onWindowEnded={() => setClipDone(true)}
-            onUnplayable={() => setClipDone(true)}
+            // Not clipDone: on a phone that heard nothing, "Nobody got it" would
+            // let it end a song the rest of the room is still listening to. It
+            // gets the escape when everyone else does (the effect above).
+            onUnplayable={() => setClipFailed(true)}
+            onProgress={setHeard}
           />
 
           {/* Driven by the room's shared deadlineAt, corrected per device, so
@@ -219,19 +270,19 @@ export default function OnlineGame({ onBack, onExit }) {
             />
           )}
 
-          {room.settings?.hints && !revealed && game.deadlineAt != null && game.phase === 'listening' && (
-            <SongHints question={question} players={room.players} fraction={room.clock.fraction} />
+          {room.settings?.hints && !revealed && (
+            <SongHints question={question} players={room.players} fraction={heard} />
           )}
 
           {!revealed && race && (
             <OnlineRaceRound
               players={room.activePlayers}
-              questions={round}
+              questions={suggestionPool}
               question={question}
               game={game}
               myPlayerId={room.myPlayerId}
               isMyBuzz={room.isMyBuzz}
-              clipStarted={clipStarted}
+              clipStarted={canAnswer}
               clipDone={clipDone}
               onBuzz={room.buzz}
               onAnswer={(guess) => room.resolveBuzz(question, guess)}
@@ -242,7 +293,7 @@ export default function OnlineGame({ onBack, onExit }) {
           {!revealed && !race && (
             <OnlineSimultaneousRound
               players={room.activePlayers}
-              questions={round}
+              questions={suggestionPool}
               question={question}
               game={game}
               myPlayerId={room.myPlayerId}
@@ -250,9 +301,12 @@ export default function OnlineGame({ onBack, onExit }) {
               iAmOut={room.iAmOut}
               lives={lastManStanding ? game.lives : null}
               eliminated={game.eliminated}
-              clipStarted={clipStarted}
+              clipStarted={canAnswer}
               onSubmit={(text) => room.submitAnswer(question, text)}
-              onReveal={room.revealNow}
+              // The host's alone: it closes the song for everyone and, in Lives,
+              // charges nobody a life (rules.revealNow), so in anyone's hands it
+              // was a way to skip losing one.
+              onReveal={room.isHost ? room.revealNow : null}
             />
           )}
 
@@ -264,10 +318,12 @@ export default function OnlineGame({ onBack, onExit }) {
               answers={game.answers}
               windowMs={game.windowMs}
               lives={lastManStanding ? game.lives : null}
+              lostIds={lostOn(game, game.index)}
+              eliminated={game.eliminated}
               multiplier={songMultiplier(game)}
               myId={room.myPlayerId}
               onNext={room.advance}
-              nextLabel={isLast ? 'See results →' : 'Next question →'}
+              nextLabel={isLast ? 'See results →' : 'Next song →'}
             />
           )}
         </Screen>
@@ -283,6 +339,7 @@ export default function OnlineGame({ onBack, onExit }) {
         mode={room.game.mode}
         lives={room.game.lives}
         eliminated={room.game.eliminated}
+        eliminatedAt={room.game.eliminatedAt}
         round={room.round ?? []}
         // game.index is the last question the room actually reached, which in
         // Lives is short of the round it was dealt.
@@ -290,7 +347,8 @@ export default function OnlineGame({ onBack, onExit }) {
         log={room.game.log ?? []}
         departedIds={room.departedIds}
         roundSize={room.round?.length ?? Object.keys(room.game.scores).length}
-        onPlayAgain={room.returnToLobby}
+        // The host's call: it sends the whole room back to the lobby.
+        onPlayAgain={room.isHost ? room.returnToLobby : null}
       />,
       // The final results: the host may take the table on to another game.
       { nextGame: true },

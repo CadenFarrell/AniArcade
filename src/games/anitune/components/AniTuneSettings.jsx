@@ -95,10 +95,10 @@ export default function AniTuneSettings({ players, values, onChange, disabled = 
       </div>
 
       <Card title="The round" action={<DetailToggle />} padding="lg" className="mb-6">
-        <Field label="Questions" htmlFor="anitune-round-size" className="mb-5">
+        <Field label="Songs" htmlFor="anitune-round-size" className="mb-5">
           <NumberInput
             id="anitune-round-size"
-            ariaLabel="Questions"
+            ariaLabel="Songs"
             min={1}
             max={50}
             value={values.roundSize}
@@ -170,25 +170,37 @@ export default function AniTuneSettings({ players, values, onChange, disabled = 
           </Field>
         )}
 
-        {/* How the clip itself plays — set once and left alone at most tables. */}
-        {values.timed && (
-          <>
-            <Checkbox
-              label="Hints"
-              checked={Boolean(values.hints)}
+        {/* Untimed, the window still decides when "Nobody got it" appears and
+            when the hints turn over, so its length stays on the card. */}
+        {!values.timed && (
+          <Field label="Listen time (s)" htmlFor="anitune-listen-seconds" className="mb-5">
+            <NumberInput
+              id="anitune-listen-seconds"
+              ariaLabel="Listen time in seconds"
+              min={5}
+              max={60}
+              value={values.guessSeconds}
               disabled={disabled}
-              onChange={(e) => onChange('hints', e.target.checked)}
-              className="mb-2"
+              onChange={(guessSeconds) => onChange('guessSeconds', guessSeconds)}
             />
-            <SettingHelp
-              indent
-              className="mb-5"
-              more="Never the song's title. Answering before a hint already pays more, through the speed bonus."
-            >
-              While nobody has it: the theme's number and year a third of the way in, then whose lists it is on.
-            </SettingHelp>
-          </>
+          </Field>
         )}
+
+        {/* Every mode, timed or not: the ladder follows the music. */}
+        <Checkbox
+          label="Hints"
+          checked={Boolean(values.hints)}
+          disabled={disabled}
+          onChange={(e) => onChange('hints', e.target.checked)}
+          className="mb-2"
+        />
+        <SettingHelp
+          indent
+          className="mb-5"
+          more="Never the song's title. In a timed game, answering before a hint already pays more, through the speed bonus."
+        >
+          While nobody has it: the theme&apos;s number and year a third of the way in, then whose lists it is on.
+        </SettingHelp>
 
         {local && (players?.length ?? 0) > 1 && (values.mode === RACE ? (
           <>
@@ -221,17 +233,6 @@ export default function AniTuneSettings({ players, values, onChange, disabled = 
         ))}
 
         <MoreSettings about="the clip">
-          <Field label="Clip length (s)" htmlFor="anitune-clip-seconds" className="mb-5">
-            <NumberInput
-              id="anitune-clip-seconds"
-              ariaLabel="Clip length in seconds"
-              min={3}
-              max={30}
-              value={values.clipSeconds}
-              disabled={disabled}
-              onChange={(clipSeconds) => onChange('clipSeconds', clipSeconds)}
-            />
-          </Field>
           <div className="flex flex-col gap-4 sm:flex-row">
             <Field label="Clip starts" htmlFor="anitune-sample-point" className="flex-1">
               <Select

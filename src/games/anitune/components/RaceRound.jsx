@@ -8,13 +8,16 @@ import PlayerFace from '../../../shared/components/PlayerFace';
 // guess takes you out of this question and hands the clip back to the rest.
 export default function RaceRound({
   players, questions, lockedOut, buzzedBy, clipDone,
+  // False until the clip is actually playing: a pad live while the song is
+  // still loading (or waiting on a "Play clip" tap) is a buzz on nothing.
+  clipStarted = true,
   onBuzz, onAnswer, onGiveUp,
 }) {
   // A laptop on the coffee table: number keys buzz the matching pad (1 is the
   // first seat), so a table can crowd a keyboard instead of one trackpad.
   // Ignored while anyone is typing an answer, and for anyone already out.
   useEffect(() => {
-    if (buzzedBy) return undefined;
+    if (buzzedBy || !clipStarted) return undefined;
     const onKey = (e) => {
       if (e.repeat || e.altKey || e.ctrlKey || e.metaKey) return;
       if (e.target?.closest?.('input, textarea, select, [contenteditable]')) return;
@@ -27,7 +30,7 @@ export default function RaceRound({
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [buzzedBy, players, lockedOut, onBuzz]);
+  }, [buzzedBy, clipStarted, players, lockedOut, onBuzz]);
 
   if (buzzedBy) {
     const player = players.find((p) => p.id === buzzedBy);
@@ -40,7 +43,7 @@ export default function RaceRound({
           key={buzzedBy}
           questions={questions}
           onSubmit={onAnswer}
-          submitLabel="Lock it in"
+          submitLabel="Lock in"
         />
         <p className="mt-3 text-center text-sm text-fg-subtle">
           Miss it and you&apos;re out for this song — the clip picks back up for everyone else.
@@ -54,9 +57,11 @@ export default function RaceRound({
   return (
     <div className="mt-6">
       <p className="mb-4 text-center text-base text-fg-body">
-        {stillIn.length === players.length
-          ? 'First one to name it takes the point'
-          : `${stillIn.length} still in`}
+        {!clipStarted
+          ? 'Wait for the clip to start…'
+          : stillIn.length === players.length
+            ? 'First one to name it takes the point'
+            : `${stillIn.length} still in`}
       </p>
 
       {/* Full-width pads, each with its player's face and key number, so a
@@ -72,7 +77,7 @@ export default function RaceRound({
               fullWidth
               sound="buzz"
               onClick={() => onBuzz(p.id)}
-              disabled={out}
+              disabled={out || !clipStarted}
               className="min-h-20 justify-start gap-3"
             >
               <PlayerFace player={p} className={out ? 'grayscale' : ''} />

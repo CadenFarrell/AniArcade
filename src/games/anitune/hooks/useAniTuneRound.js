@@ -79,6 +79,11 @@ export function useAniTuneRound(players, mode, roundLength, settings = {}, initi
       [apply, players]
     ),
 
+    // A clip the CDN never served: reveal the song and charge nobody, the way
+    // the online escape hatch does. giveUp would cost every Lives player a life
+    // for a song none of them could hear.
+    skipSong: useCallback(() => apply((s) => rules.revealNow(s)), [apply]),
+
     startGuessing: useCallback(() => apply(rules.startGuessing), [apply]),
     beginEntry: useCallback(() => apply((s) => rules.beginEntry(s, Date.now())), [apply]),
     submitAnswer: useCallback(

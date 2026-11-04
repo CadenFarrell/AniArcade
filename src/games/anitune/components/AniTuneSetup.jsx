@@ -55,7 +55,7 @@ export default function AniTuneSetup({ onStart, preparing, progress, error, onBa
 
   // The Start bar's one line: what is ready, or the first thing that is not.
   const status = preparing && progress
-    ? `${progress.phase === 'resolving' ? 'Matching your shows…' : 'Loading themes…'} ${progress.done}/${progress.total}`
+    ? `${progress.phase === 'resolving' ? 'Matching shows…' : 'Loading themes…'} ${progress.done}/${progress.total}`
     : players.length === 0 ? 'Seat at least one player.'
       : !everyoneHasShows ? 'Everyone needs an anime list.'
         : noKinds ? 'Pick openings, endings, or both.'

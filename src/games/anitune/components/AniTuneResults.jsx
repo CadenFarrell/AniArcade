@@ -1,7 +1,7 @@
 import { computeRankedPlayers } from '../../../shared/utils/ranking';
 import { formatPoints } from '../../../shared/utils/deadline';
 import { themeAndYear, songCredit } from '../utils/labels';
-import { hasLives, roundAwards } from '../rules';
+import { hasLives, rankLives, roundAwards } from '../rules';
 import ResultsLayout, { Awards, Splash, Standings } from '../../../shared/components/Results';
 import { StartBar } from '../../../shared/components/SetupLayout';
 import { splitPodium } from '../../../shared/utils/podium';
@@ -16,7 +16,7 @@ import { fromRanked } from '../../../shared/utils/history';
 export default function AniTuneResults({
   // onBack is local-only: online "again" returns to the lobby, and there is no
   // local setup to go back to. Screen omits the row when it is undefined.
-  players, scores, roundSize, mode, lives = null, eliminated = [],
+  players, scores, roundSize, mode, lives = null, eliminated = [], eliminatedAt = {},
   // The songs actually heard, for the recap below. `playedCount` matters because
   // Lives can end a round early: the questions after that were dealt but never
   // played, and listing them would both claim the table heard things it didn't
@@ -29,32 +29,28 @@ export default function AniTuneResults({
   const played = round.slice(0, playedCount ?? round.length);
   const lastManStanding = hasLives(mode);
 
-  // Lives ranks by survival first and points only as a tiebreak, because that is
-  // what the mode asks of you: a player who outlasted everyone on lucky guesses
-  // beat the one who scored more and went out in round three. `eliminated` is
-  // append-only, so its order IS the elimination order — later out is better.
-  const ranked = lastManStanding
-    ? [...players]
-      .map((p) => ({ ...p, total: scores[p.id] || 0, outAt: eliminated.indexOf(p.id) }))
-      .sort((a, b) => {
-        if ((a.outAt < 0) !== (b.outAt < 0)) return a.outAt < 0 ? -1 : 1;
-        if (a.outAt !== b.outAt) return b.outAt - a.outAt;
-        return b.total - a.total;
-      })
-      .map((p, i) => ({ ...p, position: i + 1 }))
-    : computeRankedPlayers(players, scores);
+  // Lives ranks by survival first and points only between players who went out
+  // on the same song (rules.rankLives, which says why seat order is not a
+  // tiebreak).
+  const lifeRanking = lastManStanding ? rankLives(players, scores, eliminated, eliminatedAt) : null;
+  const ranked = lifeRanking ? lifeRanking.ranked : computeRankedPlayers(players, scores);
 
   // The old "12 / 20" denominator only made sense when a question was worth
   // exactly one point. A speed bonus takes the ceiling to 2.0 per question, and
   // "12.4 / 20" would read as though 40 were unreachable rather than 20 being
-  // the wrong number entirely — so the total stands alone.
-  const suffix = roundSize ? `over ${roundSize} song${roundSize === 1 ? '' : 's'}` : '';
+  // the wrong number entirely — so the total stands alone. The count is the
+  // songs HEARD: Lives can end a round early, and "over 10 songs" above a bar
+  // reading "6 songs played" contradicted itself.
+  const heard = played.length || roundSize;
+  const suffix = heard ? `over ${heard} song${heard === 1 ? '' : 's'}` : '';
 
   const podium = splitPodium(ranked);
   const { winners, rest, kana } = podium;
-  // Lives has no ties at the top — survival orders everyone — and the one left
-  // standing is what the mode is about, so the stamp says so.
-  const stamp = lastManStanding && ranked.length > 1 ? 'Survivor' : podium.stamp;
+  // "Survivor" only when it is true: exactly one player never knocked out. A
+  // round that ran out of songs with several still in, or took the last two out
+  // together, ranks a winner on points like any other mode and stamps it so.
+  const stamp = lifeRanking && ranked.length > 1 && lifeRanking.survivors === 1 && winners.length === 1
+    ? 'Survivor' : podium.stamp;
   // The finished game, into each seated profile's history (utils/history.js).
   // In Lives the survivor is the one in first place, so the podium already says it.
   useRecordResult(descriptor.id, players, winners.map((p) => p.id), fromRanked(ranked));
@@ -83,8 +79,15 @@ export default function AniTuneResults({
         </Splash>
       )}
       bar={(
-        <StartBar width="md" status={`${played.length} song${played.length === 1 ? '' : 's'} played`} ready>
-          <Button variant="primary" size="lg" onClick={onPlayAgain}>Play again</Button>
+        // Online, only the host has a replay (onPlayAgain is null for everyone
+        // else): it sends the whole room back to the lobby, which is the host's
+        // call, not whoever taps first.
+        <StartBar
+          width="md"
+          status={onPlayAgain ? `${played.length} song${played.length === 1 ? '' : 's'} played` : 'Waiting for the host…'}
+          ready
+        >
+          {onPlayAgain && <Button variant="primary" size="lg" onClick={onPlayAgain}>Play again</Button>}
         </StartBar>
       )}
     >

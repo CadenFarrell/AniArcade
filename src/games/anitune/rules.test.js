@@ -4,6 +4,7 @@ import {
   submitAnswer, beginEntry, startGuessing, submitOnlineAnswer, revealNow, giveUp, nextQuestion,
   openWindow, scoreAnswer, expireQuestion, livePlayerIds, answerElapsedMs, resumeRound,
   songMultiplier, FINAL_MULTIPLIER, claimSpoken, awardSpoken, selfReport, roundAwards,
+  scoreParts, rankLives, lostOn,
 } from './rules';
 
 const player = (id) => ({ id, name: id });
@@ -639,5 +640,74 @@ describe('roundAwards', () => {
     ]);
     expect(awards[0].detail).toBe('1.2s on Bebop');
     expect(roundAwards([{ i: 0, got: { ana: 900, ben: 900 } }], ALL)).toEqual([]);
+  });
+});
+
+describe('scoreParts', () => {
+  it('splits a score into the flat point and the speed bonus, summing to scoreAnswer', () => {
+    const fast = { correct: true, ms: 5000 };
+    const parts = scoreParts(fast, 20000);
+    expect(parts.base).toBe(1);
+    expect(parts.speed).toBeGreaterThan(0);
+    expect(parts.base + parts.speed).toBe(scoreAnswer(fast, 20000));
+  });
+
+  it('has no speed half untimed, and nothing at all for a wrong answer', () => {
+    expect(scoreParts({ correct: true, ms: null }, null)).toEqual({ base: 1, speed: 0 });
+    expect(scoreParts({ correct: false, ms: 100 }, 20000)).toEqual({ base: 0, speed: 0 });
+  });
+});
+
+describe('Lives: who lost a life, and when they went out', () => {
+  it('logs who lost a life on the song and stamps the song a player went out on', () => {
+    const state = { ...startRound(ALL, LIVES, { startingLives: 1 }), index: 3 };
+    const { patch } = revealNow(
+      { ...state, answers: { ana: { text: RIGHT, correct: true, ms: null } } },
+      ALL_IDS,
+    );
+    expect(lostOn(patch, 3).sort()).toEqual(['ben', 'cleo']);
+    expect(patch.eliminatedAt).toEqual({ ben: 3, cleo: 3 });
+  });
+
+  it('reads nothing for a song with no line, or outside Lives', () => {
+    expect(lostOn(startRound(ALL, LIVES), 0)).toEqual([]);
+    const { patch } = giveUp(startRound(ALL, RACE), ALL_IDS);
+    expect(lostOn(patch, 0)).toEqual([]);
+  });
+});
+
+describe('rankLives', () => {
+  it('ranks survivors first, then later knock-outs, and splits a same-song knock-out by points', () => {
+    const { ranked, survivors } = rankLives(
+      ALL,
+      { ana: 1, ben: 5, cleo: 2 },
+      ['ben', 'cleo'],
+      { ben: 4, cleo: 4 },
+    );
+    expect(ranked.map((p) => p.id)).toEqual(['ana', 'ben', 'cleo']);
+    expect(ranked.map((p) => p.position)).toEqual([1, 2, 3]);
+    expect(survivors).toBe(1);
+  });
+
+  it('shares a place only where survival and points both tie', () => {
+    const { ranked, survivors } = rankLives(ALL, { ana: 3, ben: 3, cleo: 1 }, [], {});
+    expect(ranked.map((p) => p.position)).toEqual([1, 1, 3]);
+    expect(survivors).toBe(3);
+  });
+
+  it('counts no survivor when the last two went out together', () => {
+    const { ranked, survivors } = rankLives(
+      [ANA, BEN],
+      { ana: 2, ben: 4 },
+      ['ana', 'ben'],
+      { ana: 6, ben: 6 },
+    );
+    expect(survivors).toBe(0);
+    expect(ranked[0].id).toBe('ben');
+  });
+
+  it('falls back to the elimination order for a round saved before eliminatedAt', () => {
+    const { ranked } = rankLives(ALL, { ana: 9, ben: 0, cleo: 0 }, ['ana', 'ben'], undefined);
+    expect(ranked.map((p) => p.id)).toEqual(['cleo', 'ben', 'ana']);
   });
 });

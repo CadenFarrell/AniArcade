@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { isCorrectTitleGuess, suggestTitles } from './titleMatch';
+import { isCorrectTitleGuess, suggestTitles, listSuggestionPool } from './titleMatch';
 
 // A question carries both the player's own list title and the AnimeThemes name.
 const q = (animeTitle, displayTitle) => ({ animeTitle, displayTitle });
@@ -22,9 +22,45 @@ describe('isCorrectTitleGuess', () => {
     expect(isCorrectTitleGuess(jjk, 'jujutsu')).toBe(true);
   });
 
-  it('requires four characters before a fragment counts, so short strings cannot brute-force it', () => {
+  it('counts a fragment only as whole words, so a cut-off word cannot fish for it', () => {
     expect(isCorrectTitleGuess(jjk, 'juj')).toBe(false);
-    expect(isCorrectTitleGuess(jjk, 'juju')).toBe(true);
+    expect(isCorrectTitleGuess(jjk, 'juju')).toBe(false);
+    expect(isCorrectTitleGuess(aot, 'tack')).toBe(false);
+    expect(isCorrectTitleGuess(q('Girls und Panzer', 'Girls und Panzer'), 'girl')).toBe(false);
+  });
+
+  it('lets the last word of a longer guess be cut short, since that is someone still typing', () => {
+    expect(isCorrectTitleGuess(aot, 'attack on tit')).toBe(true);
+    expect(isCorrectTitleGuess(jjk, 'jujutsu kai')).toBe(true);
+  });
+
+  it('never accepts words that only name a season or a format', () => {
+    const s2 = q('Attack on Titan Season 2', 'Shingeki no Kyojin Season 2');
+    expect(isCorrectTitleGuess(s2, 'season')).toBe(false);
+    expect(isCorrectTitleGuess(s2, 'season 2')).toBe(false);
+    expect(isCorrectTitleGuess(q('Mob Psycho 100 II', 'Mob Psycho 100 II'), 'ii')).toBe(false);
+  });
+
+  it('accepts any season of the right show', () => {
+    const s2 = q('Attack on Titan Season 2', 'Shingeki no Kyojin Season 2');
+    expect(isCorrectTitleGuess(s2, 'attack on titan')).toBe(true);
+    expect(isCorrectTitleGuess(s2, 'shingeki no kyojin')).toBe(true);
+    expect(isCorrectTitleGuess(aot, 'attack on titan the final season')).toBe(true);
+  });
+
+  it('refuses a fragment that fits another show on the table just as well', () => {
+    const note = { ...q('Death Note', 'Death Note'), lookalikes: ['Death Parade'] };
+    expect(isCorrectTitleGuess(note, 'death')).toBe(false);
+    expect(isCorrectTitleGuess(note, 'note')).toBe(true);
+    expect(isCorrectTitleGuess(note, 'death note')).toBe(true);
+    // With nothing to confuse it with, the one word names it.
+    expect(isCorrectTitleGuess(q('Death Note', 'Death Note'), 'death')).toBe(true);
+  });
+
+  it('still takes the bare show name when a spin-off shares every word of it', () => {
+    const s2 = { ...q('Attack on Titan Season 2', 'Shingeki no Kyojin Season 2'), lookalikes: ['Attack on Titan: Junior High'] };
+    expect(isCorrectTitleGuess(s2, 'attack on titan')).toBe(true);
+    expect(isCorrectTitleGuess(s2, 'titan')).toBe(false);
   });
 
   it('accepts a guess that wraps the title in extra words', () => {
@@ -88,5 +124,21 @@ describe('suggestTitles', () => {
 
   it('returns nothing when no title matches', () => {
     expect(suggestTitles(questions, 'zzzz')).toEqual([]);
+  });
+});
+
+describe('listSuggestionPool', () => {
+  it('puts the dealt songs first, then every show on the table’s lists', () => {
+    const round = [aot];
+    const players = [
+      { animeList: [{ title: 'Bleach' }, { title: 'Attack on Titan' }] },
+      { animeList: [{ title: 'Frieren' }] },
+      {},
+    ];
+    const pool = listSuggestionPool(round, players);
+    expect(pool[0]).toBe(aot);
+    // Deduplicated by the box itself: the dealt song keeps its romaji line.
+    expect(suggestTitles(pool, 'attack')).toEqual([{ title: 'Attack on Titan', alt: 'Shingeki no Kyojin' }]);
+    expect(suggestTitles(pool, 'frie')).toEqual([{ title: 'Frieren', alt: 'Frieren' }]);
   });
 });

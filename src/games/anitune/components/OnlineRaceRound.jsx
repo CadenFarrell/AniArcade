@@ -24,7 +24,7 @@ export default function OnlineRaceRound({
             key={question.id}
             questions={questions}
             onSubmit={onAnswer}
-            submitLabel="Lock it in"
+            submitLabel="Lock in"
           />
           <p className="mt-3 text-center text-sm text-fg-subtle">
             Miss it and you&apos;re out for this song — the clip picks back up for everyone else.

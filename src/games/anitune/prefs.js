@@ -26,8 +26,12 @@ export const DEFAULT_PREFS = {
 
   // --- the round ---
   roundSize: 10,
-  clipSeconds: 10,
+  // No clipSeconds any more: the clip plays the whole guessing window (see
+  // ClipPlayer), so a separate length could only ever cut it short into
+  // silence. The removal note at the foot of this file applies to it.
   timed: true,
+  // The guessing window. Untimed, the same number is how long the table
+  // listens before "Nobody got it" is offered.
   guessSeconds: 20,
   // Race only: how long the buzzer gets to type once they have the clip. Short,
   // because the rest of the room is waiting on a paused song.
@@ -58,15 +62,17 @@ export const DEFAULT_PREFS = {
   // table ticks who got it — no handoffs, and no speed bonus.
   localEntry: 'private',
 
-  // Hints while the clip plays (the year and OP/ED number at 35% of the guess
-  // window, whose lists the show is on at 65%). Off by default: recognition is
-  // the game, and a table that wants a lifeline turns it on.
+  // Hints while the clip plays (the year and OP/ED number once 35% of the
+  // window has been heard, whose lists the show is on at 65%). In every mode,
+  // timed or not, since they follow the music rather than a clock. Off by
+  // default: recognition is the game, and a table that wants a lifeline turns
+  // it on.
   hints: false,
 };
 
 export const LOCAL_RACE_STYLES = [
   { id: 'buzz', label: 'Buzz pads', blurb: 'A button for each player on the screen. On a laptop, number keys 1–9 buzz too.' },
-  { id: 'shout', label: 'Shout it', blurb: 'Everyone shouts the answer; tap who said it first, then check it together.' },
+  { id: 'shout', label: 'Shout it', blurb: 'Everyone shouts the answer; tap who said it first, then check it together. A wrong call ends the song, since the answer is on screen.' },
 ];
 
 export const LOCAL_ENTRY_STYLES = [

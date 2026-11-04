@@ -83,8 +83,7 @@ export default function OnlineLobby({ room }) {
           )}
           {room.isHost && active.length >= 2 && everyoneHasShows && settings.sharedSongsOnly && eligible === 0 && (
             <Banner tone="warning" className="mb-4">
-              No anime titles overlap between players — turn off &quot;Shared songs only&quot; or
-              import matching titles.
+              No shows in common — turn off &ldquo;Shared songs only&rdquo; or import more lists.
             </Banner>
           )}
         </>

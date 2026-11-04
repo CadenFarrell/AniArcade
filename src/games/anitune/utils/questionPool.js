@@ -1,6 +1,8 @@
 // Pure helpers for turning players' anime lists into a pool of AniTune
 // questions. No network and no imports beyond title normalisation, so the
 // filtering rules can be exercised directly.
+import { franchiseTitleKey } from '../../../shared/utils/franchise';
+import { distinctiveWords } from './titleMatch';
 import { normalizeTitle } from '../../../shared/utils/ranking';
 import { shuffle } from '../../../shared/utils/random';
 import { filterByPopularity, DEFAULT_POPULARITY_ID } from './popularity';
@@ -270,5 +272,51 @@ export function pickRound(questions, {
     }
   }
 
-  return picked.map((q) => ({ ...q, clipFraction: sampleFraction(samplePoint, rng) }));
+  const lookalikesFor = lookalikeIndex(questions);
+  return picked.map((q) => ({
+    ...q,
+    clipFraction: sampleFraction(samplePoint, rng),
+    lookalikes: lookalikesFor(q),
+  }));
+}
+
+// At most this many lookalike names per song. Stamped onto every dealt
+// question and copied into the room, so it stays a handful of strings.
+const MAX_LOOKALIKES = 12;
+
+/**
+ * → (question) => the names of OTHER shows in the pool that share a distinctive
+ * word with it (titleMatch.isCorrectTitleGuess's `lookalikes`).
+ *
+ * A partial guess ("death") is an answer only if it picks out one show; the
+ * matcher cannot see the pool, so the deal hands each question the few names
+ * it could be confused with. "Other" is by franchise (franchiseTitleKey), so a
+ * second season is never a lookalike of the first — any season of the right
+ * show is the right answer.
+ */
+export function lookalikeIndex(pool = []) {
+  const shows = new Map();
+  for (const q of pool) {
+    if (!q?.slug || shows.has(q.slug)) continue;
+    const names = [q.animeTitle, q.displayTitle].filter(Boolean);
+    shows.set(q.slug, {
+      names: [...new Set(names)],
+      keys: new Set(names.map((n) => franchiseTitleKey(n))),
+      words: new Set(names.flatMap((n) => distinctiveWords(n))),
+    });
+  }
+  return (question) => {
+    const self = shows.get(question.slug)
+      ?? { keys: new Set([question.animeTitle, question.displayTitle].filter(Boolean).map((n) => franchiseTitleKey(n))) };
+    const words = new Set([question.animeTitle, question.displayTitle].filter(Boolean).flatMap((n) => distinctiveWords(n)));
+    const out = [];
+    for (const [slug, show] of shows) {
+      if (slug === question.slug) continue;
+      if ([...show.keys].some((k) => self.keys.has(k))) continue;
+      if (![...show.words].some((w) => words.has(w))) continue;
+      for (const n of show.names) if (!out.includes(n)) out.push(n);
+      if (out.length >= MAX_LOOKALIKES) break;
+    }
+    return out.slice(0, MAX_LOOKALIKES);
+  };
 }

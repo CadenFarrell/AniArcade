@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   getEligibleAnimeList, eligibleEntries, hasSharedAnime, pickAudioForTheme, buildQuestionPool,
-  shuffle, pickRound, yearRangeIsOpen, YEAR_MIN, YEAR_MAX,
+  shuffle, pickRound, yearRangeIsOpen, YEAR_MIN, YEAR_MAX, lookalikeIndex,
 } from './questionPool';
 
 const player = (id, titles) => ({ id, animeList: titles.map((t) => ({ title: t })) });
@@ -351,5 +351,35 @@ describe('pickRound', () => {
     // Random stays clear of the leading silence a theme usually opens with.
     expect(pickRound(others, { count: 5, samplePoint: 'random', rng: seeded(1) })
       .every((x) => x.clipFraction >= 0.2 && x.clipFraction <= 0.7)).toBe(true);
+  });
+});
+
+describe('lookalikeIndex', () => {
+  const show = (slug, animeTitle, displayTitle = animeTitle) => ({ id: `${slug}:op1`, slug, animeTitle, displayTitle });
+  const pool = [
+    show('death-note', 'Death Note'),
+    show('death-parade', 'Death Parade'),
+    show('aot', 'Attack on Titan', 'Shingeki no Kyojin'),
+    show('aot-s2', 'Attack on Titan Season 2', 'Shingeki no Kyojin Season 2'),
+    show('aot-jh', 'Attack on Titan: Junior High', 'Shingeki! Kyojin Chuugakkou'),
+    show('bleach', 'Bleach'),
+  ];
+  const lookalikes = lookalikeIndex(pool);
+
+  it('names the other shows that share a distinctive word', () => {
+    expect(lookalikes(pool[0])).toEqual(['Death Parade']);
+  });
+
+  it('never counts another season of the same show', () => {
+    const out = lookalikes(pool[3]);
+    expect(out).not.toContain('Attack on Titan');
+    expect(out).toContain('Attack on Titan: Junior High');
+  });
+
+  it('is empty for a show nothing shares a word with, and pickRound stamps it on', () => {
+    expect(lookalikes(pool[5])).toEqual([]);
+    const round = pickRound(pool, { count: 6, rng: () => 0.5 });
+    const dn = round.find((q) => q.slug === 'death-note');
+    expect(dn.lookalikes).toEqual(['Death Parade']);
   });
 });

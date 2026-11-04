@@ -1,7 +1,7 @@
 import { themeLabel } from '../utils/labels';
 import { Icon } from '../../../shared/ui';
 
-// When each hint turns over, as a fraction of the guess window elapsed.
+// When each hint turns over, as a fraction of the window HEARD.
 const FIRST_AT = 0.35;
 const SECOND_AT = 0.65;
 
@@ -21,8 +21,13 @@ function nameList(names) {
  * bonus already pays more for an answer before a hint than after one, which is
  * the right price without a second rule to learn.
  *
- * `fraction` is the clock's elapsed fraction (useDeadline), so the hints follow
- * the room's one clock online, pause with it, and need a timed round to exist.
+ * `fraction` is how much of the window the clip has played (ClipPlayer /
+ * SyncedClipPlayer's onProgress), not the guess clock's. It used to be the
+ * clock's, which meant the ladder only existed where a shared deadline ran
+ * while the song played — on one device that was Race alone, so the setting
+ * did nothing in Everyone guesses or Last one standing. Following the music
+ * works in every mode, timed or not, and still pauses with a race buzz, since
+ * the clip does.
  */
 export default function SongHints({ question, players = [], fraction }) {
   if (fraction == null || fraction < FIRST_AT) return null;

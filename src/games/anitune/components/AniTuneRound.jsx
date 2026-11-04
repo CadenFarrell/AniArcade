@@ -7,7 +7,8 @@ import SelfReport from '../../../shared/components/SelfReport';
 import SimultaneousRound from './SimultaneousRound';
 import QuestionReveal from './QuestionReveal';
 import { useAniTuneRound } from '../hooks/useAniTuneRound';
-import { isRace, hasLives, isEliminated, songMultiplier, livePlayerIds } from '../rules';
+import { isRace, hasLives, isEliminated, songMultiplier, livePlayerIds, lostOn } from '../rules';
+import { usePrimedAudio } from '../hooks/usePrimedAudio';
 import { formatPoints } from '../../../shared/utils/deadline';
 import { Backdrop, Badge, Button, GhostButton, Screen, TimerBar } from '../../../shared/ui';
 import Lives from './Lives';
@@ -23,7 +24,7 @@ import RoundHeader from '../../../shared/components/RoundHeader';
 // this component's business: LocalGame renders the one fixed "Hub" button
 // over every local view, so the exit stays in the same corner on all of them.
 export default function AniTuneRound({
-  round, players, questions, clipSeconds, playbackRate = 1, mode, settings = {},
+  round, players, questions, playbackRate = 1, mode, settings = {},
   initialState = null, onProgress, onFinish, onBackToSetup,
   // One device: how a race is buzzed ('buzz' pads or 'shout'), how everyone
   // answers ('private' handoffs or 'aloud' with a tick list), and the hint
@@ -33,8 +34,14 @@ export default function AniTuneRound({
   const {
     state, activeId, isLastQuestion, clock, setQuestion, openWindow,
     buzz, resolveBuzz, giveUp, startGuessing, beginEntry, submitAnswer, advance,
-    claimSpoken, awardSpoken, selfReport,
+    claimSpoken, awardSpoken, selfReport, skipSong,
   } = useAniTuneRound(players, mode, round.length, settings, initialState);
+  // One <audio> for the whole round (hooks/usePrimedAudio): once a phone has
+  // played song 1, every later song can start without a tap.
+  const sharedAudio = usePrimedAudio();
+  // The clip plays the whole guessing window (ClipPlayer's note). Untimed, the
+  // same number is how long before "Nobody got it" is offered.
+  const windowSeconds = settings.guessSeconds ?? 20;
   // Out-loud everyone-guesses: whether this song's answer is up for ticking.
   // Keyed by the song, so the next one starts covered.
   const [checkingFor, setCheckingFor] = useState(-1);
@@ -50,6 +57,10 @@ export default function AniTuneRound({
   // or it never loaded at all. Stored as an index rather than a flag so it
   // resets itself on the next question without an effect.
   const [clipDoneIndex, setClipDoneIndex] = useState(-1);
+  // Which question's clip is actually playing (race pads wait for it), and how
+  // much of its window has been heard (the hints). Index-keyed like clipDone.
+  const [clipStartedIndex, setClipStartedIndex] = useState(-1);
+  const [heard, setHeard] = useState({ index: -1, fraction: 0 });
   const preloadRef = useRef(null);
 
   const question = round[state.index];
@@ -58,6 +69,8 @@ export default function AniTuneRound({
   // handed over; the person actually typing may replay it.
   const paused = state.phase === 'buzzed' || state.phase === 'handoff';
   const clipDone = clipDoneIndex === state.index;
+  const clipStarted = clipStartedIndex === state.index;
+  const heardFraction = heard.index === state.index ? heard.fraction : 0;
   const race = isRace(mode);
   const lastManStanding = hasLives(mode);
 
@@ -101,6 +114,7 @@ export default function AniTuneRound({
         scores: state.scores,
         lives: state.lives,
         eliminated: state.eliminated,
+        eliminatedAt: state.eliminatedAt ?? {},
         // Every settled song (rules.settle), for the results' awards.
         log: state.log ?? [],
         // How many clips actually played. Not round.length: Lives can finish the
@@ -139,7 +153,7 @@ export default function AniTuneRound({
         />
 
         <RoundHeader
-          title={race ? 'Buzz in' : lastManStanding ? 'Last one standing' : 'Everyone guesses'}
+          title={race ? (localRace === 'shout' ? 'Shout it' : 'Buzz in') : lastManStanding ? 'Last one standing' : 'Everyone guesses'}
           tag={`Song ${state.index + 1}/${round.length}`}
           hint={doubled ? 'Final song: double points' : undefined}
         />
@@ -147,7 +161,8 @@ export default function AniTuneRound({
         <ClipPlayer
           key={question.id}
           src={question.audioUrl}
-          seconds={clipSeconds}
+          windowSeconds={windowSeconds}
+          shared={sharedAudio}
           fraction={question.clipFraction}
           playbackRate={playbackRate}
           revealed={revealed}
@@ -155,8 +170,10 @@ export default function AniTuneRound({
           // The scoring window opens with the music, not with the deal — the
           // clip can take seconds to load off a cold CDN, and starting the clock
           // before anyone can hear anything would score patience.
-          onStarted={openWindow}
+          onStarted={() => { setClipStartedIndex(state.index); openWindow(); }}
           onWindowEnded={() => setClipDoneIndex(state.index)}
+          onProgress={(fraction) => setHeard({ index: state.index, fraction })}
+          onSkip={skipSong}
           // A clip the CDN never served would otherwise strand race mode: with
           // nothing to listen to and no window to run out, the only way on
           // would be for every player to deliberately buzz and miss.
@@ -175,8 +192,11 @@ export default function AniTuneRound({
           />
         )}
 
-        {hints && !revealed && state.deadlineAt != null && state.phase === 'listening' && (
-          <SongHints question={question} players={players} fraction={clock.fraction} />
+        {/* Timed off what the table has HEARD, not off a running clock, so the
+            ladder works in every mode: pass-the-device and out-loud rounds have
+            no shared clock while the song plays, and used to get no hints. */}
+        {hints && !revealed && (
+          <SongHints question={question} players={players} fraction={heardFraction} />
         )}
 
         {!revealed && race && localRace === 'shout' && (
@@ -199,6 +219,9 @@ export default function AniTuneRound({
             lockedOut={state.lockedOut}
             buzzedBy={state.buzzedBy}
             clipDone={clipDone}
+            // No buzzing a song nobody can hear yet (a clip still loading, or
+            // waiting on a "Play clip" tap).
+            clipStarted={clipStarted || clipDone}
             onBuzz={buzz}
             onAnswer={(guess) => resolveBuzz(question, guess)}
             onGiveUp={giveUp}
@@ -258,14 +281,24 @@ export default function AniTuneRound({
             answers={state.answers}
             windowMs={state.windowMs}
             lives={lastManStanding ? state.lives : null}
+            lostIds={lostOn(state, state.index)}
+            eliminated={state.eliminated}
             multiplier={songMultiplier(state)}
             onNext={next}
-            nextLabel={isLastQuestion ? 'See results →' : 'Next question →'}
+            nextLabel={isLastQuestion ? 'See results →' : 'Next song →'}
           />
         )}
 
         <div className="mt-6 text-center">
-          <GhostButton onClick={onBackToSetup}>← Back to setup</GhostButton>
+          {/* Asks first: it ends the game and throws away its save, one tap
+              from the Next button. Same window.confirm HubButton uses. */}
+          <GhostButton
+            onClick={() => {
+              if (window.confirm('Back to setup? This game ends, and its scores are lost.')) onBackToSetup();
+            }}
+          >
+            ← Back to setup
+          </GhostButton>
         </div>
       </Screen>
     </>

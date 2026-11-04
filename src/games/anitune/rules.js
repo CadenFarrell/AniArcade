@@ -123,6 +123,9 @@ export function startRound(players, mode = RACE, {
     // Append-only, so it doubles as the elimination *order* the results screen
     // ranks by — out on question 9 beats out on question 2.
     eliminated: [],
+    // The song each of them went out on (settle), so two players knocked out
+    // together tie on survival and are split by points (rankLives).
+    eliminatedAt: {},
     ...questionReset(players, 0),
   };
 }
@@ -203,9 +206,20 @@ function elapsedIn(state, now) {
  * clock existed and is what an untimed round still pays.
  */
 export function scoreAnswer(answer, windowMs) {
-  if (!answer?.correct) return 0;
-  if (!windowMs || answer.ms == null) return QUESTION_POINTS;
-  return QUESTION_POINTS + speedBonus(answer.ms, windowMs);
+  const { base, speed } = scoreParts(answer, windowMs);
+  return base + speed;
+}
+
+/**
+ * scoreAnswer's two halves, for the reveal that explains a score: the flat
+ * point for being right, and the speed bonus on top. Kept as the one place the
+ * arithmetic happens, so scoreAnswer is literally their sum and the "1 + 0.6"
+ * a row prints can never disagree with the "+1.6" beside it.
+ */
+export function scoreParts(answer, windowMs) {
+  if (!answer?.correct) return { base: 0, speed: 0 };
+  if (!windowMs || answer.ms == null) return { base: QUESTION_POINTS, speed: 0 };
+  return { base: QUESTION_POINTS, speed: speedBonus(answer.ms, windowMs) };
 }
 
 // How fast an answer was, in ms, or null when there was nothing to measure
@@ -259,19 +273,33 @@ function settle(state, answers, graded) {
   for (const [id, answer] of Object.entries(answers)) {
     if (answer?.correct) got[id] = answer.ms ?? -1;
   }
-  const log = [...(state.log ?? []), { i: state.index, got }];
-  if (!hasLives(state.mode)) return { scores, log };
+  if (!hasLives(state.mode)) {
+    return { scores, log: [...(state.log ?? []), { i: state.index, got }] };
+  }
 
   const lives = { ...state.lives };
   const eliminated = [...(state.eliminated ?? [])];
+  // Which song knocked each player out. `eliminated` alone is only an ORDER,
+  // and two players out on the same song are a tie that order would break by
+  // seat; the results rank them by points instead (rankLives), which needs to
+  // know they went out together.
+  const eliminatedAt = { ...(state.eliminatedAt ?? {}) };
+  // Who lost a life on this song, so the reveal can say so in words rather than
+  // leaving the table to count hearts.
+  const lost = [];
   for (const id of graded) {
     if (eliminated.includes(id)) continue;
     if (answers[id]?.correct) continue;
     const left = Math.max(0, (lives[id] ?? 0) - 1);
     lives[id] = left;
-    if (left === 0) eliminated.push(id);
+    lost.push(id);
+    if (left === 0) {
+      eliminated.push(id);
+      eliminatedAt[id] = state.index;
+    }
   }
-  return { scores, lives, eliminated, log };
+  const log = [...(state.log ?? []), { i: state.index, got, lost }];
+  return { scores, lives, eliminated, eliminatedAt, log };
 }
 
 // --- Race ------------------------------------------------------------------
@@ -366,8 +394,11 @@ export function claimSpoken(state, playerId, now) {
  * The table checked the claimed answer. Right scores as a buzz would (speed to
  * the claim); wrong ends the song for everyone, because the answer was on the
  * screen to be checked — unlike a typed miss, there is nothing left to race for.
- * The answer is marked `aloud`, so the reveal says "said it" rather than quoting
- * text nobody typed.
+ * (Letting the rest keep racing, as a wrong buzz does, was tried in planning and
+ * dropped for exactly that: they would all have just read the title.) The mode
+ * card and the rules sheet say so, since it is the one place the two race
+ * styles differ. The answer is marked `aloud`, so the reveal says "said it"
+ * rather than quoting text nobody typed.
  */
 export function awardSpoken(state, correct) {
   if (state.phase !== 'buzzed' || !state.buzzedBy) return { patch: {} };
@@ -678,6 +709,53 @@ export function resumeRound(saved, players, roundLength) {
   const over = players.length > 1 ? survivors.length <= 1 : survivors.length === 0;
   if (over) return null;
   return { ...saved, ...questionReset(survivors, index) };
+}
+
+// Who lost a life on song `index` (settle's log line), for the reveal. Empty
+// outside Lives, and on a round saved before the line carried it.
+export function lostOn(state, index) {
+  const line = (state?.log ?? []).find((l) => l?.i === index);
+  return line?.lost ?? [];
+}
+
+/**
+ * Last one standing's final order → `{ ranked, survivors }`.
+ *
+ * Survival first, because that is what the mode asks of you: a player who
+ * outlasted everyone on lucky guesses beat the one who scored more and went out
+ * on song three. Then points, but only between players who survived equally
+ * long — and "equally long" means went out ON THE SAME SONG (eliminatedAt).
+ * Ranking those by the order they were pushed into `eliminated` ranked them by
+ * seat, which is the pass order, which is nothing anyone did.
+ *
+ * A round saved before eliminatedAt existed has only the order, so each player
+ * falls back to their position in it — the old behaviour, never a crash.
+ *
+ * `survivors` counts who was never knocked out: the results stamp "Survivor"
+ * only when that is exactly one player, because a round that ran out of songs
+ * with three still in, or knocked the last two out together, has no survivor to
+ * name.
+ */
+export function rankLives(players = [], scores = {}, eliminated = [], eliminatedAt = {}) {
+  const outOn = (id) => {
+    if (!eliminated.includes(id)) return Infinity;
+    return eliminatedAt?.[id] ?? eliminated.indexOf(id);
+  };
+  const ranked = players
+    .map((p) => ({ ...p, total: scores[p.id] || 0, outOn: outOn(p.id) }))
+    .sort((a, b) => (b.outOn - a.outOn) || (b.total - a.total));
+  // Positions share a place where survival AND points both tie, the way
+  // computeRankedPlayers shares one on a points tie.
+  let position = 0;
+  const withPlaces = ranked.map((p, i) => {
+    const prev = ranked[i - 1];
+    if (!prev || prev.outOn !== p.outOn || prev.total !== p.total) position = i + 1;
+    return { ...p, position };
+  });
+  return {
+    ranked: withPlaces,
+    survivors: withPlaces.filter((p) => p.outOn === Infinity).length,
+  };
 }
 
 // Whoever the UI should be highlighting right now, if anyone.

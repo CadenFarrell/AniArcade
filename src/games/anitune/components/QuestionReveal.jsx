@@ -1,4 +1,4 @@
-import { isRace, scoreAnswer, answerElapsedMs } from '../rules';
+import { isRace, scoreParts, answerElapsedMs } from '../rules';
 import { themeAndYear } from '../utils/labels';
 import { formatPoints, formatSeconds } from '../../../shared/utils/deadline';
 import { Avatar, Badge, Button, Card, CardRow, Icon } from '../../../shared/ui';
@@ -30,8 +30,21 @@ function nameList(names) {
   return `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
 }
 
+// "1 + 0.6 speed ×2" — what a row's points were made of, under the badge. Only
+// worth printing when there is more than the flat point to explain.
+function breakdown({ base, speed }, multiplier) {
+  if (!base) return '';
+  if (!(speed > 0) && multiplier === 1) return '';
+  const sum = speed > 0 ? `${formatPoints(base)} + ${formatPoints(speed)} speed` : formatPoints(base);
+  return multiplier > 1 ? `${sum} ×${multiplier}` : sum;
+}
+
 export default function QuestionReveal({
   question, mode, players, answers, windowMs = null, lives = null, onNext, nextLabel,
+  // Lives only: who lost a life on this song (rules.lostOn), and everyone out
+  // by now. A player knocked out on an EARLIER song has no row: they were not
+  // asked this one, and "passed" beside their name misdescribed that.
+  lostIds = [], eliminated = [],
   // Online only: whose phone this is, so the sound is that player's own result.
   myId = null,
   // The final song's double (rules.songMultiplier): the scores already carry
@@ -67,14 +80,21 @@ export default function QuestionReveal({
   // Race only ever shows the players who actually buzzed; everyone else never
   // had a turn and a row of "passed" would misdescribe that. Sorted by answer
   // time so the leaderboard reads as a race.
+  const outBefore = (id) => eliminated.includes(id) && !lostIds.includes(id);
   const rows = players
-    .filter((p) => !race || answers[p.id])
-    .map((p) => ({
-      player: p,
-      answer: answers[p.id],
-      ms: answerElapsedMs(answers[p.id]),
-      points: scoreAnswer(answers[p.id], windowMs) * multiplier,
-    }))
+    .filter((p) => (race ? answers[p.id] : !outBefore(p.id)))
+    .map((p) => {
+      const parts = scoreParts(answers[p.id], windowMs);
+      return {
+        player: p,
+        answer: answers[p.id],
+        ms: answerElapsedMs(answers[p.id]),
+        points: (parts.base + parts.speed) * multiplier,
+        detail: breakdown(parts, multiplier),
+        // In words, beside the hearts: the hearts alone made the table count.
+        life: lostIds.includes(p.id) ? (eliminated.includes(p.id) ? 'out' : 'lost a life') : null,
+      };
+    })
     .sort((a, b) => {
       if (a.ms == null) return b.ms == null ? 0 : 1;
       if (b.ms == null) return -1;
@@ -109,7 +129,9 @@ export default function QuestionReveal({
         {race
           ? (winner ? `${winner.name} got it!` : 'Nobody got it')
           : (scorers.length
-            ? `${scorers.length} of ${players.length} got it`
+            // Out of who was asked: a Lives player out on an earlier song
+            // is not one of the "M".
+            ? `${scorers.length} of ${rows.length} got it`
             : 'Nobody got it')}
       </p>
 
@@ -161,7 +183,7 @@ export default function QuestionReveal({
           load rather than as nothing having happened. */}
       {rows.length > 0 && (
       <Card padding="sm" className="mb-5">
-        {rows.map(({ player: p, answer, ms, points }, i) => (
+        {rows.map(({ player: p, answer, ms, points, detail, life }, i) => (
           <CardRow key={p.id} className={`text-left ${on ? 'reveal-row' : ''}`} style={on ? stagger.style(i) : undefined}>
             <span className={`w-6 flex-shrink-0 text-lg ${answer?.correct ? 'text-pop-lime' : 'text-pop-red'}`}>
               <Icon name={answer?.correct ? 'check' : 'cross'} label={answer?.correct ? 'Right' : 'Wrong'} />
@@ -180,6 +202,11 @@ export default function QuestionReveal({
                 {answer?.aloud
                   ? (answer.correct ? 'said it' : 'missed it')
                   : answer?.text?.trim() ? `“${answer.text}”` : 'passed'}
+                {life && (
+                  <span className="font-bold text-pop-red">
+                    {' · '}{life === 'out' ? <><Icon name="skull" /> out</> : 'lost a life'}
+                  </span>
+                )}
               </span>
             </span>
             {ms != null && (
@@ -190,7 +217,12 @@ export default function QuestionReveal({
                 )}
               </span>
             )}
-            {points > 0 && <PointsBadge points={points} delayMs={stagger.delay(i)} skip={stagger.skipped} />}
+            {points > 0 && (
+              <span className="flex flex-shrink-0 flex-col items-end gap-0.5">
+                <PointsBadge points={points} delayMs={stagger.delay(i)} skip={stagger.skipped} />
+                {detail && <span className="text-xs tabular-nums text-fg-subtle">{detail}</span>}
+              </span>
+            )}
           </CardRow>
         ))}
       </Card>

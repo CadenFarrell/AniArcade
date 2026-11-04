@@ -14,7 +14,7 @@ const mocks = {
   }),
 };
 const BASE = {
-  roundSize: 3, clipSeconds: 10, timed: false, guessSeconds: 20, answerSeconds: 10, startingLives: 3,
+  roundSize: 3, timed: false, guessSeconds: 20, answerSeconds: 10, startingLives: 3,
   playbackRate: 1, samplePoint: 'middle', sharedSongsOnly: true, includeOpenings: true, includeEndings: true,
   popularity: 'any', yearFrom: 1960, yearTo: 2030, maxPerAnime: 2,
 };
