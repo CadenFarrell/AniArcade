@@ -225,10 +225,26 @@ function noteFor(card, rule) {
  * It is one more tier in front of "fresh this game", never a filter.
  */
 export function dealGame(players, settings, pack = null, rng = Math.random, { recent = null } = {}) {
+  // "Shared characters first": a game dealt only from characters on every
+  // list, when those can fill it. They almost never can — a non-show round
+  // wants five of them from five different shows plus a sixth one fact away —
+  // so the option used to refuse to start for nearly every real table. Now a
+  // shared deal that falls short deals from everyone's lists instead and says
+  // so (`sharedFallback`), rather than blocking Start on a setting.
+  if (settings?.sharedOnly && players?.length > 1) {
+    const shared = dealFrom(players, settings, pack, rng, recent, true);
+    if (shared.deal) return shared;
+    const all = dealFrom(players, settings, pack, rng, recent, false);
+    return all.deal ? { deal: { ...all.deal, sharedFallback: true } } : all;
+  }
+  return dealFrom(players, settings, pack, rng, recent, false);
+}
+
+function dealFrom(players, settings, pack, rng, recent, sharedOnly) {
   const rounds = settings?.rounds ?? 8;
   const size = Math.min(CARDS_RANGE.max, Math.max(CARDS_RANGE.min, settings?.cards ?? 6));
   const reasonsOn = settings?.reasons !== false;
-  const pool = cardPool(players, { sharedOnly: Boolean(settings?.sharedOnly) }, pack);
+  const pool = cardPool(players, { sharedOnly }, pack);
 
   const sets = [];
   const usedOdd = new Set();

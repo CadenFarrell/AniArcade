@@ -10,9 +10,11 @@ import { CARDS_RANGE } from './deal';
 //                        hold in your head, enough that a lucky tap is 1 in 6.
 //   reasons: true      — saying WHY is what separates knowing from guessing,
 //                        and it is worth a point only beside a right pick.
-//   sharedOnly: false  — a pool of characters on EVERY list rarely holds eight
-//                        clean rounds; the deal leans toward characters more of
-//                        the table knows either way (deal.js).
+//   sharedOnly: false  — "Shared characters first": a pool of characters on
+//                        EVERY list rarely holds eight clean rounds, so on it
+//                        deals from everyone's lists when it falls short
+//                        (deal.js's sharedFallback). The deal leans toward
+//                        characters more of the table knows either way.
 export const DEFAULT_PREFS = {
   rounds: 8,
   cards: 6,

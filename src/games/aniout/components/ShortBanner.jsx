@@ -6,7 +6,6 @@ import { Banner } from '../../../shared/ui';
 // visible cause), so it names the folded option in words.
 export default function ShortBanner({ settings, found, online = false }) {
   const fixes = [
-    settings.sharedOnly && 'turn off “Shared characters only”',
     settings.cards > 5 && 'deal fewer characters per round',
     'play fewer rounds',
     online ? 'or someone imports a bigger list' : 'or import a bigger list with the link button on a player',

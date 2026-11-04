@@ -53,7 +53,14 @@ so the odd one tends to be a stranger who almost fits. The search has fixed budg
 fixtures, a three-player deal takes about 10–20ms.
 
 **Fresh faces come first.** If a list is too small, a face may repeat among the five, but
-the same character is never the odd one twice in a game.
+the same character is never the odd one twice in a game. Faces this device dealt in its last
+few games come before that (`recent`, `shared/utils/recentDeals.js`), as a tier, never a filter.
+
+**"Shared characters first" is a lean, not a gate** (the `sharedOnly` pref, 2026-11-04). A game
+dealt only from characters on every list almost never fills on real lists (a non-show round
+wants five of them from five shows plus a sixth one fact away), so the option refused to start
+for nearly every table. `dealGame` now tries the shared pool, and when it falls short deals
+from everyone's lists and marks `sharedFallback`, which the status line says out loud.
 
 `deal.test.js` checks every dealt round against an independent `cardsOut` written from the
 rules' text, so `validRound` cannot vouch for itself.

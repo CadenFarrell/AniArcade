@@ -22,6 +22,7 @@ export function setupStatus({ count, trial, settings, packStatus, online = false
     status = online ? 'Waiting for more players to join.' : 'Seat at least one player.';
   } else if (loading) status = 'Loading show facts…';
   else if (short) status = `Need ${settings.rounds} rounds — these lists hold ${trial.found}.`;
+  else if (trial?.deal?.sharedFallback) status = `${count} players · ${settings.rounds} rounds of ${settings.cards} · not enough shared, so from everyone’s lists`;
   else status = `${count} player${count === 1 ? '' : 's'} · ${settings.rounds} rounds of ${settings.cards}`;
   const ready = count >= min && !loading && !short;
   return { status, ready, short };

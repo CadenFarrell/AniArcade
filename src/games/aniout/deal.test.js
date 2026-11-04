@@ -234,3 +234,15 @@ describe('dealing around recent games', () => {
     expect(dealGame(ada, { ...SETTINGS, rounds: 3 }, null, seeded(6), { recent: all }).deal.sets).toHaveLength(3);
   });
 });
+
+describe('shared characters first', () => {
+  it('deals from everyone’s lists, and says so, when the shared ones cannot fill the game', () => {
+    const ada = profile('Ada', bigList(60));
+    const ben = { ...profile('Ben', bigList(6)), id: 'ben' };
+    const res = dealGame([ada, ben], { ...SETTINGS, rounds: 3, sharedOnly: true }, null, seeded(3));
+    expect(res.deal.sets).toHaveLength(3);
+    expect(res.deal.sharedFallback).toBe(true);
+    // Off, nothing is flagged.
+    expect(dealGame([ada, ben], { ...SETTINGS, rounds: 3 }, null, seeded(3)).deal.sharedFallback).toBeUndefined();
+  });
+});

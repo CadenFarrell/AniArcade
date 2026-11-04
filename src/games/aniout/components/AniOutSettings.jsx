@@ -66,16 +66,16 @@ export default function AniOutSettings({ values, onChange, onReset, host = false
 
       <MoreSettings>
         <Checkbox
-          label="Shared characters only"
+          label="Shared characters first"
           checked={values.sharedOnly}
           onChange={(e) => onChange('sharedOnly', e.target.checked)}
           className="mb-2"
         />
         <SettingHelp
           indent
-          more="Off, a character only one of you has seen can come up. The deal leans toward characters more of you know either way."
+          more="A whole game of characters on every list is rare (a round needs five from five different shows), so when there are not enough the game deals from everyone's lists and says so. The deal leans toward characters more of you know either way."
         >
-          Only deal characters on every player&apos;s list.
+          Deal only characters on every player&apos;s list when there are enough.
         </SettingHelp>
       </MoreSettings>
 
