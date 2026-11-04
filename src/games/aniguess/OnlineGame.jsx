@@ -381,7 +381,10 @@ export default function OnlineGame({ onBack, onExit }) {
         roundNumber={room.roundNumber}
         roundHistory={room.roundHistory}
         departedIds={room.departedIds}
-        onPlayAgain={() => { room.leaveRoom(); onBack(); }}
+        // The host takes the table back to the lobby for a rematch; a guest
+        // waits for them (the bar says so) rather than holding a button that
+        // could only ever leave.
+        onPlayAgain={room.isHost ? room.returnToLobby : null}
         onEditLists={() => { room.leaveRoom(); onBack(); }}
       />,
       // The final results: the host may take the table on to another game.

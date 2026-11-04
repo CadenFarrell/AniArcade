@@ -45,9 +45,11 @@ export default function Leaderboard({
         <Splash players={winners} stamp={stamp} kana={kana} score={`${winners[0].total} pts`} />
       )}
       bar={(
-        <StartBar width="md" status={`${players.length} players`} ready>
+        // onPlayAgain is null online for everyone but the host, who alone can
+        // move the room back to its lobby (WavelengthResults' rule).
+        <StartBar width="md" status={onPlayAgain ? `${players.length} players` : 'Waiting for the host…'} ready>
           <Button variant="neutral" size="lg" onClick={onEditLists}>Edit Character Lists</Button>
-          <Button variant="primary" size="lg" onClick={onPlayAgain}>Play Again</Button>
+          {onPlayAgain && <Button variant="primary" size="lg" onClick={onPlayAgain}>Play Again</Button>}
         </StartBar>
       )}
     >

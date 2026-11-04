@@ -159,6 +159,23 @@ export function useRoom() {
       }));
   }, [patchState, roomCode, bestEffort, isHost]);
 
+  // From the final leaderboard back to the lobby, the table still seated. It
+  // used to be "Play Again" = everyone leaves, which dissolved the room the
+  // table wanted a rematch in. Host-only, like every other game's: the lobby
+  // is where the host starts, and two devices resetting at once would race.
+  // Only the match's own story is cleared — handleStartGame rebuilds every
+  // round field from scratch anyway — so a guest still on the leaderboard
+  // moves with the view rather than reading a half-reset table.
+  const returnToLobby = useCallback(async () => {
+    if (!isHost) return;
+    const db = getFirebaseDb();
+    await bestEffort(set(ref(db, `rooms/${roomCode}/open`), true));
+    return patchState({
+      view: 'setup', lastOutcome: null, roundHistory: null,
+      turnState: { pendingAction: null },
+    });
+  }, [isHost, roomCode, patchState, bestEffort]);
+
   // Online "collective pick": every non-assignee shares ONE live proposal,
   // written to the secret assignments/{playerId} slot so the assignee can't see
   // it (the same rule that protects the final assignment). Anyone can propose or
@@ -497,7 +514,7 @@ export function useRoom() {
     graceMs: core.graceMs,
     handleStartGame, proposeCharacter, lockInAssignment, setMyApproval, handleRevealDone,
     handleTurnComplete, handleCorrectGuess, handleWrongGuess, handleGiveUp,
-    finishRound, handlePeek, handleNewRound, handleEndSession,
+    finishRound, handlePeek, handleNewRound, handleEndSession, returnToLobby,
     submitPendingAction, resolvePendingAction, clearPendingAction,
     readAssignment,
   };

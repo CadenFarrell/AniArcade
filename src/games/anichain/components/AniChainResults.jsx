@@ -45,7 +45,9 @@ export default function AniChainResults({ game, players, departedIds = [], onPla
 
   return (
     <ResultsLayout
-      ceremony={teamGame ? players.length : rest.length}
+      // The rows the Standings below builds: both TEAMS in a team game (not the
+      // players — staging one tick per player left a dead pause before the splash).
+      ceremony={teamGame ? 2 : rest.length}
       game={descriptor}
       title="Final Scores"
       players={players}

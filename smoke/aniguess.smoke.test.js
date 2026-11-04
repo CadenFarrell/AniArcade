@@ -112,6 +112,19 @@ describe('AniGuess online', () => {
     await until(() => devs.every((d) => d.r.view === 'roundEnd' && d.r.roundHistory.length === 1), { what: 'round banked with its story' });
     expect(A.r.roundHistory[0]).toHaveLength(2);
     expect(A.r.gameSession.settings.rounds).toBe(2);
+
+    // Play Again: the host takes the seated table back to the lobby — the room
+    // reopens, nobody leaves, and a guest cannot do it for them.
+    await A.act((r) => r.handleEndSession(() => {}));
+    await until(() => devs.every((d) => d.r.view === 'leaderboard'), { what: 'leaderboard' });
+    await other.act((r) => (r.isHost ? null : r.returnToLobby()));
+    await sleep(500);
+    expect(A.r.view).toBe('leaderboard');
+    const host = devs.find((d) => d.r.isHost);
+    await host.act((r) => r.returnToLobby());
+    await until(() => devs.every((d) => d.r.view === 'setup' && d.r.roomCode), { what: 'back in the lobby' });
+    expect(A.r.gameSession.players).toHaveLength(2);
+    expect((await get(ref(A.db, `rooms/${A.r.roomCode}/open`))).val()).toBe(true);
     expect(syncErrors(devs)).toEqual([]);
   });
 });

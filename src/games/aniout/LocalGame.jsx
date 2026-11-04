@@ -16,7 +16,10 @@ export default function LocalGame({ onExit, onBack }) {
 
   const start = ({ players, settings }) => {
     const res = dealGame(players, settings, pack.pack);
-    if (res.error) { setError(res.error); return; }
+    // A failed deal goes back to setup, where `error` is shown. From "Play
+    // again" the round is on screen, and leaving it there made the button do
+    // nothing at all (the error landed on a setup screen nobody could see).
+    if (res.error) { setError(res.error); setGame(null); return; }
     setError(null);
     // `n` remounts the round on "play again", so its hook starts a fresh game.
     setGame((g) => ({ players, settings, deal: res.deal, n: (g?.n ?? 0) + 1 }));
