@@ -1,6 +1,7 @@
-import { useEffect } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useEscapeKey } from '../hooks/useEscapeKey';
 import { playSound } from '../services/sound';
+import { inertOutside } from '../utils/inertOutside';
 
 // There were six hand-rolled copies of this overlay, and only three of them
 // wired up Escape. Folding the hook in here means every dialog gets keyboard
@@ -41,8 +42,35 @@ export default function Modal({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // The page behind is out of reach while the dialog is open: inert for
+  // keyboards, screen readers and the playtest bots, as the scrim already made
+  // it for pointers (shared/utils/inertOutside.js says why it was not before).
+  //
+  // Focus goes with it. Making the background inert drops focus from the
+  // button that opened the dialog, so the panel takes it, unless something in
+  // the dialog already has it (an autoFocus field). Children's autoFocus runs
+  // before this parent's layout effect, so the check sees it. On close, focus
+  // goes back to that button, if it is still on the page and live. The opener
+  // is read in the first RENDER, before any autoFocus inside has moved focus.
+  const rootRef = useRef(null);
+  const panelRef = useRef(null);
+  const [opener] = useState(() => (typeof document === 'undefined' ? null : document.activeElement));
+  useLayoutEffect(() => {
+    const undo = inertOutside(rootRef.current);
+    const panel = panelRef.current;
+    if (panel && !panel.contains(document.activeElement)) panel.focus({ preventScroll: true });
+    return () => {
+      // Un-inert first: an inert element refuses focus.
+      undo();
+      if (opener && opener !== document.body && opener.isConnected && !opener.closest('[inert]')) {
+        opener.focus?.({ preventScroll: true });
+      }
+    };
+  }, [opener]);
+
   return (
     <div
+      ref={rootRef}
       // backdrop-blur as well as the scrim: an ink scrim over a busy page
       // leaves the page's own ink lines showing through as noise behind the
       // panel. Blurring them is what makes the dialog read as IN FRONT.
@@ -58,11 +86,15 @@ export default function Modal({
       aria-modal="true"
     >
       <div
+        ref={panelRef}
+        // Focusable only from code (the open above), never a Tab stop, and
+        // with no ring: it is the panel, not a control.
+        tabIndex={-1}
         // Without this the backdrop's onClick fires for every click inside.
         onClick={(e) => e.stopPropagation()}
         // A heavier rule and a deeper shadow than a plain card-pop: a dialog is
         // the one panel that has to look like it is lifted off the page.
-        className={`m-auto w-full ${WIDTHS[width]}
+        className={`m-auto w-full outline-none ${WIDTHS[width]}
           ${bare ? '' : 'card-pop border-[3px] p-6 shadow-[0_8px_0_0_var(--color-ink)] sm:p-8'} ${className}`}
       >
         {children}
