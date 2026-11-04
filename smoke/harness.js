@@ -12,7 +12,7 @@
 // firebase SDK are externals and stay shared, which is what renderHook needs.
 import { vi, expect } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
-import { initializeApp } from 'firebase/app';
+import { initializeApp, deleteApp } from 'firebase/app';
 import {
   initializeAuth, inMemoryPersistence, connectAuthEmulator, signInAnonymously, onAuthStateChanged,
 } from 'firebase/auth';
@@ -102,6 +102,19 @@ export function firebaseDevice(label) {
     }, reject);
   });
   return { app, auth, db, ensureSignedIn };
+}
+
+// A device's Firebase torn down for good, once its test is over. goOffline
+// alone (what a crash is) leaves the app registered with the SDK, and with it
+// the auth instance, the database's listener tree and every closure those
+// listeners hold — which, for a playtest seat, is that seat's whole copy of the
+// app. The online playtest made ~120 devices in one process and never released
+// one: the likeliest cause of its out-of-memory crashes. Not for a crash in the
+// middle of a test — a closed tab's onDisconnect must still fire, and deleteApp
+// is not what a closed tab does.
+export async function disposeDevice({ app, db }) {
+  goOffline(db);
+  await deleteApp(app).catch(() => { /* already deleted */ });
 }
 
 export const FIREBASE_MODULE = FIREBASE;

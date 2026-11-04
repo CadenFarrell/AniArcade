@@ -58,6 +58,20 @@ export function scenarioFor(game, strategy, seed, { layer = 'local' } = {}) {
 
   const prefs = {};
   for (const [key, values] of Object.entries(strategy.axes ?? {})) prefs[key] = at(values, key, game.id, seed);
+  // Online, a timer that is on runs at its SHORTEST length. Online time is
+  // real, so a 60s answer clock is a real minute of every seat waiting, and
+  // the online layer was ~36 minutes for 39 runs (2026-11-04). What online
+  // play adds is the room — writes, presence, devices agreeing — which a short
+  // clock tests as well as a long one; the long ones still run locally on the
+  // fake clock. A timer that is off (AniFake's clueSeconds: 0) stays off, and
+  // a strategy's "let the clock run out" wait reads scenario.prefs, so it
+  // shrinks with it.
+  if (layer === 'online') {
+    for (const [key, values] of Object.entries(strategy.axes ?? {})) {
+      const lengths = values.filter((v) => typeof v === 'number' && v > 0);
+      if (/seconds$/i.test(key) && prefs[key] > 0 && lengths.length) prefs[key] = Math.min(...lengths);
+    }
+  }
 
   const variant = strategy.variants?.length ? at(strategy.variants, 'variant', game.id, seed) : null;
 

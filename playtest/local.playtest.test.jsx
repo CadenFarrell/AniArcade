@@ -28,6 +28,7 @@ import { strategies } from './strategies/index.js';
 import { respondAnimeThemes, isAnimeThemes } from './fakes/animethemes.js';
 import { installMediaStubs } from './fakes/media.js';
 import { writeLayerReport } from './report.js';
+import { shardGames, heapMB } from './core/shard.js';
 
 // vitest loads .env.local, which points at PRODUCTION Firebase. Local play is
 // the unconfigured build, exactly as in HubScreen.test.jsx.
@@ -36,6 +37,17 @@ vi.mock('../src/shared/services/firebase', () => ({
   getFirebaseAuth: () => { throw new Error('firebase touched in local play'); },
   getFirebaseDb: () => { throw new Error('firebase touched in local play'); },
   ensureSignedIn: () => { throw new Error('firebase touched in local play'); },
+}));
+
+// The hub's idle preload of every game, off. Each run starts on the hub, so a
+// second of fake time in, it would evaluate all thirteen games' code again —
+// 260 times a sweep, for twelve games the run never opens — and at a moment
+// set by real I/O, not the seed, in the middle of the bot's turn. freshApp
+// loads the one game a run plays, before it starts. The preload itself is
+// HubScreen.test.jsx's to cover, not the bots'.
+vi.mock('../src/shared/utils/lazyGame', async (importOriginal) => ({
+  ...(await importOriginal()),
+  preloadGames: () => () => {},
 }));
 
 const ONLY_GAME = process.env.PLAYTEST_GAME || null;
@@ -80,14 +92,18 @@ afterAll(() => writeLayerReport('local', records, { only: ONLY_GAME, seeds }));
 // testing libraries stay shared because they are external to Vite's graph;
 // the providers and HubScreen must come from the same fresh graph or the
 // contexts would not match.
-async function freshApp() {
+//
+// Only the game under test is loaded: the run opens no other (a chaos exit to
+// the hub comes back to the same tile), and with the hub's preload off (above)
+// nothing else loads the other twelve.
+async function freshApp(gameId) {
   vi.resetModules();
   const [{ default: HubScreen }, { games: fresh }, arcade] = await Promise.all([
     import('../src/hub/HubScreen'),
     import('../src/hub/registry'),
     import('../src/shared/testing/arcade'),
   ]);
-  await Promise.all(fresh.map((g) => g.Component.preload()));
+  await fresh.find((g) => g.id === gameId)?.Component.preload();
   return { HubScreen, ...arcade };
 }
 
@@ -144,7 +160,7 @@ function makeAdapter(user, errors, offsite, app) {
 
 async function runOne(game, strategy, seed) {
   const scenario = scenarioFor(game, strategy, seed);
-  const app = await freshApp();
+  const app = await freshApp(game.id);
   const { HubScreen, renderArcade, seedProfiles } = app;
   localStorage.clear();
   const profiles = profilesFor(scenario, strategy);
@@ -193,13 +209,16 @@ async function runOne(game, strategy, seed) {
   }
 }
 
-const selected = games.filter((g) => !ONLY_GAME || g.id === ONLY_GAME);
+// One game asked for by name plays here whatever the shard; otherwise this
+// process plays its slice of the registry (core/shard.js, set by run.js).
+const selected = ONLY_GAME ? games.filter((g) => g.id === ONLY_GAME) : shardGames(games, 'local');
 
 describe.each(selected.map((g) => [g.id, g]))('%s', (id, game) => {
   const strategy = strategies[id];
   it.each(seeds)('seed %i', async (seed) => {
     expect(strategy, `no playtest strategy for ${id}`).toBeTruthy();
     const record = await runOne(game, strategy, seed);
+    record.heapMB = heapMB();
     records.push(record);
     if (record.outcome !== 'pass') {
       const trace = record.trace.slice(-8).map((t) => `  ${t.step}. [${t.screen}] ${t.action}`).join('\n');

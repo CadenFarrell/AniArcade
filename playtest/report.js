@@ -28,7 +28,10 @@ export function writeLayerReport(layer, records, meta = {}) {
     }
     writeFileSync(file, JSON.stringify({ layer, game, at: new Date().toISOString(), runs: [...prior, ...runs] }, null, 1));
   }
-  buildReport();
+  // A shard leaves the summary to run.js, which rebuilds it once every shard
+  // is done: two shards finishing together would both read the other's
+  // half-written JSON and race to write summary.md.
+  if (!process.env.PLAYTEST_SHARD) buildReport();
 }
 
 function loadAll() {

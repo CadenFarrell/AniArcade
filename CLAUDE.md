@@ -50,6 +50,7 @@ npm run playtest -- --game anitag --seed 7 --debug # replay one run exactly (--d
 npm run playtest -- --layer online                 # devices in one room on the emulator (reuses a running one)
 npm run playtest -- --layer browser                # Playwright: phone + desktop, axe, layout, drag, online
 npm run playtest:all                               # all three, then the report
+npm run playtest -- --shards 1                     # local/online in one process (default: picked by free RAM)
 ```
 
 Each run writes `playtest-report/` (gitignored). The bots find screens and buttons by their

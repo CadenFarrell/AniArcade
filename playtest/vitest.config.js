@@ -23,5 +23,10 @@ export default defineConfig({
     fileParallelism: false,
     // A playtest is a report, not a gate: every seed runs even after a failure.
     bail: 0,
+    // A line per seed as it finishes. The default reporter, writing to a pipe
+    // (a shard's, or Claude's shell), says nothing until the whole file is
+    // done — a sweep then sat silent for most of an hour, impossible to tell
+    // from a hang.
+    reporters: ['verbose'],
   },
 });

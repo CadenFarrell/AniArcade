@@ -25,7 +25,8 @@ import userEvent from '@testing-library/user-event';
 import { readFile, readdir } from 'node:fs/promises';
 import { goOffline } from 'firebase/database';
 import { games } from '../src/hub/registry';
-import { firebaseDevice, memStorage, FIREBASE_MODULE, STORAGE_MODULE } from '../smoke/harness.js';
+import { firebaseDevice, disposeDevice, memStorage, FIREBASE_MODULE, STORAGE_MODULE } from '../smoke/harness.js';
+import { shardGames, heapMB } from './core/shard.js';
 import { snapshotDom } from './core/snapshot.js';
 import { playTable } from './core/table.js';
 import { scenarioFor, profilesFor } from './core/scenarios.js';
@@ -153,7 +154,14 @@ function makeSeat({ game, name, profile, prefs, isHost, user, errors }) {
       async exitToHub() {},
     },
     mount,
-    unmount: () => { try { view?.unmount(); } catch { /* already gone */ } goOffline(fb.db); },
+    // The run is over: the device goes for good, Firebase app and all (see
+    // disposeDevice for why goOffline alone leaked every seat of every run).
+    async dispose() {
+      try { view?.unmount(); } catch { /* already gone */ }
+      view = null;
+      container.remove();
+      await disposeDevice(fb);
+    },
   };
   return seat;
 }
@@ -197,17 +205,20 @@ async function runOne(game, strategy, seed) {
     if (offsite.length) record.findings.push(...offsite.map((m) => ({ kind: 'network', severity: 'fail', message: m })));
     return record;
   } finally {
-    for (const s of seats) s.unmount();
+    await Promise.all(seats.map((s) => s.dispose()));
   }
 }
 
-const selected = games.filter((g) => !ONLY_GAME || g.id === ONLY_GAME);
+// One game asked for by name plays here whatever the shard; otherwise this
+// process plays its slice of the registry (core/shard.js, set by run.js).
+const selected = ONLY_GAME ? games.filter((g) => g.id === ONLY_GAME) : shardGames(games, 'online');
 
 describe.each(selected.map((g) => [g.id, g]))('%s online', (id, game) => {
   const strategy = strategies[id];
   it.each(seeds)('seed %i', async (seed) => {
     expect(strategy, `no playtest strategy for ${id}`).toBeTruthy();
     const record = await runOne(game, strategy, seed);
+    record.heapMB = heapMB();
     records.push(record);
     if (record.outcome !== 'pass') {
       const trace = record.trace.slice(-10).map((t) => `  ${t.step}. [${t.screen}] ${t.action}`).join('\n');
