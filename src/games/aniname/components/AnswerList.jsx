@@ -8,8 +8,13 @@ import { Icon, Mark } from '../../../shared/ui';
 //
 // `onJudge(index, accept)` turns each pending row into the table's two buttons
 // ("Accept “x”" / "Reject “x”", which the bots press); without it pending rows
-// just wait.
-export default function AnswerList({ answers, onJudge = null }) {
+// just wait. Online they are votes: `votes` ({ judges, me }) prints each
+// pending row's count and marks this phone's own vote as pressed, and a vote
+// may be changed until the majority decides.
+//
+// `onChallenge(index)` gives the namer a "Challenge “x”" button on a name the
+// arcade marked wrong (not one the table rejected), sending it to the table.
+export default function AnswerList({ answers, onJudge = null, onChallenge = null, votes = null }) {
   if (!answers?.length) return null;
   return (
     <ol className="mb-5 divide-y-2 divide-ink border-y-2 border-ink" aria-label="Answers">
@@ -25,13 +30,32 @@ export default function AnswerList({ answers, onJudge = null }) {
             {a.why && a.verdict === 'wrong' && a.why !== 'blank' && (
               <span className="block text-xs text-fg-helper">{a.why}</span>
             )}
+            {a.verdict === 'pending' && a.why === 'challenged' && (
+              <span className="block text-xs text-fg-helper">Challenged</span>
+            )}
+            {a.verdict === 'pending' && votes && votes.judges.length > 1 && (
+              <span className="block text-xs text-fg-helper">
+                {votes.judges.filter((id) => a.votes?.[id] != null).length} of {votes.judges.length} voted
+              </span>
+            )}
           </span>
           <Verdict answer={a} />
+          {a.verdict === 'wrong' && a.why !== 'table said no' && onChallenge && (
+            <button
+              type="button"
+              aria-label={`Challenge “${a.label || a.text}”`}
+              onClick={() => onChallenge(i)}
+              className="btn-pop focus-pop border-ink bg-surface px-3 py-1.5 text-sm text-fg-strong"
+            >
+              Challenge
+            </button>
+          )}
           {a.verdict === 'pending' && onJudge && (
             <span className="flex w-full gap-2 sm:w-auto">
               <button
                 type="button"
                 aria-label={`Accept “${a.label || a.text}”`}
+                aria-pressed={votes ? a.votes?.[votes.me] === true : undefined}
                 onClick={() => onJudge(i, true)}
                 className="btn-pop focus-pop flex-1 border-ink bg-pop-lime px-3 py-1.5 text-sm text-paper sm:flex-none"
               >
@@ -40,6 +64,7 @@ export default function AnswerList({ answers, onJudge = null }) {
               <button
                 type="button"
                 aria-label={`Reject “${a.label || a.text}”`}
+                aria-pressed={votes ? a.votes?.[votes.me] === false : undefined}
                 onClick={() => onJudge(i, false)}
                 className="btn-pop focus-pop flex-1 border-ink bg-pop-red px-3 py-1.5 text-sm text-paper sm:flex-none"
               >

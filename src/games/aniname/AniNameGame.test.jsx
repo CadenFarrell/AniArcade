@@ -93,6 +93,9 @@ async function step(user, log) {
     await user.click(screen.getByRole('button', { name: /^bid \d+$/i }));
     return 'bid';
   }
+  // The clock waits for the namer to take the device.
+  const begin = q('button', /^start my clock$/i);
+  if (begin) { await user.click(begin); return 'begin'; }
   const box = q('textbox', /your answer/i);
   if (box) {
     const list = screen.queryByRole('list', { name: 'Answers' });
@@ -131,6 +134,8 @@ describe('AniName, played locally', { timeout: 60000 }, () => {
     const log = await playToEnd(user);
     expect(log.filter((s) => s === 'bid')).toHaveLength(3);
     expect(log.filter((s) => s === 'next')).toHaveLength(3);
+    // One clock handoff a round: the minute starts in the namer's hands.
+    expect(log.filter((s) => s === 'begin')).toHaveLength(3);
     expect(log).toContain('name');
     // A right name plus an unknown one meets a bid of 2 only if the table
     // accepts the unknown, so every round that named both went to review.

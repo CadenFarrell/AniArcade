@@ -84,6 +84,7 @@ export default function OnlineGame({ onBack, onExit }) {
       onPass={room.pass}
       onName={room.name}
       onDone={room.done}
+      onChallenge={room.challenge}
       onJudge={room.judge}
       onNext={room.next}
     />,

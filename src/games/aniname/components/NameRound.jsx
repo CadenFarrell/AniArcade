@@ -1,9 +1,10 @@
 import PlayerRow from '../../../shared/components/PlayerRow';
 import RoundHeader from '../../../shared/components/RoundHeader';
 import ResultImpact from '../../../shared/components/ResultImpact';
+import Handoff from '../../../shared/components/Handoff';
 import { Backdrop, Button, Card, Screen, TimerBar } from '../../../shared/ui';
 import { answersFor, categoryText } from '../answers';
-import { canJudge, currentCategory, missPoints, rightCount } from '../rules';
+import { canJudge, currentCategory, judgesFor, missPoints, rightCount } from '../rules';
 import AnswerList from './AnswerList';
 import BidPanel from './BidPanel';
 import NamingPanel from './NamingPanel';
@@ -23,7 +24,7 @@ const SAMPLE = 12;
 // Every handler takes the acting player's id first; the online hook ignores it.
 export default function NameRound({
   game, deal, players, index, clock, departedIds = [], youId = null, canActAs, judgeAs = null,
-  onBid, onPass, onName, onDone, onJudge, onNext,
+  onBid, onPass, onName, onDone, onJudge, onNext, onBegin = null, onChallenge = null,
 }) {
   const cat = currentCategory(game, deal);
   const nameOf = (id) => players.find((p) => p.id === id)?.name ?? 'Someone';
@@ -43,7 +44,7 @@ export default function NameRound({
     hint = bid ? `Top bid: ${who(bid.by)} — ${bid.n}.` : 'No bid yet.';
   } else if (phase === 'naming') {
     title = `${possessive(bidder)} Turn`;
-    hint = `${right} of ${bid.n} named.`;
+    hint = game.deadlineAt == null ? 'Hand the device over.' : `${right} of ${bid.n} named.`;
   } else if (phase === 'review') {
     title = 'Table Decides';
     hint = `${right} of ${bid.n} right so far. Rule on the names the arcade doesn’t know.`;
@@ -68,6 +69,18 @@ export default function NameRound({
         onPass={() => onPass(game.turnId)}
       />
     ) : waiting(`Waiting for ${nameOf(game.turnId)} to bid…`);
+  } else if (phase === 'naming' && game.deadlineAt == null && onBegin) {
+    // Local only (online the clock starts with the auction's close): the
+    // device goes to the namer first, and the minute starts when they say so.
+    panel = (
+      <Handoff
+        className="mb-4"
+        player={players.find((p) => p.id === bidder)}
+        note={`${bid.n} to name. The clock starts when you press it.`}
+        cta="Start my clock"
+        onReady={() => onBegin(bidder)}
+      />
+    );
   } else if (phase === 'naming') {
     const mine = canActAs(bidder);
     panel = (
@@ -75,15 +88,30 @@ export default function NameRound({
         {mine
           ? <NamingPanel key={roundKey} onName={(text) => onName(bidder, text)} onDone={() => onDone(bidder)} />
           : waiting(`${nameOf(bidder)} is naming…`)}
-        <AnswerList answers={game.answers} />
+        <AnswerList
+          answers={game.answers}
+          onChallenge={mine && onChallenge ? (i) => onChallenge(bidder, i) : null}
+        />
       </>
     );
   } else if (phase === 'review') {
     const mayJudge = judgeAs != null && canJudge(game, judgeAs, ids);
+    // Online every judge votes and the majority decides (rules.tally), so the
+    // list shows each pending name's count and this phone's own vote.
+    const judges = judgesFor(game, ids);
     panel = (
       <>
         {!mayJudge && waiting(`The table is ruling on ${nameOf(bidder)}’s answers…`)}
-        <AnswerList answers={game.answers} onJudge={mayJudge ? (i, accept) => onJudge(judgeAs, i, accept) : null} />
+        {mayJudge && youId && judges.length > 1 && (
+          <p className="mb-3 text-center text-sm text-fg-helper">
+            The table votes on each name. Half saying yes accepts it; more than half saying no rejects it.
+          </p>
+        )}
+        <AnswerList
+          answers={game.answers}
+          onJudge={mayJudge ? (i, accept) => onJudge(judgeAs, i, accept) : null}
+          votes={youId ? { judges, me: judgeAs } : null}
+        />
       </>
     );
   } else {
@@ -122,7 +150,7 @@ export default function NameRound({
           }}
         />
         <RoundHeader title={title} tag={`Round ${game.round + 1}/${game.rounds}`} hint={hint}>
-          {phase === 'naming' && clock && (
+          {phase === 'naming' && game.deadlineAt != null && clock && (
             <TimerBar secondsLeft={clock.secondsLeft} fraction={clock.fraction} label="Time to name" />
           )}
         </RoundHeader>

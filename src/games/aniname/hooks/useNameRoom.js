@@ -131,7 +131,11 @@ export function useNameRoom(pack = null) {
     return rules.addName(g, me, { ...judged, text }, ids(), now());
   }), [applyGame, me, now, ids]);
   const done = useCallback(() => applyGame((g) => rules.stopNaming(g, me, ids(), now())), [applyGame, me, now, ids]);
-  const judge = useCallback((_, i, accept) => applyGame((g) => rules.judgeAnswer(g, me, i, accept, ids())), [applyGame, me, ids]);
+  // A vote, not a ruling: the table decides by majority (rules.tally), so no
+  // one judge — who scores if the bid falls short — settles a name alone.
+  const judge = useCallback((_, i, accept) =>
+    applyGame((g) => rules.judgeAnswer(g, me, i, accept, ids(), { vote: true })), [applyGame, me, ids]);
+  const challenge = useCallback((_, i) => applyGame((g) => rules.challengeAnswer(g, me, i)), [applyGame, me]);
   // Anyone may press Next; the second device's transaction aborts.
   const next = useCallback(() => applyGame((g) => rules.nextRound(g, ids())), [applyGame, ids]);
 
@@ -189,6 +193,6 @@ export function useNameRoom(pack = null) {
     index,
     clock,
     startGame, returnToLobby,
-    bid, pass, name, done, judge, next,
+    bid, pass, name, done, judge, challenge, next,
   };
 }

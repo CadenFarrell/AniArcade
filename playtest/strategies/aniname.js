@@ -41,8 +41,15 @@ export default makeStrategy({
       return click(bid, 'bid');
     }
 
+    // One device: the clock waits for the namer to take it.
+    const begin = find(snap, /^start my clock$/i);
+    if (begin) return click(begin, 'start the clock');
+
     const box = find(snap, /your answer/i, { role: 'textbox' }) ?? find(snap, /your answer/i);
     if (box) {
+      // A name the arcade marked wrong, now and then disputed.
+      const challenge = find(snap, /^challenge /i);
+      if (challenge && rng.chance(0.3)) return click(challenge, 'challenge a name');
       ctx.memory.named = ctx.memory.named ?? 0;
       const add = find(snap, /^add$/i);
       if (box.value && add) { ctx.memory.named += 1; return click(add, 'add a name'); }

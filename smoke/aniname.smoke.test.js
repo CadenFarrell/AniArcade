@@ -85,11 +85,16 @@ describe('AniName online', () => {
       await namer.act((r) => r.done());
       await until(() => devs.every((d) => d.r.game.phase === 'review'), { what: 'review' });
 
-      // The namer may not rule on their own answer; someone else accepts it.
+      // The namer may not rule on their own answer, and no one judge settles
+      // it: one "no" of two judges is not a majority, and the other's "yes"
+      // makes a tie, which goes to the namer.
       await namer.act((r) => r.judge(null, 1, true));
       expect(A.r.game.phase).toBe('review');
-      const judge = devs.find((d) => d !== namer);
-      await judge.act((r) => r.judge(null, 1, true));
+      const [judge, other] = devs.filter((d) => d !== namer);
+      await judge.act((r) => r.judge(null, 1, false));
+      await until(() => devs.every((d) => d.r.game.answers[1].votes?.[judge.r.myPlayerId] === false), { what: 'vote in' });
+      expect(A.r.game.phase).toBe('review');
+      await other.act((r) => r.judge(null, 1, true));
       await until(() => devs.every((d) => d.r.game.phase === 'revealed'), { what: 'revealed' });
       expect(A.r.game.result).toMatchObject({ made: true, n: 2 });
 

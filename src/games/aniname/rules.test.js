@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
-  MAX_BID, NAME_GRACE_MS, addName, canJudge, endGame, judgeAnswer, missPoints, nextRound,
-  normalizeDeal, normalizeGame, pass, placeBid, settleIfComplete, standings, startGame, stopNaming,
+  MAX_BID, NAME_GRACE_MS, addName, beginNaming, canJudge, challengeAnswer, endGame, judgeAnswer,
+  judgesFor, missPoints, nextRound, normalizeDeal, normalizeGame, pass, placeBid, settleIfComplete,
+  standings, startGame, stopNaming, tally,
 } from './rules';
 
 const DEAL = {
@@ -131,6 +132,92 @@ describe('the table’s review', () => {
   });
 });
 
+describe('the table’s vote (online)', () => {
+  const FOUR = ['a', 'b', 'c', 'd'];
+  const VOTE = { vote: true };
+  // b names 4 with two right and three unknown, judged by a, c and d.
+  function toReview(ids = FOUR) {
+    let g = startGame(ids, DEAL);
+    g = apply(g, placeBid(g, 'a', 3, ids, T0));
+    g = apply(g, placeBid(g, 'b', 4, ids, T0));
+    for (const id of ids.slice(2)) g = apply(g, pass(g, id, ids, T0));
+    g = apply(g, pass(g, 'a', ids, T0));
+    for (const k of ['x1', 'x2']) g = apply(g, addName(g, 'b', right(k), ids, T0));
+    for (const k of ['u1', 'u2', 'u3']) g = apply(g, addName(g, 'b', unknown(k), ids, T0));
+    return apply(g, stopNaming(g, 'b', ids, T0));
+  }
+
+  it('decides a name by majority, never by one judge alone', () => {
+    let g = toReview();
+    expect(judgesFor(g, FOUR)).toEqual(['a', 'c', 'd']);
+    g = apply(g, judgeAnswer(g, 'a', 2, false, FOUR, VOTE));
+    expect(g.answers[2]).toMatchObject({ verdict: 'pending', votes: { a: false } });
+    g = apply(g, judgeAnswer(g, 'c', 2, false, FOUR, VOTE));
+    expect(g.answers[2].verdict).toBe('wrong');
+  });
+
+  it('gives a tie to the namer', () => {
+    // Two judges (a and c): one yes is half, which accepts.
+    let g = toReview(IDS);
+    g = apply(g, judgeAnswer(g, 'a', 2, true, IDS, VOTE));
+    expect(g.answers[2].verdict).toBe('right');
+    // ...while one no of two is not more than half.
+    g = apply(g, judgeAnswer(g, 'c', 3, false, IDS, VOTE));
+    expect(g.answers[3].verdict).toBe('pending');
+  });
+
+  it('lets a judge change their vote until the name is decided', () => {
+    let g = toReview();
+    g = apply(g, judgeAnswer(g, 'a', 2, false, FOUR, VOTE));
+    g = apply(g, judgeAnswer(g, 'a', 2, true, FOUR, VOTE));
+    expect(g.answers[2].votes).toEqual({ a: true });
+    expect(tally(g.answers[2], ['a', 'c', 'd'])).toBeNull();
+    expect(tally({ votes: { a: true, c: true } }, ['a', 'c', 'd'])).toBe('right');
+  });
+
+  it('re-counts without a judge who left, which can decide the name', () => {
+    let g = toReview();
+    g = apply(g, judgeAnswer(g, 'a', 2, false, FOUR, VOTE));
+    g = apply(g, judgeAnswer(g, 'c', 2, true, FOUR, VOTE));
+    expect(g.answers[2].verdict).toBe('pending');
+    // d leaves: a and c split one each, a tie, which goes to the namer.
+    g = apply(g, settleIfComplete(g, ['a', 'b', 'c']));
+    expect(g.answers[2].verdict).toBe('right');
+  });
+});
+
+describe('the clock handoff and the challenge', () => {
+  it('leaves the clock unstarted with no `now`, and starts it once for the namer', () => {
+    let g = startGame(['a', 'b'], DEAL);
+    g = apply(g, placeBid(g, 'a', 2, ['a', 'b'], null));
+    g = apply(g, pass(g, 'b', ['a', 'b'], null));
+    expect(g).toMatchObject({ phase: 'naming', deadlineAt: null });
+    expect(addName(g, 'a', right('x1'), ['a', 'b'], T0).patch).toEqual({});
+    expect(beginNaming(g, 'b', T0).patch).toEqual({});
+    g = apply(g, beginNaming(g, 'a', T0));
+    expect(g.deadlineAt).toBe(T0 + 60_000);
+    expect(beginNaming(g, 'a', T0 + 5).patch).toEqual({});
+    expect(apply(g, addName(g, 'a', right('x1'), ['a', 'b'], T0 + 1)).answers).toHaveLength(1);
+  });
+
+  it('lets the namer send a name the arcade marked wrong to the table', () => {
+    let g = toNaming();
+    g = apply(g, addName(g, 'b', { text: 'Levi', key: 'levi', label: 'Levi', verdict: 'wrong', why: 'not in Naruto' }, IDS, T0));
+    expect(challengeAnswer(g, 'a', 0).patch).toEqual({});
+    g = apply(g, challengeAnswer(g, 'b', 0));
+    expect(g.answers[0]).toMatchObject({ verdict: 'pending', why: 'challenged' });
+    // Pending now, so it counts toward going to the table.
+    for (const k of ['x1', 'x2', 'x3']) g = apply(g, addName(g, 'b', right(k), IDS, T0));
+    expect(apply(g, stopNaming(g, 'b', IDS, T0)).phase).toBe('review');
+  });
+
+  it('never re-opens a name the table rejected, or one after the clock', () => {
+    const g = { ...toNaming(), answers: [{ text: 'x', key: 'x', label: 'x', verdict: 'wrong', why: 'table said no' }] };
+    expect(challengeAnswer(g, 'b', 0).patch).toEqual({});
+    expect(challengeAnswer({ ...g, phase: 'review' }, 'b', 0).patch).toEqual({});
+  });
+});
+
 describe('departures', () => {
   it('drops a departed bidder whose turn it is', () => {
     let g = startGame(IDS, DEAL);
@@ -183,7 +270,7 @@ describe('repair', () => {
     const g = normalizeGame({ order: { 0: 'a' }, phase: 'naming', scores: { a: '2' } });
     expect(g).toMatchObject({ order: ['a'], phase: 'bidding', bid: null, answers: [], passed: {}, scores: { a: 2 } });
     const answers = normalizeGame({ bid: { by: 'a', n: 2 }, phase: 'review', answers: { 0: { key: 'k', verdict: 'nope' } } }).answers;
-    expect(answers).toEqual([{ text: '', key: 'k', label: '', verdict: 'pending', why: null }]);
+    expect(answers).toEqual([{ text: '', key: 'k', label: '', verdict: 'pending', why: null, votes: {} }]);
     expect(normalizeDeal({ cats: { 0: { kind: 'cast', key: 'x', label: 'X' }, 1: { nope: 1 } } }).cats)
       .toEqual([{ kind: 'cast', key: 'x', label: 'X', known: 0 }, null]);
   });

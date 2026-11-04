@@ -21,7 +21,17 @@
 // but only when they could change the result.
 //
 // **Time.** Nothing here reads a clock. A rule that needs "now" takes it as an
-// argument (Date.now() locally, server time online), so tests pin it.
+// argument (server time online), so tests pin it. Locally the auction runs with
+// `now = null`, which leaves the naming clock UNSTARTED (deadlineAt null) until
+// the namer has the device and presses "Start my clock" (beginNaming): the
+// last drop-out used to start the minute while the phone was still in someone
+// else's hands.
+//
+// **The table rules by majority online** (judgeAnswer's `vote`). Everyone but
+// the namer scores when a bid falls short, so one judge settling a name alone
+// was a judge paid to say no. Each judge votes; a name is accepted once half
+// the judges say yes (a tie goes to the namer) and rejected once more than half
+// say no. Locally the table rules in person and one tap stands for it.
 
 /** A bid's floor and ceiling. Thirty is more than anyone names in a minute. */
 export const MIN_BID = 1;
@@ -84,7 +94,8 @@ function nextBidder(game, fromId, activeIds) {
   return null;
 }
 
-// Nobody left to raise: the high bidder names.
+// Nobody left to raise: the high bidder names. With no `now` (local play) the
+// clock waits for beginNaming.
 function toNaming(game, now) {
   return {
     phase: 'naming',
@@ -156,6 +167,8 @@ function afterNaming(game, activeIds) {
  */
 export function addName(game, playerId, judged, activeIds = null, now = null) {
   if (game.phase !== 'naming' || game.bid?.by !== playerId || !judged?.key) return { patch: {} };
+  // A clocked game whose clock has not started: the namer has not taken the device yet.
+  if (now != null && game.deadlineAt == null) return { patch: {} };
   if (now != null && game.deadlineAt != null && now > game.deadlineAt + NAME_GRACE_MS) return { patch: {} };
   const repeat = (game.answers ?? []).some((a) => a.key === judged.key && a.verdict !== 'wrong');
   const entry = {
@@ -170,6 +183,31 @@ export function addName(game, playerId, judged, activeIds = null, now = null) {
   return { patch: { answers } };
 }
 
+/**
+ * Local play: the namer has the device and starts the clock. Only once — a
+ * second press (or a clock already running) is refused.
+ */
+export function beginNaming(game, playerId, now) {
+  if (game.phase !== 'naming' || game.bid?.by !== playerId || game.deadlineAt != null || now == null) return { patch: {} };
+  return { patch: { deadlineAt: now + game.namingMs } };
+}
+
+/**
+ * The namer disputes a name the arcade marked wrong. Its facts are per
+ * franchise (one studio, one debut year for every season), so "animated by
+ * MAPPA" can rule out an Attack on Titan season MAPPA did animate. The name
+ * goes to the table as pending. Only the namer may, only while naming (after
+ * the clock a short round has already settled), and never on a name the table
+ * itself rejected or on a repeat.
+ */
+export function challengeAnswer(game, playerId, index) {
+  if (game.phase !== 'naming' || game.bid?.by !== playerId) return { patch: {} };
+  const a = game.answers?.[index];
+  if (!a || a.verdict !== 'wrong' || a.why === 'table said no') return { patch: {} };
+  const answers = game.answers.map((x, i) => (i === index ? { ...x, verdict: 'pending', why: 'challenged', votes: {} } : x));
+  return { patch: { answers } };
+}
+
 /** The bidder stops early ("Done"), or anyone once the clock has run out. */
 export function stopNaming(game, playerId, activeIds = null, now = null) {
   if (game.phase !== 'naming') return { patch: {} };
@@ -178,26 +216,79 @@ export function stopNaming(game, playerId, activeIds = null, now = null) {
   return { patch: afterNaming(game, activeIds) };
 }
 
+/** Who rules on pending answers: everyone here but the bidder, or the bidder alone when nobody else is. */
+export function judgesFor(game, activeIds = null) {
+  const others = live(game, activeIds).filter((id) => id !== game.bid?.by);
+  return others.length ? others : [game.bid?.by].filter(Boolean);
+}
+
 /** Who may rule on a pending answer: anyone but the bidder, unless nobody else is here. */
 export function canJudge(game, playerId, activeIds = null) {
   if (game.phase !== 'review') return false;
-  const others = live(game, activeIds).filter((id) => id !== game.bid.by);
-  return others.length ? playerId !== game.bid.by : playerId === game.bid.by;
+  return judgesFor(game, activeIds).includes(playerId);
 }
 
 /**
- * The table rules on one pending answer. The round ends the moment it is
- * decided either way — the bid reached, or too few pending left to reach it —
- * so nobody votes on answers that can no longer matter.
+ * A pending answer's votes, counted over the judges here now: 'right' once at
+ * least half say yes (a tie goes to the namer, since the arcade not knowing a
+ * name is no reason to doubt it), 'wrong' once more than half say no, else
+ * null. A judge who left stops counting, so their leaving can decide a vote.
  */
-export function judgeAnswer(game, playerId, index, accept, activeIds = null) {
-  if (!canJudge(game, playerId, activeIds) || game.answers?.[index]?.verdict !== 'pending') return { patch: {} };
-  const answers = game.answers.map((a, i) => (i === index ? { ...a, verdict: accept ? 'right' : 'wrong', why: accept ? 'table' : 'table said no' } : a));
+export function tally(answer, judges) {
+  const n = judges.length;
+  if (!n) return null;
+  const votes = answer?.votes ?? {};
+  const yes = judges.filter((id) => votes[id] === true).length;
+  const no = judges.filter((id) => votes[id] === false).length;
+  if (yes > 0 && yes * 2 >= n) return 'right';
+  if (no * 2 > n) return 'wrong';
+  return null;
+}
+
+const ruled = (a, verdict) => ({ ...a, verdict, why: verdict === 'right' ? 'table' : 'table said no' });
+
+// After any ruling, the bid reached or too few pending left to reach it ends
+// the round, so nobody votes on answers that can no longer matter.
+function afterRuling(game, answers, activeIds) {
   const next = { ...game, answers };
   const right = rightCount(answers);
   if (right >= game.bid.n) return { patch: { answers, ...settle(next, true, activeIds) } };
   if (right + pendingCount(answers) < game.bid.n) return { patch: { answers, ...settle(next, false, activeIds) } };
   return { patch: { answers } };
+}
+
+/**
+ * The table rules on one pending answer. Locally (`vote` false) one tap is the
+ * table's ruling. Online each judge casts a vote, which they may change until
+ * `tally` decides the name.
+ */
+export function judgeAnswer(game, playerId, index, accept, activeIds = null, { vote = false } = {}) {
+  if (!canJudge(game, playerId, activeIds) || game.answers?.[index]?.verdict !== 'pending') return { patch: {} };
+  if (!vote) {
+    return afterRuling(game, game.answers.map((a, i) => (i === index ? ruled(a, accept ? 'right' : 'wrong') : a)), activeIds);
+  }
+  const judges = judgesFor(game, activeIds);
+  const answers = game.answers.map((a, i) => {
+    if (i !== index) return a;
+    const cast = { ...a, votes: { ...(a.votes ?? {}), [playerId]: Boolean(accept) } };
+    const verdict = tally(cast, judges);
+    return verdict ? ruled(cast, verdict) : cast;
+  });
+  return afterRuling(game, answers, activeIds);
+}
+
+// Every voted pending answer re-counted over the judges here now (one left).
+function recount(game, activeIds) {
+  const judges = judgesFor(game, activeIds);
+  let moved = false;
+  const answers = game.answers.map((a) => {
+    if (a.verdict !== 'pending' || !a.votes || !Object.keys(a.votes).length) return a;
+    const verdict = tally(a, judges);
+    if (!verdict) return a;
+    moved = true;
+    return ruled(a, verdict);
+  });
+  return moved ? afterRuling(game, answers, activeIds) : { patch: {} };
 }
 
 /** From the reveal to the next round (the opener moves one seat), or the end. */
@@ -219,7 +310,9 @@ export function nextRound(game, activeIds = null) {
  *   - bidding, and the seat whose turn it is has gone: they drop out (or,
  *     before any bid, the opening moves to the next seat here);
  *   - bidding, and the high bidder has gone: the auction starts over;
- *   - naming or review, and the bidder has gone: the round is void.
+ *   - naming or review, and the bidder has gone: the round is void;
+ *   - review, and a judge has gone: every voted pending name is re-counted
+ *     without them, which can decide it (and the round).
  * The clock running out is `stopNaming`'s, not this.
  */
 export function settleIfComplete(game, activeIds, now = null) {
@@ -249,6 +342,7 @@ export function settleIfComplete(game, activeIds, now = null) {
       },
     };
   }
+  if (game.phase === 'review') return recount(game, activeIds);
   return { patch: {} };
 }
 
@@ -289,6 +383,9 @@ function normalizeAnswer(raw) {
     label: typeof raw.label === 'string' ? raw.label : '',
     verdict: VERDICTS.includes(raw.verdict) ? raw.verdict : 'pending',
     why: typeof raw.why === 'string' ? raw.why : null,
+    // RTDB drops an empty object, so a pending name with no votes yet reads
+    // back without the key at all.
+    votes: Object.fromEntries(Object.entries(raw.votes ?? {}).filter(([, v]) => typeof v === 'boolean')),
   };
 }
 

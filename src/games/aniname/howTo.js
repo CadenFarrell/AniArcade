@@ -21,7 +21,9 @@ export const HOW_TO = {
       items: [
         'Answers are checked against everyone’s lists and the arcade’s facts on popular shows.',
         'A name the arcade doesn’t know goes to the rest of the table to accept or reject after the clock.',
-        'A name it knows doesn’t fit is marked wrong straight away.',
+        'Online the table votes: half saying yes accepts a name, more than half saying no rejects it.',
+        'A name it knows doesn’t fit is marked wrong straight away. If the arcade got it wrong, the namer can Challenge it while the clock runs, and it goes to the table.',
+        'On one device the clock starts when the namer has the device and presses Start my clock.',
       ],
     },
     {

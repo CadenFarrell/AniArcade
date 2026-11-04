@@ -66,9 +66,24 @@ thinly to be fair.
 - **Reaching the bid in right answers ends the round at once.** A repeat (by key, so
   "Kakashi" after "Kakashi Hatake") is listed and counts for nothing.
 - **Review settles as soon as the result is decided** (bid reached, or too few pending left).
-  Anyone but the namer may rule (`canJudge`), and the namer may rule only when nobody else is
-  here. Locally the device rules as any other seated player, because the table decides in
-  person.
+  Anyone but the namer may rule (`canJudge`, over `judgesFor`), and the namer may rule only
+  when nobody else is here. Locally the device rules as any other seated player, because the
+  table decides in person, and one tap is the table's ruling.
+- **Online the table VOTES (`judgeAnswer`'s `vote`, 2026-11-04).** Everyone but the namer
+  scores when a bid falls short, so one phone settling a name alone was a judge paid to say
+  no. `tally` accepts once half the judges here say yes (a tie goes to the namer) and rejects
+  once more than half say no; a vote can be changed until then. Votes live on the answer
+  (`votes/{playerId}`, normalized because RTDB drops the empty object), and a judge who leaves
+  stops counting: `settleIfComplete` re-counts review, which can decide a name.
+- **Challenge (`challengeAnswer`):** the namer may send a name the arcade marked `wrong` to
+  the table, while naming only (after the clock a short round has already settled). The facts
+  are per franchise (one studio, one debut year for all seasons), so a later season's studio or
+  year can be ruled out wrongly; the `why` line on a wrong row is what tells the namer so. A
+  name the table itself rejected cannot be challenged.
+- **Local clock handoff (`beginNaming`):** locally the auction runs with `now = null`, so the
+  last drop-out leaves `deadlineAt` null and `NameRound` shows a `Handoff` to the namer ("Start
+  my clock"); `addName` refuses with a `now` while the clock is unstarted. Online the clock
+  starts with the auction's close, as before.
 - **Time:** rules take `now`. Locally that is `Date.now()`, with the close on a timer set for
   the deadline. Online it is server time; the screen's clock drains to the deadline, and a
   second clock `NAME_GRACE_MS` later closes the round from any device (AniQuiz's
@@ -92,8 +107,8 @@ The playtest strategy (`playtest/strategies/aniname.js`) and `AniNameGame.test.j
 these words:
 
 - the "Count" stepper, "Bid N", "Drop out"
-- the "Your answer" box, "Add", "I'm done"
-- "Accept “x”" / "Reject “x”"
+- "Start my clock" (local), the "Your answer" box, "Add", "I'm done", "Challenge “x”"
+- "Accept “x”" / "Reject “x”" (online these are votes, `aria-pressed` on this phone's own)
 - "Next round", "See results"
 
 The headings are:

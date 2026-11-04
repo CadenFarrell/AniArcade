@@ -10,7 +10,9 @@ import * as rules from '../rules';
 //
 // Every player is here on one device, so the "active" roster is the whole
 // table and nothing ever needs settling. The clock is Date.now(): there is
-// only one to agree with.
+// only one to agree with. The auction runs with no `now`, so the last drop-out
+// leaves the naming clock unstarted until the namer has the device and
+// presses "Start my clock" (rules.beginNaming).
 export function useNameRound(players, deal, pack) {
   const ids = useMemo(() => players.map((p) => p.id), [players]);
   const [game, setGame] = useState(() => rules.startGame(ids, deal));
@@ -39,8 +41,10 @@ export function useNameRound(players, deal, pack) {
     game,
     index,
     clock,
-    bid: useCallback((id, n) => apply((g) => rules.placeBid(g, id, n, ids, Date.now())), [apply, ids]),
-    pass: useCallback((id) => apply((g) => rules.pass(g, id, ids, Date.now())), [apply, ids]),
+    bid: useCallback((id, n) => apply((g) => rules.placeBid(g, id, n, ids, null)), [apply, ids]),
+    pass: useCallback((id) => apply((g) => rules.pass(g, id, ids, null)), [apply, ids]),
+    begin: useCallback((id) => apply((g) => rules.beginNaming(g, id, Date.now())), [apply]),
+    challenge: useCallback((id, i) => apply((g) => rules.challengeAnswer(g, id, i)), [apply]),
     name: useCallback((id, text) => apply((g) => {
       const judged = judgeName(index, rules.currentCategory(g, deal), text);
       return rules.addName(g, id, { ...judged, text }, ids, Date.now());
