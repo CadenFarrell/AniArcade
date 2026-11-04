@@ -71,16 +71,20 @@ function MatchRecap({ log, players }) {
         const namers = (l.namedBy ?? []).map(nameOf);
         return (
           // The log only grows, and a round's place in it is its identity.
+          // The character and the namers WRAP, never truncate: at phone width
+          // "Round 1 · the character was J…" cut off the one fact the line is
+          // for (browser playtest, 2026-11-04). Only the player's name, which
+          // is short and also on the face beside it, may truncate.
           <CardRow key={i}>
             <PlayerFace player={fake} />
             <span className="min-w-0 flex-1">
-              <span className="block truncate text-sm text-fg-helper">
+              <span className="block break-words text-sm text-fg-helper">
                 Round {i + 1}{l.secretName ? ` · the character was ${l.secretName}` : ''}
               </span>
               <span className="block truncate font-display text-lg font-extrabold text-fg-strong">
                 {fake.name} was the fake
               </span>
-              <span className="block truncate text-sm text-fg-helper">
+              <span className="block break-words text-sm text-fg-helper">
                 {namers.length ? `Named by ${namers.join(', ')}` : 'Nobody named them'}
                 {l.stole ? ' · guessed the character' : ''}
               </span>

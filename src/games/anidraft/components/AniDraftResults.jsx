@@ -83,15 +83,19 @@ function Recap({ game, players }) {
                 .map((id) => `${nameOf(id)}: ${entry.teams[id][i].name}`);
               return (
                 // A round's roles are distinct, and their place is their identity.
+                // The picks WRAP, never truncate: at phone width a tie's second
+                // card and every losing pick after the first were cut to "…"
+                // (browser playtest, 2026-11-04), and the losing picks are the
+                // half of this list a table argues over.
                 <li key={roleId} className="flex items-center gap-3 border-b border-line px-2 py-2 last:border-0">
                   <Avatar src={card?.imageUrl} alt="" size="sm" />
                   <div className="min-w-0 flex-1">
                     <p className="font-display text-xs font-bold uppercase tracking-[0.2em] text-fg-helper">{roleOf(roleId).name}</p>
-                    <p className="truncate font-display text-base font-bold uppercase tracking-wide text-fg-strong">
+                    <p className="break-words font-display text-base font-bold uppercase tracking-wide text-fg-strong">
                       {wonWith.length ? wonWith.join(' / ') : 'No votes'}
                     </p>
                     {field.length > 0 && (
-                      <p className="truncate text-xs text-fg-helper">{field.join(' · ')}</p>
+                      <p className="break-words text-xs text-fg-helper">{field.join(' · ')}</p>
                     )}
                   </div>
                   <span className="shrink-0 text-right text-sm font-bold text-fg-body">
