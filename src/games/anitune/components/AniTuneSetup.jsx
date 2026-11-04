@@ -93,6 +93,10 @@ export default function AniTuneSetup({ onStart, preparing, progress, error, onBa
           <div
             className="h-4 w-full overflow-hidden rounded-pop-sm border-2 border-ink bg-surface-2"
             role="progressbar"
+            // A progressbar with no name is announced as just "progress bar"
+            // (axe's aria-progressbar-name, the playtest's one standing finding).
+            aria-label="Finding songs"
+            aria-valuetext={`${progress.done} of ${progress.total} shows`}
             aria-valuenow={progress.done}
             aria-valuemin={0}
             aria-valuemax={progress.total}
