@@ -86,12 +86,21 @@ describe('dealGame', () => {
     }
   });
 
-  it('draws wrong answers from the same show first', () => {
+  it('draws wrong answers from the same show first, with hints off', () => {
     // Nine rounds deals every portrait, so Frieren is always on the table.
-    const { deal } = dealGame([ann, ben], { ...settings, rounds: 9 }, null, seeded(5));
+    const { deal } = dealGame([ann, ben], { ...settings, hints: false, rounds: 9 }, null, seeded(5));
     const frieren = deal.cards.find((c) => c.key === 'frieren');
     // Her show has exactly three other characters, so they are the options.
     expect([...frieren.choices].sort()).toEqual(['Fern', 'Frieren', 'Himmel', 'Stark']);
+  });
+
+  it('keeps one same-show option with hints on, so a show hint can tell the rest apart', () => {
+    for (let seed = 1; seed < 20; seed++) {
+      const { deal } = dealGame([ann, ben], { ...settings, rounds: 9 }, null, seeded(seed));
+      const frieren = deal.cards.find((c) => c.key === 'frieren');
+      const sameShow = frieren.choices.filter((o) => ['Fern', 'Himmel', 'Stark'].includes(o));
+      expect(sameShow).toHaveLength(1);
+    }
   });
 
   it('reads hints from the list first, then the pack, and leaves out what neither has', () => {

@@ -3,7 +3,7 @@ import RoundHeader from '../../../shared/components/RoundHeader';
 import ResultImpact from '../../../shared/components/ResultImpact';
 import { ChoiceEntry, TypedEntry } from '../../../shared/components/AnswerEntry';
 import { Backdrop, Button, Card, Screen } from '../../../shared/ui';
-import { CHOICE, budgetLeft, currentCard, pointsFor } from '../rules';
+import { CHOICE, budgetLeft, currentCard, missCost, pointsFor } from '../rules';
 import PeekBoard from './PeekBoard';
 import BidPanel from './BidPanel';
 import HintCards from './HintCards';
@@ -66,6 +66,7 @@ export default function PeekRound({
         bid={bid}
         onBid={(n) => onBid(game.turnId, n)}
         onPass={() => onPass(game.turnId)}
+        missCost={missCost(deal?.answerStyle)}
       />
     ) : waiting(`Waiting for ${nameOf(game.turnId)} to bid…`);
   } else if (phase === 'peeking') {

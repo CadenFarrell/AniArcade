@@ -20,7 +20,8 @@
 // and the bid is the number the bidder chose and the table watched them choose.
 // Stopping early never changes it, which keeps the bid the one decision that
 // prices the round. A wrong answer pays WRONG_BONUS to every other player still
-// here — a miss has to cost something, or the lowest bid is always free.
+// here — a miss has to cost something, or the lowest bid is always free —
+// and in multiple choice it also costs the bidder MISS_COST.
 //
 // Two objects, AniQuiz's split:
 //
@@ -49,6 +50,18 @@ export const MIN_BID = 1;
 // to keep the lowest bid from being free. 4 and 7 on the 5×7 board.
 export const HINT_COST = Math.round((2 * TILES) / 16);
 export const WRONG_BONUS = Math.round((3 * TILES) / 16);
+// What a miss costs the BIDDER, in multiple choice only. The bonus alone left
+// the lowest bid free there: four names make a blind guess right a quarter of
+// the time, and at a 1-tile bid that is 0.25 × 34 = 8.5 points against each
+// opponent's 0.75 × 7 = 5.25 — so the opener bid 1, which closes the bidding,
+// and the round was a coin toss nobody else touched. With the cost the blind
+// guess nets 8.5 − 5.25 = 3.25 against the opponent's 5.25, a loss, while a
+// bidder who really knows the face from one tile still comes out well ahead.
+// Typed answers have no such floor (a blind guess is almost never right), so
+// they keep the bonus alone. Scores may go below zero, as in AniQuiz: a floor
+// at zero would make the cost free at the start of every game.
+export const MISS_COST = WRONG_BONUS;
+export const missCost = (answerStyle) => (answerStyle === CHOICE ? MISS_COST : 0);
 // Where the opener's stepper sits before they touch it: half the board.
 export const OPENING_BID = Math.floor(TILES / 2);
 // Cards dealt beyond the rounds, for a portrait that will not load (skipCard).
@@ -228,6 +241,11 @@ export function submitAnswer(game, deal, playerId, text, activeIds = null) {
     points = pointsFor(game.bid.n);
     scores[playerId] = (scores[playerId] ?? 0) + points;
   } else {
+    const cost = missCost(deal?.answerStyle);
+    if (cost) {
+      points = -cost; // never `-cost` for 0: -0 is a different value to Object.is and RTDB
+      scores[playerId] = (scores[playerId] ?? 0) + points;
+    }
     // Everyone else still here. Departed players keep their frozen score.
     for (const id of game.order) {
       if (id === playerId || (activeIds && !activeIds.includes(id))) continue;

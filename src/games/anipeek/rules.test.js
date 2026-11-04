@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import * as rules from './rules';
 
-const { HINT_COST, MAX_BID, TILES, WRONG_BONUS } = rules;
+const { HINT_COST, MAX_BID, MISS_COST, TILES, WRONG_BONUS } = rules;
 
 const card = (key, name, extra = {}) => ({ key, name, series: 'Show', imageUrl: `https://img/${key}.jpg`, choices: [], hints: {}, ...extra });
 
@@ -127,13 +127,31 @@ describe('answering and scoring', () => {
     expect(rules.names(rules.currentCard(g, deal), 'Levi')).toBe(false);
   });
 
-  it('pays everyone else still here for a miss or a pass', () => {
+  it('pays everyone else still here for a miss or a pass, and charges the bidder in multiple choice', () => {
     const g = peekFor(4);
     const miss = apply(g, rules.submitAnswer(g, deal, 'a', 'Eren', ['a', 'b']));
-    expect(miss.scores).toEqual({ a: 0, b: WRONG_BONUS, c: 0 });
+    expect(miss.scores).toEqual({ a: -MISS_COST, b: WRONG_BONUS, c: 0 });
+    expect(miss.result.points).toBe(-MISS_COST);
     const blank = apply(g, rules.submitAnswer(g, deal, 'a', '', ids));
     expect(blank.result.correct).toBe(false);
-    expect(blank.scores).toEqual({ a: 0, b: WRONG_BONUS, c: WRONG_BONUS });
+    expect(blank.scores).toEqual({ a: -MISS_COST, b: WRONG_BONUS, c: WRONG_BONUS });
+  });
+
+  it('charges a typed miss nothing — a blind typed guess is almost never right', () => {
+    const typed = { ...deal, answerStyle: 'typed' };
+    const g = peekFor(4);
+    const miss = apply(g, rules.submitAnswer(g, typed, 'a', 'Eren', ids));
+    expect(miss.scores).toEqual({ a: 0, b: WRONG_BONUS, c: WRONG_BONUS });
+    expect(miss.result.points).toBe(0);
+  });
+
+  it('makes a blind 1-tile bid in multiple choice lose ground on average', () => {
+    // A quarter right among four names: the bidder's expected gain against
+    // one opponent's expected miss bonus.
+    const p = 1 / 4;
+    const bidder = p * rules.pointsFor(1) - (1 - p) * MISS_COST;
+    const opponent = (1 - p) * WRONG_BONUS;
+    expect(bidder).toBeLessThan(opponent);
   });
 
   it('only takes the answer from the bidder', () => {

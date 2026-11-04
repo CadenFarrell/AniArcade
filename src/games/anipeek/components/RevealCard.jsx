@@ -23,7 +23,7 @@ export default function RevealCard({ card, result, who, children }) {
         <Mark yes={false} label="Wrong" />
         <span>
           {result.text ? `${who(result.by)} said “${result.text}”.` : `${who(result.by)} passed.`}
-          {' '}Everyone else +{WRONG_BONUS}.
+          {' '}Everyone else +{WRONG_BONUS}{result.points < 0 ? `, ${who(result.by)} ${result.points}` : ''}.
         </span>
       </p>
     );

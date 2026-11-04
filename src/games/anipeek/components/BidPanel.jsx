@@ -13,7 +13,7 @@ const startingBid = (bid) => (bid ? Math.max(MIN_BID, bid.n - 1) : OPENING_BID);
 //
 // Keyed by the caller per turn, so the stepper never carries a value over from
 // the last bidder.
-export default function BidPanel({ heading, bid, onBid, onPass }) {
+export default function BidPanel({ heading, bid, onBid, onPass, missCost = 0 }) {
   const ceiling = bid ? bid.n - 1 : MAX_BID;
   const [n, setN] = useState(() => Math.min(ceiling, startingBid(bid)));
   const valid = Number.isInteger(n) && n >= MIN_BID && n <= ceiling;
@@ -37,7 +37,12 @@ export default function BidPanel({ heading, bid, onBid, onPass }) {
       />
       <p className="mb-4 text-center text-sm text-fg-body">
         {valid
-          ? <>Worth <span className="font-bold text-pop-amber">{pointsFor(n)} points</span> if you name them.</>
+          ? (
+            <>
+              Worth <span className="font-bold text-pop-amber">{pointsFor(n)} points</span> if you name them
+              {missCost ? `, −${missCost} if you miss` : ''}.
+            </>
+          )
           : `Bid ${MIN_BID}–${ceiling}.`}
       </p>
       <div className="flex gap-3">

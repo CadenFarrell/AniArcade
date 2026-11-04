@@ -1,5 +1,5 @@
 import { DEFAULT_PREFS } from './prefs';
-import { HINT_COST, HINTS, MIN_PLAYERS, TILES, WRONG_BONUS } from './rules';
+import { HINT_COST, HINTS, MIN_PLAYERS, MISS_COST, TILES, WRONG_BONUS } from './rules';
 
 // The game's rules sheet (shared/components/HowToSheet.jsx), built from the
 // rules' own constants. The score is TILES − bid, never "tiles still covered":
@@ -22,6 +22,7 @@ export const HOW_TO = {
       items: [
         `Named right: ${TILES} minus your bid.`,
         `Named wrong: every other player gets ${WRONG_BONUS}.`,
+        `With multiple choice, a wrong name also costs you ${MISS_COST}, so a blind guess at a low bid doesn’t pay.`,
         `${DEFAULT_PREFS.rounds} rounds by default. Highest total wins.`,
       ],
     },

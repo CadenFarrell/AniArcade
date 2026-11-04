@@ -49,9 +49,15 @@ function hintsFor(series, players, pack) {
 // from the same show first (a picture of a Bebop character beside three
 // Bebop names), then the same gender, then anyone. AniFake's pickDecoy idea,
 // widened to a set. Never the answer, never two of one person.
-function choicesFor(card, everyone, rng) {
+//
+// With hint cards in the game, at most ONE wrong option shares the show. The
+// hints describe the show (studio, year, format, source), so four names from
+// one show all fit every hint, and a card bought for 4 tiles told the bidder
+// nothing. One same-show decoy keeps the options from being ruled out by the
+// art style alone; the rest are what a bought hint can tell apart.
+function choicesFor(card, everyone, rng, { hintsOn = false } = {}) {
   const others = everyone.filter((c) => c.key !== card.key);
-  const sameShow = shuffle(others.filter((c) => c.series === card.series), rng);
+  const sameShow = shuffle(others.filter((c) => c.series === card.series), rng).slice(0, hintsOn ? 1 : Infinity);
   const sameGender = shuffle(others.filter((c) => c.series !== card.series && card.gender && c.gender === card.gender), rng);
   const rest = shuffle(others.filter((c) => c.series !== card.series && !(card.gender && c.gender === card.gender)), rng);
   const wrong = [];
@@ -112,7 +118,7 @@ export function dealGame(players, settings, pack = null, rng = Math.random) {
       name: card.name,
       series: card.series,
       imageUrl: card.imageUrl,
-      choices: answerStyle === CHOICE ? choicesFor(card, everyone, rng) : [],
+      choices: answerStyle === CHOICE ? choicesFor(card, everyone, rng, { hintsOn }) : [],
       hints: hintsOn ? hintsFor(card.series, players, pack) : {},
     };
   });
