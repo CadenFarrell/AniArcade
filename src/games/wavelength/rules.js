@@ -625,7 +625,10 @@ export function roundLogEntry(state, playerIds = []) {
     psychicId: state.psychicId ?? null,
     left: spec?.leftLabel ?? '',
     right: spec?.rightLabel ?? '',
-    clue: state.clue ?? state.card?.name ?? '',
+    // `||`, not `??`: a card round's clue is '' (startRound), which `??` keeps,
+    // and a card carries `title` (normalizeCard) — the old `?? card.name` left
+    // every card-mode round reading "—" on the final screen.
+    clue: state.clue || state.card?.title || '',
     target: state.target,
     bestId: best?.playerId ?? null,
     bestDistance: best?.distance ?? null,

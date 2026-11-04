@@ -757,6 +757,16 @@ describe('the session log and its awards', () => {
     expect(rules.roundLogEntry({ ...r, abandoned: true }, ids)).toBeNull();
   });
 
+  it('logs a card round by its card, since a card round has no typed clue', () => {
+    const r = {
+      ...rules.startRound(ids, { round: 0, mode: 'cards' }),
+      psychicId: 'a', spectrum: SPECTRA[1].id,
+      card: { id: 'k', title: 'Frieren', subtitle: '', imageUrl: '' },
+      phase: 'reveal', target: 40, dials: { b: 42 },
+    };
+    expect(rules.roundLogEntry(r, ids).clue).toBe('Frieren');
+  });
+
   it('names a clear Bullseye and Mind meld, and drops a tie', () => {
     const log = [
       { round: 0, psychicId: 'a', left: 'L', right: 'R', bestId: 'b', bestDistance: 1, psychicPoints: 3 },
