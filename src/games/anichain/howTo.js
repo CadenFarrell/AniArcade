@@ -15,6 +15,7 @@ export const HOW_TO = {
         `Two clue-givers see a character from the table’s lists. Before the first word, either may ask for another if they don’t know them (${SKIPS} times a turn).`,
         'They take turns adding ONE word to the sentence. No planning together: each word has to follow whatever the other just said.',
         'The character’s name, the show’s title and the names of anyone else in that show are off limits. The givers’ card lists them.',
+        'On one device, a giver who says a banned word ends the turn and nobody scores. Online, a banned word is refused as it is typed, with the reason.',
         `Up to ${cap} words by default. Nobody right by then, and the turn is over.`,
       ],
     },
