@@ -873,7 +873,24 @@ export function roundLogEntry(state, { fakeId, secret } = {}) {
     escaped: caught !== fakeId,
     stole: caught === fakeId && state.mode === 'blind' && stealIsCorrect(state.steal, secret),
     namedBy: [...named],
+    // The round's character, for the recap and so a later round of the match
+    // does not deal it again. Public by now: every card was published at the
+    // reveal this line is written after. `key` online (a published card), the
+    // pool entry's `id` locally; both are the folded name.
+    secretKey: secret?.key ?? secret?.id ?? null,
+    secretName: secret?.name ?? null,
   };
+}
+
+/**
+ * The characters earlier rounds of this match were about, for the next deal's
+ * `exclude` — a preference with a fallback (pickSecret), so a small pool still
+ * deals. Without it a three-round match on a short famous tier dealt the same
+ * character twice, and a table that has just watched someone bluff Levi knows
+ * every clue about him.
+ */
+export function pastSecrets(log) {
+  return [...new Set((log ?? []).map((e) => e?.secretKey).filter(Boolean))];
 }
 
 /**

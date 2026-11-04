@@ -83,7 +83,9 @@ deployed rule and the forbidden one is refused by Firebase rather than by a clie
 a bug there is a `PERMISSION_DENIED` instead of a silent leak. This is where the arcade escapes
 AniFake's "whoever computes the deal learns it" concession rather than inheriting it: AniFake's
 host holds a value *nobody* may know, while here every player is meant to know everyone else's, so
-the only forbidden computation is a device's own — and two dealers arranges that. **One residual
+the only forbidden computation is a device's own — and two dealers arranges that. Both dealers also exclude `state/seenCategories`, every clause revealed in an earlier round
+(public by then; `nextRound` appends the round's results), so online — like local play always
+did — a short game cannot hand a player the clause they just solved. **One residual
 limit, recorded rather than designed around:** the second dealer cannot read its own category, so
 when drawing the host's it cannot exclude the one clause it holds. It excludes every clause it
 *can* see, leaving a roughly one-in-a-dozen chance those two share. It is unfixable without a

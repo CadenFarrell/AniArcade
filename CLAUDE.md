@@ -237,6 +237,16 @@ settings card rendered by both its setup screen and its lobby. Adding an option 
 places, listed with the rest in `.claude/rules/settings-cards.md` (loads with `prefs.js` and
 the settings, setup and lobby files).
 
+### Recent deals
+
+`shared/utils/recentDeals.js` (`aniarcade_recent_deals`, not in `PRESERVED_KEYS`) remembers
+what each game dealt in its last few games on the dealing device (locally the one device,
+online the host's; never room state), and AniPeek, AniOut, AniName and AniTurf deal around it.
+It is a **preference, never a filter** (`preferFresh`, or a rank penalty), because a small
+shared list is exactly where a filter would leave nothing to deal. AniQuiz keeps its own
+two-tier `recent.js`. Repeats WITHIN a match are each game's own state (AniFake's match log,
+AniGuess's round history, AniTag's `seenCategories`).
+
 ### Profiles and identity
 
 Player profiles (name + anime list + characters) live in localStorage under

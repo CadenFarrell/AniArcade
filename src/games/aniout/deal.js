@@ -219,8 +219,12 @@ function noteFor(card, rule) {
  *
  * `settings`: `{ rounds, cards, reasons, sharedOnly }` (prefs.js). `pack` is
  * the indexed fact pack or null.
+ *
+ * `recent` is the cards this device dealt lately (shared/utils/recentDeals.js),
+ * tried first: a table playing again otherwise met the same best-known faces.
+ * It is one more tier in front of "fresh this game", never a filter.
  */
-export function dealGame(players, settings, pack = null, rng = Math.random) {
+export function dealGame(players, settings, pack = null, rng = Math.random, { recent = null } = {}) {
   const rounds = settings?.rounds ?? 8;
   const size = Math.min(CARDS_RANGE.max, Math.max(CARDS_RANGE.min, settings?.cards ?? 6));
   const reasonsOn = settings?.reasons !== false;
@@ -236,10 +240,13 @@ export function dealGame(players, settings, pack = null, rng = Math.random) {
   while (sets.length < rounds) {
     const kinds = RULE_KINDS.filter((k) => k.id !== last && (k.id !== 'show' || showRounds < showCap));
     let built = null;
-    // Fresh faces first; a list too small for that may repeat a face in the
-    // five, but never deals the same odd one twice.
-    for (const fresh of [true, false]) {
-      const from = fresh ? pool.filter((c) => !used.has(c.key)) : pool;
+    // Fresh faces first (not dealt lately on this device, then not yet this
+    // game); a list too small for that may repeat a face in the five, but
+    // never deals the same odd one twice.
+    const tiers = recent?.size ? ['unseen', 'fresh', 'any'] : ['fresh', 'any'];
+    for (const tier of tiers) {
+      const from = tier === 'any' ? pool
+        : pool.filter((c) => !used.has(c.key) && (tier === 'fresh' || !recent.has(c.key)));
       for (const k of weightedOrder(kinds, rng)) {
         built = buildRound(from, k, size, rng, usedOdd);
         if (built) break;
@@ -276,4 +283,7 @@ export function dealGame(players, settings, pack = null, rng = Math.random) {
   }
   return { deal: { rounds, size, reasonsOn, sets } };
 }
+
+/** Every card a deal shows, for recentDeals. */
+export const dealtKeys = (deal) => [...new Set((deal?.sets ?? []).flatMap((s) => s.cards.map((c) => c.key)))];
 

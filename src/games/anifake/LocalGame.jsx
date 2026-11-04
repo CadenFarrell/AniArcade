@@ -4,7 +4,7 @@ import LocalRound from './components/LocalRound';
 import AniFakeResults from './components/AniFakeResults';
 import AniFakeFinal from './components/AniFakeFinal';
 import { eligibleCharacters } from './utils/pool';
-import { applyRoundScores, minPool, roundLogEntry, seating } from './rules';
+import { applyRoundScores, minPool, pastSecrets, roundLogEntry, seating } from './rules';
 import { isFinalRound, matchLabel } from '../../shared/utils/match';
 import { HubButton } from '../../shared/ui';
 import TablePortraits from '../../shared/components/TablePortraits';
@@ -85,6 +85,7 @@ export default function LocalGame({ onExit, onBack }) {
           players={game.players}
           pool={game.pool}
           settings={game.settings}
+          earlier={pastSecrets(log)}
           onFinish={handleFinish}
           onQuit={() => { setGame(null); setView('setup'); }}
         />

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { answersFor, buildIndex, categoriesFor, categoryText, judgeName } from './answers';
-import { dealGame } from './deal';
+import { dealGame, dealtKeys } from './deal';
 import { indexPack } from '../../shared/utils/facts';
 
 const char = (name, role = 'Main') => ({ id: name, name, role, gender: 'Male', genres: ['Action'] });
@@ -83,6 +83,18 @@ describe('categories and the deal', () => {
     const res = dealGame(players, { rounds: 6, seconds: 60 }, pack, () => 0.5);
     expect(res.error).toMatch(/need 6/);
     expect(res.found).toBeGreaterThan(0);
+  });
+
+  it('puts the categories this device dealt lately after the rest', () => {
+    // Ten studios, so a second deal has fresh ones of every kind to reach for
+    // (with three, a studio-heavy deal has to repeat one: the soft fallback).
+    const big = Array.from({ length: 30 }, (_, i) => show(`Show ${i}`, `Studio ${i % 10}`, 2000 + (i % 4),
+      Array.from({ length: 7 }, (__, j) => `Hero ${i}-${j}`)));
+    const table = [{ id: 'ada', name: 'Ada', animeList: big }];
+    const first = dealGame(table, { rounds: 4, seconds: 45 }, null, () => 0.3).deal;
+    const recent = new Set(dealtKeys(first));
+    const again = dealGame(table, { rounds: 4, seconds: 45 }, null, () => 0.3, { recent }).deal;
+    expect(dealtKeys(again).some((k) => recent.has(k))).toBe(false);
   });
 
   it('deals distinct categories, never the same cast twice', () => {

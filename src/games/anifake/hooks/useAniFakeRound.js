@@ -11,7 +11,7 @@ import * as rules from '../rules';
 // The truth is right here in `deal`. Online has to reconstruct it precisely
 // because no device there is allowed to hold it.
 export function useAniFakeRound(players, pool, {
-  mode = 'blind', laps = 1, wordLimit = 1, fame, allowRedeal = false,
+  mode = 'blind', laps = 1, wordLimit = 1, fame, allowRedeal = false, earlier = [],
 } = {}) {
   const playerIds = useMemo(() => players.map((p) => p.id), [players]);
 
@@ -28,7 +28,8 @@ export function useAniFakeRound(players, pool, {
   // already holds the whole deal, which is the simplification the note at the
   // top of this file is about.
   const [dealState, setDealState] = useState(() => {
-    const first = rules.dealRoles(playerIds, pool, { mode, fame, deal: 1 });
+    // `earlier`: this match's past secrets (rules.pastSecrets), dealt around.
+    const first = rules.dealRoles(playerIds, pool, { mode, fame, deal: 1, exclude: earlier });
     // `discarded` rides along beside `dealt` and is deliberately not derived from
     // it: `dealt` is folded ids for exclusion and includes the decoy, while this
     // is display names of superseded SECRETS only, and it goes on screen.
@@ -64,7 +65,7 @@ export function useAniFakeRound(players, pool, {
       mode,
       fame,
       deal: next,
-      exclude: dealState.dealt,
+      exclude: [...dealState.dealt, ...earlier],
       pinFake: dealState.deal.fakeId,
       discarded,
     });
@@ -74,7 +75,7 @@ export function useAniFakeRound(players, pool, {
       dealt: [...dealState.dealt, ...fresh.dealt],
       discarded,
     });
-  }, [dealState, playerIds, pool, mode, fame]);
+  }, [dealState, playerIds, pool, mode, fame, earlier]);
 
   const apply = useCallback((fn) => {
     setState((s) => {

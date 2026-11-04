@@ -3,6 +3,7 @@ import AniTurfSetup from './components/AniTurfSetup';
 import LocalRound from './components/LocalRound';
 import AniTurfResults from './components/AniTurfResults';
 import { drawBoard } from './utils/board';
+import { readRecentDeals, rememberDealt } from '../../shared/utils/recentDeals';
 import { CELLS, applyWin, pickStartTeam, rotateGivers } from './rules';
 import { HubButton } from '../../shared/ui';
 import TablePortraits from '../../shared/components/TablePortraits';
@@ -24,13 +25,16 @@ export default function LocalGame({ onExit, onBack }) {
 
   const start = (chosen) => {
     setError(null);
-    const { board, enough, available } = drawBoard(chosen.players, { sharedOnly: chosen.sharedOnly });
+    const { board, enough, available } = drawBoard(chosen.players, {
+      sharedOnly: chosen.sharedOnly, recent: readRecentDeals('aniturf'),
+    });
     if (!enough) {
       // Setup already gates on this; reaching here means the roster changed
       // under it, so say the number rather than failing silently.
       setError(`Only ${available} characters to draw from — the board needs ${CELLS}.`);
       return;
     }
+    rememberDealt('aniturf', board.map((c) => c.id));
     setTable(chosen);
     setSetup({
       board,

@@ -3,6 +3,7 @@ import { ref, onValue, set, update, runTransaction } from 'firebase/database';
 import { getFirebaseDb } from '../../../shared/services/firebase';
 import { useRoomCore } from '../../../shared/hooks/useRoomCore';
 import { drawBoard } from '../utils/board';
+import { readRecentDeals, rememberDealt } from '../../../shared/utils/recentDeals';
 import * as rules from '../rules';
 
 const ROOM_KEY = 'aniturf_online_room';
@@ -152,11 +153,13 @@ export function useAniTurfRoom() {
     const teams = rules.splitTeams(ids, state?.lobby?.teams);
     const ready = rules.teamsReady(teams);
     if (!ready.ok) { setSyncError(ready.reason); return; }
-    const { board, enough, available } = drawBoard(here, { sharedOnly: settings.sharedOnly });
+    // Only the host deals, so only the host's device remembers the board.
+    const { board, enough, available } = drawBoard(here, { sharedOnly: settings.sharedOnly, recent: readRecentDeals('aniturf') });
     if (!enough) {
       setSyncError(`Only ${available} characters to draw from — the board needs ${rules.CELLS}.`);
       return;
     }
+    rememberDealt('aniturf', board.map((c) => c.id));
     const nextRound = roundNumber + 1;
     const db = getFirebaseDb();
     await bestEffort(set(ref(db, `rooms/${roomCode}/open`), false));

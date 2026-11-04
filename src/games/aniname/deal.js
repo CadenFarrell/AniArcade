@@ -34,7 +34,7 @@ function weightedOrder(kinds, rng) {
  * "Characters from X" and "main characters from X" count as one show, so the
  * same cast is never asked for twice in a game.
  */
-export function dealGame(players, settings, pack = null, rng = Math.random) {
+export function dealGame(players, settings, pack = null, rng = Math.random, { recent = null } = {}) {
   const rounds = roundsFor(settings, players.length);
   const index = buildIndex(players, pack);
   const byKind = new Map();
@@ -42,9 +42,12 @@ export function dealGame(players, settings, pack = null, rng = Math.random) {
     if (!byKind.has(cat.kind)) byKind.set(cat.kind, []);
     byKind.get(cat.kind).push(cat);
   }
-  // Most-held first, with noise, so the lean is a lean and not a wall.
+  // Most-held first, with noise, so the lean is a lean and not a wall — and
+  // a category this device dealt lately (shared/utils/recentDeals.js) after
+  // every one it did not, or the same table met the same top casts each night.
+  const stale = (c) => (recent?.has(categoryId(c)) ? 1 : 0);
   for (const list of byKind.values()) {
-    list.sort((a, b) => (b.owners + rng() * 1.5) - (a.owners + rng() * 1.5));
+    list.sort((a, b) => (stale(a) - stale(b)) || ((b.owners + rng() * 1.5) - (a.owners + rng() * 1.5)));
   }
 
   const cats = [];
@@ -73,3 +76,8 @@ export function dealGame(players, settings, pack = null, rng = Math.random) {
   }
   return { deal: { rounds, namingMs: (settings?.seconds ?? 60) * 1000, cats } };
 }
+
+/** A category's identity across games: its kind and its key. */
+export const categoryId = (c) => `${c.kind}:${c.key}`;
+/** The categories a deal asks, for recentDeals. */
+export const dealtKeys = (deal) => (deal?.cats ?? []).map(categoryId);

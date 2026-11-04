@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRoom } from './hooks/useRoom';
 import { useWins } from '../../shared/hooks/useWins';
+import { earlierCharacters } from './utils/characterPool';
 import { isCorrectGuess } from './utils/guessMatch';
 import { buildWhoIsWho } from './utils/whoIsWho';
 import { roundComplete } from './rules';
@@ -262,6 +263,7 @@ export default function OnlineGame({ onBack, onExit }) {
         allPlayers={room.activePlayers}
         sharedShowsOnly={room.gameSession.settings.sharedShowsOnly}
         twoStepRandom={room.gameSession.settings.twoStepRandom}
+        earlier={earlierCharacters(room.roundHistory, room.assignmentPlayer?.id)}
         currentProposal={room.currentProposal}
         myPlayerId={room.myPlayerId}
         onPropose={room.proposeCharacter}

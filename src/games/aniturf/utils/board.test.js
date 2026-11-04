@@ -42,6 +42,15 @@ describe('drawBoard', () => {
     expect(sharedSeen / 20).toBeGreaterThan(9);
   });
 
+  it('ranks the faces of recent boards one owner lower, so the next board is fresh', () => {
+    // 75 characters one player holds: the 50-slot window can skip the 25 just dealt.
+    const a = player('a', names('Hero', 75));
+    const first = drawBoard([a], { rng: () => 0.3 }).board;
+    const recent = new Set(first.map((c) => c.id));
+    const next = drawBoard([a], { rng: () => 0.7, recent }).board;
+    expect(next.filter((c) => recent.has(c.id))).toHaveLength(0);
+  });
+
   it('shared-only keeps characters everyone holds', () => {
     const shared = names('Shared', 24);
     const a = player('a', [...shared, 'Extra']);

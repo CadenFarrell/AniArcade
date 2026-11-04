@@ -53,7 +53,9 @@ filtered three ways:
   draws from.
 - **`sharedOnly`**: only characters on every list. It is off by default, since a shared pool
   rarely reaches eight portraits. The deal leans toward characters more players know either
-  way: banded by owner count, then a window twice the size needed, shuffled.
+  way: banded by owner count, then a window twice the size needed, shuffled. Faces this
+  device dealt in its last few games are left out first when enough others remain
+  (`dealGame`'s `recent`, `shared/utils/recentDeals.js`).
 
 `deal.js` decides everything once, on the dealing device: `rounds + SPARES` cards, each with its
 options and hints, so guests never need the pack. **Wrong options come from the same show

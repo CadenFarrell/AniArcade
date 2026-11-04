@@ -2,7 +2,8 @@ import { useCallback, useEffect, useRef } from 'react';
 import { ref, runTransaction, set } from 'firebase/database';
 import { getFirebaseDb } from '../../../shared/services/firebase';
 import { useRoomCore } from '../../../shared/hooks/useRoomCore';
-import { dealGame } from '../deal';
+import { dealGame, dealtKeys } from '../deal';
+import { readRecentDeals, rememberDealt } from '../../../shared/utils/recentDeals';
 import * as rules from '../rules';
 
 // Per-game, so a saved AniOut room cannot clobber another game's.
@@ -89,11 +90,13 @@ export function useOutRoom() {
   const startGame = useCallback(async (settings, pack) => {
     if (!isHost) return;
     const dealtIn = rosterRef.current.active;
-    const res = dealGame(dealtIn, settings, pack);
+    // Only the host deals, so only the host's device remembers what it dealt.
+    const res = dealGame(dealtIn, settings, pack, Math.random, { recent: readRecentDeals('aniout') });
     if (res.error) {
       setSyncError(res.error);
       return;
     }
+    rememberDealt('aniout', dealtKeys(res.deal));
     const db = getFirebaseDb();
     await bestEffort(set(ref(db, `rooms/${roomCode}/open`), false));
     await patchState({

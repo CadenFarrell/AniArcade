@@ -69,6 +69,10 @@ function normalizeState(raw) {
     ...raw,
     players: Array.isArray(raw.players) ? raw.players.filter(Boolean) : [],
     totalScores: raw.totalScores ?? {},
+    // Every clause revealed in an earlier round of this game, for the random
+    // deal to exclude. Public by now (attachCategory wrote each onto its
+    // result at the turn's end). RTDB drops the empty array.
+    seenCategories: Array.isArray(raw.seenCategories) ? raw.seenCategories.filter(Boolean) : [],
     // The single point round state enters the hook — so nothing downstream, and
     // least of all rules.js, ever sees the shapes RTDB drops.
     game: rules.normalizeGame(raw.game),
@@ -268,13 +272,14 @@ export function useCategoriesRoom() {
       const dealt = dealCategories(others, Math.random, {
         pool: settings?.categoryPool,
         extra: extraCategories,
+        exclude: state?.seenCategories ?? [],
       });
       await Promise.all(others.map((id) => set(
         ref(db, `rooms/${roomCode}/assignments/${id}`),
         { category: dealt[id], forRound: game.round },
       )));
     });
-  }, [roomCode, game, tablePicks, isHost, hostId, seated, settings, extraCategories, state?.view, once]);
+  }, [roomCode, game, tablePicks, isHost, hostId, seated, settings, extraCategories, state?.view, state?.seenCategories, once]);
 
   // One other device deals the host's, because the host may not deal its own.
   useEffect(() => {
@@ -301,12 +306,12 @@ export function useCategoriesRoom() {
       const dealt = dealCategories([hostId], Math.random, {
         pool: settings?.categoryPool,
         extra: extraCategories,
-        exclude: taken,
+        exclude: [...taken, ...(state?.seenCategories ?? [])],
       });
       await set(hostSlot, { category: dealt[hostId], forRound: game.round });
     });
   }, [roomCode, game, tablePicks, hostId, myPlayerId, secondDealerId, seated, settings,
-      extraCategories, state?.view, once]);
+      extraCategories, state?.view, state?.seenCategories, once]);
 
   // --- round mutations --------------------------------------------------------
   //
@@ -336,6 +341,7 @@ export function useCategoriesRoom() {
       settings: nextSettings,
       totalScores: {},
       bankedRound: null,
+      seenCategories: null,
       game: rules.startRound(ids.length ? ids : playerIds, {
         round: 0,
         cap: nextSettings.proposalCap,
@@ -429,7 +435,13 @@ export function useCategoriesRoom() {
   const nextRound = useCallback(async () => {
     if (!isHost || !game) return;
     const ids = roster.activeIds.length ? roster.activeIds : playerIds;
+    // The round's clauses, revealed on its results, join what the next random
+    // deal leaves out. Local play has always excluded last round's; online the
+    // deal used to exclude nothing, so a short game could hand a player the
+    // clause they had just solved.
+    const revealed = Object.values(game.results ?? {}).map((r) => r?.category).filter((c) => rules.toSpec(c));
     await patchState({
+      seenCategories: [...(state?.seenCategories ?? []), ...revealed],
       game: rules.startRound(ids, {
         round: game.round + 1,
         // Both from the ROUND rather than from settings, so neither can drift
@@ -438,7 +450,7 @@ export function useCategoriesRoom() {
         source: game.source,
       }),
     });
-  }, [isHost, game, patchState, roster, playerIds]);
+  }, [isHost, game, state?.seenCategories, patchState, roster, playerIds]);
 
   const finish = useCallback(() => (
     isHost ? patchState({ view: 'results' }) : undefined

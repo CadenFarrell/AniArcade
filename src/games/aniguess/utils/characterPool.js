@@ -60,12 +60,23 @@ function dedupeByName(pool) {
   });
 }
 
+/**
+ * The characters `playerId` has already been this match, from the round
+ * history's locks (each lock carries the character once the round is over, so
+ * this is public by the time it is read). A Random pick deals around them:
+ * being Levi again in round two is a round already solved.
+ */
+export function earlierCharacters(roundHistory, playerId) {
+  return (roundHistory ?? []).flat().filter((l) => l?.playerId === playerId && l.character).map((l) => l.character);
+}
+
 // Picks a random character from the given anime list, tagging it with its
 // series. twoStepRandom picks a show first (every show equally likely) then a
 // character within it; otherwise every distinct character across all shows is
-// equally likely. `excluding` (a previously picked character) is left out so a
-// re-roll never hands back what's already on screen — unless it's the only
-// option. Returns null if there's nothing to pick from.
+// equally likely. `excluding` (a character, or a list of them) is left out so a
+// re-roll never hands back what's already on screen, and a player is not dealt
+// a character they already were earlier in the match — unless that leaves
+// nothing. Returns null if there's nothing to pick from.
 export function pickRandomCharacter(animeList, twoStepRandom = false, excluding = null) {
   if (!animeList || animeList.length === 0) return null;
   let pool;
@@ -75,8 +86,9 @@ export function pickRandomCharacter(animeList, twoStepRandom = false, excluding 
   } else {
     pool = dedupeByName(animeList.flatMap((a) => a.characters.map((c) => ({ ...c, series: a.title }))));
   }
-  if (excluding) {
-    const remaining = pool.filter((c) => characterKey(c) !== characterKey(excluding));
+  const avoid = new Set([].concat(excluding ?? []).filter(Boolean).map(characterKey));
+  if (avoid.size) {
+    const remaining = pool.filter((c) => !avoid.has(characterKey(c)));
     if (remaining.length > 0) pool = remaining;
   }
   return pool[Math.floor(Math.random() * pool.length)];

@@ -4,7 +4,8 @@ import { getFirebaseDb } from '../../../shared/services/firebase';
 import { useRoomCore } from '../../../shared/hooks/useRoomCore';
 import { useDeadline } from '../../../shared/hooks/useDeadline';
 import { buildIndex, judgeName } from '../answers';
-import { dealGame } from '../deal';
+import { dealGame, dealtKeys } from '../deal';
+import { readRecentDeals, rememberDealt } from '../../../shared/utils/recentDeals';
 import * as rules from '../rules';
 
 // Per-game, so a saved AniName room cannot clobber another game's.
@@ -99,11 +100,13 @@ export function useNameRoom(pack = null) {
   const startGame = useCallback(async (settings, dealPack) => {
     if (!isHost) return;
     const dealtIn = rosterRef.current.active;
-    const res = dealGame(dealtIn, settings, dealPack);
+    // Only the host deals, so only the host's device remembers what it dealt.
+    const res = dealGame(dealtIn, settings, dealPack, Math.random, { recent: readRecentDeals('aniname') });
     if (res.error) {
       setSyncError(res.error);
       return;
     }
+    rememberDealt('aniname', dealtKeys(res.deal));
     const db = getFirebaseDb();
     await bestEffort(set(ref(db, `rooms/${roomCode}/open`), false));
     await patchState({

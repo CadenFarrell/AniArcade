@@ -18,8 +18,8 @@ import { Backdrop, Button, Card, Icon, Screen, Wordmark } from '../../../shared/
 // effects. What is genuinely device state is anything about the HAND-OFF, which
 // the round knows nothing about: the two indices (how far the device has been
 // passed) and `announcing` (whether the table has acknowledged a re-deal).
-export default function LocalRound({ players, pool, settings, onFinish, onQuit }) {
-  const round = useAniFakeRound(players, pool, settings);
+export default function LocalRound({ players, pool, settings, earlier = [], onFinish, onQuit }) {
+  const round = useAniFakeRound(players, pool, { ...settings, earlier });
   const [revealIndex, setRevealIndex] = useState(0);
   const [voterIndex, setVoterIndex] = useState(0);
   // Whether anyone on this pass through the roster asked for a fresh card. One

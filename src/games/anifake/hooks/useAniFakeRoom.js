@@ -287,8 +287,11 @@ export function useAniFakeRoom() {
     // Both are gated on `allowRedeal`, not merely convenient to gate: with no
     // check phase there is nothing to re-deal, so a table that turned it off
     // keeps the one-function-call ceiling exactly as it was.
+    // Earlier rounds' characters (public since their reveals, in the match
+    // log) are dealt around. A new match starts with none.
+    const earlier = next ? rules.pastSecrets(Object.values(state?.matchLog ?? {})) : [];
     const { secrets, dealt, fakeId, secretName } = rules.dealRoles(ids, pool, {
-      mode: settings.mode, fame: settings.fame, round: nextRound, deal: 1,
+      mode: settings.mode, fame: settings.fame, round: nextRound, deal: 1, exclude: earlier,
     });
     dealtRef.current = settings.allowRedeal ? dealt : [];
     fakeRef.current = settings.allowRedeal ? fakeId : null;
@@ -332,7 +335,7 @@ export function useAniFakeRoom() {
       }),
       view: settings.allowRedeal ? 'check' : 'clues',
     });
-  }, [isHost, roomCode, roundNumber, state?.matchRound, patchState, bestEffort, rosterRef, setSyncError]);
+  }, [isHost, roomCode, roundNumber, state?.matchRound, state?.matchLog, patchState, bestEffort, rosterRef, setSyncError]);
 
   // The reveal's two host buttons: the next round of the match, or its end.
   const nextRound = useCallback(() => startGame(state?.settings, { next: true }), [startGame, state?.settings]);
@@ -382,7 +385,7 @@ export function useAniFakeRoom() {
       fame: state?.settings?.fame,
       round: roundNumber,
       deal: nextDeal,
-      exclude: dealtRef.current,
+      exclude: [...dealtRef.current, ...rules.pastSecrets(Object.values(state?.matchLog ?? {}))],
       pinFake: fakeRef.current,
       // Everything dealt SO FAR — this deal's own secret is appended below, not
       // here, or the new cards would name the character they are carrying.

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { pickRandomCharacter, getAssignableAnimeList, filterAnimeList } from './characterPool';
+import { earlierCharacters, pickRandomCharacter, getAssignableAnimeList, filterAnimeList } from './characterPool';
 
 const char = (name) => ({ id: `anilist_${name}`, name, role: 'Main', genres: [] });
 const anime = (title, names) => ({ id: title, title, characters: names.map(char) });
@@ -17,6 +17,16 @@ const drawSet = (animeList, twoStep = false, excluding = null) => {
 };
 
 describe('pickRandomCharacter', () => {
+  it('deals around the characters a player already was this match, unless nothing else is left', () => {
+    const list = [anime('Show', ['Eren', 'Mikasa', 'Armin'])];
+    const history = [[{ playerId: 'p1', character: { name: 'Eren' } }, { playerId: 'p2', character: { name: 'Armin' } }]];
+    const earlier = earlierCharacters(history, 'p1');
+    expect(earlier.map((c) => c.name)).toEqual(['Eren']);
+    expect([...drawSet(list, false, earlier)].sort()).toEqual(['Show::Armin', 'Show::Mikasa']);
+    // Everyone excluded: the pick still deals rather than returning nothing.
+    expect(drawSet([anime('Show', ['Eren'])], false, earlier).size).toBe(1);
+  });
+
   it('offers a character listed under two shows only once', () => {
     // The spin-off / recap-movie case franchise grouping deliberately leaves
     // apart: same cast, different titles.

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { dealGame, decoysFor, sharedValues, validRound } from './deal';
+import { dealGame, dealtKeys, decoysFor, sharedValues, validRound } from './deal';
 import { KINDS } from './connections';
 import { cardPool } from './utils/pool';
 import { indexPack } from '../../shared/utils/facts';
@@ -217,5 +217,20 @@ describe('decoysFor', () => {
     // True of all five: never a decoy.
     expect(decoys).not.toContain('All adapted from manga');
     expect(decoys).not.toContain('All male characters');
+  });
+});
+
+describe('dealing around recent games', () => {
+  it('leans away from the cards this device dealt lately, and still deals when it cannot', () => {
+    const ada = [profile('Ada', bigList(60))];
+    const first = dealGame(ada, { ...SETTINGS, rounds: 3 }, null, seeded(5)).deal;
+    const recent = new Set(dealtKeys(first));
+    const again = dealGame(ada, { ...SETTINGS, rounds: 3 }, null, seeded(6), { recent }).deal;
+    const repeats = dealtKeys(again).filter((k) => recent.has(k)).length;
+    const blind = dealtKeys(dealGame(ada, { ...SETTINGS, rounds: 3 }, null, seeded(6)).deal).filter((k) => recent.has(k)).length;
+    expect(repeats).toBeLessThan(Math.max(1, blind));
+    // Everything recent: the deal falls back to the whole pool.
+    const all = new Set(cardPool(ada, {}, null).map((c) => c.key));
+    expect(dealGame(ada, { ...SETTINGS, rounds: 3 }, null, seeded(6), { recent: all }).deal.sets).toHaveLength(3);
   });
 });

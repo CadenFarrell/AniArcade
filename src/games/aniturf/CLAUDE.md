@@ -60,6 +60,11 @@ simulation copying the real generator, 20,000 games a setting, perfect and 60–
 planting logs first. `ClueForm` takes the limit as `max` and its status line says why, or a
 stepper stuck at 1 reads as broken.
 
+**A board leans away from the last few boards' faces** (`drawBoard`'s `recent`,
+`shared/utils/recentDeals.js`): a recent face ranks one owner lower, so a table playing again
+gets a fresher board while the lean toward shared characters still holds. Consecutive boards
+used to share about half their faces.
+
 ## Online: nobody deals a key but its owner
 
 Each key is known to one person and hidden from everyone else, the owner's own guessers

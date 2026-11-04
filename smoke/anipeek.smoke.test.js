@@ -1,6 +1,6 @@
 import { describe, it, expect, afterAll } from 'vitest';
 import { device, profile, seatTable, until, sleep, GRACE_WAIT, syncErrors } from './harness';
-import { HINT_COST, WRONG_BONUS, pointsFor } from '../src/games/anipeek/rules';
+import { HINT_COST, WRONG_BONUS, missCost, pointsFor } from '../src/games/anipeek/rules';
 
 const HOOK = ['src/games/anipeek/hooks/usePeekRoom.js', 'usePeekRoom'];
 const BASE = { rounds: 4, answerStyle: 'choice', hints: true, sharedOnly: false };
@@ -66,7 +66,11 @@ describe('AniPeek online', () => {
         const right = by === 'ann';
         const text = right ? card(A.r).name : 'definitely wrong';
         if (right) expected.ann += pointsFor(g.bid.n);
-        else for (const id of Object.keys(expected)) if (id !== by) expected[id] += WRONG_BONUS;
+        else {
+          for (const id of Object.keys(expected)) if (id !== by) expected[id] += WRONG_BONUS;
+          // Multiple choice also charges the bidder for the miss.
+          expected[by] -= missCost(A.r.deal.answerStyle);
+        }
         await byId(devs, by).act((r) => r.answer(null, text));
         await until(() => devs.every((d) => d.r.game.phase === 'revealed'), { what: 'revealed' });
         expect(A.r.game.scores).toEqual(expected);

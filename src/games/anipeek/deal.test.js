@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { dealGame } from './deal';
+import { dealGame, dealtKeys } from './deal';
 import { portraitPool, hasPortrait } from './utils/pool';
 import { SPARES } from './rules';
 
@@ -122,5 +122,24 @@ describe('dealGame', () => {
     expect(deal.answerStyle).toBe('typed');
     expect(deal.hintsOn).toBe(false);
     expect(deal.cards.every((c) => c.choices.length === 0 && Object.keys(c.hints).length === 0)).toBe(true);
+  });
+});
+
+describe('dealing around recent games', () => {
+  const settings = { rounds: 3, answerStyle: 'choice', hints: true, sharedOnly: false };
+
+  it('draws faces this device has not dealt lately when enough are left', () => {
+    const first = dealGame([ann, ben], settings, null, seeded(4)).deal;
+    const recent = new Set(dealtKeys(first));
+    for (let seed = 1; seed < 10; seed++) {
+      const { deal } = dealGame([ann, ben], settings, null, seeded(seed), { recent });
+      expect(dealtKeys(deal).some((k) => recent.has(k))).toBe(false);
+    }
+  });
+
+  it('still deals from the whole pool when the unseen ones run short', () => {
+    const recent = new Set(['frieren', 'fern', 'stark', 'himmel', 'spike spiegel', 'jet black']);
+    const { deal } = dealGame([ann, ben], { ...settings, rounds: 6 }, null, seeded(2), { recent });
+    expect(deal.cards).toHaveLength(6 + SPARES);
   });
 });

@@ -101,7 +101,10 @@ the one screen that records history. The reveal is now the stop BETWEEN rounds: 
 log; a start from the lobby is a new match and clears both. `matchLog/{roundNumber}` is written
 in the SAME patch as the totals, under the `bankedAt` claim, so an award (`matchAwards`) can
 never count a round the scores did not; it is keyed by round, not an array, because an
-unscored round writes no line.
+unscored round writes no line. Each line also carries the round's `secretKey`/`secretName`
+(public by then: every card was published at the reveal), and `rules.pastSecrets` feeds them
+into the next round's `exclude`, so a match does not deal one character twice. That is no
+widening of what the host holds: the log is `state/`, which every device reads.
 
 The clue clock stores nothing in the room. Every device runs its own `LocalClock` keyed on the
 turn, and only the speaker's device acts on expiry (`timeOutClue`, which logs the turn as out

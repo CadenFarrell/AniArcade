@@ -15,7 +15,7 @@ const NO_SHARED_HELP = 'Turn off "Shared shows only" in the lobby, or make sure 
 // overwrites the slot), forcing everyone to re-approve.
 export default function OnlineCharacterAssignment({
   guesser, allPlayers, sharedShowsOnly = true, twoStepRandom = false,
-  currentProposal, myPlayerId, onPropose, onToggleApproval, assignmentNumber, totalPlayers,
+  currentProposal, myPlayerId, onPropose, onToggleApproval, assignmentNumber, totalPlayers, earlier = [],
 }) {
   const [browseMode, setBrowseMode] = useState(false);
 
@@ -32,7 +32,7 @@ export default function OnlineCharacterAssignment({
   const iApproved = !!approvals[myPlayerId];
 
   const proposeRandom = () => {
-    const character = pickRandomCharacter(filteredAnimeList, twoStepRandom);
+    const character = pickRandomCharacter(filteredAnimeList, twoStepRandom, earlier);
     if (character) onPropose(character);
     setBrowseMode(false);
   };

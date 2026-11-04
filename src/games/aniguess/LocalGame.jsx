@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useAutoSeat } from '../../shared/hooks/useAutoSeat';
+import { earlierCharacters } from './utils/characterPool';
 import { MIN_PLAYERS, turnsLeft } from './rules';
 import ListManager from '../../shared/components/ListManager';
 import PlayerSetup from './components/PlayerSetup';
@@ -139,6 +140,7 @@ function App({ onExit, onBack }) {
             onCharacterAssigned={handleCharacterAssigned}
             assignmentNumber={assignmentIndex + 1}
             totalPlayers={gameSession.players.length}
+            earlier={earlierCharacters(roundHistory, assignmentPlayer?.id)}
           />
         )}
 

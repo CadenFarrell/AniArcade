@@ -7,7 +7,7 @@ import Handoff from '../../../shared/components/Handoff';
 const NO_SHARED_HELP = "Go back and either add a matching anime title to each player's list, "
   + 'or turn off "Shared shows only" in Setup.';
 
-export default function CharacterAssignment({ guesser, allPlayers, sharedShowsOnly = true, twoStepRandom = false, onCharacterAssigned, assignmentNumber, totalPlayers }) {
+export default function CharacterAssignment({ guesser, allPlayers, sharedShowsOnly = true, twoStepRandom = false, onCharacterAssigned, assignmentNumber, totalPlayers, earlier = [] }) {
   const [step, setStep] = useState('lookaway');
   const [selectedCharacter, setSelectedCharacter] = useState(null);
   const [browseMode, setBrowseMode] = useState(false);
@@ -15,7 +15,7 @@ export default function CharacterAssignment({ guesser, allPlayers, sharedShowsOn
   const filteredAnimeList = getAssignableAnimeList(guesser, allPlayers, sharedShowsOnly);
 
   const pickRandom = () => {
-    const character = pickRandomCharacter(filteredAnimeList, twoStepRandom);
+    const character = pickRandomCharacter(filteredAnimeList, twoStepRandom, earlier);
     if (!character) { setStep('noSharedShows'); return; }
     setSelectedCharacter(character);
     setStep('confirm');
@@ -28,7 +28,7 @@ export default function CharacterAssignment({ guesser, allPlayers, sharedShowsOn
 
   // Swaps in another random character without leaving the confirm screen.
   const reroll = () => {
-    const next = pickRandomCharacter(filteredAnimeList, twoStepRandom, selectedCharacter);
+    const next = pickRandomCharacter(filteredAnimeList, twoStepRandom, [...earlier, selectedCharacter]);
     if (next) setSelectedCharacter(next);
   };
 

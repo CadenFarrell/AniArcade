@@ -7,6 +7,12 @@
 // of the best-ranked two boards' worth. A window rather than the top 25
 // exactly, so two games with the same table do not deal the same board.
 //
+// A face this device put on a board lately (shared/utils/recentDeals.js) ranks
+// one owner lower, so a table playing again gets a fresher board while the
+// lean toward shared characters still holds: a recent character three players
+// know still beats a fresh one only its importer has seen. Before it,
+// consecutive boards shared about half their faces.
+//
 // Portraits are preferred, never required. A card is a portrait AND a name,
 // and the name alone still plays; requiring one would lock out most lists
 // imported before portraits were stored.
@@ -22,11 +28,12 @@ export function boardPool(players, { sharedOnly = false } = {}) {
   return sharedOnly ? all.filter((c) => c.owners.size === players.length) : all;
 }
 
-export function drawBoard(players, { sharedOnly = false, rng = Math.random } = {}) {
+export function drawBoard(players, { sharedOnly = false, rng = Math.random, recent = null } = {}) {
   const pool = boardPool(players, { sharedOnly });
   if (pool.length < CELLS) return { board: [], enough: false, available: pool.length };
+  const reach = (c) => c.owners.size - (recent?.has(c.entry.id) ? 1 : 0);
   const ranked = [...pool].sort((a, b) => (
-    b.owners.size - a.owners.size
+    reach(b) - reach(a)
     || Number(Boolean(b.entry.imageUrl)) - Number(Boolean(a.entry.imageUrl))
     || (b.entry.favourites ?? 0) - (a.entry.favourites ?? 0)
   ));

@@ -1012,7 +1012,14 @@ describe('the match log and awards', () => {
 
   it('logs who was fake, whether they walked, and who named them', () => {
     const r = round({ mode: 'blind', votes: { a: 'c', b: 'c', c: 'a' } });
-    expect(rules.roundLogEntry(r, { fakeId: 'c' })).toEqual({ fakeId: 'c', escaped: false, stole: false, namedBy: ['a', 'b'] });
+    expect(rules.roundLogEntry(r, { fakeId: 'c' })).toEqual({
+      fakeId: 'c', escaped: false, stole: false, namedBy: ['a', 'b'], secretKey: null, secretName: null,
+    });
+    // The secret rides along once it is public, from a published card (key) or a pool entry (id).
+    expect(rules.roundLogEntry(r, { fakeId: 'c', secret: { key: 'levi', name: 'Levi' } }))
+      .toMatchObject({ secretKey: 'levi', secretName: 'Levi' });
+    expect(rules.roundLogEntry(r, { fakeId: 'c', secret: { id: 'levi', name: 'Levi' } }).secretKey).toBe('levi');
+    expect(rules.pastSecrets([{ secretKey: 'levi' }, null, { secretKey: 'levi' }, { secretKey: 'rem' }])).toEqual(['levi', 'rem']);
     expect(rules.roundLogEntry(r, { fakeId: 'b' })).toMatchObject({ fakeId: 'b', escaped: true, namedBy: [] });
     expect(rules.roundLogEntry(r, {})).toBeNull();
   });

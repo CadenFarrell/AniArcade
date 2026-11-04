@@ -8,6 +8,7 @@ import { franchiseTitleKey } from '../../shared/utils/franchise';
 import { resolveShowKey } from '../../shared/utils/facts';
 import { FORMAT_NOUNS, SOURCE_LABELS } from '../../shared/utils/mediaLabels';
 import { CHOICE, HINTS, SPARES, TYPED } from './rules';
+import { preferFresh } from '../../shared/utils/recentDeals';
 import { everyCharacter, portraitPool } from './utils/pool';
 
 const CHOICES = 4;
@@ -92,8 +93,12 @@ function draw(pool, count, rng) {
  *
  * `settings`: `{ rounds, answerStyle, hints, sharedOnly }` (prefs.js). The deal
  * holds `rounds` cards plus up to SPARES more, for portraits that fail to load.
+ *
+ * `recent` is the faces this device dealt lately (shared/utils/recentDeals.js):
+ * the deal draws from the others when enough are left, so a table playing
+ * again does not get the same best-known faces. Never a filter.
  */
-export function dealGame(players, settings, pack = null, rng = Math.random) {
+export function dealGame(players, settings, pack = null, rng = Math.random, { recent = null } = {}) {
   const rounds = settings?.rounds ?? 8;
   const pool = portraitPool(players, { sharedOnly: Boolean(settings?.sharedOnly) });
   if (pool.length < rounds) {
@@ -104,7 +109,8 @@ export function dealGame(players, settings, pack = null, rng = Math.random) {
   const answerStyle = settings?.answerStyle === TYPED ? TYPED : CHOICE;
   const hintsOn = settings?.hints !== false;
 
-  const picked = draw(pool, Math.min(pool.length, rounds + SPARES), rng);
+  const need = Math.min(pool.length, rounds + SPARES);
+  const picked = draw(preferFresh(pool, (row) => row.entry.id, recent, need), need, rng);
   const cards = picked.map(({ entry }) => {
     const card = {
       key: entry.id,
@@ -124,6 +130,9 @@ export function dealGame(players, settings, pack = null, rng = Math.random) {
   });
   return { deal: { answerStyle, hintsOn, rounds, cards } };
 }
+
+/** The faces a deal shows, for recentDeals: the rounds' cards, not the spares. */
+export const dealtKeys = (deal) => (deal?.cards ?? []).slice(0, deal?.rounds ?? 0).map((c) => c.key);
 
 /** The typed box's suggestions: every character on the table's lists. */
 export function suggestionsFor(players) {
