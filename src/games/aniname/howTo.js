@@ -31,7 +31,8 @@ export const HOW_TO = {
       items: [
         'Name them all: you score your bid.',
         'Fall short: everyone else scores half your bid, rounded up.',
-        `${DEFAULT_PREFS.rounds} rounds by default, and the opener moves each round. Highest total wins.`,
+        'One category a round. The opener moves one seat each round, and by default the game goes round the table '
+          + `${DEFAULT_PREFS.laps === 1 ? 'once' : `${DEFAULT_PREFS.laps} times`}, so everyone opens equally often. Highest total wins.`,
       ],
     },
   ],

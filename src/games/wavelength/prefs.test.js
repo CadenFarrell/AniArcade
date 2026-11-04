@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import {
-  DEFAULT_PREFS, MAX_GUESS_SECONDS, MAX_ROUNDS, MIN_GUESS_SECONDS, MIN_ROUNDS,
+  DEFAULT_PREFS, MAX_GUESS_SECONDS, MIN_GUESS_SECONDS,
 } from './prefs';
+import { MAX_LAPS, MIN_LAPS, roundsFor } from '../../shared/utils/match';
 import { CLUE_MODES, needsCardPool } from './rules';
 import { CLUE_MODE_HELP } from './help';
 import { CARD_POOLS } from './utils/cards';
@@ -27,7 +28,7 @@ describe('DEFAULT_PREFS', () => {
 
   it('covers every option the two screens can change', () => {
     expect(Object.keys(DEFAULT_PREFS).sort()).toEqual([
-      'cardPool', 'clueMode', 'guessSeconds', 'rounds', 'sharedOnly', 'timed',
+      'cardPool', 'clueMode', 'guessSeconds', 'laps', 'sharedOnly', 'timed',
     ]);
   });
 
@@ -43,15 +44,16 @@ describe('DEFAULT_PREFS', () => {
   // clamps it, so the saved value and the rendered one disagree on first paint
   // and the reset link sits lit on an untouched card.
   it('defaults inside the bounds its own fields enforce', () => {
-    expect(DEFAULT_PREFS.rounds).toBeGreaterThanOrEqual(MIN_ROUNDS);
-    expect(DEFAULT_PREFS.rounds).toBeLessThanOrEqual(MAX_ROUNDS);
+    expect(DEFAULT_PREFS.laps).toBeGreaterThanOrEqual(MIN_LAPS);
+    expect(DEFAULT_PREFS.laps).toBeLessThanOrEqual(MAX_LAPS);
     expect(DEFAULT_PREFS.guessSeconds).toBeGreaterThanOrEqual(MIN_GUESS_SECONDS);
     expect(DEFAULT_PREFS.guessSeconds).toBeLessThanOrEqual(MAX_GUESS_SECONDS);
   });
 
-  it('bounds a round count that is playable at both ends', () => {
-    expect(MIN_ROUNDS).toBeGreaterThan(0);
-    expect(MAX_ROUNDS).toBeGreaterThan(MIN_ROUNDS);
+  it('plays every seat as the psychic equally often at any table size', () => {
+    for (let n = 2; n <= 8; n++) expect(roundsFor(DEFAULT_PREFS.laps, n) % n).toBe(0);
+    expect(MIN_LAPS).toBeGreaterThan(0);
+    expect(MAX_LAPS).toBeGreaterThan(MIN_LAPS);
     expect(MAX_GUESS_SECONDS).toBeGreaterThan(MIN_GUESS_SECONDS);
   });
 });

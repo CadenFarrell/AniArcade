@@ -1,4 +1,5 @@
 import { MIN_PLAYERS, ONLINE_MIN_PLAYERS } from './rules';
+import { roundsFor } from './prefs';
 
 export const TAGLINE = 'Bid how many you can name — then name them';
 
@@ -15,10 +16,11 @@ export function setupStatus({ count, trial, settings, packStatus, online = false
   const min = online ? ONLINE_MIN_PLAYERS : MIN_PLAYERS;
   const loading = packStatus === 'loading';
   const short = !loading && count >= min && Boolean(trial?.error);
+  const rounds = roundsFor(settings, count);
   let status;
   if (count < min) status = online ? 'Waiting for more players to join.' : 'Seat at least one player.';
   else if (loading) status = 'Loading show facts…';
-  else if (short) status = `Need ${settings.rounds} categories — these lists hold ${trial.found}.`;
-  else status = `${count} player${count === 1 ? '' : 's'} · ${settings.rounds} rounds · ${settings.seconds}s to name`;
-  return { status, ready: count >= min && !loading && !short, short };
+  else if (short) status = `Need ${rounds} categories — these lists hold ${trial.found}.`;
+  else status = `${count} player${count === 1 ? '' : 's'} · ${rounds} rounds · ${settings.seconds}s to name`;
+  return { status, ready: count >= min && !loading && !short, short, rounds };
 }

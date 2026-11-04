@@ -13,6 +13,7 @@ import { poolTooSmall } from '../help';
 import { DEFAULT_PREFS } from '../prefs';
 import { MIN_PLAYERS, needsCardPool } from '../rules';
 import { MIN_CARD_POOL, eligibleCards, poolNoun } from '../utils/cards';
+import { roundsFor } from '../../../shared/utils/match';
 import descriptor from '../index';
 
 // Local setup.
@@ -40,13 +41,13 @@ export default function WavelengthSetup({ onStart, onBack }) {
   // Only the keys this screen owns — the timer is online-only. writePrefs merges
   // a partial, so saving this set leaves those untouched; see prefs.js.
   const [settings, setSettings] = useState(() => ({
-    rounds: prefs.rounds,
+    laps: prefs.laps,
     clueMode: prefs.clueMode,
     cardPool: prefs.cardPool,
     sharedOnly: prefs.sharedOnly,
   }));
   const change = (key, value) => setSettings((s) => ({ ...s, [key]: value }));
-  const { rounds, clueMode, cardPool, sharedOnly } = settings;
+  const { laps, clueMode, cardPool, sharedOnly } = settings;
 
   const needsCards = needsCardPool(clueMode);
 
@@ -74,7 +75,7 @@ export default function WavelengthSetup({ onStart, onBack }) {
   const applyDefaults = () => {
     resetPrefs();
     setSettings({
-      rounds: DEFAULT_PREFS.rounds,
+      laps: DEFAULT_PREFS.laps,
       clueMode: DEFAULT_PREFS.clueMode,
       cardPool: DEFAULT_PREFS.cardPool,
       sharedOnly: DEFAULT_PREFS.sharedOnly,
@@ -84,7 +85,8 @@ export default function WavelengthSetup({ onStart, onBack }) {
   const start = () => {
     savePrefs(settings);
     remember(players);
-    onStart({ players, rounds, mode: clueMode, cardPool, sharedOnly });
+    // laps × the players seated now: everyone is the psychic equally often.
+    onStart({ players, rounds: roundsFor(laps, players.length), mode: clueMode, cardPool, sharedOnly });
   };
 
   const status = !enoughPlayers ? `Needs ${MIN_PLAYERS} players.`

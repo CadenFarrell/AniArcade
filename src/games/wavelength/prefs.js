@@ -23,7 +23,10 @@
 // from one player to the next — so a single shared countdown would be measuring
 // the wrong thing entirely.
 export const DEFAULT_PREFS = {
-  rounds: 8,
+  // Times round the table (shared/utils/match.js): every player is the psychic
+  // this often, and the game plays laps × players rounds. It was `rounds: 8`,
+  // which split unevenly at 3, 5, 6 and 7 players; mergePrefs drops the old key.
+  laps: 2,
   timed: false,
   guessSeconds: 60,
   // See rules.CLUE_MODES. Kept a plain string rather than validated against that
@@ -35,11 +38,6 @@ export const DEFAULT_PREFS = {
   sharedOnly: true,
 };
 
-// Bounds for the round-count field. A session of one is a legitimate warm-up and
-// the upper bound only exists to keep a typo from producing a thousand-round
-// game that the leaderboard cannot show.
-export const MIN_ROUNDS = 1;
-export const MAX_ROUNDS = 30;
 
 export const MIN_GUESS_SECONDS = 15;
 export const MAX_GUESS_SECONDS = 180;

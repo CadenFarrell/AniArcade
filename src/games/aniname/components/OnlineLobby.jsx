@@ -49,12 +49,13 @@ export default function OnlineLobby({ room, pack }) {
             badgeFor={(p) => <ListBadge count={(p.animeList || []).length} />}
           />
           <LobbyImport />
-          {room.isHost && gate.short && <ShortBanner settings={settings} found={trial.found} online />}
+          {room.isHost && gate.short && <ShortBanner rounds={gate.rounds} found={trial.found} online />}
         </>
       )}
       right={room.isHost ? (
         <AniNameSettings
           values={settings}
+          playerCount={active.length}
           host
           onChange={(key, value) => setSettings((s) => ({ ...s, [key]: value }))}
           onReset={() => { setSettings({ ...DEFAULT_PREFS }); resetPrefs(); }}

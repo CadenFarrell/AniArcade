@@ -9,7 +9,7 @@ import { find, findAll, click, fill, wait, has } from '../core/generic.js';
 export default makeStrategy({
   players: [2, 6],
   axes: {
-    rounds: [2, 4, 8],
+    laps: [1, 2],
     timed: [false, true],
     guessSeconds: [30, 60],
     clueMode: ['text', 'cards', 'readroom'],

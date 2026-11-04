@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { clampRounds, isEndless, isFinalRound, matchLabel } from './match';
+import {
+  MAX_LAPS, MIN_LAPS, clampLaps, clampRounds, isEndless, isFinalRound, matchLabel, roundsFor,
+} from './match';
 
 describe('match', () => {
   it('treats 0, missing and garbage as endless', () => {
@@ -23,5 +25,18 @@ describe('match', () => {
     expect(matchLabel(3, 3)).toBe('Final round');
     expect(matchLabel(1, 1)).toBe('Round 1 of 1');
     expect(matchLabel(5, 0)).toBe('Round 5');
+  });
+});
+
+describe('laps', () => {
+  it('plays laps × players rounds, so every seat gets the role equally often', () => {
+    expect(roundsFor(2, 3)).toBe(6);
+    expect(roundsFor(1, 5)).toBe(5);
+  });
+
+  it('clamps garbage to the bounds and never plays zero rounds', () => {
+    expect(clampLaps('x')).toBe(MIN_LAPS);
+    expect(clampLaps(99)).toBe(MAX_LAPS);
+    expect(roundsFor(2, 0)).toBe(2);
   });
 });

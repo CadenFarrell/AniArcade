@@ -28,7 +28,7 @@ export default function OnlineLobby({ room }) {
   // clueMode in particular — without it every room would play a typed clue
   // whatever the host chose, and nothing on any screen would look wrong.
   const [settings, setSettings] = useState(() => ({
-    rounds: prefs.rounds,
+    laps: prefs.laps,
     timed: prefs.timed,
     guessSeconds: prefs.guessSeconds,
     clueMode: prefs.clueMode,

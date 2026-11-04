@@ -35,3 +35,33 @@ export function clampRounds(rounds) {
   if (!Number.isFinite(n) || n <= 0) return ENDLESS;
   return Math.min(n, MAX_MATCH_ROUNDS);
 }
+
+// --- Laps: a length counted in turns round the table ---------------------------
+//
+// A game that hands one role round the seats a round at a time (AniWave's
+// psychic, AniName's opener) is only fair when every seat gets it equally often,
+// and a plain round count rarely divides: 8 rounds at 3 players made two
+// psychics three times and one twice, 6 at 4 had two openers going twice. Those
+// games store `laps` instead and play laps × players rounds, so the split is
+// even at any table size. The count is taken from the players actually seated
+// at Start, never from a lobby's roster before then.
+export const MIN_LAPS = 1;
+export const MAX_LAPS = 5;
+
+export function clampLaps(laps) {
+  const n = Math.floor(Number(laps));
+  if (!Number.isFinite(n) || n < MIN_LAPS) return MIN_LAPS;
+  return Math.min(n, MAX_LAPS);
+}
+
+/**
+ * Rounds for `laps` times round a table of `players`. `minRounds` lifts a short
+ * game (a table of one or two) to whole laps of at least that many rounds, so
+ * the split stays even: AniName's 2 laps at 2 players would be 4 rounds, and a
+ * solo 2.
+ */
+export function roundsFor(laps, players, { minRounds = 1 } = {}) {
+  const seats = Math.max(1, Math.floor(Number(players) || 0));
+  const rounds = clampLaps(laps) * seats;
+  return rounds >= minRounds ? rounds : seats * Math.ceil(minRounds / seats);
+}

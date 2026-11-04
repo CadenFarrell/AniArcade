@@ -6,6 +6,7 @@ import { useDeadline } from '../../../shared/hooks/useDeadline';
 import { getSpectrum, spectrumIdOf } from '../spectra';
 import { dealHand, searchableCards } from '../utils/cards';
 import * as rules from '../rules';
+import { roundsFor } from '../../../shared/utils/match';
 
 const ROOM_KEY = 'aniwave_online_room';
 
@@ -199,8 +200,12 @@ export function useWavelengthRoom() {
     // the psychic role on the very first round.
     const seated = roster.active.map((p) => p.id);
     const ids = seated.length ? seated : playerIds;
+    // The lobby sends `laps`; the round count is laps × the players dealt in
+    // here, not the lobby's roster a moment ago. A direct `rounds` (the smoke
+    // suite's) is taken as it is.
+    const rounds = Number.isInteger(nextSettings?.rounds) ? nextSettings.rounds : roundsFor(nextSettings?.laps, ids.length);
     await patchState({
-      settings: nextSettings,
+      settings: { ...nextSettings, rounds },
       totalScores: {},
       roundLog: null,
       // null rather than [], because RTDB does not store an empty array — this

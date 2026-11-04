@@ -15,7 +15,7 @@ export const HOW_TO = {
         'Each round one player is the psychic. The role moves round the table.',
         `A spectrum with two ends appears, running ${DIAL_MIN} to ${DIAL_MAX}. Only the psychic sees where the target sits on it.`,
         'The psychic gives a clue that points at that spot. Everyone else sets their own dial, then the target is revealed.',
-        `${DEFAULT_PREFS.rounds} rounds by default.`,
+        `By default the role goes round the table ${DEFAULT_PREFS.laps === 1 ? 'once' : `${DEFAULT_PREFS.laps} times`}, so everyone is the psychic equally often.`,
       ],
     },
     {

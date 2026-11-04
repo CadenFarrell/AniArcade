@@ -130,12 +130,13 @@ async function playToEnd(user) {
 describe('AniName, played locally', { timeout: 60000 }, () => {
   it('runs the auction, the naming, the table’s ruling and the reveal to the results', async () => {
     const user = userEvent.setup();
-    await start(user, ['Caden', 'Ayu'], { rounds: 3, seconds: 60 });
+    await start(user, ['Caden', 'Ayu'], { laps: 2, seconds: 60 });
     const log = await playToEnd(user);
-    expect(log.filter((s) => s === 'bid')).toHaveLength(3);
-    expect(log.filter((s) => s === 'next')).toHaveLength(3);
+    // Two laps of a table of two: four rounds, each player opening twice.
+    expect(log.filter((s) => s === 'bid')).toHaveLength(4);
+    expect(log.filter((s) => s === 'next')).toHaveLength(4);
     // One clock handoff a round: the minute starts in the namer's hands.
-    expect(log.filter((s) => s === 'begin')).toHaveLength(3);
+    expect(log.filter((s) => s === 'begin')).toHaveLength(4);
     expect(log).toContain('name');
     // A right name plus an unknown one meets a bid of 2 only if the table
     // accepts the unknown, so every round that named both went to review.
@@ -145,7 +146,7 @@ describe('AniName, played locally', { timeout: 60000 }, () => {
 
   it('plays a table of one', async () => {
     const user = userEvent.setup();
-    await start(user, ['Caden'], { rounds: 3, seconds: 30 });
+    await start(user, ['Caden'], { laps: 1, seconds: 30 });
     const log = await playToEnd(user);
     expect(log).not.toContain('drop');
     expect(errors).not.toHaveBeenCalled();

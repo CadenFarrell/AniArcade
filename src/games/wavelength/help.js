@@ -46,10 +46,6 @@ export const sharedOnlyHelp = ({ noun }) => ({
 });
 
 export const SETTING_HELP = {
-  rounds: {
-    short: 'Everyone takes a turn as the psychic.',
-    more: 'A session divides most evenly when this is a multiple of the number of players.',
-  },
 
   cardPool: {
     short: 'Which pool the cards come from — and which spectrums get suggested.',

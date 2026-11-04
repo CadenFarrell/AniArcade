@@ -19,7 +19,7 @@ const MADE_UP = ['Hero One', 'Rival Two', 'Captain Three', 'Sensei Four', 'Docto
 export default makeStrategy({
   players: [1, 4],
   axes: {
-    rounds: [3, 4, 6],
+    laps: [1, 2],
     seconds: [30, 60, 90],
   },
   onBlocked: () => ({ expected: true }),

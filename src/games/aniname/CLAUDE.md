@@ -57,6 +57,10 @@ thinly to be fair.
   never asked for twice.
 - Too few categories gives `{ error, found }`, and setup and the lobby keep a trial deal for
   the status line (`copy.js`).
+- **The length is `laps`, not rounds** (`prefs.roundsFor`, over `shared/utils/match.js`): the
+  opener moves a seat a round, so the deal holds laps × the players dealt in, lifted to whole
+  laps of at least `MIN_GAME_ROUNDS` for a table of one or two. A direct `rounds` (the smoke
+  suite's) still wins.
 - `TAG_SKIP` drops census tags, as in AniOut.
 
 ## Rules (`rules.js`)

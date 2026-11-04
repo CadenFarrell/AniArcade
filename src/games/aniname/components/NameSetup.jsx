@@ -34,7 +34,7 @@ export default function NameSetup({ pack, onStart, onBack, error }) {
     () => (players.length && pack.status !== 'loading' ? dealGame(players, settings, pack.pack) : null),
     [players, settings, pack.status, pack.pack],
   );
-  const { status, ready, short } = setupStatus({ count: players.length, trial, settings, packStatus: pack.status });
+  const { status, ready, short, rounds } = setupStatus({ count: players.length, trial, settings, packStatus: pack.status });
 
   const handleImported = (merged) => {
     saveProfile(merged);
@@ -58,13 +58,14 @@ export default function NameSetup({ pack, onStart, onBack, error }) {
               onRemove={(id) => setPlayers((prev) => prev.filter((x) => x.id !== id))}
               onUpdate={(p) => setPlayers((prev) => prev.map((x) => (x.id === p.id ? p : x)))}
             />
-            {short && <ShortBanner settings={settings} found={trial.found} />}
+            {short && <ShortBanner rounds={rounds} found={trial.found} />}
             {error && <Banner tone="danger" className="mb-4">{error}</Banner>}
           </>
         )}
         right={(
           <AniNameSettings
             values={settings}
+            playerCount={players.length}
             onChange={(key, value) => setSettings((s) => ({ ...s, [key]: value }))}
             onReset={() => { setSettings({ ...DEFAULT_PREFS }); resetPrefs(); }}
           />

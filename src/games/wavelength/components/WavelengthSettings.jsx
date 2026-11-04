@@ -2,7 +2,8 @@ import SettingsFooter from '../../../shared/components/SettingsFooter';
 import SettingHelp, { DetailToggle } from '../../../shared/components/SettingHelp';
 import { Button, Card, Checkbox, Field, NumberInput } from '../../../shared/ui';
 import { SETTING_HELP, sharedOnlyHelp } from '../help';
-import { DEFAULT_PREFS, MAX_GUESS_SECONDS, MAX_ROUNDS, MIN_GUESS_SECONDS, MIN_ROUNDS } from '../prefs';
+import { DEFAULT_PREFS, MAX_GUESS_SECONDS, MIN_GUESS_SECONDS } from '../prefs';
+import LapsSetting from '../../../shared/components/LapsSetting';
 import { needsCardPool } from '../rules';
 import { CARD_POOLS, poolNoun } from '../utils/cards';
 
@@ -28,7 +29,7 @@ import { CARD_POOLS, poolNoun } from '../utils/cards';
 export default function WavelengthSettings({
   values, onChange, eligible, playerCount, online = false, onReset,
 }) {
-  const { rounds, clueMode, cardPool, sharedOnly, timed, guessSeconds } = values;
+  const { laps, clueMode, cardPool, sharedOnly, timed, guessSeconds } = values;
   const needsCards = needsCardPool(clueMode);
   const noun = poolNoun(cardPool);
   const sharedHelp = sharedOnlyHelp({ noun });
@@ -36,19 +37,7 @@ export default function WavelengthSettings({
 
   return (
     <Card title="Settings" action={<DetailToggle />} padding="lg" className="mb-6">
-      <Field label="Rounds" htmlFor="aniwave-rounds" className="mb-2">
-        <NumberInput
-          id="aniwave-rounds"
-          ariaLabel="Rounds"
-          min={MIN_ROUNDS}
-          max={MAX_ROUNDS}
-          value={rounds}
-          onChange={(v) => onChange('rounds', v)}
-        />
-      </Field>
-      <SettingHelp className="mb-5" more={SETTING_HELP.rounds.more}>
-        {SETTING_HELP.rounds.short}
-      </SettingHelp>
+      <LapsSetting id="aniwave-laps" value={laps} playerCount={playerCount} role="the psychic" onChange={onChange} />
 
       {needsCards && (
         <>

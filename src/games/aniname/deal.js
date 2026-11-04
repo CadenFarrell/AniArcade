@@ -4,6 +4,7 @@
 // with four hundred shows behind it is not copied into the room.
 //
 // Pure, with an injectable rng, so a seed is a replay.
+import { roundsFor } from './prefs';
 import { shuffle } from '../../shared/utils/random';
 import { KINDS, buildIndex, categoriesFor } from './answers';
 
@@ -24,7 +25,8 @@ function weightedOrder(kinds, rng) {
  * Deals a game. Returns `{ deal }`, or `{ error, found }` when the lists hold
  * fewer categories than rounds.
  *
- * `settings`: `{ rounds, seconds }` (prefs.js). `pack` is the indexed fact pack
+ * `settings`: `{ laps, seconds }` (prefs.js), dealt as laps × the players
+ * dealt in (prefs.roundsFor), or a direct `rounds`. `pack` is the indexed fact pack
  * or null. A category leans toward shows more of the table holds: a
  * "characters from X" only its importer has seen is a round only they can bid.
  *
@@ -33,7 +35,7 @@ function weightedOrder(kinds, rng) {
  * same cast is never asked for twice in a game.
  */
 export function dealGame(players, settings, pack = null, rng = Math.random) {
-  const rounds = settings?.rounds ?? 6;
+  const rounds = roundsFor(settings, players.length);
   const index = buildIndex(players, pack);
   const byKind = new Map();
   for (const cat of shuffle(categoriesFor(index), rng)) {
