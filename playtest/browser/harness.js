@@ -114,6 +114,7 @@ export function pageAdapter(page, { errors, prefix }) {
   page.on('pageerror', (e) => errors.push(`pageerror: ${e.message}`.slice(0, 600)));
   page.on('dialog', (d) => d.accept().catch(() => {}));
   const loc = (id) => page.locator(`[data-bot-id="${id}"]`).first();
+  const afterWipe = () => page.locator('[data-wipe]').waitFor({ state: 'detached', timeout: 1500 }).catch(() => {});
   const adapter = {
     alive: true,
     refused: [],
@@ -139,7 +140,7 @@ export function pageAdapter(page, { errors, prefix }) {
           // a person presses the label — so does the bot, before calling it refused.
           const label = page.locator(`label:has([data-bot-id="${id}"])`).first();
           if (await label.count() && await label.click(opts).then(() => true, () => false)) return;
-          adapter.refused.push(`${a.name ?? id}: ${e.message.split('\n')[0].slice(0, 160)}`);
+          adapter.refused.push(`${a.name ?? id}: ${refusalReason(e.message)}`);
           await loc(id).click({ ...opts, force: true }).catch(() => {});
         });
       }
@@ -154,16 +155,40 @@ export function pageAdapter(page, { errors, prefix }) {
       // report's "Press start" and hub-tile click-refused. Waiting before the
       // click instead does not help: by the time the wipe clears, the button it
       // was aimed at is gone. HubScreen.test's afterWipe is the same wait.
-      await page.locator('[data-wipe]').waitFor({ state: 'detached', timeout: 1500 }).catch(() => {});
+      await afterWipe();
     },
     async reload() { await page.reload(); await page.waitForTimeout(200); },
+    // The chaos exit waits out the wipe too. It used to wait a flat 100ms, so the
+    // next snapshot read the game screen still mounted under the wipe, and the
+    // bot pressed a button on it ("Next round" on AniPeek seed 2, "Confirm" on
+    // AniGuess seed 1) that the wipe then took away. The click timed out on a
+    // locator that matched nothing, and the reports read it as a game remounting
+    // its own button.
     async exitToHub() {
       await page.getByRole('button', { name: /^\s*hub\s*$/i }).first().click({ timeout: 3000 }).catch(() => {});
       await page.waitForTimeout(100);
+      await afterWipe();
     },
     async crash() { adapter.alive = false; await page.context().close().catch(() => {}); },
   };
   return adapter;
+}
+
+// Why Playwright would not click, not just that it timed out. The first line of
+// its error is always "locator.click: Timeout 3000ms exceeded", and the reason
+// — the element was detached, never stable, or covered by another — is in the
+// call log under it. With only the first line, the reports could not tell a
+// covered control from one that was gone, and a review had to guess. The last
+// call-log step that is not a retry or a wait is the one that kept failing.
+// The log arrives dimmed with ANSI codes (the runner sets FORCE_COLOR), which
+// must come off before a line can be recognised as a step.
+function refusalReason(message) {
+  // eslint-disable-next-line no-control-regex
+  const lines = String(message).replace(/\u001b\[[0-9;]*m/g, '').split('\n');
+  const steps = lines.map((l) => l.trim()).filter((l) => l.startsWith('- ')).map((l) => l.slice(2));
+  const telling = [...steps].reverse().find((s) => !/^(retrying|waiting \d+ms|attempting)/i.test(s));
+  const head = lines[0].slice(0, 80);
+  return telling ? `${head} — ${telling.slice(0, 140)}` : head;
 }
 
 const slug = (s) => s.replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '').slice(0, 40).toLowerCase() || 'screen';
