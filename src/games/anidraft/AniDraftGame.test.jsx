@@ -108,7 +108,10 @@ async function revealRound(user) {
   expect(screen.queryByRole('button', { name: 'Next role' })).toBeNull();
 }
 
-describe('AniDraft, one device', () => {
+// Whole games through the real screens run 3-7s each — past vitest's 5s
+// default on a busy machine (and AniDraft's one-round game on a quiet one).
+// AniTurfGame.test.jsx's allowance.
+describe('AniDraft, one device', { timeout: 60000 }, () => {
   it('plays a one-round game from Start to the final scores', async () => {
     const user = userEvent.setup();
     const names = ['Ann', 'Ben', 'Cal'];

@@ -109,7 +109,10 @@ async function nextOrResults(user) {
   await user.click(next);
 }
 
-describe('AniChain, one device', () => {
+// Whole games through the real screens run 3-7s each — past vitest's 5s
+// default on a busy machine (and AniDraft's one-round game on a quiet one).
+// AniTurfGame.test.jsx's allowance.
+describe('AniChain, one device', { timeout: 60000 }, () => {
   it('plays a pair game from Start to the final scores', async () => {
     const user = userEvent.setup();
     await start(user, ['Ann', 'Ben', 'Cal'], { shape: 'pair', cap: 6, rounds: 4, pool: 'main' });
