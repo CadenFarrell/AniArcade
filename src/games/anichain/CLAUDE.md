@@ -85,6 +85,15 @@ The words are said and the guesses shouted, so the device is a scorekeeper. The 
 5. "Out of words" appears at the cap. "Banned word" is the table calling a slip.
 6. "Givers: peek again" reopens the card behind the same handoff.
 
+**The word clock** (`wordClock`, local only, off by default) is the shared `LocalClock`,
+keyed on `${deal}:${chain.length}`. When it runs out, `loseWord` appends `{ by, text: null,
+lost: true }`. The lost word counts toward the cap and the value, and the other giver speaks
+next. `currentGuessers` follows the last word SAID, so a stall opens no new guess: in
+`rivals`, a giver could otherwise stall to hand their own team another try at an unchanged
+sentence. The clock is not on screen while the givers peek or the table picks who got it,
+so the word's time starts again in full after either; both happen in front of the table. The
+`n` that `loseWord` takes pins it to one word, so a timer that fires late loses nothing.
+
 **The card lives beside the game in one state object, never in it**, mirroring online: the
 game learns only that a turn was dealt (`dealt`), and learns the character when the turn ends
 (`publishReveal`). There is no guess window locally (`now` is null).

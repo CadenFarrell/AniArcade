@@ -21,6 +21,9 @@
 //           round, turn, team, givers, phase, deal, skips, dealt,
 //           chain, wordAt, guesses, result, reveal, log }
 //
+//   chain: [{ by, text }] — text null locally (said out loud), and
+//          { by, text: null, lost: true } for a word the local clock took.
+//
 //   phase: 'deal' → 'chain' → 'over' → (next turn: 'deal' …) → 'finished'
 //
 // **The secret is never in here.** The game knows a turn was dealt (`dealt`),
@@ -134,11 +137,19 @@ export function guessersFor(game, wordBy, activeIds = null) {
   return here(ids, activeIds);
 }
 
-/** Who may guess right now: after the last word, the players it was for. */
+/**
+ * Who may guess right now: the players the last word SAID was for. A word lost
+ * to the local clock (loseWord) adds nothing to the sentence, so it opens no
+ * new guess. In `rivals` it matters: a giver who stalls must not hand their own
+ * team another go at a sentence that has not changed.
+ */
 export function currentGuessers(game, activeIds = null) {
-  const last = game.chain[game.chain.length - 1];
+  const last = game.chain.findLast((w) => !w.lost);
   return last ? guessersFor(game, last.by, activeIds) : [];
 }
+
+/** How many of the chain's words were lost to the clock (local only). */
+export const lostCount = (game) => game.chain.filter((w) => w.lost).length;
 
 /** Whose word is next: the givers take turns, the first speaker first. */
 export const nextGiver = (game) => game.givers[game.chain.length % 2] ?? null;
@@ -267,6 +278,21 @@ export function addWord(game, by, text = null, { now = null, activeIds = null } 
   return { patch: { chain: [...game.chain, { by, text: word }], wordAt: now } };
 }
 
+/**
+ * Locally, the word clock ran out on `by` before they said word `n + 1`: that
+ * word is lost. It still counts toward the cap, so the value drops as if it
+ * had been said, and the turn passes to the other giver. Stalling costs the
+ * pair a word, not the whole turn.
+ *
+ * `n` is how long the chain was when the clock started. A timer that fires
+ * late, after a word has been said, is refused, so one timer can never lose
+ * two words.
+ */
+export function loseWord(game, by, n) {
+  if (game.phase !== 'chain' || nextGiver(game) !== by || game.chain.length !== n || n >= game.cap) return { patch: {} };
+  return { patch: { chain: [...game.chain, { by, text: null, lost: true }] } };
+}
+
 // One guess, or a pass, on the current word: only from a player it was for,
 // only once a word.
 function answer(game, by, entry) {
@@ -313,6 +339,8 @@ function endTurn(game, kind, by = null, n = null) {
     ...result,
     words: game.chain.length,
     chain: game.chain.map((w) => w.text ?? ''),
+    // Words lost to the local clock, which the reveal counts.
+    lost: lostCount(game),
     character: null,
     skipped: [],
   };
@@ -479,6 +507,7 @@ function normalizeEntry(e) {
     givers: listOf(e.givers),
     words: numberOr(e.words, 0),
     chain: listOf(e.chain).map((w) => (typeof w === 'string' ? w : '')),
+    lost: numberOr(e.lost, 0),
     character: normalizeCharacter(e.character),
     skipped: listOf(e.skipped).map(normalizeCharacter).filter(Boolean),
   };
@@ -513,7 +542,7 @@ export function normalizeGame(raw) {
     dealt: numberOr(raw.dealt, null),
     chain: listOf(raw.chain)
       .filter((w) => w && typeof w === 'object' && w.by != null)
-      .map((w) => ({ by: w.by, text: str(w.text) })),
+      .map((w) => (w.lost === true ? { by: w.by, text: null, lost: true } : { by: w.by, text: str(w.text) })),
     wordAt: numberOr(raw.wordAt, null),
     guesses: listOf(raw.guesses)
       .filter((g) => g && typeof g === 'object' && g.by != null)

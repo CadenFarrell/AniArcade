@@ -1,10 +1,12 @@
 import SpeechBubble from '../../../shared/components/SpeechBubble';
+import { lostCount } from '../rules';
 
 // The sentence so far. Online it is the typed words, in a speech balloon
 // (somebody IS talking to the whole table), each word's speaker readable from
 // its underline: the first giver's words solid, the second's dashed, so two
 // voices in one sentence show without leaning on colour. Locally the words
-// were said out loud, so all the device has to show is how many.
+// were said out loud, so all the device has to show is how many — and how
+// many of those the word clock took (rules.loseWord), since they count too.
 export default function ChainLine({ game, players }) {
   const nameOf = (id) => players.find((p) => p.id === id)?.name ?? 'Someone';
   const [first, second] = game.givers;
@@ -12,10 +14,12 @@ export default function ChainLine({ game, players }) {
   const typed = game.chain.some((w) => w.text);
 
   if (!typed) {
+    const lost = lostCount(game);
+    const said = game.chain.length - lost;
     return (
       <p className="mb-5 text-center font-display text-lg font-bold uppercase tracking-wider text-fg-strong">
         {game.chain.length
-          ? `${game.chain.length} word${game.chain.length === 1 ? '' : 's'} said`
+          ? `${said} word${said === 1 ? '' : 's'} said${lost ? ` · ${lost} lost` : ''}`
           : 'No words yet'}
         <span className="sr-only"> by {who}</span>
       </p>

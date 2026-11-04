@@ -30,6 +30,9 @@ export default makeStrategy({
     // cap: short caps keep a run to a couple of minutes.
     cap: [6, 8],
     rounds: [4],
+    // The local word clock (not on the lobby's card, so online plays without
+    // it whatever is seeded). The bot lets it run out now and then.
+    wordClock: [0, 10],
   },
   // A shape the table is too small for would only ever be refused at Start:
   // seed the biggest one this many players can play instead. And a table big
@@ -88,6 +91,8 @@ export default makeStrategy({
     if (banned && rng.chance(0.03)) return click(banned, 'a giver slipped');
     const peek = find(snap, /^givers: peek again$/i);
     if (peek && !memory.peeked && rng.chance(0.05)) { memory.peeked = true; return click(peek, 'the givers peek again'); }
+    // A giver who stalls: the word clock takes the word, and the chain moves on.
+    if (next && ctx.scenario.prefs.wordClock && rng.chance(0.08)) return wait(ctx.scenario.prefs.wordClock * 1000 + 1000, 'let the word clock run out');
     if (next) return click(next, 'the next word is said');
     if (out) return click(out, 'out of words');
 

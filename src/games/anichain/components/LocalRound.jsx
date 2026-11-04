@@ -4,6 +4,8 @@ import ResultImpact from '../../../shared/components/ResultImpact';
 import RoundHeader from '../../../shared/components/RoundHeader';
 import { StartBar } from '../../../shared/components/SetupLayout';
 import { TEAM_NAMES, teamOf } from '../../../shared/utils/teams';
+import LocalClock from '../../../shared/components/LocalClock';
+import { useSoundCue } from '../../../shared/hooks/useSoundCue';
 import { Backdrop, Button, Card, Screen } from '../../../shared/ui';
 import { useChainRound } from '../hooks/useChainRound';
 import {
@@ -23,6 +25,14 @@ import TableScores from './TableScores';
 //
 // The givers can peek again mid-turn, behind the same handoff — a sentence
 // ten words long is a lot to steer without a glance at the card.
+//
+// With the word clock on (settings.wordClock), each word has that long to be
+// said and "Next word" pressed; run out and the word is lost (rules.loseWord):
+// it counts toward the cap and the other giver speaks next. It is the shared
+// LocalClock keyed on the word, and it is not on screen while the givers peek
+// or the table settles "Who got it?" (neither is the speaker stalling), so
+// the word's time starts again in full after either. Both happen in front of
+// the whole table, which is what keeps that from being a way to stall.
 export default function LocalRound({ players, settings, teams, pack, onPlayAgain, onBack }) {
   const round = useChainRound(players, settings, teams, pack);
   const { game, card } = round;
@@ -31,6 +41,13 @@ export default function LocalRound({ players, settings, teams, pack, onPlayAgain
   const [seen, setSeen] = useState(null);
   const [peek, setPeek] = useState(false);
   const [picking, setPicking] = useState(false);
+
+  // Hooks before any early return. The clock's key names the word being
+  // waited on; none once the cap is reached (only "Out of words" is left).
+  const n = game.chain.length;
+  const clockKey = settings.wordClock > 0 && game.phase === 'chain' && n < game.cap ? `${game.deal}:${n}` : null;
+  const lastLost = game.phase === 'chain' && n > 0 && game.chain[n - 1].lost;
+  useSoundCue('timeup', lastLost ? `${game.deal}:${n}` : null);
 
   if (game.phase === 'finished') {
     return <AniChainResults game={game} players={players} onPlayAgain={onPlayAgain} onBack={onBack} />;
@@ -109,16 +126,24 @@ export default function LocalRound({ players, settings, teams, pack, onPlayAgain
   }
 
   // The chain.
-  const n = game.chain.length;
   const capped = n >= game.cap;
   const speaker = nextGiver(game);
   const guessers = currentGuessers(game);
-  const forTeam = game.shape === 'rivals' && n ? TEAM_NAMES[teamOf(game, game.chain[n - 1].by)] : null;
-  const hint = !n
-    ? `${nameOf(speaker)}, say the first word — worth ${valueAt(game.cap, 1)} if it’s guessed straight away.`
+  // The guesses follow the last word SAID: a word lost to the clock adds
+  // nothing to the sentence (rules.currentGuessers).
+  const said = game.chain.findLast((w) => !w.lost);
+  const forTeam = game.shape === 'rivals' && said ? TEAM_NAMES[teamOf(game, said.by)] : null;
+  const lostLine = lastLost ? `Time ran out — ${nameOf(game.chain[n - 1].by)}’s word is lost. ` : '';
+  let hint;
+  if (!said) {
+    hint = capped
+      ? `${lostLine}No word was said in time.`
+      : `${lostLine}${nameOf(speaker)}, say ${n ? 'the next' : 'the first'} word — worth ${valueAt(game.cap, n + 1)} if it’s guessed straight away.`;
+  } else {
     // Said of the word just spoken, by name: under "<next giver>'s Word" a
     // bare "this word" read as the word still to come.
-    : `${forTeam ? `${nameOf(game.chain[n - 1].by)}’s word is for ${forTeam} only. ` : ''}One guess each, out loud — worth ${currentValue(game)} now.`;
+    hint = `${lostLine}${forTeam ? `${nameOf(said.by)}’s word is for ${forTeam} only. ` : ''}One guess each, out loud — worth ${currentValue(game)} now.`;
+  }
   return (
     <Shell>
       <TableScores game={game} players={players} activeId={capped ? null : speaker} />
@@ -126,10 +151,14 @@ export default function LocalRound({ players, settings, teams, pack, onPlayAgain
         title={capped ? 'Last Guesses' : `${nameOf(speaker)}'s Word`}
         tag={`Word ${Math.min(n + 1, game.cap)}/${game.cap}`}
         hint={hint}
-      />
+      >
+        {clockKey && !picking && (
+          <LocalClock key={clockKey} ms={settings.wordClock * 1000} onExpire={round.loseWord} label="Time for the word" className="" />
+        )}
+      </RoundHeader>
       <ChainLine game={game} players={players} />
 
-      {n > 0 && (
+      {guessers.length > 0 && (
         <Card title="Who got it?" padding="md" className="mb-5">
           {picking ? (
             <div className="grid gap-2 sm:grid-cols-2">

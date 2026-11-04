@@ -2,7 +2,7 @@ import MoreSettings from '../../../shared/components/MoreSettings';
 import SettingsFooter from '../../../shared/components/SettingsFooter';
 import SettingHelp, { DetailToggle } from '../../../shared/components/SettingHelp';
 import { Card, Field, Select } from '../../../shared/ui';
-import { CAP_OPTIONS, DEFAULT_PREFS, POOL_OPTIONS, ROUNDS_OPTIONS, SHAPE_OPTIONS } from '../prefs';
+import { CAP_OPTIONS, DEFAULT_PREFS, POOL_OPTIONS, ROUNDS_OPTIONS, SHAPE_OPTIONS, WORD_CLOCK_OPTIONS } from '../prefs';
 import { MIN_PLAYERS } from '../rules';
 
 const SHAPE_HELP = {
@@ -22,14 +22,19 @@ const SHAPE_HELP = {
 
 /**
  * AniChain's Settings card, rendered by both the local setup screen and the
- * online lobby. `host` adds the lobby's "your settings apply to everyone".
+ * online lobby. `host` adds the lobby's "your settings apply to everyone";
+ * `local` adds the word clock, which online has no use for: there the guess
+ * window already paces the chain, and every word is typed.
  *
  * One `onChange(key, value)`, because the lobby's settings object is what
  * leaves the host's device. Every option reaches the game through
  * rules.startGame (the pool too: online the first giver's device deals).
  */
-export default function AniChainSettings({ values, onChange, onReset, host = false }) {
+export default function AniChainSettings({ values, onChange, onReset, host = false, local = false }) {
   const help = SHAPE_HELP[values.shape] ?? SHAPE_HELP.pair;
+  // The footer compares against what this screen can reach: in the lobby the
+  // clock is not on the card, so a saved local clock must not read as "changed".
+  const shown = local ? values : { ...values, wordClock: DEFAULT_PREFS.wordClock };
   return (
     <Card title="Settings" action={<DetailToggle />} padding="lg" className="mb-6">
       <Field label="Table" htmlFor="anichain-shape" className="mb-2">
@@ -49,6 +54,19 @@ export default function AniChainSettings({ values, onChange, onReset, host = fal
       <SettingHelp className="mb-5" more="A right guess after word 1 is worth the cap, one less for every word after it. A short cap is a sprint; a long one leaves room for the sentence to wander off and come back.">
         The longest a sentence can get before the turn is over.
       </SettingHelp>
+
+      {local && (
+        <>
+          <Field label="Word clock" htmlFor="anichain-clock" className="mb-2">
+            <Select id="anichain-clock" value={String(values.wordClock)} onChange={(e) => onChange('wordClock', Number(e.target.value))}>
+              {WORD_CLOCK_OPTIONS.map((o) => <option key={o.value} value={String(o.value)}>{o.label}</option>)}
+            </Select>
+          </Field>
+          <SettingHelp className="mb-5" more="A word not said in time is lost: it still counts toward the cap, and the other giver speaks next. The word’s time starts again after the givers peek or the table checks who got it.">
+            How long each giver has to say a word and press Next word.
+          </SettingHelp>
+        </>
+      )}
 
       <Field label="Rounds" htmlFor="anichain-rounds" className="mb-2">
         <Select id="anichain-rounds" value={String(values.rounds)} onChange={(e) => onChange('rounds', Number(e.target.value))}>
@@ -74,7 +92,7 @@ export default function AniChainSettings({ values, onChange, onReset, host = fal
         </SettingHelp>
       </MoreSettings>
 
-      <SettingsFooter values={values} defaults={DEFAULT_PREFS} onReset={onReset} />
+      <SettingsFooter values={shown} defaults={DEFAULT_PREFS} onReset={onReset} />
     </Card>
   );
 }

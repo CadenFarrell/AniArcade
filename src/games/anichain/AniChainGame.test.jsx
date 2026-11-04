@@ -6,7 +6,7 @@
 // tests prove the scoring; these prove a couch gets from Start to the results
 // in every shape without a screen dead-ending.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { readFile } from 'node:fs/promises';
 import AniChainGame from './AniChainGame';
@@ -46,6 +46,7 @@ beforeEach(() => {
 
 afterEach(() => {
   cleanup();
+  vi.useRealTimers();
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
 });
@@ -168,6 +169,35 @@ describe('AniChain, one device', { timeout: 60000 }, () => {
     }
     expect(await screen.findByRole('heading', { name: 'Final Scores' })).toBeTruthy();
     expectTeamTotals();
+    expect(errors).not.toHaveBeenCalled();
+  });
+
+  // The word clock: a word not said in time is lost (counted, the turn passes
+  // on), and the clock is off screen while the table settles "Who got it?". Fake
+  // timers that still run in real time, so the pack load and waitFor work.
+  it('loses a word to the word clock, and holds it while the table picks who got it', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const user = userEvent.setup({ advanceTimers: (ms) => vi.advanceTimersByTime(ms) });
+    await start(user, ['Ann', 'Ben', 'Cal'], { shape: 'pair', cap: 6, rounds: 4, pool: 'main', wordClock: 10 });
+    await user.click(await screen.findByRole('button', { name: /— show us$/i }));
+    await user.click(button('Hide it'));
+    const first = screen.getByRole('heading', { level: 2, name: /'s Word$/ }).textContent;
+    expect(screen.getByRole('progressbar', { name: 'Time for the word' })).toBeTruthy();
+
+    await act(async () => { vi.advanceTimersByTime(10_500); });
+    expect(screen.getByText(/0 words said · 1 lost/i)).toBeTruthy();
+    expect(screen.getByText(/Time ran out — \w+’s word is lost/)).toBeTruthy();
+    expect(screen.getByRole('heading', { level: 2, name: /'s Word$/ }).textContent).not.toBe(first);
+    // Nothing was said, so nobody has a guess to credit.
+    expect(button('Got it')).toBeNull();
+
+    await user.click(button('Next word'));
+    await user.click(button('Got it'));
+    await act(async () => { vi.advanceTimersByTime(30_000); });
+    expect(screen.getByText(/1 word said · 1 lost/i)).toBeTruthy();
+    await user.click(screen.getAllByRole('button', { name: / got it$/i })[0]);
+    expect(screen.getByRole('heading', { level: 2, name: 'Got It!' })).toBeTruthy();
+    expect(screen.getByText('1 word lost to the clock.')).toBeTruthy();
     expect(errors).not.toHaveBeenCalled();
   });
 });

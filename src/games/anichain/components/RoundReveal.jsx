@@ -54,6 +54,11 @@ export default function RoundReveal({ game, players, youId = null, children }) {
           <p className="text-lg text-fg-body [overflow-wrap:anywhere]">{entry.chain.join(' ')}</p>
         </section>
       )}
+      {entry?.lost > 0 && (
+        <p className="mb-5 text-sm text-fg-helper">
+          {`${entry.lost} word${entry.lost === 1 ? '' : 's'} lost to the clock.`}
+        </p>
+      )}
       {reveal?.skipped?.length > 0 && (
         <p className="mb-5 text-sm text-fg-helper">
           Passed on first: {reveal.skipped.map((c) => c.name).join(', ')}.

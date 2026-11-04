@@ -11,8 +11,10 @@ import * as rules from '../rules';
 // and who it was once the turn is over (publishReveal). Everyone is on one
 // device, so the "active" roster is the whole table and nothing settles.
 //
-// Words are said out loud, so `word` only counts one (text null), and there is
-// no clock: a table guessing aloud sets its own pace.
+// Words are said out loud, so `word` only counts one (text null). There is no
+// guess window: a table guessing aloud sets its own pace. The optional word
+// clock (settings.wordClock) lives on the screen (LocalRound's LocalClock), and only
+// reaches the game through `loseWord` when it runs out.
 
 // Who the draw should look for a shared character with: everyone the turn's
 // words could be for.
@@ -73,6 +75,9 @@ export function useChainRound(players, settings, teams, pack) {
     begin: useCallback(() => apply((g) => rules.markDealt(g, g.deal)), [apply]),
     skip: useCallback((id) => apply((g) => rules.skip(g, id)), [apply]),
     word: useCallback(() => apply((g) => rules.addWord(g, rules.nextGiver(g))), [apply]),
+    // Read inside the updater, so a "Next word" tapped as the clock runs out
+    // wins or loses cleanly: whichever lands second sees a longer chain.
+    loseWord: useCallback(() => apply((g) => rules.loseWord(g, rules.nextGiver(g), g.chain.length)), [apply]),
     gotIt: useCallback((id) => apply((g) => rules.gotIt(g, id)), [apply]),
     outOfWords: useCallback(() => apply((g) => rules.outOfWords(g)), [apply]),
     banned: useCallback((id) => apply((g) => rules.bannedWord(g, id)), [apply]),

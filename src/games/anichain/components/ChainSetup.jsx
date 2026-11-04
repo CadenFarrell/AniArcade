@@ -78,6 +78,7 @@ export default function ChainSetup({ pack, onStart, onBack, error }) {
         right={(
           <AniChainSettings
             values={settings}
+            local
             onChange={(key, value) => setSettings((s) => ({ ...s, [key]: value }))}
             onReset={() => { setSettings({ ...DEFAULT_PREFS }); resetPrefs(); }}
           />

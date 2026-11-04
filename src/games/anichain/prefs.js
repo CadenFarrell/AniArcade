@@ -10,6 +10,9 @@
 //                    three, or six, every seat twice.
 //   pool: 'main'   — main characters: the ones a table can build a sentence
 //                    towards from a few shared words.
+//   wordClock: 0   — no clock on a spoken word. Local only (online the guess
+//                    window already paces the chain); a table with a giver who
+//                    stalls turns it on, and a word not said in time is lost.
 //
 // Teams are deliberately not here: they are who is at the table tonight, not
 // a preference (AniTurf's prefs.js says the same).
@@ -18,6 +21,7 @@ export const DEFAULT_PREFS = {
   cap: 10,
   rounds: 6,
   pool: 'main',
+  wordClock: 0,
 };
 
 export const SHAPE_OPTIONS = [
@@ -27,6 +31,11 @@ export const SHAPE_OPTIONS = [
 ];
 export const CAP_OPTIONS = [6, 8, 10, 12];
 export const ROUNDS_OPTIONS = [4, 6, 8];
+export const WORD_CLOCK_OPTIONS = [
+  { value: 0, label: 'No clock' },
+  { value: 10, label: '10 seconds a word' },
+  { value: 20, label: '20 seconds a word' },
+];
 export const POOL_OPTIONS = [
   { value: 'main', label: 'Main characters' },
   { value: 'all', label: 'Anyone on the lists' },
@@ -40,5 +49,6 @@ export function cleanPrefs(prefs) {
     cap: pick(prefs?.cap, CAP_OPTIONS, DEFAULT_PREFS.cap),
     rounds: pick(prefs?.rounds, ROUNDS_OPTIONS, DEFAULT_PREFS.rounds),
     pool: pick(prefs?.pool, POOL_OPTIONS.map((o) => o.value), DEFAULT_PREFS.pool),
+    wordClock: pick(prefs?.wordClock, WORD_CLOCK_OPTIONS.map((o) => o.value), DEFAULT_PREFS.wordClock),
   };
 }

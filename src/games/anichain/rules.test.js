@@ -95,6 +95,57 @@ describe('rival givers', () => {
   });
 });
 
+describe('the local word clock', () => {
+  const lose = (g) => apply(g, rules.loseWord(g, rules.nextGiver(g), g.chain.length));
+
+  it('loses the word, counts it toward the cap, and passes the turn', () => {
+    let g = words(dealt(pairGame({ cap: 3 })), 1);
+    expect(rules.currentValue(g)).toBe(3);
+    g = lose(g);
+    expect(g.chain).toEqual([{ by: 'a', text: null }, { by: 'b', text: null, lost: true }]);
+    expect(rules.nextGiver(g)).toBe('a');
+    expect(rules.currentValue(g)).toBe(2);
+    expect(rules.lostCount(g)).toBe(1);
+    g = lose(g);
+    // The cap: nothing more to lose, and the turn can only run out.
+    expect(rules.loseWord(g, rules.nextGiver(g), g.chain.length).patch).toEqual({});
+    g = apply(g, rules.outOfWords(g));
+    expect(g.log[0]).toMatchObject({ kind: 'out', words: 3, lost: 2 });
+  });
+
+  it('refuses a stale timer, the wrong giver, and a turn not dealt', () => {
+    const g = words(dealt(pairGame()), 2);
+    expect(rules.loseWord(g, 'a', 1).patch).toEqual({}); // the clock started at 1 word
+    expect(rules.loseWord(g, 'b', 2).patch).toEqual({}); // it is a's go
+    expect(rules.loseWord(pairGame(), 'a', 0).patch).toEqual({});
+  });
+
+  it('opens no new guess: a lost first word has no guessers, a later one keeps the last word’s', () => {
+    let g = lose(dealt(pairGame()));
+    expect(rules.currentGuessers(g)).toEqual([]);
+    expect(rules.gotIt(g, 'c').patch).toEqual({});
+    g = lose(words(g, 1));
+    expect(rules.currentGuessers(g)).toEqual(['c', 'd']);
+    // Scored at the lost word's value: three words gone by.
+    g = apply(g, rules.gotIt(g, 'c'));
+    expect(g.result).toMatchObject({ kind: 'got', n: 3, value: 8 });
+  });
+
+  it('in rivals, a stall never hands the staller’s own team a guess', () => {
+    const teams = { red: ['a', 'b'], blue: ['c', 'd'] };
+    let g = words(dealt(rules.startGame({ ids: ['a', 'b', 'c', 'd'], shape: 'rivals', teams })), 1);
+    expect(rules.currentGuessers(g)).toEqual(['b']);
+    g = lose(g); // Blue's giver stalls
+    expect(rules.currentGuessers(g)).toEqual(['b']);
+    expect(rules.gotIt(g, 'd').patch).toEqual({});
+  });
+
+  it('survives normalizeGame', () => {
+    const g = lose(words(dealt(pairGame()), 1));
+    expect(rules.normalizeGame(JSON.parse(JSON.stringify(g))).chain).toEqual(g.chain);
+  });
+});
+
 describe('team pairs', () => {
   const teams = { red: ['a', 'b', 'c'], blue: ['d', 'e', 'f'] };
   it('plays both teams a round, each giving to its own guessers', () => {

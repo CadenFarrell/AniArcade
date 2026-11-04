@@ -1,7 +1,8 @@
-import { DEFAULT_PREFS } from './prefs';
+import { DEFAULT_PREFS, WORD_CLOCK_OPTIONS } from './prefs';
 import { GUESS_MS, MIN_PLAYERS, SKIPS, giverShare, valueAt } from './rules';
 
 const cap = DEFAULT_PREFS.cap;
+const clocks = WORD_CLOCK_OPTIONS.filter((o) => o.value > 0).map((o) => o.value).join(' or ');
 
 // The game's rules sheet (shared/components/HowToSheet.jsx), built from the
 // rules' and prefs' own constants, so a retuned number reaches the sheet.
@@ -17,6 +18,7 @@ export const HOW_TO = {
         'The character’s name, the show’s title and the names of anyone else in that show are off limits. The givers’ card lists them.',
         'On one device, a giver who says a banned word ends the turn and nobody scores. Online, a banned word is refused as it is typed, with the reason.',
         `Up to ${cap} words by default. Nobody right by then, and the turn is over.`,
+        `On one device you can set a word clock (${clocks} seconds). A word not said in time is lost: it still counts toward the cap, and the other giver speaks next.`,
       ],
     },
     {
