@@ -123,7 +123,9 @@ async function playToEnd(user) {
   return log;
 }
 
-describe('AniOut, played locally', () => {
+// Whole games through the real screens run ~3s alone and past vitest's 5s
+// default under a busy full run. AniTurfGame.test.jsx's allowance.
+describe('AniOut, played locally', { timeout: 60000 }, () => {
   it('passes the device for every pick, then reveals, through to the results', async () => {
     const user = userEvent.setup();
     await start(user, ['Caden', 'Ayu'], { rounds: 4, cards: 6, reasons: true, sharedOnly: false });
