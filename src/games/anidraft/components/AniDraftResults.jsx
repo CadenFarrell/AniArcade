@@ -62,7 +62,8 @@ export default function AniDraftResults({ game, players, departedIds = [], onPla
   );
 }
 
-// Every round: each role, the pick that won it and by whom.
+// Every round: each role, the pick that won it and by whom, and under it what
+// every other team put up for it, since the losing picks are half the argument.
 function Recap({ game, players }) {
   const nameOf = (id) => players.find((p) => p.id === id)?.name ?? 'Someone';
   if (!game.log.length) return null;
@@ -75,6 +76,11 @@ function Recap({ game, players }) {
               const won = winnersOf(entry.tally[i], game.order);
               const top = won[0];
               const card = top ? entry.teams[top]?.[i] : null;
+              // A tie wins for every tied team, so every tied card is named.
+              const wonWith = won.map((id) => entry.teams[id]?.[i]?.name).filter(Boolean);
+              const field = game.order
+                .filter((id) => !won.includes(id) && entry.teams[id]?.[i])
+                .map((id) => `${nameOf(id)}: ${entry.teams[id][i].name}`);
               return (
                 // A round's roles are distinct, and their place is their identity.
                 <li key={roleId} className="flex items-center gap-3 border-b border-line px-2 py-2 last:border-0">
@@ -82,8 +88,11 @@ function Recap({ game, players }) {
                   <div className="min-w-0 flex-1">
                     <p className="font-display text-xs font-bold uppercase tracking-[0.2em] text-fg-helper">{roleOf(roleId).name}</p>
                     <p className="truncate font-display text-base font-bold uppercase tracking-wide text-fg-strong">
-                      {card?.name ?? 'No votes'}
+                      {wonWith.length ? wonWith.join(' / ') : 'No votes'}
                     </p>
+                    {field.length > 0 && (
+                      <p className="truncate text-xs text-fg-helper">{field.join(' · ')}</p>
+                    )}
                   </div>
                   <span className="shrink-0 text-right text-sm font-bold text-fg-body">
                     {won.length ? won.map(nameOf).join(' & ') : '—'}

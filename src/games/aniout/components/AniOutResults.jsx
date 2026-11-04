@@ -1,15 +1,18 @@
-import ResultsLayout, { Splash, Standings } from '../../../shared/components/Results';
+import ResultsLayout, { Awards, Splash, Standings } from '../../../shared/components/Results';
 import { StartBar } from '../../../shared/components/SetupLayout';
-import { Button } from '../../../shared/ui';
+import PlayerFace from '../../../shared/components/PlayerFace';
+import { Avatar, Button, Card, CardRow, Mark } from '../../../shared/ui';
 import { splitPodium } from '../../../shared/utils/podium';
 import { useRecordResult } from '../../../shared/hooks/useRecordResult';
 import { fromRanked } from '../../../shared/utils/history';
-import { standings } from '../rules';
+import { outAwards, standings } from '../rules';
 import descriptor from '../index';
 
 // Final standings — the one screen that records the game (play-history rule:
 // final results only, never a between-rounds screen; AniOut's reveal is one).
-export default function AniOutResults({ players, scores, departedIds = [], onPlayAgain, onBack, againLabel = 'Play again' }) {
+export default function AniOutResults({
+  players, scores, log = [], deal = null, departedIds = [], onPlayAgain, onBack, againLabel = 'Play again',
+}) {
   const ranked = standings(players, scores);
   const { winners, rest, stamp, kana } = splitPodium(ranked);
   useRecordResult(descriptor.id, players, winners.map((p) => p.id), fromRanked(ranked));
@@ -41,6 +44,46 @@ export default function AniOutResults({ players, scores, departedIds = [], onPla
       )}
     >
       <Standings build ranked={rest} departedIds={departedIds} score={(p) => String(p.total)} />
+      <Awards awards={outAwards(log, players)} />
+      <Recap log={log} deal={deal} players={players} />
     </ResultsLayout>
+  );
+}
+
+// Every round, told back: the odd one out, what the others had in common, and
+// who saw it. The connections are the game, and totals alone forget them.
+function Recap({ log, deal, players }) {
+  const lines = (log ?? []).filter(Boolean);
+  if (!lines.length || !deal?.sets?.length) return null;
+  const nameOf = (id) => players.find((p) => p.id === id)?.name ?? 'Someone';
+  return (
+    <Card title="The rounds" padding="sm" className="mb-6">
+      {lines.map((l) => {
+        const set = deal.sets[l.round];
+        if (!set) return null;
+        const odd = set.cards.find((c) => c.key === set.odd);
+        const nobody = !l.got.length;
+        return (
+          <CardRow key={l.round}>
+            <Avatar src={odd?.imageUrl} alt="" size="sm" />
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-sm text-fg-helper">{set.sentence}</span>
+              <span className="block truncate font-display text-lg font-extrabold text-fg-strong">
+                {odd?.name ?? 'The odd one out'}
+              </span>
+              <span className="flex flex-wrap items-center gap-1 text-sm text-fg-helper">
+                {nobody ? 'It fooled everyone' : (
+                  <>
+                    {l.got.map((id) => <PlayerFace key={id} player={players.find((p) => p.id === id) ?? { id, name: nameOf(id) }} />)}
+                    <span className="truncate">{l.got.map(nameOf).join(', ')}</span>
+                  </>
+                )}
+              </span>
+            </span>
+            <Mark yes={!nobody} label={nobody ? 'Nobody' : `${l.got.length} got it`} />
+          </CardRow>
+        );
+      })}
+    </Card>
   );
 }

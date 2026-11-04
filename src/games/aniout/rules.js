@@ -38,6 +38,7 @@ export function startGame(playerIds, deal) {
     round: 0,
     phase: 'picking',
     picks: {},
+    log: [],
   };
 }
 
@@ -96,11 +97,50 @@ export function settleIfComplete(game, deal, activeIds) {
   return { patch: settle(game, deal, game.picks) };
 }
 
-/** From the reveal, on to the next round — or the end. Anyone may press it. */
+// The round just revealed, as one line of the game's story: who found the odd
+// one out and who also named the reason. Plain ids, so it survives RTDB.
+function logLine(game) {
+  const picks = Object.entries(game.picks ?? {});
+  return {
+    round: game.round,
+    got: picks.filter(([, p]) => p.correct).map(([id]) => id),
+    reasons: picks.filter(([, p]) => p.reasonRight).map(([id]) => id),
+  };
+}
+
+/**
+ * From the reveal, on to the next round — or the end. Anyone may press it. The
+ * round goes into `log` on the way, for the final screen's recap and awards.
+ */
 export function nextRound(game) {
   if (game.phase !== 'revealed') return { patch: {} };
-  if (game.round + 1 >= game.rounds) return { patch: { phase: 'finished' } };
-  return { patch: { round: game.round + 1, phase: 'picking', picks: {} } };
+  const log = [...(game.log ?? []), logLine(game)];
+  if (game.round + 1 >= game.rounds) return { patch: { phase: 'finished', log } };
+  return { patch: { round: game.round + 1, phase: 'picking', picks: {}, log } };
+}
+
+/**
+ * The final screen's superlatives, from the log: a clear leader or nothing (a
+ * tie drops the award rather than picking one by seat).
+ *
+ *   Sharpest eye   the most odd ones out found (two or more)
+ *   Mind reader    the most reasons named (two or more, reasons on)
+ */
+export function outAwards(log = [], players = []) {
+  const byId = (id) => players.find((p) => p.id === id) ?? null;
+  const leader = (field) => {
+    const counts = {};
+    for (const line of log ?? []) for (const id of line?.[field] ?? []) counts[id] = (counts[id] ?? 0) + 1;
+    const ranked = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+    if (!ranked.length || ranked[0][1] < 2 || ranked[1]?.[1] === ranked[0][1]) return null;
+    return { player: byId(ranked[0][0]), n: ranked[0][1] };
+  };
+  const out = [];
+  const eye = leader('got');
+  if (eye?.player) out.push({ title: 'Sharpest eye', player: eye.player, detail: `Found the odd one out ${eye.n} times` });
+  const reader = leader('reasons');
+  if (reader?.player) out.push({ title: 'Mind reader', player: reader.player, detail: `Named the reason ${reader.n} times` });
+  return out;
 }
 
 /** The room emptied below ONLINE_MIN_PLAYERS: straight to the results. */
@@ -159,6 +199,10 @@ export function normalizeGame(raw) {
     round: numberOr(raw.round, 0),
     phase: ['picking', 'revealed', 'finished'].includes(raw.phase) ? raw.phase : 'picking',
     picks,
+    // RTDB drops empty arrays, inside a line as well as the log itself.
+    log: listOf(raw.log)
+      .filter((l) => l && typeof l === 'object')
+      .map((l) => ({ round: numberOr(l.round, 0), got: listOf(l.got), reasons: listOf(l.reasons) })),
   };
 }
 

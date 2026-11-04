@@ -13,7 +13,7 @@ export default function LocalRound({ players, deal, onPlayAgain, onBack }) {
   const suggestions = useMemo(() => suggestionsFor(players), [players]);
 
   if (round.game.phase === 'finished') {
-    return <AniPeekResults players={players} scores={round.game.scores} onPlayAgain={onPlayAgain} onBack={onBack} />;
+    return <AniPeekResults players={players} scores={round.game.scores} log={round.game.log} deal={deal} onPlayAgain={onPlayAgain} onBack={onBack} />;
   }
 
   return (

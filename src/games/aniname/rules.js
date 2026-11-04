@@ -72,6 +72,7 @@ export function startGame(playerIds, deal) {
     order: [...playerIds],
     scores: Object.fromEntries(playerIds.map((id) => [id, 0])),
     rounds: deal?.cats?.length ?? 0,
+    log: [],
     round: 0,
     namingMs: deal?.namingMs ?? 60_000,
     ...roundReset(playerIds[0] ?? null),
@@ -294,7 +295,13 @@ function recount(game, activeIds) {
 /** From the reveal to the next round (the opener moves one seat), or the end. */
 export function nextRound(game, activeIds = null) {
   if (game.phase !== 'revealed') return { patch: {} };
-  if (game.round + 1 >= game.rounds) return { patch: { phase: 'finished' } };
+  // The round just revealed, for the final screen's recap: the category is
+  // `deal.cats[round]`, so only the result itself is kept.
+  const r = game.result;
+  const log = [...(game.log ?? []), {
+    round: game.round, by: r?.by ?? null, n: r?.n ?? 0, made: Boolean(r?.made), count: r?.count ?? 0, void: r?.void ?? null,
+  }];
+  if (game.round + 1 >= game.rounds) return { patch: { phase: 'finished', log } };
   const seats = live(game, activeIds);
   const at = game.order.indexOf(game.opener);
   let opener = seats[0] ?? game.order[0];
@@ -302,7 +309,28 @@ export function nextRound(game, activeIds = null) {
     const id = game.order[(at + step) % game.order.length];
     if (seats.includes(id)) { opener = id; break; }
   }
-  return { patch: { round: game.round + 1, ...roundReset(opener) } };
+  return { patch: { round: game.round + 1, log, ...roundReset(opener) } };
+}
+
+/**
+ * The final screen's superlatives, from the log: a clear leader or nothing.
+ *
+ *   Big talker    the biggest bid that was made
+ *   Overreach     the biggest bid that fell short
+ */
+export function nameAwards(log = [], players = []) {
+  const byId = (id) => players.find((p) => p.id === id) ?? null;
+  const lines = (log ?? []).filter((l) => l && !l.void && l.by);
+  const top = (list) => {
+    const sorted = [...list].sort((a, b) => b.n - a.n);
+    return sorted.length && (sorted.length === 1 || sorted[1].n < sorted[0].n) ? sorted[0] : null;
+  };
+  const out = [];
+  const made = top(lines.filter((l) => l.made));
+  if (made && byId(made.by)) out.push({ title: 'Big talker', player: byId(made.by), detail: `Bid ${made.n} and named them all` });
+  const short = top(lines.filter((l) => !l.made));
+  if (short && byId(short.by)) out.push({ title: 'Overreach', player: byId(short.by), detail: `Bid ${short.n}, named ${short.count}` });
+  return out;
 }
 
 /**
@@ -414,6 +442,10 @@ export function normalizeGame(raw) {
     passed,
     answers: listOf(raw.answers).map(normalizeAnswer).filter(Boolean),
     deadlineAt: numberOr(raw.deadlineAt, null),
+    log: listOf(raw.log).filter((l) => l && typeof l === 'object').map((l) => ({
+      round: numberOr(l.round, 0), by: l.by ?? null, n: numberOr(l.n, 0), made: Boolean(l.made),
+      count: numberOr(l.count, 0), void: l.void === 'left' ? 'left' : null,
+    })),
     result: r && typeof r === 'object'
       ? { by: r.by ?? null, n: numberOr(r.n, 0), made: Boolean(r.made), count: numberOr(r.count, 0), void: r.void === 'left' ? 'left' : null }
       : null,

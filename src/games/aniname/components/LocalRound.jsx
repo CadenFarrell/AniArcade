@@ -14,7 +14,7 @@ export default function LocalRound({ players, deal, pack, onPlayAgain, onBack })
   const { game } = round;
 
   if (game.phase === 'finished') {
-    return <AniNameResults players={players} scores={game.scores} onPlayAgain={onPlayAgain} onBack={onBack} />;
+    return <AniNameResults players={players} scores={game.scores} log={game.log} deal={deal} onPlayAgain={onPlayAgain} onBack={onBack} />;
   }
 
   const judgeAs = players.find((p) => p.id !== game.bid?.by)?.id ?? game.bid?.by ?? null;

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   PICK_POINTS, REASON_POINTS, currentSet, endGame, nextRound, normalizeDeal, normalizeGame,
-  settleIfComplete, standings, startGame, stillToPick, submitPick,
+  outAwards, settleIfComplete, standings, startGame, stillToPick, submitPick,
 } from './rules';
 
 const set = (odd = 'z') => ({
@@ -96,7 +96,7 @@ describe('advancing', () => {
 describe('repair', () => {
   it('rebuilds what RTDB drops: empty picks, arrays as objects', () => {
     const g = normalizeGame({ order: { 0: 'p1', 1: 'p2' }, scores: { p1: '3' }, rounds: 2, round: 0, phase: 'picking' });
-    expect(g).toEqual({ order: ['p1', 'p2'], scores: { p1: 3 }, rounds: 2, round: 0, phase: 'picking', picks: {} });
+    expect(g).toEqual({ order: ['p1', 'p2'], scores: { p1: 3 }, rounds: 2, round: 0, phase: 'picking', picks: {}, log: [] });
     expect(normalizeGame({ picks: { p1: { card: 'z', reason: 0 }, p2: { nope: 1 } } }).picks)
       .toEqual({ p1: { card: 'z', reason: 0 } });
     const d = normalizeDeal({ rounds: 1, sets: { 0: { ...set(), cards: { 0: { key: 'a' } }, reasons: null } } });
@@ -108,5 +108,26 @@ describe('repair', () => {
   it('ranks ties together', () => {
     const r = standings([{ id: 'a' }, { id: 'b' }, { id: 'c' }], { a: 3, b: 5, c: 3 });
     expect(r.map((p) => [p.id, p.position])).toEqual([['b', 1], ['a', 2], ['c', 2]]);
+  });
+});
+
+describe('the game log and its awards', () => {
+  const players = [{ id: 'p1', name: 'Ann' }, { id: 'p2', name: 'Ben' }];
+
+  it('logs each revealed round on the way to the next, the last one included', () => {
+    const base = { ...startGame(['p1', 'p2'], { sets: [{}, {}] }), phase: 'revealed' };
+    const picks = { p1: { card: 'a', reason: 0, correct: true, reasonRight: true }, p2: { card: 'b', reason: 1, correct: false, reasonRight: false } };
+    const one = { ...base, picks, ...nextRound({ ...base, picks }).patch };
+    expect(one.log).toEqual([{ round: 0, got: ['p1'], reasons: ['p1'] }]);
+    const two = nextRound({ ...one, phase: 'revealed', picks: {} }).patch;
+    expect(two.phase).toBe('finished');
+    expect(two.log).toHaveLength(2);
+    expect(normalizeGame({ log: { 0: { round: 1 } } }).log).toEqual([{ round: 1, got: [], reasons: [] }]);
+  });
+
+  it('names a clear leader, and drops a tie', () => {
+    const log = [{ got: ['p1', 'p2'], reasons: ['p1'] }, { got: ['p1'], reasons: ['p1'] }];
+    expect(outAwards(log, players).map((a) => [a.title, a.player.id])).toEqual([['Sharpest eye', 'p1'], ['Mind reader', 'p1']]);
+    expect(outAwards([{ got: ['p1', 'p2'] }, { got: ['p1', 'p2'] }], players)).toEqual([]);
   });
 });

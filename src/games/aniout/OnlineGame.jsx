@@ -55,6 +55,8 @@ export default function OnlineGame({ onBack, onExit }) {
       <AniOutResults
         players={table}
         scores={current.scores}
+        log={current.log}
+        deal={deal}
         departedIds={room.departedIds}
         onPlayAgain={room.isHost ? room.returnToLobby : null}
         againLabel="Back to lobby"

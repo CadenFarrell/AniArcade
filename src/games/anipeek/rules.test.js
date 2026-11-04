@@ -258,3 +258,26 @@ describe('repair', () => {
     expect(d.cards[2].key).toBe('y');
   });
 });
+
+describe('the game log and its awards', () => {
+  const players = [{ id: 'a', name: 'Ann' }, { id: 'b', name: 'Ben' }, { id: 'c', name: 'Cat' }];
+
+  it('logs each revealed round on the way to the next, the last one included', () => {
+    let g = peekFor(4);
+    g = apply(g, rules.uncoverTile(g, 'a', 3));
+    g = apply(g, rules.submitAnswer(g, deal, 'a', 'Levi Ackerman', ids));
+    g = apply(g, rules.nextRound(g, ids));
+    expect(g.log).toEqual([{ card: 0, by: 'a', bid: 4, tiles: 1, hints: 0, correct: true, points: TILES - 4, void: null }]);
+    expect(rules.normalizeGame({ ...g, log: { 0: g.log[0] } }).log).toEqual(g.log);
+  });
+
+  it('names the cheapest right name and the boldest miss, and drops a tie', () => {
+    const log = [
+      { by: 'a', bid: 6, tiles: 2, hints: 1, correct: true },
+      { by: 'b', bid: 3, tiles: 3, hints: 0, correct: true },
+      { by: 'c', bid: 2, tiles: 2, hints: 0, correct: false },
+    ];
+    expect(rules.peekAwards(log, players).map((x) => [x.title, x.player.id])).toEqual([['Eagle eye', 'b'], ['Boldest miss', 'c']]);
+    expect(rules.peekAwards([log[1], { ...log[1], by: 'a' }], players)).toEqual([]);
+  });
+});

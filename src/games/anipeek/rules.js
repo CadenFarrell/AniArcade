@@ -143,6 +143,7 @@ export function startGame(playerIds, deal) {
     // Spares sit after the rounds' own cards, so the next one to hand out is
     // always the first index past what has been used.
     nextSpare: rounds,
+    log: [],
     ...bidReset(order[0] ?? null),
   };
 }
@@ -285,15 +286,53 @@ export function skipCard(game, deal, activeIds = null) {
 /** On to the next round, or the end. Anyone may press it. */
 export function nextRound(game, activeIds = null) {
   if (game?.phase !== 'revealed') return { patch: {} };
+  // The round just revealed, kept for the final screen's portrait strip: the
+  // card (its index into the deal), the bid, what it cost, and how it ended.
+  const r = game.result;
+  const line = {
+    card: game.cardIndex,
+    by: r?.by ?? game.bid?.by ?? null,
+    bid: game.bid?.n ?? null,
+    tiles: game.uncovered.length,
+    hints: game.hintsTaken.length,
+    correct: Boolean(r?.correct),
+    points: r?.points ?? 0,
+    void: r?.void ?? null,
+  };
+  const log = [...(game.log ?? []), line];
   const round = game.round + 1;
-  if (round >= game.rounds) return { patch: { phase: 'finished', turnId: null } };
+  if (round >= game.rounds) return { patch: { phase: 'finished', turnId: null, log } };
   return {
     patch: {
       round,
       cardIndex: round,
+      log,
       ...bidReset(openerFor(game.order, round, activeIds)),
     },
   };
+}
+
+/**
+ * The final screen's superlatives, from the log: a clear leader or nothing.
+ *
+ *   Eagle eye     the right name from the fewest tiles, hints counted at cost
+ *   Boldest miss  the lowest bid that missed
+ */
+export function peekAwards(log = [], players = []) {
+  const byId = (id) => players.find((p) => p.id === id) ?? null;
+  const lines = (log ?? []).filter((l) => l && !l.void && l.by);
+  const out = [];
+  const cost = (l) => l.tiles + l.hints * HINT_COST;
+  const rights = lines.filter((l) => l.correct).sort((a, b) => cost(a) - cost(b));
+  if (rights.length && (rights.length === 1 || cost(rights[1]) > cost(rights[0])) && byId(rights[0].by)) {
+    const l = rights[0];
+    out.push({ title: 'Eagle eye', player: byId(l.by), detail: `Named one from ${l.tiles} tile${l.tiles === 1 ? '' : 's'}${l.hints ? ` and ${l.hints} hint${l.hints === 1 ? '' : 's'}` : ''}` });
+  }
+  const misses = lines.filter((l) => !l.correct && Number.isInteger(l.bid)).sort((a, b) => a.bid - b.bid);
+  if (misses.length && (misses.length === 1 || misses[1].bid > misses[0].bid) && byId(misses[0].by)) {
+    out.push({ title: 'Boldest miss', player: byId(misses[0].by), detail: `Bid ${misses[0].bid} and missed` });
+  }
+  return out;
 }
 
 /**
@@ -395,6 +434,16 @@ export function normalizeGame(raw) {
     uncovered: listOf(raw.uncovered).map(Number).filter((t) => Number.isInteger(t)),
     hintsTaken: listOf(raw.hintsTaken).filter((h) => typeof h === 'string'),
     result: normalizeResult(raw.result),
+    log: listOf(raw.log).filter((l) => l && typeof l === 'object').map((l) => ({
+      card: numberOr(l.card, 0),
+      by: l.by ?? null,
+      bid: numberOr(l.bid, null),
+      tiles: numberOr(l.tiles, 0),
+      hints: numberOr(l.hints, 0),
+      correct: Boolean(l.correct),
+      points: numberOr(l.points, 0),
+      void: l.void === 'left' || l.void === 'broken' ? l.void : null,
+    })),
   };
 }
 

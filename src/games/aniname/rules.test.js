@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   MAX_BID, NAME_GRACE_MS, addName, beginNaming, canJudge, challengeAnswer, endGame, judgeAnswer,
   judgesFor, missPoints, nextRound, normalizeDeal, normalizeGame, pass, placeBid, settleIfComplete,
-  standings, startGame, stopNaming, tally,
+  nameAwards, standings, startGame, stopNaming, tally,
 } from './rules';
 
 const DEAL = {
@@ -278,5 +278,23 @@ describe('repair', () => {
   it('ranks ties together', () => {
     const r = standings([{ id: 'a' }, { id: 'b' }], { a: 3, b: 3 });
     expect(r.map((p) => p.position)).toEqual([1, 1]);
+  });
+});
+
+describe('the game log and its awards', () => {
+  const players = [{ id: 'a', name: 'Ann' }, { id: 'b', name: 'Ben' }, { id: 'c', name: 'Cat' }];
+
+  it('logs each revealed round on the way to the next, the last one included', () => {
+    let g = toNaming();
+    for (const k of ['x1', 'x2', 'x3', 'x4']) g = apply(g, addName(g, 'b', right(k), IDS, T0));
+    g = apply(g, nextRound(g, IDS));
+    expect(g.log).toEqual([{ round: 0, by: 'b', n: 4, made: true, count: 4, void: null }]);
+    expect(normalizeGame({ ...g, log: { 0: g.log[0] } }).log).toEqual(g.log);
+  });
+
+  it('names the biggest bid made and the biggest that fell short, and drops a tie', () => {
+    const log = [{ by: 'a', n: 6, made: true, count: 6 }, { by: 'b', n: 4, made: true, count: 4 }, { by: 'c', n: 9, made: false, count: 5 }];
+    expect(nameAwards(log, players).map((x) => [x.title, x.player.id])).toEqual([['Big talker', 'a'], ['Overreach', 'c']]);
+    expect(nameAwards([log[0], { ...log[0], by: 'b' }], players)).toEqual([]);
   });
 });

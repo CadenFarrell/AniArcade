@@ -27,7 +27,7 @@ export default function LocalRound({ players, deal, onPlayAgain, onBack }) {
   useSoundCue('reveal', shared && game.phase === 'revealed' ? `${game.round}` : null);
 
   if (game.phase === 'finished') {
-    return <AniOutResults players={players} scores={game.scores} onPlayAgain={onPlayAgain} onBack={onBack} />;
+    return <AniOutResults players={players} scores={game.scores} log={game.log} deal={deal} onPlayAgain={onPlayAgain} onBack={onBack} />;
   }
 
   return (
