@@ -25,7 +25,7 @@ strategy and a smoke test. Read CLAUDE.md first. Things that shape any new game:
 Two clue-givers alternate one word each toward a secret character. Shipped with three table
 shapes (one pair vs everyone, rival givers, team pairs), one guess per word, and banned
 words (name, show title, other cast). Notes in src/games/anichain/CLAUDE.md.
-Possible follow-ups: an optional typed local mode, a per-word clock for local play.
+Since shipped: a per-word clock and typed words for local play (both settings).
 
 ## Built: AniDraft (was idea 2)
 Every player drafts a team: five roles dealt from a deck of 30, one shared board of

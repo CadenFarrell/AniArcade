@@ -16,9 +16,10 @@ export const HOW_TO = {
         `Two clue-givers see a character from the table’s lists. Before the first word, either may ask for another if they don’t know them (${SKIPS} times a turn).`,
         'They take turns adding ONE word to the sentence. No planning together: each word has to follow whatever the other just said.',
         'The character’s name, the show’s title and the names of anyone else in that show are off limits. The givers’ card lists them.',
-        'On one device, a giver who says a banned word ends the turn and nobody scores. Online, a banned word is refused as it is typed, with the reason.',
+        'On one device, a giver who says a banned word ends the turn and nobody scores. Online, or with typed words on one device, a banned word is refused as it is typed, with the reason.',
+        'On one device the words are said out loud, or you can set them to be typed: the two givers pass the phone between them, and the sentence builds up on screen.',
         `Up to ${cap} words by default. Nobody right by then, and the turn is over.`,
-        `On one device you can set a word clock (${clocks} seconds). A word not said in time is lost: it still counts toward the cap, and the other giver speaks next.`,
+        `On one device you can set a word clock (${clocks} seconds). A word not given in time is lost: it still counts toward the cap, and the other giver goes next.`,
       ],
     },
     {

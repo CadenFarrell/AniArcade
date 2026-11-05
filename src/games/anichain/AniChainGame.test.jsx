@@ -172,6 +172,41 @@ describe('AniChain, one device', { timeout: 60000 }, () => {
     expect(errors).not.toHaveBeenCalled();
   });
 
+  // Typed words on one device: the givers type into the online game's word
+  // bar, a banned word is refused with its reason before anything is added,
+  // the sentence builds up on screen, and the reveal reads it back.
+  it('plays a typed turn, refusing a banned word as it is typed', async () => {
+    const user = userEvent.setup();
+    await start(user, ['Ann', 'Ben', 'Cal'], { shape: 'pair', cap: 6, rounds: 4, pool: 'main', words: 'typed' });
+    await user.click(await screen.findByRole('button', { name: /— show us$/i }));
+    await user.click(button('Hide it'));
+    // Typed words are checked, so nobody calls a slip.
+    expect(button('Banned word')).toBeNull();
+    expect(button('Next word')).toBeNull();
+    const first = screen.getByRole('heading', { level: 2, name: /'s Word$/ }).textContent;
+
+    // Every character in the fixture is a "Hero".
+    await user.type(screen.getByRole('textbox', { name: 'Your word' }), 'Heroic');
+    expect(screen.getByText('“Heroic” is part of the name.')).toBeTruthy();
+    expect(button('Add word').disabled).toBe(true);
+    await user.clear(screen.getByRole('textbox', { name: 'Your word' }));
+    await user.type(screen.getByRole('textbox', { name: 'Your word' }), 'ninja');
+    await user.click(button('Add word'));
+
+    expect(screen.getByText('ninja')).toBeTruthy();
+    expect(screen.getByRole('heading', { level: 2, name: /'s Word$/ }).textContent).not.toBe(first);
+    expect(screen.getByRole('textbox', { name: 'Your word' }).value).toBe('');
+    await user.type(screen.getByRole('textbox', { name: 'Your word' }), 'ramen{Enter}');
+    expect(screen.getByText('ramen')).toBeTruthy();
+
+    await user.click(button('Got it'));
+    await user.click(screen.getAllByRole('button', { name: / got it$/i })[0]);
+    expect(screen.getByRole('heading', { level: 2, name: 'Got It!' })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'The sentence' })).toBeTruthy();
+    expect(screen.getByText('ninja ramen')).toBeTruthy();
+    expect(errors).not.toHaveBeenCalled();
+  });
+
   // The word clock: a word not said in time is lost (counted, the turn passes
   // on), and the clock is off screen while the table settles "Who got it?". Fake
   // timers that still run in real time, so the pack load and waitFor work.

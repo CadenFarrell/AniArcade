@@ -18,15 +18,16 @@ const LABEL = 'mb-1 block font-display text-[11px] font-bold uppercase tracking-
 /**
  * A giver's word. Checked as it is typed against the card's banned list
  * (chainWords.validWord), so a refusal says why before anything is sent.
- * `wait` is why the word cannot go yet (the guess window), or null.
+ * `wait` is why the word cannot go yet (the guess window), or null. `note`
+ * replaces the resting status line (locally, who to pass the phone to).
  */
-export function WordBar({ banned, wait = null, onAdd }) {
+export function WordBar({ banned, wait = null, note = null, onAdd }) {
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
   const check = validWord(text, banned);
   const typed = text.trim().length > 0;
   const status = typed && !check.ok ? check.reason
-    : wait ?? 'One word. It has to follow what’s already been said.';
+    : wait ?? note ?? 'One word. It has to follow what’s already been said.';
   const ok = check.ok && !wait && !sending;
   const submit = async (e) => {
     e.preventDefault();

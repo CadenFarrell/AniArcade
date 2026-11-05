@@ -13,6 +13,11 @@
 //   wordClock: 0   — no clock on a spoken word. Local only (online the guess
 //                    window already paces the chain); a table with a giver who
 //                    stalls turns it on, and a word not said in time is lost.
+//   words: 'spoken' — locally the words are said out loud and the device only
+//                    counts them. 'typed' passes the phone between the two
+//                    givers, who type each word: the sentence is on screen
+//                    and banned words are refused as they are typed, as
+//                    online. Local only (online every word is typed).
 //
 // Teams are deliberately not here: they are who is at the table tonight, not
 // a preference (AniTurf's prefs.js says the same).
@@ -22,6 +27,7 @@ export const DEFAULT_PREFS = {
   rounds: 6,
   pool: 'main',
   wordClock: 0,
+  words: 'spoken',
 };
 
 export const SHAPE_OPTIONS = [
@@ -35,6 +41,10 @@ export const WORD_CLOCK_OPTIONS = [
   { value: 0, label: 'No clock' },
   { value: 10, label: '10 seconds a word' },
   { value: 20, label: '20 seconds a word' },
+];
+export const WORDS_OPTIONS = [
+  { value: 'spoken', label: 'Said out loud' },
+  { value: 'typed', label: 'Typed on the phone' },
 ];
 export const POOL_OPTIONS = [
   { value: 'main', label: 'Main characters' },
@@ -50,5 +60,6 @@ export function cleanPrefs(prefs) {
     rounds: pick(prefs?.rounds, ROUNDS_OPTIONS, DEFAULT_PREFS.rounds),
     pool: pick(prefs?.pool, POOL_OPTIONS.map((o) => o.value), DEFAULT_PREFS.pool),
     wordClock: pick(prefs?.wordClock, WORD_CLOCK_OPTIONS.map((o) => o.value), DEFAULT_PREFS.wordClock),
+    words: pick(prefs?.words, WORDS_OPTIONS.map((o) => o.value), DEFAULT_PREFS.words),
   };
 }

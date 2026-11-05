@@ -7,6 +7,11 @@ import { lostCount } from '../rules';
 // voices in one sentence show without leaning on colour. Locally the words
 // were said out loud, so all the device has to show is how many — and how
 // many of those the word clock took (rules.loseWord), since they count too.
+// With typed words on one device the sentence is on screen as it is online,
+// and a word the clock took holds its place as a dash: it counted.
+//
+// The count is the fallback whenever nothing has been typed yet, so a typed
+// turn opens on "No words yet" like a spoken one.
 export default function ChainLine({ game, players }) {
   const nameOf = (id) => players.find((p) => p.id === id)?.name ?? 'Someone';
   const [first, second] = game.givers;
@@ -34,11 +39,13 @@ export default function ChainLine({ game, players }) {
             // A word's place in the sentence IS its identity: the same word
             // twice is two words.
             key={i}
-            className={`font-display text-2xl font-bold uppercase tracking-wide text-fg-strong underline underline-offset-4
-              decoration-2 ${w.by === first ? 'decoration-solid' : 'decoration-dashed'}`}
+            className={w.lost
+              ? 'font-display text-2xl font-bold text-fg-subtle'
+              : `font-display text-2xl font-bold uppercase tracking-wide text-fg-strong underline underline-offset-4
+                decoration-2 ${w.by === first ? 'decoration-solid' : 'decoration-dashed'}`}
           >
-            {w.text}
-            <span className="sr-only"> ({nameOf(w.by)})</span>
+            {w.lost ? <span aria-hidden="true">—</span> : w.text}
+            <span className="sr-only">{w.lost ? ` (${nameOf(w.by)}’s word, lost to the clock)` : ` (${nameOf(w.by)})`}</span>
           </span>
         ))}
         <span aria-hidden="true" className="font-display text-2xl font-bold text-fg-subtle">…</span>

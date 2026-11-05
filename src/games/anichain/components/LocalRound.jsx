@@ -13,6 +13,7 @@ import {
 } from '../rules';
 import AniChainResults from './AniChainResults';
 import ChainLine from './ChainLine';
+import { WordBar } from './EntryBar';
 import RoundReveal from './RoundReveal';
 import { revealTitle } from '../copy';
 import SecretCard from './SecretCard';
@@ -33,6 +34,12 @@ import TableScores from './TableScores';
 // or the table settles "Who got it?" (neither is the speaker stalling), so
 // the word's time starts again in full after either. Both happen in front of
 // the whole table, which is what keeps that from being a way to stall.
+//
+// With typed words (settings.words === 'typed') the givers pass the phone
+// between them and type each word into the online game's WordBar, checked
+// against the card's banned list as it is typed — so there is no "Banned
+// word" button to press. The screen never shows the card, only the sentence,
+// so nobody else has to look away; the guesses are still shouted and tapped.
 export default function LocalRound({ players, settings, teams, pack, onPlayAgain, onBack }) {
   const round = useChainRound(players, settings, teams, pack);
   const { game, card } = round;
@@ -127,6 +134,7 @@ export default function LocalRound({ players, settings, teams, pack, onPlayAgain
 
   // The chain.
   const capped = n >= game.cap;
+  const typed = settings.words === 'typed';
   const speaker = nextGiver(game);
   const guessers = currentGuessers(game);
   // The guesses follow the last word SAID: a word lost to the clock adds
@@ -138,7 +146,7 @@ export default function LocalRound({ players, settings, teams, pack, onPlayAgain
   if (!said) {
     hint = capped
       ? `${lostLine}No word was said in time.`
-      : `${lostLine}${nameOf(speaker)}, say ${n ? 'the next' : 'the first'} word — worth ${valueAt(game.cap, n + 1)} if it’s guessed straight away.`;
+      : `${lostLine}${nameOf(speaker)}, ${typed ? 'type' : 'say'} ${n ? 'the next' : 'the first'} word — worth ${valueAt(game.cap, n + 1)} if it’s guessed straight away.`;
   } else {
     // Said of the word just spoken, by name: under "<next giver>'s Word" a
     // bare "this word" read as the word still to come.
@@ -177,18 +185,28 @@ export default function LocalRound({ players, settings, teams, pack, onPlayAgain
 
       <div className="mb-5 flex flex-wrap justify-center gap-3">
         <Button variant="neutral" onClick={() => { setSeen(null); setPeek(true); }}>Givers: peek again</Button>
-        <Button variant="neutral" onClick={() => round.banned(speaker)}>Banned word</Button>
+        {!typed && <Button variant="neutral" onClick={() => round.banned(speaker)}>Banned word</Button>}
       </div>
 
-      <StartBar
-        width="md"
-        status={capped ? `That was word ${game.cap} — last guesses, then the turn is over.` : `${nameOf(speaker)} says word ${n + 1}, then press Next word.`}
-        ready
-      >
-        {capped
-          ? <Button variant="primary" size="lg" onClick={round.outOfWords}>Out of words</Button>
-          : <Button variant="primary" size="lg" onClick={() => { setPicking(false); round.word(); }}>Next word</Button>}
-      </StartBar>
+      {typed && !capped ? (
+        <WordBar
+          // One bar a word: a word the clock took clears whatever was half typed.
+          key={`${game.deal}:${n}`}
+          banned={card?.banned ?? []}
+          note={n ? `${nameOf(speaker)}’s word: pass them the phone.` : `${nameOf(speaker)} types the first word.`}
+          onAdd={(w) => { setPicking(false); round.word(w, n); }}
+        />
+      ) : (
+        <StartBar
+          width="md"
+          status={capped ? `That was word ${game.cap} — last guesses, then the turn is over.` : `${nameOf(speaker)} says word ${n + 1}, then press Next word.`}
+          ready
+        >
+          {capped
+            ? <Button variant="primary" size="lg" onClick={round.outOfWords}>Out of words</Button>
+            : <Button variant="primary" size="lg" onClick={() => { setPicking(false); round.word(); }}>Next word</Button>}
+        </StartBar>
+      )}
     </Shell>
   );
 }

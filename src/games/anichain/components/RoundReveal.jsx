@@ -51,7 +51,9 @@ export default function RoundReveal({ game, players, youId = null, children }) {
           <h3 id="anichain-sentence" className="mb-1 font-display text-sm font-bold uppercase tracking-[0.2em] text-fg-helper">
             The sentence
           </h3>
-          <p className="text-lg text-fg-body [overflow-wrap:anywhere]">{entry.chain.join(' ')}</p>
+          {/* A word lost to the clock is an empty slot in the log's chain:
+              left out, not joined in as a double space. */}
+          <p className="text-lg text-fg-body [overflow-wrap:anywhere]">{entry.chain.filter(Boolean).join(' ')}</p>
         </section>
       )}
       {entry?.lost > 0 && (

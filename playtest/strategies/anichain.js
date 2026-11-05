@@ -5,6 +5,8 @@
 //   - locally the device only COUNTS words: "Next word" until somebody "Got
 //     it" (then "<name> got it"), or the cap's "Out of words" — the fallback
 //     would press "Banned word" and "peek again" as often as anything;
+//   - with typed words locally (the `words` axis) the same "Your word" box
+//     and "Add word", with "Got it" still pressed now and then between words;
 //   - online a word is the "Your word" box then "Add word", refused while it
 //     is banned (replaced, not retried) and held while the guess window runs
 //     (waited out, not refilled forever);
@@ -33,6 +35,8 @@ export default makeStrategy({
     // The local word clock (not on the lobby's card, so online plays without
     // it whatever is seeded). The bot lets it run out now and then.
     wordClock: [0, 10],
+    // Locally, words said out loud (counted) or typed on the phone.
+    words: ['spoken', 'typed'],
   },
   // A shape the table is too small for would only ever be refused at Start:
   // seed the biggest one this many players can play instead. And a table big
@@ -62,9 +66,23 @@ export default makeStrategy({
     const hide = find(snap, /^hide it$/i);
     if (hide) return click(hide, 'hide the card');
 
-    // Online: a giver's word.
+    // Locally, who got it, once the card is open (before the typed word box,
+    // which a typed local game shows on the same screen).
+    const credits = findAll(snap, / got it$/i);
+    if (credits.length) return click(rng.pick(credits), 'credit a guesser');
+    const gotIt = find(snap, /^got it$/i);
+    const peek = find(snap, /^givers: peek again$/i);
+
+    // A giver's word: online, or typed locally.
     const word = find(snap, /^your word$/i, { role: 'textbox' });
     if (word) {
+      // Between words only, not mid-word: otherwise every typed turn ends after a word or two.
+      if (gotIt && !word.value && rng.chance(0.2)) return click(gotIt, 'somebody shouted it');
+      if (peek && !memory.peeked && rng.chance(0.05)) { memory.peeked = true; return click(peek, 'the givers peek again'); }
+      // A typed local word the clock takes: the bar clears, and the turn moves on.
+      if (!word.value && peek && ctx.scenario.prefs.wordClock && rng.chance(0.08)) {
+        return wait(ctx.scenario.prefs.wordClock * 1000 + 1000, 'let the word clock run out');
+      }
       const add = find(snap, /^add word$/i);
       if (word.value && add) return click(add, 'add the word');
       if (word.value && has(snap, /waiting for guesses|checking a guess/i)) return wait(500, 'the guess window');
@@ -80,16 +98,12 @@ export default makeStrategy({
       return fill(guess, rng.pick(GUESSES), 'guess a name');
     }
 
-    // Locally: who got it, once the card is open.
-    const credits = findAll(snap, / got it$/i);
-    if (credits.length) return click(rng.pick(credits), 'credit a guesser');
-    const gotIt = find(snap, /^got it$/i);
+    // Locally, spoken: the device counts words.
     const next = find(snap, /^next word$/i);
     const out = find(snap, /^out of words$/i);
     if (gotIt && rng.chance(0.3)) return click(gotIt, 'somebody shouted it');
     const banned = find(snap, /^banned word$/i);
     if (banned && rng.chance(0.03)) return click(banned, 'a giver slipped');
-    const peek = find(snap, /^givers: peek again$/i);
     if (peek && !memory.peeked && rng.chance(0.05)) { memory.peeked = true; return click(peek, 'the givers peek again'); }
     // A giver who stalls: the word clock takes the word, and the chain moves on.
     if (next && ctx.scenario.prefs.wordClock && rng.chance(0.08)) return wait(ctx.scenario.prefs.wordClock * 1000 + 1000, 'let the word clock run out');

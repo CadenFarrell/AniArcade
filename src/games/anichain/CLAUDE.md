@@ -94,6 +94,15 @@ sentence. The clock is not on screen while the givers peek or the table picks wh
 so the word's time starts again in full after either; both happen in front of the table. The
 `n` that `loseWord` takes pins it to one word, so a timer that fires late loses nothing.
 
+**Typed words** (`words: 'typed'`, local only, `'spoken'` by default) pass the phone between
+the two givers, who type each word into the online game's `WordBar`. It checks the word against
+the card's banned list as it is typed, so there is no "Banned word" button. The screen shows
+the sentence (`ChainLine`'s speech bubble, a lost word a dash) and never the card, so nobody
+else looks away; guesses are still shouted and tapped. `word(text, n)` is pinned to the word
+it was typed for: without that, a word added as the clock took it would land on the other
+giver's go. Spoken stays the default because a hand-off every word is slower than talking;
+typed buys the sentence on the reveal and a banned check the table need not police.
+
 **The card lives beside the game in one state object, never in it**, mirroring online: the
 game learns only that a turn was dealt (`dealt`), and learns the character when the turn ends
 (`publishReveal`). There is no guess window locally (`now` is null).

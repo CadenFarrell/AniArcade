@@ -2,7 +2,7 @@ import MoreSettings from '../../../shared/components/MoreSettings';
 import SettingsFooter from '../../../shared/components/SettingsFooter';
 import SettingHelp, { DetailToggle } from '../../../shared/components/SettingHelp';
 import { Card, Field, Select } from '../../../shared/ui';
-import { CAP_OPTIONS, DEFAULT_PREFS, POOL_OPTIONS, ROUNDS_OPTIONS, SHAPE_OPTIONS, WORD_CLOCK_OPTIONS } from '../prefs';
+import { CAP_OPTIONS, DEFAULT_PREFS, POOL_OPTIONS, ROUNDS_OPTIONS, SHAPE_OPTIONS, WORD_CLOCK_OPTIONS, WORDS_OPTIONS } from '../prefs';
 import { MIN_PLAYERS } from '../rules';
 
 const SHAPE_HELP = {
@@ -23,8 +23,9 @@ const SHAPE_HELP = {
 /**
  * AniChain's Settings card, rendered by both the local setup screen and the
  * online lobby. `host` adds the lobby's "your settings apply to everyone";
- * `local` adds the word clock, which online has no use for: there the guess
- * window already paces the chain, and every word is typed.
+ * `local` adds the word clock and spoken-or-typed words, which online has no
+ * use for: there the guess window already paces the chain, and every word is
+ * typed.
  *
  * One `onChange(key, value)`, because the lobby's settings object is what
  * leaves the host's device. Every option reaches the game through
@@ -33,8 +34,9 @@ const SHAPE_HELP = {
 export default function AniChainSettings({ values, onChange, onReset, host = false, local = false }) {
   const help = SHAPE_HELP[values.shape] ?? SHAPE_HELP.pair;
   // The footer compares against what this screen can reach: in the lobby the
-  // clock is not on the card, so a saved local clock must not read as "changed".
-  const shown = local ? values : { ...values, wordClock: DEFAULT_PREFS.wordClock };
+  // local options are not on the card, so a saved local clock or typed words
+  // must not read as "changed".
+  const shown = local ? values : { ...values, wordClock: DEFAULT_PREFS.wordClock, words: DEFAULT_PREFS.words };
   return (
     <Card title="Settings" action={<DetailToggle />} padding="lg" className="mb-6">
       <Field label="Table" htmlFor="anichain-shape" className="mb-2">
@@ -57,13 +59,26 @@ export default function AniChainSettings({ values, onChange, onReset, host = fal
 
       {local && (
         <>
+          <Field label="Words" htmlFor="anichain-words" className="mb-2">
+            <Select id="anichain-words" value={values.words} onChange={(e) => onChange('words', e.target.value)}>
+              {WORDS_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </Select>
+          </Field>
+          <SettingHelp className="mb-5" more="Typed, the two givers pass the phone between them for every word, and nobody else needs to look away: the screen shows the sentence, never the character. A banned word is refused as it is typed. Guesses are still said out loud.">
+            {values.words === 'typed'
+              ? 'The givers type each word, and the sentence builds up on screen.'
+              : 'The givers say each word out loud, and the phone counts them.'}
+          </SettingHelp>
+
           <Field label="Word clock" htmlFor="anichain-clock" className="mb-2">
             <Select id="anichain-clock" value={String(values.wordClock)} onChange={(e) => onChange('wordClock', Number(e.target.value))}>
               {WORD_CLOCK_OPTIONS.map((o) => <option key={o.value} value={String(o.value)}>{o.label}</option>)}
             </Select>
           </Field>
-          <SettingHelp className="mb-5" more="A word not said in time is lost: it still counts toward the cap, and the other giver speaks next. The word’s time starts again after the givers peek or the table checks who got it.">
-            How long each giver has to say a word and press Next word.
+          <SettingHelp className="mb-5" more="A word not given in time is lost: it still counts toward the cap, and the other giver goes next. The word’s time starts again after the givers peek or the table checks who got it.">
+            {values.words === 'typed'
+              ? 'How long each giver has to type a word and add it.'
+              : 'How long each giver has to say a word and press Next word.'}
           </SettingHelp>
         </>
       )}

@@ -11,7 +11,11 @@ import * as rules from '../rules';
 // and who it was once the turn is over (publishReveal). Everyone is on one
 // device, so the "active" roster is the whole table and nothing settles.
 //
-// Words are said out loud, so `word` only counts one (text null). There is no
+// Words are said out loud, so `word` only counts one (text null) — or, with
+// typed words (settings.words), carries the word the giver typed, already
+// checked against the card's banned list on screen (EntryBar's WordBar, as
+// online). Either way `n` pins it to the word it was for: a word typed as the
+// clock took it would otherwise land on the OTHER giver's go. There is no
 // guess window: a table guessing aloud sets its own pace. The optional word
 // clock (settings.wordClock) lives on the screen (LocalRound's LocalClock), and only
 // reaches the game through `loseWord` when it runs out.
@@ -74,7 +78,9 @@ export function useChainRound(players, settings, teams, pack) {
     index,
     begin: useCallback(() => apply((g) => rules.markDealt(g, g.deal)), [apply]),
     skip: useCallback((id) => apply((g) => rules.skip(g, id)), [apply]),
-    word: useCallback(() => apply((g) => rules.addWord(g, rules.nextGiver(g))), [apply]),
+    word: useCallback((text = null, n = null) => apply((g) => (
+      n != null && g.chain.length !== n ? { patch: {} } : rules.addWord(g, rules.nextGiver(g), text)
+    )), [apply]),
     // Read inside the updater, so a "Next word" tapped as the clock runs out
     // wins or loses cleanly: whichever lands second sees a longer chain.
     loseWord: useCallback(() => apply((g) => rules.loseWord(g, rules.nextGiver(g), g.chain.length)), [apply]),
