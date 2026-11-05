@@ -44,7 +44,16 @@ export default function AniOutResults({
       )}
     >
       <Standings build ranked={rest} departedIds={departedIds} score={(p) => String(p.total)} />
-      <Awards awards={outAwards(log, players, { reasonsOn: Boolean(deal?.reasonsOn) })} />
+      <Awards
+        awards={outAwards(log, players, {
+          reasonsOn: Boolean(deal?.reasonsOn),
+          nameOf: (round, key) => deal?.sets?.[round]?.cards?.find((c) => c.key === key)?.name ?? '',
+          oddOf: (round) => {
+            const set = deal?.sets?.[round];
+            return set?.cards?.find((c) => c.key === set.odd)?.name ?? '';
+          },
+        })}
+      />
       <Recap log={log} deal={deal} players={players} />
     </ResultsLayout>
   );

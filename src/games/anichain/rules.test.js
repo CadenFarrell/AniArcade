@@ -259,26 +259,37 @@ describe('normalizeGame', () => {
 });
 
 describe('chainAwards', () => {
-  const players = ['a', 'b', 'c', 'd'].map((id) => ({ id, name: id }));
-  const titles = (log) => Object.fromEntries(rules.chainAwards(log, players).map((x) => [x.title, [x.player.id, x.detail]]));
-  const got = (by, n, givers, extra = {}) => ({ kind: 'got', by, n, givers, character: { name: 'Levi' }, ...extra });
+  const players = ['a', 'b', 'c', 'd'].map((id) => ({ id, name: id.toUpperCase() }));
+  const titles = (log, opts = { cap: 10 }) => Object.fromEntries(rules.chainAwards(log, players, opts).map((x) => [x.title, [x.player.id, x.detail]]));
+  const got = (by, n, givers, name = 'Levi', extra = {}) => ({ kind: 'got', by, n, givers, character: { name }, words: n, ...extra });
 
-  it('names the mind reader and the set-up artist', () => {
-    const t = titles([got('c', 2, ['a', 'b']), got('d', 4, ['a', 'b']), got('a', 5, ['c', 'd'])]);
+  it('names the mind reader, the set-up artist, the buzzer beater, the hat trick and the wordsmith', () => {
+    const t = titles([
+      got('c', 2, ['a', 'b'], 'Levi', { chain: ['titan', 'cleaning'] }),
+      got('c', 10, ['b', 'd'], 'Rem'),
+      got('c', 4, ['a', 'b'], 'Goku', { chain: ['', '', '', 'duel'] }),
+      got('a', 5, ['c', 'd'], 'Luffy'),
+    ]);
     expect(t['Mind reader']).toEqual(['c', 'Got Levi after 2 words']);
-    expect(t['Set-up artist']).toEqual(['b', 'Their word set up 2 guesses']);
+    expect(t['Set-up artist']).toEqual(['b', 'Said “duel”, and C got Goku']);
+    expect(t['Buzzer beater']).toEqual(['c', 'Got Rem on the last word']);
+    expect(t['Hat trick']).toEqual(['c', 'Got Levi, Rem and Goku']);
+    expect(t.Wordsmith).toEqual(['b', 'Every chain they gave got guessed, 3 of 3']);
   });
 
-  it('roasts the slip, the wild guesser, the picky and the staller', () => {
+  it('roasts the slip, the wild guesser, the picky, the staller and the talker in circles', () => {
     const t = titles([
-      { kind: 'banned', by: 'a', givers: ['a', 'b'] },
-      { kind: 'out', givers: ['c', 'd'], skipBy: ['c', 'c'], lostBy: ['d', 'd'], wrong: { a: 2, b: 1 } },
-      { kind: 'out', givers: ['a', 'b'], skipBy: ['a'], wrong: { a: 1 } },
+      { kind: 'banned', by: 'a', givers: ['a', 'b'], character: { name: 'Naruto' } },
+      { kind: 'out', words: 10, givers: ['c', 'd'], character: { name: 'Rem' }, skipBy: ['c', 'c'], skipped: [{ name: 'Levi' }, { name: 'Eren' }], lostBy: ['d', 'd'], wrong: { a: 2, b: 1 } },
+      { kind: 'out', words: 3, givers: ['a', 'b'], skipBy: ['a'], wrong: { a: 1 } },
     ]);
-    expect(t['Slip of the tongue']).toEqual(['a', 'Said a banned word']);
+    expect(t['Slip of the tongue']).toEqual(['a', 'Said a banned word giving Naruto']);
     expect(t['Wild guesser']).toEqual(['a', '3 wrong guesses, all with confidence']);
-    expect(t.Picky).toEqual(['c', 'Turned down 2 characters']);
+    expect(t.Picky).toEqual(['c', 'Turned down Levi and Eren']);
     expect(t.Staller).toEqual(['d', 'Lost 2 words to the clock']);
+    expect(t['Talked in circles']).toBeUndefined(); // d and a, one each
+    expect(titles([{ kind: 'out', words: 10, givers: ['c', 'd'], character: { name: 'Rem' } }])['Talked in circles'])
+      .toEqual(['d', 'Said the last of 10 words for Rem, and nobody got it']);
   });
 
   it('remembers who asked for each re-deal, through the room', () => {

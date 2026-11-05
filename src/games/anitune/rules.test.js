@@ -628,25 +628,34 @@ describe('one device, out loud', () => {
 });
 
 describe('roundAwards', () => {
-  it('names the fastest finger, a streak of three, and a deep cut, dropping ties', () => {
+  const titles = (log, opts) => Object.fromEntries(roundAwards(log, ALL, { mode: SIMULTANEOUS, ...opts })
+    .map((a) => [a.title, [a.player.id, a.detail]]));
+  const names = (i) => ['Bebop', 'Gurenge', 'Unravel', 'Tank!', 'Kick Back'][i] ?? '';
+
+  it('names the fastest finger, the clutch, the deep cut and the encore, dropping ties', () => {
     const log = [
       { i: 0, got: { ana: 1200, ben: 3000 } },
       { i: 1, got: { ana: 4000 } },
       { i: 2, got: { ana: 2500, cleo: 5000 } },
     ];
-    const awards = roundAwards(log, ALL, { mode: SIMULTANEOUS, titleOf: () => 'Bebop' });
-    expect(awards.map((a) => [a.title, a.player.id])).toEqual([
-      ['Fastest finger', 'ana'], ['Hot streak', 'ana'], ['Deep cut', 'ana'], ['Clutch', 'ana'],
-    ]);
-    expect(awards[0].detail).toBe('1.2s on Bebop');
-    expect(awards[3].detail).toBe('Got the last song, Bebop, in 2.5s');
+    const t = titles(log, { titleOf: names });
+    expect(t['Fastest finger']).toEqual(['ana', '1.2s on Bebop']);
+    expect(t.Clutch).toEqual(['ana', 'Got the last song, Unravel, in 2.5s']);
+    expect(t['Deep cut']).toEqual(['ana', 'The only one to get Gurenge']);
+    expect(t.Encore).toEqual(['ana', '3 songs in a row, Bebop to Unravel']);
     expect(roundAwards([{ i: 0, got: { ana: 900, ben: 900 } }], ALL)).toEqual([]);
   });
 
-  const titles = (log, opts) => Object.fromEntries(roundAwards(log, ALL, { mode: SIMULTANEOUS, ...opts })
-    .map((a) => [a.title, [a.player.id, a.detail]]));
+  it('names home turf for every song off their own list, and the stranger who missed theirs', () => {
+    const log = [{ i: 0, got: { ana: 1, ben: 1 } }, { i: 1, got: { ana: 1 } }, { i: 2, got: { ana: 1 } }];
+    const t = titles(log, { titleOf: names, ownersOf: (i) => (i === 0 ? ['ana'] : ['ana', 'ben']) });
+    expect(t['Home turf']).toEqual(['ana', 'Got all 3 songs off their own list']);
+    expect(t['Stranger to their own list']).toEqual(['ben', 'Missed 2 songs off their own list, Unravel included']);
+    // A song played after they were knocked out is not theirs to miss.
+    expect(titles(log, { ownersOf: () => ['ben'], eliminatedAt: { ben: 1 } })['Stranger to their own list']).toBeUndefined();
+  });
 
-  it('roasts the slowpoke, the trigger happy, the confidently wrong and the silent', () => {
+  it('roasts the slowpoke, the wrong anime and the silent', () => {
     const log = [
       { i: 0, got: { ana: 1000, ben: 12500 }, miss: { cleo: 'Naruto' } },
       { i: 1, got: { ana: 2000 }, miss: { cleo: 'Bleach' }, blank: ['ben'] },
@@ -654,27 +663,19 @@ describe('roundAwards', () => {
       { i: 3, got: { ana: 500 }, blank: ['ben'] },
       { i: 4, got: {}, miss: { ana: '' }, blank: ['ben'] },
     ];
-    const t = titles(log, { titleOf: (i) => ['Bebop', 'Gurenge', 'Unravel', 'Tank!', 'Kick Back'][i] });
+    const t = titles(log, { titleOf: names });
     expect(t.Slowpoke).toEqual(['ben', 'Took 12.5s on Bebop']);
-    expect(t['Trigger happy']).toEqual(['cleo', '3 wrong answers']);
-    expect(t['Confidently wrong']).toEqual(['cleo', 'Said “One Piece” for Unravel']);
+    expect(t['Wrong anime']).toEqual(['cleo', 'Said “One Piece” for Unravel']);
     expect(t['Radio silence']).toEqual(['ben', 'Left 3 songs blank']);
-  });
-
-  it('catches a player missing their own songs, but not after they were knocked out', () => {
-    const log = [{ i: 0, got: { ben: 1 } }, { i: 1, got: { ben: 1 } }, { i: 2, got: { ben: 1 } }];
-    const ownersOf = () => ['ana'];
-    expect(titles(log, { ownersOf })['Stranger to their own list']).toEqual(['ana', 'Missed 3 songs from their own list']);
-    expect(titles(log, { ownersOf, eliminatedAt: { ana: 0 } })['Stranger to their own list']).toBeUndefined();
   });
 
   it('names the first out in Lives, and drops a shared exit', () => {
     const log = [{ i: 0, got: {} }, { i: 1, got: {} }];
-    expect(titles(log, { mode: LIVES, eliminatedAt: { cleo: 1, ben: 3 } })['First out']).toEqual(['cleo', 'Out on song 2']);
+    expect(titles(log, { mode: LIVES, titleOf: names, eliminatedAt: { cleo: 1, ben: 3 } })['First out']).toEqual(['cleo', 'Out on song 2, Gurenge']);
     expect(titles(log, { mode: LIVES, eliminatedAt: { cleo: 1, ben: 1 } })['First out']).toBeUndefined();
   });
 
-  it('logs each song\u2019s misses and blanks for the roasts', () => {
+  it('logs each song’s misses and blanks for the roasts', () => {
     const answers = {
       ana: { text: 'Bebop', correct: true, ms: 1000 },
       ben: { text: 'Naruto', correct: false, ms: 2000 },

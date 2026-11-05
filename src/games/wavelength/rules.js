@@ -1,5 +1,5 @@
 import { getSpectrum } from './spectra';
-import { award, clearBest, clearLeader, tally } from '../../shared/utils/awards';
+import { award, clearBest, clearLeader, tally, times } from '../../shared/utils/awards';
 
 // All AniWave logic: no React, no storage, no network. Each function takes a
 // slice of round state and returns a { patch } for the caller to apply however
@@ -637,25 +637,34 @@ export function roundLogEntry(state, playerIds = []) {
     // Every placed dial's distance from the target, for the awards' averages
     // and the biggest miss. A guesser with no dial is absent, not far off.
     dials: Object.fromEntries(rows.map((r) => [r.playerId, r.distance])),
+    // And where each one was, for the dial that sat on the fence.
+    values: Object.fromEntries(rows.map((r) => [r.playerId, r.value])),
   };
 }
 
 /**
- * The final screen's superlatives. Each is a clear leader or nothing — a tie
- * drops it rather than picking a name by seat — and the card
- * (shared/utils/awards.js's pickAwards) chooses what shows. Lines from before
- * `dials` was logged skip the awards that need it.
+ * The final screen's superlatives: five good, five roasts, each a clear leader
+ * or nothing (a tie drops it rather than picking a name by seat). The card
+ * (shared/utils/awards.js's pickAwards) shows two of each. Lines from before
+ * `dials`/`values` were logged skip the awards that need them.
  *
  *   Bullseye               the closest single dial of the session
- *   Mind meld              the psychic whose clues the table read best, on average
- *   Steady hand            the lowest average distance, over three dials or more
+ *   Mind meld              a clue the table read to within 2
+ *   Steady hand            never far off: the smallest worst miss, over three dials or more
+ *   Lone ranger            close (within 5) when nobody else was within 20
+ *   Crowd pleaser          a clue that put every dial within 10
  *   Wrong end of the dial  the biggest single miss, 40 or more (roast)
  *   Radio static           a clue that scored the table nothing (roast)
+ *   Back of the pack       the furthest dial in the most rounds, two or more (roast)
+ *   Mixed signals          a clue that sent the table everywhere: 40+ between dials (roast)
+ *   Fence sitter           parked in the middle when the target wasn't, twice or more (roast)
  */
 export function sessionAwards(log = [], players = []) {
   const lines = (log ?? []).filter(Boolean);
   const byId = (id) => players.find((p) => p.id === id) ?? null;
   const on = (l) => `${l.left} → ${l.right}`;
+  const quote = (l) => (l.clue ? `“${l.clue}”` : `A clue on ${on(l)}`);
+  const spread = (l) => Object.values(l.dials ?? {}).filter(Number.isFinite);
   const out = [];
 
   const hits = lines.filter((l) => l.bestId != null && Number.isFinite(l.bestDistance));
@@ -665,35 +674,32 @@ export function sessionAwards(log = [], players = []) {
       ? `Dead on the target, ${on(h)}`
       : `Off by ${h.bestDistance} on ${on(h)}`, { weight: 2 }));
   }
-
-  const psychic = {};
-  for (const l of lines) {
-    if (!l.psychicId) continue;
-    psychic[l.psychicId] ??= { sum: 0, n: 0 };
-    psychic[l.psychicId].sum += l.psychicPoints;
-    psychic[l.psychicId].n += 1;
-  }
-  const avgs = Object.fromEntries(Object.entries(psychic).map(([id, { sum, n }]) => [id, sum / n]).filter(([, a]) => a > 0));
-  const meld = clearLeader(avgs, { min: Number.MIN_VALUE });
+  const melds = lines.filter((l) => l.psychicId && hits.includes(l) && l.bestDistance <= 2);
+  const meld = clearBest(melds, (l) => -l.bestDistance, { whoOf: (l) => l.psychicId });
   if (meld) {
-    const avg = meld.n;
-    out.push(award('Mind meld', byId(meld.id),
-      `The table scored ${Number.isInteger(avg) ? avg : avg.toFixed(1)} a round off their clues`, { weight: 2 }));
+    out.push(award('Mind meld', byId(meld.psychicId), `${quote(meld)} put ${byId(meld.bestId)?.name ?? 'a dial'} within ${meld.bestDistance}`, { weight: 2 }));
   }
 
   const dials = lines.flatMap((l) => Object.entries(l.dials ?? {})
     .filter(([, d]) => Number.isFinite(d)).map(([by, d]) => ({ by, d, l })));
-  const per = {};
+  const worstOf = {};
+  const count = {};
   for (const { by, d } of dials) {
-    per[by] ??= { sum: 0, n: 0 };
-    per[by].sum += d;
-    per[by].n += 1;
+    worstOf[by] = Math.max(worstOf[by] ?? 0, d);
+    count[by] = (count[by] ?? 0) + 1;
   }
-  const steadyField = Object.fromEntries(Object.entries(per).filter(([, v]) => v.n >= 3).map(([id, v]) => [id, v.sum / v.n]));
-  const steady = Object.keys(steadyField).length > 1 ? clearLeader(steadyField, { dir: 'min' }) : null;
-  if (steady) {
-    out.push(award('Steady hand', byId(steady.id), `Averaged ${Math.round(steady.n)} off across ${per[steady.id].n} dials`));
-  }
+  const steadyField = Object.fromEntries(Object.entries(worstOf).filter(([id]) => count[id] >= 3));
+  const steady = Object.keys(steadyField).length > 1 ? clearLeader(steadyField, { dir: 'min', max: 15 }) : null;
+  if (steady) out.push(award('Steady hand', byId(steady.id), `Never more than ${steady.n} off in ${count[steady.id]} dials`));
+
+  const lone = dials.filter(({ by, d, l }) => d <= 5 && spread(l).length > 1
+    && Object.entries(l.dials).every(([id, x]) => id === by || x > 20));
+  const ranger = clearBest(lone, (x) => -x.d);
+  if (ranger) out.push(award('Lone ranger', byId(ranger.by), `${ranger.d} off on ${on(ranger.l)} when nobody else was within 20`));
+
+  const pleasers = lines.filter((l) => l.psychicId && spread(l).length > 1 && spread(l).every((d) => d <= 10));
+  const pleaser = clearBest(pleasers, (l) => -Math.max(...spread(l)), { whoOf: (l) => l.psychicId });
+  if (pleaser) out.push(award('Crowd pleaser', byId(pleaser.psychicId), `${quote(pleaser)} put every dial within ${Math.max(...spread(pleaser))}`));
 
   const far = clearBest(dials, (x) => x.d);
   if (far && far.d >= 40) out.push(award('Wrong end of the dial', byId(far.by), `Off by ${far.d} on ${on(far.l)}`, { roast: true }));
@@ -704,9 +710,25 @@ export function sessionAwards(log = [], players = []) {
   const statik = clearLeader(tally(flat, (l) => l.psychicId));
   if (statik) {
     const l = flat.filter((x) => x.psychicId === statik.id).at(-1);
-    out.push(award('Radio static', byId(statik.id), l.clue
-      ? `“${l.clue}” scored the table nothing`
-      : `A clue that scored the table nothing, on ${on(l)}`, { roast: true }));
+    out.push(award('Radio static', byId(statik.id), `${quote(l)} scored the table nothing`, { roast: true }));
   }
+
+  const backs = lines.filter((l) => spread(l).length > 2).map((l) => clearBest(
+    Object.entries(l.dials).map(([by, d]) => ({ by, d })), (x) => x.d,
+  )).filter(Boolean);
+  const back = clearLeader(tally(backs, (x) => x.by), { min: 2 });
+  if (back) out.push(award('Back of the pack', byId(back.id), `The furthest dial ${times(back.n, 'round')}`, { roast: true }));
+
+  const mixed = clearBest(lines.filter((l) => l.psychicId && spread(l).length > 1),
+    (l) => Math.max(...spread(l)) - Math.min(...spread(l)), { whoOf: (l) => l.psychicId });
+  if (mixed && Math.max(...spread(mixed)) - Math.min(...spread(mixed)) >= 40) {
+    out.push(award('Mixed signals', byId(mixed.psychicId),
+      `${quote(mixed)}: one dial ${Math.min(...spread(mixed))} off, another ${Math.max(...spread(mixed))}`, { roast: true }));
+  }
+
+  const middle = lines.flatMap((l) => Object.entries(l.values ?? {})
+    .filter(([, v]) => v >= 45 && v <= 55 && Math.abs(l.target - 50) > 15).map(([by]) => by));
+  const fence = clearLeader(tally(middle, (by) => by), { min: 2 });
+  if (fence) out.push(award('Fence sitter', byId(fence.id), `Parked it in the middle ${fence.n} times; the target never was`, { roast: true }));
   return out.filter(Boolean);
 }

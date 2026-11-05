@@ -217,56 +217,69 @@ describe('final chances', () => {
 });
 
 describe('matchAwards', () => {
-  it('names the sharpest single solve and the most round wins, dropping ties', () => {
-    const r1 = [lock('ana', 2, 1), lock('ben', 5, 2)];
-    const r2 = [lock('ana', 3, 1), { ...lock('ben', 9, null), unsolved: true }];
-    const awards = matchAwards([r1, r2], PLAYERS);
-    expect(awards.map((a) => [a.title, a.player.id])).toEqual([
-      ['Sharpest', 'ana'], ['Most wins', 'ana'], ['Identity crisis', 'ben'],
-    ]);
-    expect(matchAwards([[lock('ana', 2, 1), lock('ben', 2, 1)]], PLAYERS)).toEqual([]);
-  });
-
   const stat = (l, extra) => ({ ...l, character: { name: `${l.playerId}-char` }, ...extra });
   const titles = (rounds) => Object.fromEntries(matchAwards(rounds, PLAYERS).map((a) => [a.title, [a.player.id, a.detail]]));
+  const out = (id, turns, extra = {}) => stat({ ...lock(id, turns, null), unsolved: true }, extra);
 
-  it('names the lucky shot, the interrogator, the butterfingers and the slow burner', () => {
+  it('names the sharpest solve, and drops a tie for it', () => {
+    expect(titles([[stat(lock('ana', 2, 1)), stat(lock('ben', 5, 2))]]).Sharpest).toEqual(['ana', 'Worked out ana-char in 2 turns']);
+    expect(titles([[lock('ana', 2, 1), lock('ben', 2, 1)]]).Sharpest).toBeUndefined();
+  });
+
+  it('names the lucky shot, the cold read and the sole survivor', () => {
+    const r1 = [
+      stat(lock('ana', 2, 1), { questions: 1, noes: 1, wrongGuesses: 0 }),
+      stat(lock('ben', 6, 2), { questions: 5, noes: 0, wrongGuesses: 0 }),
+    ];
+    const r2 = [stat(lock('cleo', 4, 1), { questions: 3, noes: 1 }), out('dev', 9)];
+    const t = titles([r1, r2]);
+    expect(t['Lucky shot']).toEqual(['ana', 'Got ana-char after 1 question']);
+    expect(t['Cold read']).toEqual(['ben', '5 questions, not one No, then ben-char']);
+    expect(t['Sole survivor']).toEqual(['cleo', 'The only one to work it out, as cleo-char']);
+  });
+
+  it('names a clean slate only for every round solved without a wrong guess', () => {
+    const r = (anaWrong) => [stat(lock('ana', 3, 1), { wrongGuesses: anaWrong }), stat(lock('ben', 4, 2), { wrongGuesses: 1 })];
+    expect(titles([r(0), r(0)])['Clean slate']).toEqual(['ana', 'Solved all 2 rounds without a wrong guess']);
+    expect(titles([r(0), r(1)])['Clean slate']).toBeUndefined();
+  });
+
+  it('roasts the slow burner, the mistaken identity and the interrogator', () => {
     const r1 = [
       stat(lock('ana', 2, 1), { questions: 1, wrongGuesses: 0 }),
-      stat(lock('ben', 12, 2), { questions: 6, wrongGuesses: 3 }),
+      stat(lock('ben', 12, 2), { questions: 6, wrongGuesses: 3, wrongText: 'Sasuke' }),
       stat(lock('cleo', 7, 3), { questions: 6, wrongGuesses: 0 }),
     ];
     const r2 = [stat(lock('cleo', 3, 1), { questions: 2, wrongGuesses: 1 }), stat(lock('ben', 9, 2), { questions: 5, wrongGuesses: 1 })];
     const t = titles([r1, r2]);
-    expect(t['Lucky shot']).toEqual(['ana', 'Got ana-char after 1 question']);
-    expect(t['The interrogator']).toEqual(['ben', 'Asked 11 questions']);
-    expect(t.Butterfingers).toEqual(['ben', '4 wrong guesses']);
     expect(t['Slow burner']).toEqual(['ben', '12 turns to find out they were ben-char']);
+    expect(t['Mistaken identity']).toEqual(['ben', 'Guessed Sasuke — they were ben-char']);
+    expect(t['The interrogator']).toEqual(['ben', 'Asked 11 questions']);
   });
 
   it('tells a give-up from running out of chances', () => {
-    const r1 = [lock('ana', 2, 1), stat({ ...lock('ben', 4, null), unsolved: true }, { gaveUp: true })];
-    const r2 = [lock('ana', 3, 1), stat({ ...lock('cleo', 9, null), unsolved: true })];
+    const r1 = [lock('ana', 2, 1), out('ben', 4, { gaveUp: true })];
+    const r2 = [lock('ana', 3, 1), out('cleo', 9)];
     const t = titles([r1, r2]);
     expect(t['Rage quit']).toEqual(['ben', 'Gave up as ben-char']);
     expect(t['Identity crisis']).toEqual(['cleo', 'Never worked out they were cleo-char']);
   });
 
-  it('skips the count awards on locks from before the counts existed, and below their minimums', () => {
+  it('skips the count awards on locks from before the counts existed', () => {
     const t = titles([[lock('ana', 2, 1), lock('ben', 5, 2)]]);
-    expect(t['Lucky shot']).toBeUndefined();
-    expect(t['The interrogator']).toBeUndefined();
-    expect(t.Butterfingers).toBeUndefined();
-    expect(t['Slow burner']).toBeUndefined();
+    for (const title of ['Lucky shot', 'Cold read', 'The interrogator', 'Mistaken identity', 'Slow burner']) expect(t[title]).toBeUndefined();
   });
 
-  it('stamps the round’s question counts on every lock', () => {
-    const logs = { ana: [{ type: 'guess', correct: false }, { type: 'question' }, { type: 'timer' }, { type: 'question' }] };
+  it('stamps the round’s question counts and last wrong guess on every lock', () => {
+    const logs = {
+      ana: [{ type: 'guess', correct: false, text: 'Rem' }, { type: 'question', answer: 'No' }, { type: 'timer' }, { type: 'question', answer: 'Yes' }],
+    };
     const state = {
       gameSession: { players: PLAYERS, settings: { pointsPerPosition: [3, 2, 1] } },
       currentPlayerIndex: 0, lockedPositions: [], questionLogs: logs, turnCounts: { ana: 4 }, peekedPlayers: [],
     };
-    expect(correctGuess(state, { type: 'guess', correct: true }).lastLocked).toMatchObject({ questions: 2, wrongGuesses: 1 });
+    expect(correctGuess(state, { type: 'guess', correct: true }).lastLocked)
+      .toMatchObject({ questions: 2, noes: 1, wrongGuesses: 1, wrongText: 'Rem' });
     expect(giveUp(state).lastLocked).toMatchObject({ questions: 2, wrongGuesses: 1, gaveUp: true });
   });
 });

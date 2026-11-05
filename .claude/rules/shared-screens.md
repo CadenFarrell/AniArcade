@@ -66,18 +66,26 @@ stamped. Online, a FINAL results screen also carries the "Next game" card under 
 "Play <Game> next", which the bots' fallback never presses.
 
 **Every FINAL results screen carries `Awards`** (never a between-rounds stop): superlatives
-for the good, the odd and the playful roasts ("Butterfingers — missed 4 clues"). Each game
-derives its own in its `rules.js` (`matchAwards`, `quizAwards`, `turfAwards`…, whose doc
-comment lists them) from what its match log recorded, with `shared/utils/awards.js`'s helpers:
-`tally`/`sumBy`/`longestRuns` per player, then `clearLeader`/`clearBest` — **a tie drops the
-award** (never picked by seat) and a count has a minimum, so one slip is not a "most". A game
-hands the card everything earned (`award(title, player, detail, { weight, roast })`) and
-`pickAwards` chooses up to four: heaviest `weight` first (~3 for the rare feats), one per
-player while anyone has none, and a roast always makes the cut when one was earned. A log
-field an award needs goes into the round's log line and its normalizer — RTDB drops empties,
-and most normalizers rebuild from named fields — and an award reads a line from before the
-field existed as "unknown", never as zero. Awards say nothing a game hides: AniDraft's come
-from the tallies, never the ballots.
+for good play and playful roasts of bad play. Each game derives its own in its `rules.js`
+(`matchAwards`, `quizAwards`, `turfAwards`…, whose doc comment lists them) from what its match
+log recorded. The house rules, settled with Caden (2026-11-05) and checked by
+`hub/awards.test.js` from each game's source:
+
+- **Five good and five roasts a game**, and the card shows two of each (`pickAwards`; a side
+  that earned fewer gives its slots to the other), so it is neither a press release nor a pile-on.
+- **Every title unique across the arcade.** "Butterfingers" in five games named none of them.
+- **A moment over a count:** the detail quotes the character, clue, bet or answer ("Bet 1,200
+  on the Daily Double — and lost"). A plain "most X" total stays only where the number is the
+  joke ("Asked 23 questions").
+
+`shared/utils/awards.js` holds the arithmetic: `tally`/`sumBy`/`longestRuns` per player, then
+`clearLeader`/`clearBest` — **a tie drops the award** (never picked by seat) and a count has a
+minimum, so one slip is not a "most". `award(title, player, detail, { weight, roast })`: `roast`
+is the bad side, `weight` ranks within a side (~3 for the rare feats), and within each side the
+card names someone new while it can. A log field an award needs goes into the round's log line
+and its normalizer — RTDB drops empties, and most normalizers rebuild from named fields — and
+an award reads a line from before the field existed as "unknown", never as zero. Awards say
+nothing a game hides: AniDraft's come from the tallies, never the ballots.
 
 **In-round, the faces are the thread.** `TablePortraits.jsx` shares portraits once (seat
 order) for everything past setup — `RoomShell` provides it online, each `LocalGame` locally —

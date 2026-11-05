@@ -579,45 +579,92 @@ export function normalizeGame(raw) {
 // --- the game's story ----------------------------------------------------------
 
 /**
- * The final screen's superlatives, from the turn log. Each is a clear leader
- * or nothing — a tie drops it rather than picking by seat — and the card
- * (shared/utils/awards.js's pickAwards) chooses what shows. Entries from
- * before `skipBy`/`lostBy`/`wrong` were logged skip the awards that need them.
+ * The final screen's superlatives, from the turn log: five good, five roasts,
+ * each a clear leader or nothing (a tie drops it rather than picking by seat).
+ * The card (shared/utils/awards.js's pickAwards) shows two of each. `cap` is
+ * the game's word cap. Entries from before `skipBy`/`lostBy`/`wrong` were
+ * logged skip the awards that need them.
+ *
+ * The givers take the words in turn from the first, lost words included
+ * (nextGiver), so word n was said by givers[(n - 1) % 2].
  *
  *   Mind reader         guessed one in the fewest words, three or fewer
- *   Set-up artist       said the word right before the most guesses (2+)
+ *   Set-up artist       said the word right before the most guesses
+ *   Buzzer beater       guessed one on the very last word
+ *   Hat trick           guessed three characters or more
+ *   Wordsmith           every chain they gave got guessed (2+ turns)
  *   Slip of the tongue  said a banned word (roast; local, where it is said aloud)
- *   Wild guesser        the most wrong guesses (3+, roast; online, where guesses are typed)
- *   Picky               turned down the most characters (2+, roast)
+ *   Wild guesser        the most wrong guesses (3+, roast; online)
+ *   Picky               turned down the most characters (roast)
  *   Staller             the most words lost to the clock (2+, roast; local)
+ *   Talked in circles   said the last word of a chain nobody got (roast)
  */
-export function chainAwards(log = [], players = []) {
+export function chainAwards(log = [], players = [], { cap = null } = {}) {
   const byId = (id) => players.find((p) => p.id === id) ?? null;
   const entries = (log ?? []).filter(Boolean);
   const gots = entries.filter((e) => e.kind === 'got' && e.by && Number.isFinite(e.n));
+  const who = (e) => e.character?.name ?? 'it';
+  const giverOf = (e, n) => e.givers?.[(n - 1) % (e.givers?.length || 1)] ?? null;
+  const latest = (list, pick) => list.filter(pick).at(-1);
   const out = [];
 
   const quick = clearBest(gots, (e) => e.n, { dir: 'min' });
-  if (quick && quick.n <= 3) {
-    const who = quick.character?.name;
-    out.push(award('Mind reader', byId(quick.by), `Got ${who ?? 'it'} after ${times(quick.n, 'word')}`, { weight: 3 }));
+  if (quick && quick.n <= 3) out.push(award('Mind reader', byId(quick.by), `Got ${who(quick)} after ${times(quick.n, 'word')}`, { weight: 3 }));
+  const setup = clearLeader(tally(gots, (e) => giverOf(e, e.n)));
+  if (setup) {
+    const e = latest(gots, (x) => giverOf(x, x.n) === setup.id);
+    const word = e.chain?.[e.n - 1];
+    out.push(award('Set-up artist', byId(setup.id), word
+      ? `Said “${word}”, and ${byId(e.by)?.name ?? 'the table'} got ${who(e)}`
+      : `Their word set up ${times(setup.n, 'guess', 'guesses')}`, { weight: 2 }));
   }
-  // The givers take the words in turn from the first, lost words included
-  // (nextGiver), so word n was said by givers[(n - 1) % 2].
-  const setup = clearLeader(tally(gots, (e) => e.givers?.[(e.n - 1) % (e.givers?.length || 1)] ?? null), { min: 2 });
-  if (setup) out.push(award('Set-up artist', byId(setup.id), `Their word set up ${setup.n} guesses`, { weight: 2 }));
+  const buzzers = gots.filter((e) => cap && e.n >= cap);
+  const buzzer = clearLeader(tally(buzzers, (e) => e.by));
+  if (buzzer) out.push(award('Buzzer beater', byId(buzzer.id), `Got ${who(latest(buzzers, (e) => e.by === buzzer.id))} on the last word`, { weight: 2 }));
+  const hat = clearLeader(tally(gots, (e) => e.by), { min: 3 });
+  if (hat) {
+    const named = gots.filter((e) => e.by === hat.id).map(who).filter((n) => n !== 'it');
+    const list = named.length <= 3
+      ? `${named.slice(0, -1).join(', ')} and ${named.at(-1)}`
+      : `${named.slice(0, 3).join(', ')} and ${named.length - 3} more`;
+    out.push(award('Hat trick', byId(hat.id), named.length >= 3 ? `Got ${list}` : `Guessed ${hat.n} characters`));
+  }
+  const turns = {};
+  const landed = {};
+  for (const e of entries.filter((x) => x.kind !== 'void')) {
+    for (const g of new Set(e.givers ?? [])) {
+      turns[g] = (turns[g] ?? 0) + 1;
+      if (e.kind === 'got') landed[g] = (landed[g] ?? 0) + 1;
+    }
+  }
+  const smith = clearLeader(Object.fromEntries(Object.entries(turns).filter(([g, n]) => n >= 2 && landed[g] === n)));
+  if (smith) out.push(award('Wordsmith', byId(smith.id), `Every chain they gave got guessed, ${smith.n} of ${smith.n}`));
 
-  const slip = clearLeader(tally(entries, (e) => (e.kind === 'banned' ? e.by : null)));
+  const slips = entries.filter((e) => e.kind === 'banned');
+  const slip = clearLeader(tally(slips, (e) => e.by));
   if (slip) {
+    const e = latest(slips, (x) => x.by === slip.id);
     out.push(award('Slip of the tongue', byId(slip.id), slip.n === 1
-      ? 'Said a banned word'
+      ? `Said a banned word giving ${who(e) === 'it' ? 'a clue' : who(e)}`
       : `Said a banned word ${times(slip.n)}`, { roast: true }));
   }
   const wild = clearLeader(sumBy(entries, (e) => e.wrong), { min: 3 });
   if (wild) out.push(award('Wild guesser', byId(wild.id), `${wild.n} wrong guesses, all with confidence`, { roast: true }));
-  const picky = clearLeader(tally(entries, (e) => e.skipBy ?? []), { min: 2 });
-  if (picky) out.push(award('Picky', byId(picky.id), `Turned down ${picky.n} characters`, { roast: true }));
+  const skips = entries.flatMap((e) => (e.skipBy ?? []).map((by, k) => ({ by, character: e.skipped?.[k] ?? null })));
+  const picky = clearLeader(tally(skips, (s) => s.by));
+  if (picky) {
+    const turned = skips.filter((s) => s.by === picky.id && s.character?.name).map((s) => s.character.name);
+    out.push(award('Picky', byId(picky.id), turned.length
+      ? `Turned down ${turned.slice(0, 2).join(' and ')}${turned.length > 2 ? ', and more' : ''}`
+      : `Turned down ${times(picky.n, 'character')}`, { roast: true }));
+  }
   const stall = clearLeader(tally(entries, (e) => e.lostBy ?? []), { min: 2 });
   if (stall) out.push(award('Staller', byId(stall.id), `Lost ${stall.n} words to the clock`, { roast: true }));
+  const outs = entries.filter((e) => e.kind === 'out' && e.words);
+  const circles = clearLeader(tally(outs, (e) => giverOf(e, e.words)));
+  if (circles) {
+    const e = latest(outs, (x) => giverOf(x, x.words) === circles.id);
+    out.push(award('Talked in circles', byId(circles.id), `Said the last of ${e.words} words for ${who(e) === 'it' ? 'a character' : who(e)}, and nobody got it`, { roast: true }));
+  }
   return out.filter(Boolean);
 }

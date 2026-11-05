@@ -887,7 +887,7 @@ describe('the session log and awards', () => {
   const players = IDS.map((id) => ({ id, name: id.toUpperCase() }));
   const titles = (log) => Object.fromEntries(rules.tagAwards(log, players).map((a) => [a.title, [a.player.id, a.detail]]));
 
-  it('logs each finished go: names, missed guesses, the clause, and who voted guesses down', () => {
+  it('logs each finished go: names and Yeses, missed guesses, give-ups, the clause, and who voted guesses down', () => {
     const state = {
       round: 1,
       cap: 10,
@@ -897,42 +897,56 @@ describe('the session log and awards', () => {
       },
       results: {
         a: { solved: true, guess: 'Wears glasses', used: 4, category: { id: 'x', label: 'Wears glasses' } },
-        b: { solved: false, guess: '', used: 10 },
+        b: { solved: false, guess: '', used: 1 },
       },
     };
     expect(rules.roundLogLine(state, IDS)).toEqual({
       round: 1,
       cap: 10,
       players: {
-        a: { solved: true, names: 1, misses: 1, used: 4, category: 'Wears glasses' },
-        b: { solved: false, names: 1, misses: 0, used: 10, category: null },
+        a: { solved: true, names: 1, yes: 1, misses: 1, wrongs: ['Girls'], used: 4, gaveUp: false, category: 'Wears glasses' },
+        b: { solved: false, names: 1, yes: 0, misses: 0, wrongs: [], used: 1, gaveUp: true, category: null },
       },
       noVotes: { b: 1, c: 1 },
     });
   });
 
-  const row = (solved, names, extra = {}) => ({ solved, names, misses: 0, used: names, category: 'Isekai', ...extra });
+  const row = (solved, names, extra = {}) => ({
+    solved, names, yes: 0, misses: 0, wrongs: [], used: names, gaveUp: false, category: 'Isekai', ...extra,
+  });
 
-  it('names who called it, the detective and the tough crowd', () => {
+  it('names who called it, the detective, the trailblazer and the tough crowd', () => {
     const log = [
-      { cap: 10, players: { a: row(true, 2), b: row(true, 6) }, noVotes: { c: 2 } },
+      { cap: 10, players: { a: row(true, 2), b: row(true, 4, { yes: 4 }) }, noVotes: { c: 2 } },
       { cap: 10, players: { a: row(true, 5), b: row(false, 4) }, noVotes: { c: 1, b: 1 } },
     ];
     const t = titles(log);
     expect(t['Called it']).toEqual(['a', 'Got “Isekai” in 2 names']);
-    expect(t.Detective).toEqual(['a', 'Cracked 2 categories']);
+    expect(t.Detective).toEqual(['a', 'Cracked their category all 2 rounds']);
+    expect(t.Trailblazer).toEqual(['b', '4 names, 4 Yeses, then “Isekai”']);
     expect(t['Tough crowd']).toEqual(['c', 'Voted down 3 guesses']);
   });
 
-  it('roasts the butterfingers and whoever ran dry', () => {
+  it('names who got there on the last name, and after two wrong guesses', () => {
+    const log = [{ cap: 10, players: { a: row(true, 7, { used: 10 }), b: row(true, 4, { misses: 2, used: 10 }), c: row(true, 5, { misses: 2 }) } }];
+    const t = titles(log);
+    expect(t['Down to the wire']).toBeUndefined(); // a and b both did
+    expect(titles([{ cap: 10, players: { a: row(true, 7, { used: 10 }) } }])['Down to the wire']).toEqual(['a', 'Got “Isekai” with no names left']);
+    expect(t['Third time lucky']).toBeUndefined(); // b and c tie
+    expect(titles([{ cap: 10, players: { c: row(true, 5, { misses: 2 }) } }])['Third time lucky'])
+      .toEqual(['c', 'Got “Isekai” after 2 wrong guesses']);
+  });
+
+  it('roasts whoever ran dry, the swing and a miss, the brick wall and the white flag', () => {
     const log = [
-      { cap: 10, players: { a: row(false, 4, { misses: 2, used: 10 }), b: row(true, 7) } },
-      { cap: 10, players: { a: row(true, 6, { misses: 1 }), b: row(true, 8) } },
+      { cap: 10, players: { a: row(false, 4, { misses: 2, used: 10, wrongs: ['Robots'] }), b: row(true, 7, { yes: 5 }), c: row(false, 3, { gaveUp: true, used: 3 }) } },
+      { cap: 10, players: { a: row(true, 6, { yes: 3, misses: 1, wrongs: ['Swords'] }), b: row(true, 8, { yes: 2 }), c: row(true, 1) } },
     ];
     const t = titles(log);
-    expect(t.Butterfingers).toEqual(['a', '3 wrong guesses at their own category']);
     expect(t['Ran dry']).toEqual(['a', 'Spent all 10 names on “Isekai” and never got it']);
-    expect(t['Called it']).toBeUndefined();
+    expect(t['Swing and a miss']).toEqual(['a', 'Guessed “Swords” — it was Isekai']);
+    expect(t['Brick wall']).toEqual(['b', '8 names, 6 Nos, on “Isekai”']);
+    expect(t['White flag']).toEqual(['c', 'Gave up on “Isekai” with 7 names left']);
   });
 
   it('has nothing to say about an empty session', () => {

@@ -45,7 +45,7 @@ export default function AniNameResults({
       )}
     >
       <Standings build ranked={rest} departedIds={departedIds} score={(p) => String(p.total)} />
-      <Awards awards={nameAwards(log, players)} />
+      <Awards awards={nameAwards(log, players, { categoryOf: (round) => deal?.cats?.[round]?.label ?? '' })} />
       <Recap log={log} deal={deal} players={players} />
     </ResultsLayout>
   );

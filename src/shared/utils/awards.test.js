@@ -54,34 +54,37 @@ describe('times', () => {
 
 describe('pickAwards', () => {
   const a = (title, id, opts) => award(title, P(id), 'why', opts);
+  const good = (title, id, opts = {}) => a(title, id, opts);
+  const bad = (title, id, opts = {}) => a(title, id, { ...opts, roast: true });
 
   it('drops awards with no player, and repeats of a title', () => {
     expect(pickAwards([award('X', null, 'd'), a('Y', 'a'), a('Y', 'b')]).map((x) => x.player.id)).toEqual(['a']);
   });
 
-  it('shows at most four, heaviest first', () => {
-    const list = [a('One', 'a'), a('Two', 'b'), a('Rare', 'c', { weight: 3 }), a('Four', 'd'), a('Five', 'e')];
-    expect(pickAwards(list).map((x) => x.title)).toEqual(['Rare', 'One', 'Two', 'Four']);
-  });
-
-  it('spreads across players before giving anyone a second', () => {
-    const list = [a('One', 'a', { weight: 2 }), a('Two', 'a', { weight: 2 }), a('Three', 'b'), a('Four', 'c')];
-    expect(pickAwards(list, { max: 3 }).map((x) => x.title)).toEqual(['One', 'Three', 'Four']);
-  });
-
-  it('fills spare slots with second awards when the table is small', () => {
-    const list = [a('One', 'a'), a('Two', 'a'), a('Three', 'b')];
-    expect(pickAwards(list).map((x) => x.title)).toEqual(['One', 'Two', 'Three']);
-  });
-
-  it('makes room for a roast when one was earned', () => {
+  it('shows two good and two roasts, good first, heaviest first on each side', () => {
     const list = [
-      a('One', 'a', { weight: 3 }), a('Two', 'b', { weight: 3 }), a('Three', 'c', { weight: 2 }),
-      a('Four', 'd', { weight: 2 }), a('Oops', 'e', { roast: true }),
+      good('G1', 'a'), good('G2', 'b', { weight: 3 }), good('G3', 'c'),
+      bad('B1', 'd'), bad('B2', 'e', { weight: 2 }), bad('B3', 'f'),
     ];
-    const shown = pickAwards(list);
-    expect(shown).toHaveLength(4);
-    expect(shown.map((x) => x.title)).toEqual(['One', 'Two', 'Three', 'Oops']);
+    expect(pickAwards(list).map((x) => x.title)).toEqual(['G2', 'G1', 'B2', 'B1']);
+  });
+
+  it('hands a short side’s slots to the other', () => {
+    const list = [good('G1', 'a'), good('G2', 'b'), good('G3', 'c'), bad('B1', 'd')];
+    expect(pickAwards(list).map((x) => x.title)).toEqual(['G1', 'G2', 'G3', 'B1']);
+    expect(pickAwards([bad('B1', 'a'), bad('B2', 'b'), bad('B3', 'c')]).map((x) => x.title)).toEqual(['B1', 'B2', 'B3']);
+  });
+
+  it('names someone new on each turn while it can', () => {
+    const list = [good('G1', 'a', { weight: 3 }), good('G2', 'a', { weight: 2 }), good('G3', 'b'), bad('B1', 'a', { weight: 3 }), bad('B2', 'c')];
+    expect(pickAwards(list).map((x) => [x.title, x.player.id])).toEqual([
+      ['G1', 'a'], ['G3', 'b'], ['B1', 'a'], ['B2', 'c'],
+    ]);
+  });
+
+  it('gives a second award once everyone at the table has one', () => {
+    const list = [good('G1', 'a'), good('G2', 'a'), bad('B1', 'a')];
+    expect(pickAwards(list).map((x) => x.title)).toEqual(['G1', 'G2', 'B1']);
   });
 
   it('is empty for nothing', () => expect(pickAwards([])).toEqual([]));

@@ -294,6 +294,9 @@ function recount(game, activeIds) {
   return moved ? afterRuling(game, answers, activeIds) : { patch: {} };
 }
 
+// `{ [field]: text }` for an answer, or nothing — RTDB stores no empty keys.
+const quoteOf = (a, field) => (a?.text ? { [field]: String(a.text).slice(0, 60) } : {});
+
 /** From the reveal to the next round (the opener moves one seat), or the end. */
 export function nextRound(game, activeIds = null) {
   if (game.phase !== 'revealed') return { patch: {} };
@@ -307,6 +310,11 @@ export function nextRound(game, activeIds = null) {
     wrong: answers.filter((a) => a.verdict === 'wrong').length,
     repeats: answers.filter((a) => a.verdict === 'repeat').length,
     passed: Object.keys(game.passed ?? {}).filter((id) => game.passed[id]),
+    // The words, for the awards to quote: the latest wrong name and repeat,
+    // and the names the table let in that the arcade could not vouch for.
+    ...quoteOf(answers.filter((a) => a.verdict === 'wrong').at(-1), 'wrongText'),
+    ...quoteOf(answers.filter((a) => a.verdict === 'repeat').at(-1), 'repeatText'),
+    saved: answers.filter((a) => a.verdict === 'right' && a.why === 'table').map((a) => String(a.text).slice(0, 60)),
   }];
   if (game.round + 1 >= game.rounds) return { patch: { phase: 'finished', log } };
   const seats = live(game, activeIds);
@@ -320,43 +328,74 @@ export function nextRound(game, activeIds = null) {
 }
 
 /**
- * The final screen's superlatives, from the log. Each is a clear leader or
- * nothing — a tie drops it rather than picking by seat — and the card
- * (shared/utils/awards.js's pickAwards) chooses what shows. Lines from before
- * `wrong`/`repeats`/`passed` were logged skip the awards that need them.
+ * The final screen's superlatives, from the log: five good, five roasts, each
+ * a clear leader or nothing (a tie drops it rather than picking by seat). The
+ * card (shared/utils/awards.js's pickAwards) shows two of each.
+ * `categoryOf(round)` names the round's category for the detail lines. Lines
+ * from before the answer details were logged skip the awards that need them.
  *
- *   Big talker     the biggest bid that was made
- *   Overreach      the biggest bid that fell short
- *   Freeloader     the most points banked off other bidders falling short (2+ rounds)
- *   Butterfingers  the most wrong names (3+, roast)
- *   Broken record  the most names said twice (roast)
- *   Chicken        the most passes in the bidding (3+, roast)
- *   Wallflower     the only player never to win a bid, over three rounds (roast)
+ *   Big talker          the biggest bid that was made
+ *   Flawless            a bid made without one wrong name or repeat (4+)
+ *   Objection!          names the arcade could not vouch for, that the table let in
+ *   True to their word  won two bids or more and made every one
+ *   Freeloader          the most points banked off other bidders falling short (2+ rounds)
+ *   Overreach           the biggest bid that fell short (roast)
+ *   Not even close      a wrong name, quoted (roast)
+ *   Broken record       a name said twice, quoted (roast)
+ *   Chicken             the most passes in the bidding (3+, roast)
+ *   Wallflower          the only player never to win a bid, over three rounds (roast)
  */
-export function nameAwards(log = [], players = []) {
+export function nameAwards(log = [], players = [], { categoryOf = () => '' } = {}) {
   const byId = (id) => players.find((p) => p.id === id) ?? null;
   const lines = (log ?? []).filter((l) => l && !l.void && l.by);
+  const on = (l) => (categoryOf(l.round) ? ` on ${categoryOf(l.round)}` : '');
+  const forCat = (l) => (categoryOf(l.round) ? ` for ${categoryOf(l.round)}` : '');
+  const latest = (list, id) => list.filter((l) => l.by === id).at(-1);
   const out = [];
+
   const made = clearBest(lines.filter((l) => l.made), (l) => l.n);
-  if (made) out.push(award('Big talker', byId(made.by), `Bid ${made.n} and named them all`, { weight: 2 }));
-  const short = clearBest(lines.filter((l) => !l.made), (l) => l.n);
-  if (short) out.push(award('Overreach', byId(short.by), `Bid ${short.n}, named ${short.count}`));
+  if (made) out.push(award('Big talker', byId(made.by), `Bid ${made.n}${on(made)} and named them all`, { weight: 2 }));
+  const clean = clearBest(lines.filter((l) => l.made && l.n >= 4 && l.wrong === 0 && l.repeats === 0), (l) => l.n);
+  if (clean) out.push(award('Flawless', byId(clean.by), `Named ${clean.n}${forCat(clean)} without a slip`, { weight: 2 }));
+  const saves = lines.flatMap((l) => (l.saved ?? []).map((text) => ({ by: l.by, text })));
+  const saved = clearLeader(countIds(saves, (s) => s.by));
+  if (saved) {
+    out.push(award('Objection!', byId(saved.id), saved.n === 1
+      ? `Talked the table into “${latest(saves, saved.id).text}”`
+      : `Talked the table into ${saved.n} names`));
+  }
+  const won = countIds(lines, (l) => l.by);
+  const kept = players.filter((p) => won[p.id] >= 2 && lines.every((l) => l.by !== p.id || l.made));
+  const word = clearLeader(Object.fromEntries(kept.map((p) => [p.id, won[p.id]])));
+  if (word) out.push(award('True to their word', byId(word.id), `Made all ${word.n} of their bids`));
 
   // A bid that fell short pays everyone else at the table.
   const shorts = lines.filter((l) => !l.made);
   const free = clearLeader(sumBy(shorts, (l) => Object.fromEntries(
     players.filter((p) => p.id !== l.by).map((p) => [p.id, missPoints(l.n)]),
   )));
-  const freeRounds = free ? shorts.filter((l) => l.by !== free.id).length : 0;
-  if (free && freeRounds >= 2) out.push(award('Freeloader', byId(free.id), `Banked ${free.n} off other people falling short`));
+  if (free && shorts.filter((l) => l.by !== free.id).length >= 2) {
+    out.push(award('Freeloader', byId(free.id), `Banked ${free.n} off other people falling short`));
+  }
 
-  const butter = clearLeader(sumBy(lines, (l) => ({ [l.by]: l.wrong })), { min: 3 });
-  if (butter) out.push(award('Butterfingers', byId(butter.id), `${butter.n} wrong names`, { roast: true }));
+  const short = clearBest(shorts, (l) => l.n);
+  if (short) out.push(award('Overreach', byId(short.by), `Bid ${short.n}${on(short)}, named ${short.count}`, { roast: true }));
+  const wrongs = lines.filter((l) => l.wrongText);
+  const butter = clearLeader(sumBy(lines, (l) => ({ [l.by]: l.wrong })));
+  if (butter) {
+    const l = latest(wrongs, butter.id);
+    out.push(award('Not even close', byId(butter.id), l
+      ? `Said “${l.wrongText}”${forCat(l)}`
+      : `${butter.n} wrong names`, { roast: true }));
+  }
+  const repeats = lines.filter((l) => l.repeatText);
   const record = clearLeader(sumBy(lines, (l) => ({ [l.by]: l.repeats })));
-  if (record) out.push(award('Broken record', byId(record.id), `Said the same name twice${record.n > 1 ? `, ${times(record.n)}` : ''}`, { roast: true }));
+  if (record) {
+    const l = latest(repeats, record.id);
+    out.push(award('Broken record', byId(record.id), l ? `Said “${l.repeatText}” twice` : 'Said the same name twice', { roast: true }));
+  }
   const chicken = clearLeader(countIds((log ?? []).filter(Boolean), (l) => l.passed ?? []), { min: 3 });
   if (chicken) out.push(award('Chicken', byId(chicken.id), `Passed ${times(chicken.n)} in the bidding`, { roast: true }));
-
   if (lines.length >= 3 && players.length >= 3) {
     const bidders = new Set(lines.map((l) => l.by));
     const never = players.filter((p) => !bidders.has(p.id));
@@ -479,6 +518,9 @@ export function normalizeGame(raw) {
       count: numberOr(l.count, 0), void: l.void === 'left' ? 'left' : null,
       wrong: numberOr(l.wrong, 0), repeats: numberOr(l.repeats, 0),
       passed: listOf(l.passed).filter((id) => typeof id === 'string'),
+      ...(typeof l.wrongText === 'string' ? { wrongText: l.wrongText } : {}),
+      ...(typeof l.repeatText === 'string' ? { repeatText: l.repeatText } : {}),
+      saved: listOf(l.saved).filter((t) => typeof t === 'string'),
     })),
     result: r && typeof r === 'object'
       ? { by: r.by ?? null, n: numberOr(r.n, 0), made: Boolean(r.made), count: numberOr(r.count, 0), void: r.void === 'left' ? 'left' : null }

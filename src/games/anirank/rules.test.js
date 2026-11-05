@@ -903,15 +903,18 @@ describe('seat pace', () => {
 });
 
 describe('matchAwards', () => {
-  it('names a mind reader and a perfect board when someone clearly earned them', () => {
-    const ps = [{ id: 'a', name: 'A' }, { id: 'b', name: 'B' }];
-    const log = [{ readers: ['a'], perfect: { b: true } }, { readers: ['a', 'b'], perfect: {} }];
-    expect(matchAwards(log, ps).map((x) => [x.title, x.player.id])).toEqual([['Perfect board', 'b'], ['Mind reader', 'a']]);
-    expect(matchAwards([{ readers: ['a', 'b'], perfect: {} }], ps)).toEqual([]);
-  });
-
   const ps = [{ id: 'a', name: 'A' }, { id: 'b', name: 'B' }, { id: 'c', name: 'C' }];
   const titles = (log) => Object.fromEntries(matchAwards(log, ps).map((x) => [x.title, [x.player.id, x.detail]]));
+  const m = (c, exact = 0) => ({ c, of: 45, exact });
+
+  it('names a perfect board and a telepath, and drops a tie', () => {
+    const log = [{ subjectId: 'c', readers: ['a'], perfect: { b: true } }, { subjectId: 'c', readers: ['a', 'b'], perfect: {} }];
+    const t = titles(log);
+    expect(t['Perfect board']).toEqual(['b', 'Every comparison right']);
+    expect(t.Telepath).toEqual(['a', 'Read the subject best 2 times']);
+    expect(titles([{ subjectId: 'c', readers: ['a'], perfect: {} }]).Telepath).toEqual(['a', 'Read C better than anyone']);
+    expect(matchAwards([{ readers: ['a', 'b'], perfect: {} }], ps)).toEqual([]);
+  });
 
   it('logs each board’s marks, its furthest card and a tie-safe best', () => {
     const sorted = perfectBoard();
@@ -927,33 +930,33 @@ describe('matchAwards', () => {
     expect(roundLogEntry({ ...state, boards: { a: sorted, b: flipped } }, ['a', 'b']).best).toBe('a');
   });
 
-  it('names the top of the class, the bullseye, upside down and way off', () => {
+  it('names the pinpoint and the glow-up, and roasts upside down, way off and the freefall', () => {
     const log = [
-      { best: 'a', marks: { a: { c: 40, of: 45, exact: 4 }, b: { c: 10, of: 45, exact: 0 } }, worst: { b: { title: 'Naruto', slot: 1, trueSlot: 9, off: 8 } } },
-      { best: 'a', marks: { a: { c: 42, of: 45, exact: 3 }, b: { c: 30, of: 45, exact: 1 } }, worst: { a: { title: 'Bleach', slot: 3, trueSlot: 4, off: 1 } } },
+      { marks: { a: m(15, 2), b: m(44, 7) }, worst: { a: { title: 'Naruto', slot: 1, trueSlot: 9, off: 8 } } },
+      { marks: { a: m(40, 4), b: m(20, 1) }, worst: {} },
     ];
     const t = titles(log);
-    expect(t['Top of the class']).toEqual(['a', 'The best board in 2 rounds']);
-    expect(t.Bullseye).toEqual(['a', '7 cards in exactly the right slot']);
-    expect(t['Upside down']).toEqual(['b', '10 of 45 comparisons right']);
-    expect(t['Way off']).toEqual(['b', 'Put Naruto at #1 — it belongs at #9']);
+    expect(t.Pinpoint).toEqual(['b', '7 of 10 cards in exactly the right slot']);
+    expect(t['Glow-up']).toEqual(['a', 'From 15/45 to 40/45 the next round']);
+    expect(t['Upside down']).toEqual(['a', '15 of 45 comparisons right']);
+    expect(t['Way off']).toEqual(['a', 'Put Naruto at #1 — it belongs at #9']);
+    expect(t.Freefall).toEqual(['b', 'From 44/45 to 20/45 the next round']);
   });
 
-  it('names the open book and the enigma only across two subjects or more', () => {
+  it('names the open book, the enigma and the total stranger across two subjects or more', () => {
     const line = (subjectId, marks) => ({ subjectId, readers: [], perfect: {}, marks });
     const log = [
-      line('a', { b: { c: 40, of: 45, exact: 0 }, c: { c: 36, of: 45, exact: 0 } }),
-      line('b', { a: { c: 20, of: 45, exact: 0 }, c: { c: 25, of: 45, exact: 0 } }),
+      line('a', { b: m(40), c: m(36) }),
+      line('b', { a: m(20), c: m(25) }),
     ];
     const t = titles(log);
     expect(t['Open book']).toEqual(['a', 'The table read them at 84%']);
     expect(t.Enigma).toEqual(['b', 'Nobody could read them: 50%']);
+    expect(t['Total stranger']).toEqual(['a', 'Read B at 20 of 45']);
     expect(titles([log[0]])['Open book']).toBeUndefined();
   });
 
   it('reads a log from before the board marks without them', () => {
-    expect(titles([{ readers: ['a'], perfect: {} }, { readers: ['a'], perfect: {} }])).toEqual({
-      'Mind reader': ['a', 'Read the subject best 2 times'],
-    });
+    expect(titles([{ readers: ['a'], perfect: {} }, { readers: ['a'], perfect: {} }])).toEqual({});
   });
 });

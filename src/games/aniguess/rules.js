@@ -63,9 +63,14 @@ export function turnsLeft(state, skipIds = []) {
 function roundStats(questionLogs, playerId) {
   const raw = questionLogs?.[playerId];
   const log = Array.isArray(raw) ? raw : Object.values(raw ?? {});
+  const wrong = log.find((e) => e?.type === 'guess' && !e.correct && e.text);
   return {
     questions: log.filter((e) => e?.type === 'question').length,
+    noes: log.filter((e) => e?.type === 'question' && e.answer === 'No').length,
     wrongGuesses: log.filter((e) => e?.type === 'guess' && !e.correct).length,
+    // The latest wrong guess's words (the log is newest first), for the
+    // awards to quote; absent when there was none, or it was a timer.
+    ...(wrong ? { wrongText: String(wrong.text).slice(0, 60) } : {}),
   };
 }
 
@@ -315,70 +320,88 @@ export function computeSessionEnd(totalScores, players) {
 }
 
 /**
- * The final leaderboard's superlatives, from every round's locks. Each is a
- * clear leader or nothing — a tie drops it rather than picking by seat — and
- * the card (shared/utils/awards.js's pickAwards) chooses which to show.
+ * The final leaderboard's superlatives, from every round's locks: five good,
+ * five roasts, each a clear leader or nothing (a tie drops it rather than
+ * picking by seat). The card (shared/utils/awards.js's pickAwards) shows two
+ * of each.
  *
- *   Sharpest          the fewest turns any single solve took
- *   Most wins         the most rounds finished in first place (2+)
- *   Lucky shot        solved after two questions or fewer
- *   The interrogator  the most questions asked across the game (10+)
- *   Slow burner       the slowest solve, well behind the quickest (roast)
- *   Butterfingers     the most wrong guesses (3+, roast)
- *   Identity crisis   ran out of chances without working it out (roast)
- *   Rage quit         gave up (roast)
+ *   Sharpest           the fewest turns any single solve took
+ *   Lucky shot         solved after two questions or fewer
+ *   Cold read          solved having asked three or more and heard no No
+ *   Sole survivor      the only one at the table to solve a round
+ *   Clean slate        solved every round, never a wrong guess (2+ rounds)
+ *   Slow burner        the slowest solve, well behind the quickest (roast)
+ *   Mistaken identity  a wrong guess, quoted beside who they really were (roast)
+ *   The interrogator   the most questions asked across the game, 10+ (roast)
+ *   Identity crisis    ran out of chances without working it out (roast)
+ *   Rage quit          gave up (roast)
  *
  * The question counts ride on each lock (roundStats); a lock from a build
  * before them has none, and the awards that need them simply skip it.
  */
 export function matchAwards(rounds = [], players = []) {
-  const all = rounds.flat().filter(Boolean);
+  const byRound = (rounds ?? []).map((r) => (r ?? []).filter(Boolean));
+  const all = byRound.flat();
   const locks = all.filter((lp) => !lp.unsolved);
   const byId = (id) => players.find((p) => p.id === id) ?? null;
-  const who = (name) => name ?? 'their character';
+  const who = (lp) => lp?.character?.name ?? 'their character';
+  const counted = (lp) => Number.isFinite(lp.questions);
+  const pid = { whoOf: (lp) => lp.playerId };
   const out = [];
-  if (locks.length) {
-    const fewest = Math.min(...locks.map((lp) => lp.turnsUsed));
-    const quick = clearBest(locks, (lp) => lp.turnsUsed, { dir: 'min', whoOf: (lp) => lp.playerId });
-    if (quick) {
-      out.push(award('Sharpest', byId(quick.playerId),
-        `Worked out ${who(quick.character?.name)} in ${times(fewest, 'turn')}`, { weight: 2 }));
-    }
-    const slow = clearBest(locks, (lp) => lp.turnsUsed, { whoOf: (lp) => lp.playerId });
-    if (slow && locks.length > 1 && slow.turnsUsed >= Math.max(6, fewest * 2)) {
-      out.push(award('Slow burner', byId(slow.playerId),
-        `${slow.turnsUsed} turns to find out they were ${who(slow.character?.name)}`, { roast: true }));
-    }
-    const lucky = clearBest(locks.filter((lp) => Number.isFinite(lp.questions)), (lp) => lp.questions,
-      { dir: 'min', whoOf: (lp) => lp.playerId });
-    if (lucky && lucky.questions <= 2) {
-      out.push(award('Lucky shot', byId(lucky.playerId),
-        `Got ${who(lucky.character?.name)} after ${times(lucky.questions, 'question')}`, { weight: 2 }));
-    }
+
+  const quick = clearBest(locks, (lp) => lp.turnsUsed, { dir: 'min', ...pid });
+  if (quick) out.push(award('Sharpest', byId(quick.playerId), `Worked out ${who(quick)} in ${times(quick.turnsUsed, 'turn')}`, { weight: 2 }));
+  const lucky = clearBest(locks.filter(counted), (lp) => lp.questions, { dir: 'min', ...pid });
+  if (lucky && lucky.questions <= 2) {
+    out.push(award('Lucky shot', byId(lucky.playerId), lucky.questions === 0
+      ? `Guessed ${who(lucky)} without asking a thing`
+      : `Got ${who(lucky)} after ${times(lucky.questions, 'question')}`, { weight: 2 }));
   }
-  if (rounds.length > 1) {
-    const wins = clearLeader(tally(locks, (lp) => (lp.position === 1 ? lp.playerId : null)), { min: 2 });
-    if (wins) out.push(award('Most wins', byId(wins.id), `Solved first in ${wins.n} rounds`, { weight: 2 }));
+  const cold = clearBest(locks.filter((lp) => counted(lp) && Number.isFinite(lp.noes) && lp.noes === 0 && lp.questions >= 3),
+    (lp) => lp.questions, pid);
+  if (cold) out.push(award('Cold read', byId(cold.playerId), `${cold.questions} questions, not one No, then ${who(cold)}`));
+  const solos = byRound.filter((r) => r.length > 1).map((r) => r.filter((lp) => !lp.unsolved)).filter((s) => s.length === 1).map((s) => s[0]);
+  const sole = clearLeader(tally(solos, (lp) => lp.playerId));
+  if (sole) {
+    const lp = solos.filter((x) => x.playerId === sole.id).at(-1);
+    out.push(award('Sole survivor', byId(sole.id), sole.n === 1
+      ? `The only one to work it out, as ${who(lp)}`
+      : `The only one to work it out, ${times(sole.n, 'round')}`, { weight: 2 }));
+  }
+  if (byRound.length > 1) {
+    const clean = players.filter((p) => byRound.every((r) => r.some((lp) => (
+      lp.playerId === p.id && !lp.unsolved && lp.wrongGuesses === 0
+    ))));
+    if (clean.length === 1) out.push(award('Clean slate', clean[0], `Solved all ${byRound.length} rounds without a wrong guess`, { weight: 2 }));
+  }
+
+  const slow = clearBest(locks, (lp) => lp.turnsUsed, pid);
+  if (slow && quick !== slow && locks.length > 1 && slow.turnsUsed >= Math.max(6, (quick?.turnsUsed ?? 1) * 2)) {
+    out.push(award('Slow burner', byId(slow.playerId), `${slow.turnsUsed} turns to find out they were ${who(slow)}`, { roast: true }));
+  }
+  const misses = all.filter((lp) => lp.wrongText);
+  const mistaken = clearLeader(sumBy(all, (lp) => ({ [lp.playerId]: lp.wrongGuesses })));
+  if (mistaken) {
+    const lp = misses.filter((x) => x.playerId === mistaken.id).at(-1);
+    out.push(award('Mistaken identity', byId(mistaken.id), lp
+      ? `Guessed ${lp.wrongText} — they were ${who(lp)}`
+      : times(mistaken.n, 'wrong guess', 'wrong guesses'), { roast: true }));
   }
   const asked = clearLeader(sumBy(all, (lp) => ({ [lp.playerId]: lp.questions })), { min: 10 });
-  if (asked) out.push(award('The interrogator', byId(asked.id), `Asked ${asked.n} questions`));
-  const wrong = clearLeader(sumBy(all, (lp) => ({ [lp.playerId]: lp.wrongGuesses })), { min: 3 });
-  if (wrong) out.push(award('Butterfingers', byId(wrong.id), `${times(wrong.n, 'wrong guess', 'wrong guesses')}`, { roast: true }));
+  if (asked) out.push(award('The interrogator', byId(asked.id), `Asked ${asked.n} questions`, { roast: true }));
   const lost = all.filter((lp) => lp.unsolved && !lp.gaveUp);
   const crisis = clearLeader(tally(lost, (lp) => lp.playerId));
   if (crisis) {
-    const last = lost.filter((lp) => lp.playerId === crisis.id).at(-1);
+    const lp = lost.filter((x) => x.playerId === crisis.id).at(-1);
     out.push(award('Identity crisis', byId(crisis.id), crisis.n === 1
-      ? `Never worked out they were ${who(last.character?.name)}`
+      ? `Never worked out they were ${who(lp)}`
       : `Never worked out who they were, ${crisis.n} rounds`, { roast: true }));
   }
   const quits = all.filter((lp) => lp.gaveUp);
   const quit = clearLeader(tally(quits, (lp) => lp.playerId));
   if (quit) {
-    const last = quits.filter((lp) => lp.playerId === quit.id).at(-1);
-    out.push(award('Rage quit', byId(quit.id), quit.n === 1
-      ? `Gave up as ${who(last.character?.name)}`
-      : `Gave up ${times(quit.n)}`, { roast: true }));
+    const lp = quits.filter((x) => x.playerId === quit.id).at(-1);
+    out.push(award('Rage quit', byId(quit.id), quit.n === 1 ? `Gave up as ${who(lp)}` : `Gave up ${times(quit.n)}`, { roast: true }));
   }
   return out.filter(Boolean);
 }

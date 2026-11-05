@@ -292,26 +292,47 @@ describe('the game log and its awards', () => {
     expect(normalizeGame({ ...g, log: { 0: g.log[0] } }).log).toEqual(g.log);
   });
 
-  it('names the biggest bid made and the biggest that fell short, and drops a tie', () => {
-    const log = [{ by: 'a', n: 6, made: true, count: 6 }, { by: 'b', n: 4, made: true, count: 4 }, { by: 'c', n: 9, made: false, count: 5 }];
-    expect(nameAwards(log, players).map((x) => [x.title, x.player.id])).toEqual([['Big talker', 'a'], ['Overreach', 'c']]);
-    expect(nameAwards([log[0], { ...log[0], by: 'b' }], players)).toEqual([]);
+  const titles = (log, ps = players) => Object.fromEntries(nameAwards(log, ps, { categoryOf: (r) => ['Ninjas', 'MAPPA', 'Isekai', 'Mecha'][r] ?? '' })
+    .map((x) => [x.title, [x.player.id, x.detail]]));
+
+  it('names the big talker, the flawless, the objection and the true to their word, and drops a tie', () => {
+    const log = [
+      { round: 0, by: 'a', n: 6, made: true, count: 6, wrong: 0, repeats: 0, saved: ['Shino'] },
+      { round: 1, by: 'b', n: 4, made: true, count: 4, wrong: 1, repeats: 0 },
+      { round: 2, by: 'a', n: 3, made: true, count: 3, wrong: 0, repeats: 0 },
+      { round: 3, by: 'c', n: 9, made: false, count: 5 },
+    ];
+    const t = titles(log);
+    expect(t['Big talker']).toEqual(['a', 'Bid 6 on Ninjas and named them all']);
+    expect(t.Flawless).toEqual(['a', 'Named 6 for Ninjas without a slip']);
+    expect(t['Objection!']).toEqual(['a', 'Talked the table into “Shino”']);
+    expect(t['True to their word']).toEqual(['a', 'Made all 2 of their bids']);
+    expect(t.Overreach).toEqual(['c', 'Bid 9 on Mecha, named 5']);
+    expect(nameAwards([log[0], { ...log[0], by: 'b' }], players).map((x) => x.title)).not.toContain('Big talker');
   });
 
-  it('names the freeloader, and roasts butterfingers, the broken record, the chicken and the wallflower', () => {
+  it('names the freeloader, and roasts not even close, the broken record, the chicken and the wallflower', () => {
     const log = [
-      { by: 'a', n: 6, made: false, count: 3, wrong: 2, repeats: 1, passed: ['c'] },
-      { by: 'a', n: 4, made: false, count: 2, wrong: 2, repeats: 0, passed: ['c', 'b'] },
-      { by: 'b', n: 5, made: true, count: 5, wrong: 0, repeats: 0, passed: ['c'] },
+      { round: 0, by: 'a', n: 6, made: false, count: 3, wrong: 2, repeats: 1, passed: ['c'], wrongText: 'Goku', repeatText: 'Kakashi' },
+      { round: 1, by: 'a', n: 4, made: false, count: 2, wrong: 2, repeats: 0, passed: ['c', 'b'] },
+      { round: 2, by: 'b', n: 5, made: true, count: 5, wrong: 0, repeats: 0, passed: ['c'] },
     ];
-    const t = Object.fromEntries(nameAwards(log, players).map((x) => [x.title, [x.player.id, x.detail]]));
+    const t = titles(log);
     expect(t.Freeloader).toBeUndefined(); // b and c both banked 3 + 2
-    expect(t.Butterfingers).toEqual(['a', '4 wrong names']);
-    expect(t['Broken record']).toEqual(['a', 'Said the same name twice']);
+    expect(t['Not even close']).toEqual(['a', 'Said “Goku” for Ninjas']);
+    expect(t['Broken record']).toEqual(['a', 'Said “Kakashi” twice']);
     expect(t.Chicken).toEqual(['c', 'Passed 3 times in the bidding']);
     expect(t.Wallflower).toEqual(['c', 'Never won a bid in 3 rounds']);
-    const t2 = Object.fromEntries(nameAwards([...log, { by: 'c', n: 8, made: false, count: 1 }], players)
-      .map((x) => [x.title, [x.player.id, x.detail]]));
+    const t2 = titles([...log, { round: 3, by: 'c', n: 8, made: false, count: 1 }]);
     expect(t2.Freeloader).toEqual(['b', 'Banked 9 off other people falling short']);
+  });
+
+  it('logs the words the roasts quote', () => {
+    let g = toNaming();
+    g = apply(g, addName(g, 'b', { text: 'Goku', key: 'goku', verdict: 'wrong' }, IDS, T0));
+    for (const k of ['x1', 'x2', 'x3', 'x4']) g = apply(g, addName(g, 'b', right(k), IDS, T0));
+    g = apply(g, nextRound(g, IDS));
+    expect(g.log[0]).toMatchObject({ wrong: 1, wrongText: 'Goku', saved: [] });
+    expect(normalizeGame({ ...g, log: { 0: g.log[0] } }).log[0]).toMatchObject({ wrongText: 'Goku' });
   });
 });

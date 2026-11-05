@@ -254,6 +254,8 @@ describe('draftAwards', () => {
   const players = ids.map((id) => ({ id, name: id.toUpperCase() }));
   const titles = (log) => Object.fromEntries(rules.draftAwards(log, players).map((x) => [x.title, [x.player.id, x.detail]]));
   const slot = (i, extra = {}) => ({ ...card(i), ...extra });
+  const tally = (...rows) => rows.map(([a, b, c]) => ({ a, b, c }));
+  const role = (id) => ROLE_DECK.find((r) => r.id === id).name;
 
   it('stamps each logged card with its pick number, and auto on a clock pick', () => {
     let g = start();
@@ -268,33 +270,43 @@ describe('draftAwards', () => {
     expect(entry.teams[g.picks[1].by][g.picks[1].slot]).toMatchObject({ pick: 2, auto: true });
   });
 
-  it('names a unanimous card, a silver tongue and the steal, from the tallies alone', () => {
-    const tally = (...rows) => rows.map(([a, b, c]) => ({ a, b, c }));
+  it('names the unanimous card, the dynasty, the silver tongue and the steal, from the tallies alone', () => {
     const log = [{
       round: 0,
       roles: ROLES,
       teams: {
-        a: [slot(0, { pick: 1, why: 'Main character energy' }), slot(1, { pick: 6, why: 'Obviously' }), slot(2, { pick: 7 }), slot(3, { pick: 12 }), slot(4, { pick: 13 })],
+        a: [slot(0, { pick: 1, why: 'Main character energy' }), slot(1, { pick: 6 }), slot(2, { pick: 7 }), slot(3, { pick: 12 }), slot(4, { pick: 13 })],
         b: [slot(5, { pick: 2 }), slot(6, { pick: 5 }), slot(7, { pick: 8 }), slot(8, { pick: 11 }), slot(9, { pick: 14, auto: true })],
         c: [slot(10, { pick: 3 }), slot(11, { pick: 4, auto: true }), slot(12, { pick: 9 }), slot(13, { pick: 10 }), slot(14, { pick: 15 })],
       },
-      tally: tally([2, 0, 1], [2, 1, 0], [0, 3, 0], [1, 1, 1], [0, 2, 1]),
+      tally: tally([2, 0, 1], [0, 2, 1], [0, 3, 0], [1, 2, 0], [0, 2, 1]),
     }];
     const t = titles(log);
-    expect(t.Unanimous).toEqual(['b', 'Every vote for Hero 7 as Healer']);
-    expect(t['Silver tongue']).toEqual(['a', 'Won 2 roles with a why line']);
-    const boss = ROLE_DECK.find((r) => r.id === 'boss').name;
-    expect(t['Steal of the draft']).toEqual(['b', `Pick 14, Hero 9, won ${boss}`]);
+    expect(t.Unanimous).toEqual(['b', `Every vote for Hero 7 as ${role('healer')}`]);
+    expect(t.Dynasty).toEqual(['b', 'Won 4 of 5 roles in round 1']);
+    expect(t['Silver tongue']).toEqual(['a', `Won ${role('captain')} with “Main character energy”`]);
+    expect(t['Steal of the draft']).toEqual(['b', `Pick 14, Hero 9, won ${role('boss')}`]);
     expect(t['First-round bust']).toEqual(['b', 'Pick 2, Hero 5 — not one vote']);
+    expect(t.Bridesmaid).toEqual(['c', 'Lost 3 roles by a single vote']);
   });
 
-  it('roasts the benchwarmer and the autopilot', () => {
+  it('names the people’s champ unless it was a clean sweep', () => {
+    const log = [{
+      round: 0,
+      roles: ROLES,
+      teams: { a: ROLES.map((_, i) => slot(i)), b: ROLES.map((_, i) => slot(10 + i)), c: ROLES.map((_, i) => slot(20 + i)) },
+      tally: tally([3, 1, 0], [1, 2, 1], [1, 1, 2], [1, 1, 2], [1, 2, 1]),
+    }];
+    expect(titles(log)['People’s champ']).toEqual(['a', `Hero 0 drew 3 votes as ${role('captain')}`]);
+  });
+
+  it('roasts the benchwarmer, the hot take and the autopilot', () => {
     const zero = { a: 0, b: 0, c: 0 };
     const log = [0, 1].map((round) => ({
       round,
       roles: ROLES,
       teams: {
-        a: ROLES.map((_, i) => slot(i, { pick: i + 1, ...(i < 1 ? { auto: true } : {}) })),
+        a: ROLES.map((_, i) => slot(i, { pick: i + 1, ...(i < 1 ? { auto: true } : {}), ...(i === 2 ? { why: 'Trust me' } : {}) })),
         b: ROLES.map((_, i) => slot(10 + i)),
         c: ROLES.map((_, i) => slot(20 + i)),
       },
@@ -302,6 +314,7 @@ describe('draftAwards', () => {
     }));
     const t = titles(log);
     expect(t.Benchwarmer).toEqual(['a', 'Not one vote, 2 rounds']);
+    expect(t['Hot take']).toEqual(['a', '“Trust me” — not one vote for Hero 2']);
     expect(t.Autopilot).toEqual(['a', 'The clock picked for them 2 times']);
   });
 });

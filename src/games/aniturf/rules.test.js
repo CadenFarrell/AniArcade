@@ -498,7 +498,7 @@ describe('turfAwards', () => {
   const clue = (team, word, number, by) => ({ kind: 'clue', team, word, number, by });
   const act = (kind, team, cell, by = null) => ({ kind, team, cell, by });
 
-  it('names the finishing move, the best clue and the trap-setter online', () => {
+  it('names the finishing move, the best clue, the trap-setter, the unstoppable and the speedrun online', () => {
     const log = [
       clue('red', 'Ninja', 3, 'r1'), act('claim', 'red', 0, 'r2'), act('claim', 'red', 5, 'r2'), act('claim', 'red', 10, 'r2'),
       clue('blue', 'Sword', 2, 'b1'), act('trap', 'blue', 3, 'b2'),
@@ -509,20 +509,34 @@ describe('turfAwards', () => {
     const t = titles({ log, winBy: 'connect', winner: 'red' });
     expect(t['Finishing move']).toEqual(['r2', 'Claimed C20 to cross the board']);
     expect(t['Best clue']).toEqual(['r1', '“Ninja · 3” landed 3 claims']);
-    expect(t['It’s a trap!']).toEqual(['r1', '2 of their traps sprung']);
+    expect(t['It’s a trap!']).toEqual(['r1', '2 of their traps sprang']);
+    expect(t.Unstoppable).toEqual(['r1', 'Crossed the board through 1 trap']);
+    expect(t.Speedrun).toEqual(['r1', 'Crossed the board in 3 clues']);
     expect(t.Overpromised).toEqual(['b1', '“Sword · 2” found nothing']);
+    expect(t['Trap magnet']).toEqual(['b2', 'Sprang 2 traps']);
   });
 
   it('falls back to the clue-giver on a shared device, and counts no unattributed stop', () => {
     const log = [
       clue('blue', 'Robot', 2, 'b1'), act('miss', 'blue', 1), { kind: 'stop', team: 'blue', by: null },
-      clue('blue', 'Space', 1, 'b1'), act('miss', 'blue', 2), { kind: 'stop', team: 'blue' },
+      clue('blue', 'Space', 1, 'b1'), act('miss', 'blue', 2), { kind: 'stop', team: 'blue' }, act('trap', 'blue', 6),
       clue('red', 'Ninja', 1, 'r1'), act('claim', 'red', 4),
     ];
     const t = titles({ log, winBy: 'connect', winner: 'red' });
     expect(t['Scorched earth']).toEqual(['b1', 'Their team burned 2 squares on their clues']);
     expect(t['Finishing move']).toEqual(['r1', 'Their clue “Ninja · 1” crossed the board']);
+    expect(t['Trap magnet']).toEqual(['b1', 'Their team walked into a trap on C6']);
     expect(t['Played it safe']).toBeUndefined();
+  });
+
+  it('roasts the early stopper and the team that was cut off', () => {
+    const log = [
+      clue('blue', 'Robot', 2, 'b1'), act('claim', 'blue', 1, 'b2'), { kind: 'stop', team: 'blue', by: 'b2' },
+      clue('blue', 'Space', 2, 'b1'), act('claim', 'blue', 2, 'b2'), { kind: 'stop', team: 'blue', by: 'b2' },
+    ];
+    const t = titles({ log, winBy: 'cut', winner: 'blue', loser: 'red' });
+    expect(t['Played it safe']).toEqual(['b2', 'Stopped early 2 times']);
+    expect(t['Dead end']).toEqual(['r1', 'Their team was cut off with no route left across']);
   });
 
   it('logs who stopped', () => {

@@ -80,7 +80,7 @@ export default function AniChainResults({ game, players, departedIds = [], onPla
       ) : (
         <Standings build ranked={rest} departedIds={departedIds} score={(p) => String(p.total)} />
       )}
-      <Awards awards={chainAwards(game.log, players)} />
+      <Awards awards={chainAwards(game.log, players, { cap: game.cap })} />
       <Recap game={game} players={players} />
     </ResultsLayout>
   );

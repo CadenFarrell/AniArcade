@@ -318,19 +318,22 @@ export function nextRound(game, activeIds = null) {
 }
 
 /**
- * The final screen's superlatives, from the log. Each is a clear leader or
- * nothing — a tie drops it rather than picking by seat — and the card
- * (shared/utils/awards.js's pickAwards) chooses what shows. `nameOf(card)` is
- * the dealt character's name, for the detail lines. Lines from before
+ * The final screen's superlatives, from the log: five good, five roasts, each
+ * a clear leader or nothing (a tie drops it rather than picking by seat). The
+ * card (shared/utils/awards.js's pickAwards) shows two of each. `nameOf(card)`
+ * is the dealt character's name, for the detail lines. Lines from before
  * `passed`/`text` were logged skip the awards that need them.
  *
- *   Eagle eye          the right name from the fewest tiles, hints counted at cost
- *   Leftovers          the most of their own bid left unspent on a right name (2+)
- *   Boldest miss       the lowest bid that missed
- *   Hint addict        the most hints bought (3+)
- *   Butterfingers      the most misses (2+), paid out to the table (roast)
- *   Chicken            the most passes in the bidding (3+, roast)
- *   Confidently wrong  a wrong name, quoted (roast)
+ *   Eagle eye        the right name from the fewest tiles, hints counted at cost
+ *   Big payday       the most points from one portrait
+ *   Leftovers        the most of their own bid left unspent on a right name (2+)
+ *   Clue collector   named it after buying two hints or more
+ *   Vulture          banked the most off other people's misses
+ *   Overconfident    the lowest bid that missed (roast)
+ *   Seeing things    a wrong name, quoted (roast)
+ *   Staring contest  missed with the most tiles uncovered, ten or more (roast)
+ *   Window shopper   missed after buying two hints or more (roast)
+ *   Cold feet        the most passes in the bidding (3+, roast)
  */
 export function peekAwards(log = [], players = [], { nameOf = () => '' } = {}) {
   const byId = (id) => players.find((p) => p.id === id) ?? null;
@@ -339,39 +342,44 @@ export function peekAwards(log = [], players = [], { nameOf = () => '' } = {}) {
   const out = [];
   const cost = (l) => l.tiles + l.hints * HINT_COST;
   const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
+  const them = (l) => nameOf(l.card) || 'them';
 
   const rights = lines.filter((l) => l.correct);
   const eagle = clearBest(rights, cost, { dir: 'min' });
   if (eagle) {
     out.push(award('Eagle eye', byId(eagle.by),
-      `Named one from ${plural(eagle.tiles, 'tile')}${eagle.hints ? ` and ${plural(eagle.hints, 'hint')}` : ''}`, { weight: 2 }));
+      `Named ${them(eagle)} from ${plural(eagle.tiles, 'tile')}${eagle.hints ? ` and ${plural(eagle.hints, 'hint')}` : ''}`, { weight: 2 }));
   }
+  const payday = clearBest(rights, (l) => l.points);
+  if (payday && payday !== eagle) out.push(award('Big payday', byId(payday.by), `${payday.points} points for ${them(payday)}`));
   const spare = clearBest(rights.filter((l) => Number.isInteger(l.bid)), (l) => l.bid - cost(l));
   if (spare && spare.bid - cost(spare) >= 2 && spare !== eagle) {
-    out.push(award('Leftovers', byId(spare.by), `Named them with ${spare.bid - cost(spare)} of their bid to spare`));
+    out.push(award('Leftovers', byId(spare.by), `Named ${them(spare)} with ${spare.bid - cost(spare)} of their bid to spare`));
   }
-  const bold = clearBest(lines.filter((l) => !l.correct && Number.isInteger(l.bid)), (l) => l.bid, { dir: 'min' });
-  if (bold) out.push(award('Boldest miss', byId(bold.by), `Bid ${bold.bid} and missed`));
+  const collector = clearBest(rights.filter((l) => l.hints >= 2), (l) => l.hints);
+  if (collector) out.push(award('Clue collector', byId(collector.by), `Bought ${collector.hints} hints, then named ${them(collector)}`));
 
-  const addict = clearLeader(sumBy(lines, (l) => ({ [l.by]: l.hints })), { min: 3 });
-  if (addict) out.push(award('Hint addict', byId(addict.id), `Bought ${addict.n} hints`));
-
+  // A miss pays everyone else at the table.
   const missed = lines.filter((l) => !l.correct);
-  const butter = clearLeader(tally(missed, (l) => l.by), { min: 2 });
-  if (butter) {
-    out.push(award('Butterfingers', byId(butter.id),
-      `Missed ${times(butter.n)} — the table banked ${butter.n * WRONG_BONUS} each`, { roast: true }));
-  }
-  const chicken = clearLeader(tally(all, (l) => l.passed ?? []), { min: 3 });
-  if (chicken) out.push(award('Chicken', byId(chicken.id), `Passed ${times(chicken.n)} in the bidding`, { roast: true }));
+  const vulture = clearLeader(sumBy(missed, (l) => Object.fromEntries(
+    players.filter((p) => p.id !== l.by).map((p) => [p.id, WRONG_BONUS]),
+  )), { min: 2 * WRONG_BONUS });
+  if (vulture) out.push(award('Vulture', byId(vulture.id), `Banked ${vulture.n} off other people’s misses`));
 
+  const bold = clearBest(missed.filter((l) => Number.isInteger(l.bid)), (l) => l.bid, { dir: 'min' });
+  if (bold) out.push(award('Overconfident', byId(bold.by), `Bid ${bold.bid} on ${them(bold)} and missed`, { roast: true }));
   const quotes = missed.filter((l) => l.text);
   const wrongest = clearLeader(tally(quotes, (l) => l.by));
   if (wrongest) {
     const l = quotes.filter((x) => x.by === wrongest.id).at(-1);
-    const was = nameOf(l.card);
-    out.push(award('Confidently wrong', byId(l.by), `Said “${l.text}”${was ? ` — it was ${was}` : ''}`, { roast: true }));
+    out.push(award('Seeing things', byId(l.by), `Said “${l.text}”${nameOf(l.card) ? ` — it was ${nameOf(l.card)}` : ''}`, { roast: true }));
   }
+  const stare = clearBest(missed, (l) => l.tiles);
+  if (stare && stare.tiles >= 10) out.push(award('Staring contest', byId(stare.by), `Uncovered ${stare.tiles} tiles and still missed ${them(stare)}`, { roast: true }));
+  const shopper = clearBest(missed.filter((l) => l.hints >= 2), (l) => l.hints);
+  if (shopper) out.push(award('Window shopper', byId(shopper.by), `Bought ${shopper.hints} hints and still missed ${them(shopper)}`, { roast: true }));
+  const chicken = clearLeader(tally(all, (l) => l.passed ?? []), { min: 3 });
+  if (chicken) out.push(award('Cold feet', byId(chicken.id), `Passed ${times(chicken.n)} in the bidding`, { roast: true }));
   return out.filter(Boolean);
 }
 

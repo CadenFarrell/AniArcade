@@ -38,7 +38,7 @@
 // and rank 0 means "belongs at the top" either way, so nothing below this line
 // has to know which direction trueOrder sorts in.
 
-import { award, clearBest, clearLeader, sumBy, tally, times } from '../../shared/utils/awards';
+import { award, clearBest, clearLeader, tally, times } from '../../shared/utils/awards';
 
 export const BOARD_SIZE = 10;
 
@@ -640,22 +640,28 @@ export function roundLogEntry(state, playerIds, { opinion = false, scoring = tru
 }
 
 /**
- * The final screen's superlatives. Each is a clear leader or nothing — a tie
- * drops it — and the card (shared/utils/awards.js's pickAwards) chooses what
- * shows. Lines from before `marks`/`worst` were logged just skip those awards.
+ * The final screen's superlatives: five good, five roasts, each a clear leader
+ * or nothing (a tie drops it). The card (shared/utils/awards.js's pickAwards)
+ * shows two of each. Lines from before `marks`/`worst` were logged skip the
+ * awards that need them.
  *
- *   Perfect board     got every comparison right, the rarest thing this game makes
- *   Mind reader       read the subject best the most times (opinion rounds)
- *   Top of the class  the best board in the most rounds (2+)
- *   Bullseye          the most cards in exactly the right slot (5+ across the match)
- *   Open book         as the subject, the table read them best (2+ subjects)
- *   Enigma            as the subject, the table read them worst (2+ subjects)
- *   Upside down       the worst single board, 40% or under (roast)
- *   Way off           the furthest any card landed from home, 5+ slots (roast)
+ *   Perfect board   every comparison right, the rarest thing this game makes
+ *   Telepath        read the subject best (opinion rounds)
+ *   Open book       as the subject, the table read them best (2+ subjects)
+ *   Pinpoint        the most cards in exactly the right slot on one board (5+)
+ *   Glow-up         the biggest jump from one round's board to the next
+ *   Upside down     the worst board on a fact round, 40% or under (roast)
+ *   Way off         the furthest any card landed from home, 5+ slots (roast)
+ *   Enigma          as the subject, the table read them worst (roast, 2+ subjects)
+ *   Total stranger  the worst read of a subject, half or under (roast)
+ *   Freefall        the biggest drop from one round's board to the next (roast)
  */
 export function matchAwards(log = [], players = []) {
   const lines = (log ?? []).filter(Boolean);
   const byId = (id) => players.find((p) => p.id === id) ?? null;
+  const nameOf = (id) => byId(id)?.name ?? 'the subject';
+  const pct = (m) => m.c / m.of;
+  const cards = (of) => Math.round((1 + Math.sqrt(1 + 8 * of)) / 2);
   const out = [];
 
   const perfect = clearLeader(tally(lines, (l) => Object.keys(l.perfect ?? {})));
@@ -663,42 +669,61 @@ export function matchAwards(log = [], players = []) {
     out.push(award('Perfect board', byId(perfect.id),
       `Every comparison right${perfect.n > 1 ? `, ${perfect.n} times` : ''}`, { weight: 3 }));
   }
-  const reader = clearLeader(tally(lines, (l) => l.readers ?? []));
-  if (reader) out.push(award('Mind reader', byId(reader.id), `Read the subject best ${times(reader.n)}`, { weight: 2 }));
-
-  const top = clearLeader(tally(lines, (l) => l.best), { min: 2 });
-  if (top) out.push(award('Top of the class', byId(top.id), `The best board in ${top.n} rounds`));
-
-  const exact = clearLeader(sumBy(lines, (l) => Object.fromEntries(
-    Object.entries(l.marks ?? {}).map(([id, m]) => [id, m?.exact]),
-  )), { min: 5 });
-  if (exact) out.push(award('Bullseye', byId(exact.id), `${exact.n} cards in exactly the right slot`));
+  const read = lines.filter((l) => l.subjectId && (l.readers ?? []).length);
+  const telepath = clearLeader(tally(read, (l) => l.readers));
+  if (telepath) {
+    const l = read.filter((x) => x.readers.includes(telepath.id)).at(-1);
+    out.push(award('Telepath', byId(telepath.id), telepath.n === 1
+      ? `Read ${nameOf(l.subjectId)} better than anyone`
+      : `Read the subject best ${times(telepath.n)}`, { weight: 2 }));
+  }
 
   // How well the table read each subject: the mean of their guessers' boards.
   const subjects = lines.filter((l) => l.subjectId && Object.keys(l.marks ?? {}).length).map((l) => {
     const ms = Object.values(l.marks);
-    return { by: l.subjectId, v: ms.reduce((a, m) => a + m.c / m.of, 0) / ms.length };
+    return { by: l.subjectId, v: ms.reduce((a, m) => a + pct(m), 0) / ms.length };
   });
   if (new Set(subjects.map((s) => s.by)).size > 1) {
     const open = clearBest(subjects, (s) => s.v);
     const enigma = clearBest(subjects, (s) => s.v, { dir: 'min' });
     if (open && enigma && open.by !== enigma.by) {
       out.push(award('Open book', byId(open.by), `The table read them at ${Math.round(open.v * 100)}%`));
-      out.push(award('Enigma', byId(enigma.by), `Nobody could read them: ${Math.round(enigma.v * 100)}%`));
+      out.push(award('Enigma', byId(enigma.by), `Nobody could read them: ${Math.round(enigma.v * 100)}%`, { roast: true }));
     }
   }
 
-  const boards = lines.flatMap((l) => Object.entries(l.marks ?? {})
-    .filter(([, m]) => m?.of > 0).map(([by, m]) => ({ by, ...m })));
-  const flop = clearBest(boards, (b) => b.c / b.of, { dir: 'min' });
-  if (flop && flop.c / flop.of <= 0.4) {
-    out.push(award('Upside down', byId(flop.by), `${flop.c} of ${flop.of} comparisons right`, { roast: true }));
+  const boards = lines.flatMap((l, k) => Object.entries(l.marks ?? {})
+    .filter(([, m]) => m?.of > 0).map(([by, m]) => ({ by, k, subjectId: l.subjectId ?? null, ...m })));
+  const pin = clearBest(boards, (b) => b.exact);
+  if (pin && pin.exact >= 5) out.push(award('Pinpoint', byId(pin.by), `${pin.exact} of ${cards(pin.of)} cards in exactly the right slot`));
+
+  // Each player's board against their own one round before.
+  const swings = [];
+  for (const b of boards) {
+    const prev = boards.filter((x) => x.by === b.by && x.k < b.k).at(-1);
+    if (prev) swings.push({ by: b.by, d: pct(b) - pct(prev), from: prev, to: b });
+  }
+  const glow = clearBest(swings, (s) => s.d);
+  if (glow && glow.d >= 0.3) {
+    out.push(award('Glow-up', byId(glow.by), `From ${glow.from.c}/${glow.from.of} to ${glow.to.c}/${glow.to.of} the next round`));
   }
 
+  const flop = clearBest(boards.filter((b) => !b.subjectId), pct, { dir: 'min' });
+  if (flop && pct(flop) <= 0.4) {
+    out.push(award('Upside down', byId(flop.by), `${flop.c} of ${flop.of} comparisons right`, { roast: true }));
+  }
   const misses = lines.flatMap((l) => Object.entries(l.worst ?? {}).map(([by, w]) => ({ by, ...w })));
   const far = clearBest(misses, (w) => w.off);
   if (far && far.off >= 5) {
     out.push(award('Way off', byId(far.by), `Put ${far.title || 'a card'} at #${far.slot} — it belongs at #${far.trueSlot}`, { roast: true }));
+  }
+  const stranger = clearBest(boards.filter((b) => b.subjectId), pct, { dir: 'min' });
+  if (stranger && pct(stranger) <= 0.5) {
+    out.push(award('Total stranger', byId(stranger.by), `Read ${nameOf(stranger.subjectId)} at ${stranger.c} of ${stranger.of}`, { roast: true }));
+  }
+  const fall = clearBest(swings, (s) => s.d, { dir: 'min' });
+  if (fall && fall.d <= -0.3) {
+    out.push(award('Freefall', byId(fall.by), `From ${fall.from.c}/${fall.from.of} to ${fall.to.c}/${fall.to.of} the next round`, { roast: true }));
   }
   return out.filter(Boolean);
 }

@@ -17,7 +17,7 @@
 // behaviour below is testable against a fake number.
 import { isCorrectTitleGuess } from './utils/titleMatch';
 import { QUESTION_POINTS, speedBonus } from '../../shared/utils/deadline';
-import { award, clearBest, clearLeader, longestRuns, tally, times } from '../../shared/utils/awards';
+import { award, clearBest, clearLeader, tally, times } from '../../shared/utils/awards';
 
 export const RACE = 'race';
 export const SIMULTANEOUS = 'simultaneous';
@@ -780,20 +780,21 @@ export function activePlayerId(state) {
 // --- The round's story ----------------------------------------------------------
 
 /**
- * The final screen's superlatives, from the round's log (settle). Each is a
- * clear leader or nothing — a tie drops it rather than picking one by seat —
- * and the card (shared/utils/awards.js's pickAwards) chooses what shows.
+ * The final screen's superlatives, from the round's log (settle): five good,
+ * five roasts, each a clear leader or nothing (a tie drops it rather than
+ * picking by seat). The card (shared/utils/awards.js's pickAwards) shows two
+ * of each.
  *
- *   Fastest finger      the quickest right answer of the round
- *   Hot streak          the most songs in a row got right (three or more)
- *   Deep cut            the most songs only they got (everyone-guesses modes)
- *   Clutch              the quickest on the last song
- *   Slowpoke            the slowest right answer, 10s or more (roast)
- *   Trigger happy       the most wrong answers, three or more (roast)
- *   Confidently wrong   a wrong title, quoted (roast)
- *   Radio silence       the most songs left blank, three or more (roast)
+ *   Fastest finger     the quickest right answer of the round
+ *   Clutch             the quickest on the last song
+ *   Deep cut           the most songs only they got (everyone-guesses modes)
+ *   Encore             the most songs in a row got right (three or more)
+ *   Home turf          every song off their own list, two or more of them
+ *   Slowpoke           the slowest right answer, 10s or more (roast)
+ *   Wrong anime        a wrong title, quoted (roast)
  *   Stranger to their own list   two or more songs off their own list missed (roast)
- *   First out           the first knocked out, in Lives (roast)
+ *   First out          the first knocked out, in Lives (roast)
+ *   Radio silence      the most songs left blank, three or more (roast)
  *
  * `titleOf(i)` names song i for the detail line; `ownersOf(i)` the ids whose
  * list song i came from; `eliminatedAt` is Lives' who-went-out-when. Lines from
@@ -806,27 +807,14 @@ export function roundAwards(log = [], players = [], {
   const byId = (id) => players.find((p) => p.id === id) ?? null;
   const on = (i) => (titleOf(i) ? ` on ${titleOf(i)}` : '');
   const secs = (ms) => `${(ms / 1000).toFixed(1)}s`;
+  // Still in the round when song i played (Lives knocks players out).
+  const playing = (id, i) => !(eliminatedAt?.[id] != null && eliminatedAt[id] < i);
   const out = [];
 
   const timed = lines.flatMap((l) => Object.entries(l.got ?? {})
     .filter(([, ms]) => ms >= 0).map(([by, ms]) => ({ by, ms, i: l.i })));
   const fast = clearBest(timed, (t) => t.ms, { dir: 'min' });
   if (fast) out.push(award('Fastest finger', byId(fast.by), `${secs(fast.ms)}${on(fast.i)}`, { weight: 2 }));
-  const slow = clearBest(timed, (t) => t.ms);
-  if (slow && slow.ms >= 10000 && slow !== fast) {
-    out.push(award('Slowpoke', byId(slow.by), `Took ${secs(slow.ms)}${on(slow.i)}`, { roast: true }));
-  }
-
-  const streak = clearLeader(longestRuns(lines, (l) => Object.keys(l.got ?? {})), { min: 3 });
-  if (streak) out.push(award('Hot streak', byId(streak.id), `${streak.n} songs in a row`));
-
-  if (!isRace(mode) && players.length > 1) {
-    const solo = clearLeader(tally(lines, (l) => {
-      const ids = Object.keys(l.got ?? {});
-      return ids.length === 1 ? ids : [];
-    }));
-    if (solo) out.push(award('Deep cut', byId(solo.id), `The only one to get ${times(solo.n, 'song')}`, { weight: 2 }));
-  }
 
   // The last song of a round of several: the one everyone remembers. Untimed
   // answers (-1) all tie at "no time", so there the only clutch is being the
@@ -842,8 +830,50 @@ export function roundAwards(log = [], players = [], {
     }
   }
 
-  const trigger = clearLeader(tally(lines, (l) => Object.keys(l.miss ?? {})), { min: 3 });
-  if (trigger) out.push(award('Trigger happy', byId(trigger.id), times(trigger.n, 'wrong answer'), { roast: true }));
+  if (!isRace(mode) && players.length > 1) {
+    const soloLines = lines.filter((l) => Object.keys(l.got ?? {}).length === 1);
+    const solo = clearLeader(tally(soloLines, (l) => Object.keys(l.got)));
+    if (solo) {
+      const l = soloLines.filter((x) => x.got[solo.id] != null).at(-1);
+      out.push(award('Deep cut', byId(solo.id), solo.n === 1 && titleOf(l.i)
+        ? `The only one to get ${titleOf(l.i)}`
+        : `The only one to get ${times(solo.n, 'song')}`, { weight: 2 }));
+    }
+  }
+
+  // The longest run of songs got in a row, and where it started and ended.
+  const runs = {};
+  for (const p of players) {
+    let from = null;
+    let best = null;
+    for (let k = 0; k < lines.length; k++) {
+      if (lines[k].got?.[p.id] == null) { from = null; continue; }
+      from ??= k;
+      if (!best || k - from + 1 > best.n) best = { n: k - from + 1, a: lines[from].i, b: lines[k].i };
+    }
+    if (best) runs[p.id] = best;
+  }
+  const encore = clearLeader(Object.fromEntries(Object.entries(runs).map(([id, r]) => [id, r.n])), { min: 3 });
+  if (encore) {
+    const r = runs[encore.id];
+    out.push(award('Encore', byId(encore.id), titleOf(r.a) && titleOf(r.b)
+      ? `${r.n} songs in a row, ${titleOf(r.a)} to ${titleOf(r.b)}`
+      : `${r.n} songs in a row`));
+  }
+
+  const owned = (id) => lines.filter((l) => (ownersOf(l.i) ?? []).includes(id) && playing(id, l.i));
+  const homes = {};
+  for (const p of players) {
+    const ls = owned(p.id);
+    if (ls.length >= 2 && ls.every((l) => l.got?.[p.id] != null)) homes[p.id] = ls.length;
+  }
+  const home = clearLeader(homes, { min: 2 });
+  if (home) out.push(award('Home turf', byId(home.id), `Got all ${home.n} songs off their own list`));
+
+  const slow = clearBest(timed, (t) => t.ms);
+  if (slow && slow.ms >= 10000 && slow !== fast) {
+    out.push(award('Slowpoke', byId(slow.by), `Took ${secs(slow.ms)}${on(slow.i)}`, { roast: true }));
+  }
 
   // The quote: whoever typed the most wrong titles, and their latest one.
   const typed = lines.flatMap((l) => Object.entries(l.miss ?? {})
@@ -851,26 +881,28 @@ export function roundAwards(log = [], players = [], {
   const wrongest = clearLeader(tally(typed, (t) => t.by));
   if (wrongest) {
     const t = typed.filter((x) => x.by === wrongest.id).at(-1);
-    out.push(award('Confidently wrong', byId(t.by),
-      `Said “${t.text}”${titleOf(t.i) ? ` for ${titleOf(t.i)}` : ''}`, { roast: true }));
+    out.push(award('Wrong anime', byId(t.by), `Said “${t.text}”${titleOf(t.i) ? ` for ${titleOf(t.i)}` : ''}`, { roast: true }));
   }
 
-  const silent = clearLeader(tally(lines, (l) => l.blank ?? []), { min: 3 });
-  if (silent) out.push(award('Radio silence', byId(silent.id), `Left ${silent.n} songs blank`, { roast: true }));
-
-  // A song off your own list that you did not get — while you were still in.
-  const stranger = clearLeader(tally(lines, (l) => (ownersOf(l.i) ?? []).filter((id) => (
-    l.got?.[id] == null && !(eliminatedAt?.[id] != null && eliminatedAt[id] < l.i)
-  ))), { min: 2 });
+  const missedOwn = lines.flatMap((l) => (ownersOf(l.i) ?? [])
+    .filter((id) => l.got?.[id] == null && playing(id, l.i)).map((by) => ({ by, i: l.i })));
+  const stranger = clearLeader(tally(missedOwn, (m) => m.by), { min: 2 });
   if (stranger) {
-    out.push(award('Stranger to their own list', byId(stranger.id),
-      `Missed ${stranger.n} songs from their own list`, { roast: true }));
+    const m = missedOwn.filter((x) => x.by === stranger.id).at(-1);
+    out.push(award('Stranger to their own list', byId(stranger.id), titleOf(m.i)
+      ? `Missed ${stranger.n} songs off their own list, ${titleOf(m.i)} included`
+      : `Missed ${stranger.n} songs off their own list`, { roast: true }));
   }
 
   if (hasLives(mode) && players.length > 2) {
     const outAt = Object.fromEntries(Object.entries(eliminatedAt ?? {}).filter(([, at]) => Number.isFinite(at)));
     const first = clearLeader(outAt, { dir: 'min' });
-    if (first) out.push(award('First out', byId(first.id), `Out on song ${first.n + 1}`, { roast: true }));
+    if (first) {
+      out.push(award('First out', byId(first.id), `Out on song ${first.n + 1}${titleOf(first.n) ? `, ${titleOf(first.n)}` : ''}`, { roast: true }));
+    }
   }
+
+  const silent = clearLeader(tally(lines, (l) => l.blank ?? []), { min: 3 });
+  if (silent) out.push(award('Radio silence', byId(silent.id), `Left ${silent.n} songs blank`, { roast: true }));
   return out.filter(Boolean);
 }

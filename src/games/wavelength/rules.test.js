@@ -753,7 +753,7 @@ describe('the session log and its awards', () => {
     };
     expect(rules.roundLogEntry(r, ids)).toMatchObject({
       psychicId: 'a', left: SPECTRA[1].leftLabel, right: SPECTRA[1].rightLabel, clue: 'beach episode', target: 40, bestId: 'b', bestDistance: 2,
-      dials: { b: 2, c: 30 },
+      dials: { b: 2, c: 30 }, values: { b: 42, c: 70 },
     });
     expect(rules.roundLogEntry({ ...r, abandoned: true }, ids)).toBeNull();
   });
@@ -768,41 +768,49 @@ describe('the session log and its awards', () => {
     expect(rules.roundLogEntry(r, ids).clue).toBe('Frieren');
   });
 
-  it('names a clear Bullseye and Mind meld, and drops a tie', () => {
-    const log = [
-      { round: 0, psychicId: 'a', left: 'L', right: 'R', bestId: 'b', bestDistance: 1, psychicPoints: 3 },
-      { round: 1, psychicId: 'b', left: 'L', right: 'R', bestId: 'c', bestDistance: 6, psychicPoints: 1 },
-      null,
-    ];
-    expect(rules.sessionAwards(log, players).map((a) => [a.title, a.player.id])).toEqual([['Bullseye', 'b'], ['Mind meld', 'a']]);
-    const tie = [
-      { round: 0, psychicId: 'a', bestId: 'b', bestDistance: 2, psychicPoints: 2 },
-      { round: 1, psychicId: 'b', bestId: 'c', bestDistance: 2, psychicPoints: 2 },
-    ];
-    expect(rules.sessionAwards(tie, players)).toEqual([]);
-  });
-
   const titles = (log) => Object.fromEntries(rules.sessionAwards(log, players).map((a) => [a.title, [a.player.id, a.detail]]));
-  const line = (round, psychicId, dials, extra = {}) => ({
-    round, psychicId, left: 'Hot', right: 'Cold', clue: `clue ${round}`, dials, psychicPoints: 2, ...extra,
+  const line = (round, psychicId, dials, extra = {}) => {
+    const bestId = Object.entries(dials).sort((x, y) => x[1] - y[1])[0]?.[0] ?? null;
+    return {
+      round, psychicId, left: 'Hot', right: 'Cold', clue: `clue ${round}`, target: 50,
+      dials, bestId, bestDistance: bestId ? dials[bestId] : null, psychicPoints: 2, ...extra,
+    };
+  };
+
+  it('names the bullseye, the mind meld and the crowd pleaser, and drops a tie', () => {
+    const t = titles([line(0, 'a', { b: 1, c: 8 }), line(1, 'b', { c: 6, a: 30 })]);
+    expect(t.Bullseye).toEqual(['b', 'Off by 1 on Hot → Cold']);
+    expect(t['Mind meld']).toEqual(['a', '“clue 0” put Ben within 1']);
+    expect(t['Crowd pleaser']).toEqual(['a', '“clue 0” put every dial within 8']);
+    expect(titles([line(0, 'a', { b: 2 }), line(1, 'b', { c: 2 })]).Bullseye).toBeUndefined();
   });
 
-  it('names a steady hand over three dials, and roasts the wrong end and the static', () => {
+  it('names a steady hand over three dials, and a lone ranger', () => {
     const log = [
       line(0, 'a', { b: 5, c: 20 }),
       line(1, 'a', { b: 8, c: 62 }),
-      line(2, 'a', { b: 2, c: 10 }),
-      line(3, 'b', { c: 30, a: 35 }, { psychicPoints: 0 }),
+      line(2, 'a', { b: 2, c: 30 }),
     ];
     const t = titles(log);
-    expect(t['Steady hand']).toEqual(['b', 'Averaged 5 off across 3 dials']);
-    expect(t['Wrong end of the dial']).toEqual(['c', 'Off by 62 on Hot → Cold']);
-    expect(t['Radio static']).toEqual(['b', '“clue 3” scored the table nothing']);
+    expect(t['Steady hand']).toEqual(['b', 'Never more than 8 off in 3 dials']);
+    expect(t['Lone ranger']).toEqual(['b', '2 off on Hot → Cold when nobody else was within 20']);
   });
 
-  it('wants a field of two for a steady hand, and a miss of 40 to call it the wrong end', () => {
-    const t = titles([line(0, 'a', { b: 5 }), line(1, 'a', { b: 8 }), line(2, 'a', { b: 39 })]);
-    expect(t['Steady hand']).toBeUndefined();
-    expect(t['Wrong end of the dial']).toBeUndefined();
+  it('roasts the wrong end, the static, the back of the pack, mixed signals and the fence sitter', () => {
+    const log = [
+      line(0, 'a', { b: 5, c: 62 }, { values: { b: 25, c: 48 }, target: 20 }),
+      line(1, 'b', { a: 10, c: 35 }, { psychicPoints: 0, values: { a: 80, c: 55 }, target: 90 }),
+      line(2, 'a', { b: 3, c: 30 }),
+    ];
+    const t = titles(log);
+    expect(t['Wrong end of the dial']).toEqual(['c', 'Off by 62 on Hot → Cold']);
+    expect(t['Radio static']).toEqual(['b', '“clue 1” scored the table nothing']);
+    expect(t['Mixed signals']).toEqual(['a', '“clue 0”: one dial 5 off, another 62']);
+    expect(t['Fence sitter']).toEqual(['c', 'Parked it in the middle 2 times; the target never was']);
+  });
+
+  it('wants three dials for a back of the pack', () => {
+    const log = [line(0, 'a', { b: 5, c: 40, a: 1 }), line(1, 'a', { b: 5, c: 40, a: 1 })];
+    expect(titles(log)['Back of the pack']).toEqual(['c', 'The furthest dial 2 rounds']);
   });
 });

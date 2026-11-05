@@ -859,11 +859,12 @@ export function applyRoundScores(totalScores, roundScores) {
 // One line per finished round, for the final screen's awards — `startRound`
 // wipes the trails and results the next round, so this is all that survives.
 // Per player who took a go: solved or not, how many NAMES they offered (the
-// trail's names, never `used`, which weighs a missed guess as several), how
-// many guesses they missed, and their clause's label once it was attached
-// (null if it never was — online it rides on another device's write). Plus,
-// per voter, how many missed guesses they voted no on. Plain values, so a
-// line survives RTDB untouched; RTDB drops an empty `noVotes`.
+// trail's names, never `used`, which weighs a missed guess as several) and how
+// many of those were a Yes, their missed guesses' words, whether they gave up
+// with names to spare, and their clause's label once it was attached (null if
+// it never was — online it rides on another device's write). Plus, per voter,
+// how many missed guesses they voted no on. Plain values, so a line survives
+// RTDB untouched; RTDB drops an empty `noVotes` or `wrongs`.
 export function roundLogLine(state, playerIds = []) {
   if (!state) return null;
   const players = {};
@@ -878,11 +879,18 @@ export function roundLogLine(state, playerIds = []) {
       }
     }
     if (!result) continue;
+    const names = trail.filter((e) => e?.kind !== 'declaration');
+    const wrongs = trail.filter((e) => e?.kind === 'declaration');
+    const used = result.used ?? 0;
+    const cap = state.cap ?? DEFAULT_CAP;
     players[id] = {
       solved: result.solved === true,
-      names: trail.filter((e) => e?.kind !== 'declaration').length,
-      misses: trail.filter((e) => e?.kind === 'declaration').length,
-      used: result.used ?? 0,
+      names: names.length,
+      yes: names.filter((e) => verdictsOf(e).some((v) => v.verdict)).length,
+      misses: wrongs.length,
+      wrongs: wrongs.map((e) => String(e.text ?? '').slice(0, 60)).filter(Boolean),
+      used,
+      gaveUp: result.solved !== true && used < cap,
       category: result.category ? getCategory(result.category).label : null,
     };
   }
@@ -890,21 +898,29 @@ export function roundLogLine(state, playerIds = []) {
 }
 
 /**
- * The final screen's superlatives, from the session's round lines. Each is a
- * clear leader or nothing — a tie drops it rather than picking by seat — and
- * the card (shared/utils/awards.js's pickAwards) chooses what shows.
+ * The final screen's superlatives, from the session's round lines: five good,
+ * five roasts, each a clear leader or nothing (a tie drops it rather than
+ * picking by seat). The card (shared/utils/awards.js's pickAwards) shows two
+ * of each. Lines from before `yes`/`wrongs`/`gaveUp` were logged skip the
+ * awards that need them.
  *
- *   Called it       the solve in the fewest names, three or fewer
- *   Detective       the most categories cracked (2+)
- *   Tough crowd     voted down the most missed guesses (3+)
- *   Butterfingers   the most missed guesses at their own clause (2+, roast)
- *   Ran dry         spent every name and never got it (roast)
+ *   Called it          the solve in the fewest names, three or fewer
+ *   Down to the wire   solved on the last name they had
+ *   Trailblazer        solved after three or more names, every one a Yes
+ *   Detective          cracked their category every round (2+ rounds)
+ *   Third time lucky   solved after two or more wrong guesses
+ *   Ran dry            spent every name and never got it (roast)
+ *   Swing and a miss   a wrong guess at their own category, quoted (roast)
+ *   Tough crowd        voted down the most missed guesses (3+, roast)
+ *   Brick wall         the most Nos on their names in one round (5+, roast)
+ *   White flag         gave up with names still to spend (roast)
  */
 export function tagAwards(log = [], players = []) {
   const lines = (log ?? []).filter(Boolean);
   const byId = (id) => players.find((p) => p.id === id) ?? null;
-  const rows = lines.flatMap((l) => Object.entries(l.players ?? {}).map(([by, r]) => ({ by, cap: l.cap, ...r })));
+  const rows = lines.flatMap((l) => Object.entries(l.players ?? {}).map(([by, r]) => ({ by, cap: l.cap ?? DEFAULT_CAP, ...r })));
   const quoted = (r) => (r.category ? `“${r.category}”` : 'their category');
+  const latest = (list, id) => list.filter((r) => r.by === id).at(-1);
   const out = [];
 
   const solves = rows.filter((r) => r.solved);
@@ -914,23 +930,44 @@ export function tagAwards(log = [], players = []) {
       ? `Got ${quoted(quick)} without naming a thing`
       : `Got ${quoted(quick)} in ${times(quick.names, 'name')}`, { weight: 3 }));
   }
+  const wire = solves.filter((r) => r.used >= r.cap);
+  const late = clearLeader(tally(wire, (r) => r.by));
+  if (late) out.push(award('Down to the wire', byId(late.id), `Got ${quoted(latest(wire, late.id))} with no names left`, { weight: 2 }));
+  const trail = solves.filter((r) => Number.isFinite(r.yes) && r.names >= 3 && r.yes === r.names);
+  const blazer = clearBest(trail, (r) => r.names);
+  if (blazer) out.push(award('Trailblazer', byId(blazer.by), `${blazer.names} names, ${blazer.names} Yeses, then ${quoted(blazer)}`));
   if (lines.length > 1) {
-    const sleuth = clearLeader(tally(solves, (r) => r.by), { min: 2 });
-    if (sleuth) out.push(award('Detective', byId(sleuth.id), `Cracked ${sleuth.n} categories`, { weight: 2 }));
+    const every = players.filter((p) => lines.every((l) => l.players?.[p.id]?.solved));
+    if (every.length === 1) out.push(award('Detective', every[0], `Cracked their category all ${lines.length} rounds`, { weight: 2 }));
   }
-  const tough = clearLeader(sumBy(lines, (l) => l.noVotes), { min: 3 });
-  if (tough) out.push(award('Tough crowd', byId(tough.id), `Voted down ${tough.n} guesses`));
+  const comebacks = solves.filter((r) => r.misses >= 2);
+  const lucky = clearBest(comebacks, (r) => r.misses);
+  if (lucky) out.push(award('Third time lucky', byId(lucky.by), `Got ${quoted(lucky)} after ${lucky.misses} wrong guesses`));
 
-  const butter = clearLeader(sumBy(rows, (r) => ({ [r.by]: r.misses })), { min: 2 });
-  if (butter) out.push(award('Butterfingers', byId(butter.id), `${butter.n} wrong guesses at their own category`, { roast: true }));
-
-  const dry = rows.filter((r) => !r.solved && r.used >= (r.cap ?? DEFAULT_CAP));
+  const dry = rows.filter((r) => !r.solved && r.used >= r.cap);
   const ran = clearLeader(tally(dry, (r) => r.by));
   if (ran) {
-    const r = dry.filter((x) => x.by === ran.id).at(-1);
+    const r = latest(dry, ran.id);
     out.push(award('Ran dry', byId(ran.id), ran.n === 1
-      ? `Spent all ${r.cap ?? DEFAULT_CAP} names on ${quoted(r)} and never got it`
+      ? `Spent all ${r.cap} names on ${quoted(r)} and never got it`
       : `Spent every name and never got it, ${times(ran.n, 'round')}`, { roast: true }));
+  }
+  const swings = rows.flatMap((r) => (r.wrongs ?? []).map((text) => ({ ...r, text })));
+  const swing = clearLeader(tally(swings, (r) => r.by));
+  if (swing) {
+    const r = latest(swings, swing.id);
+    out.push(award('Swing and a miss', byId(swing.id), `Guessed “${r.text}” — it was ${r.category ?? 'something else'}`, { roast: true }));
+  }
+  const tough = clearLeader(sumBy(lines, (l) => l.noVotes), { min: 3 });
+  if (tough) out.push(award('Tough crowd', byId(tough.id), `Voted down ${tough.n} guesses`, { roast: true }));
+  const walls = rows.filter((r) => Number.isFinite(r.yes) && r.names - r.yes >= 5);
+  const wall = clearBest(walls, (r) => r.names - r.yes);
+  if (wall) out.push(award('Brick wall', byId(wall.by), `${wall.names} names, ${wall.names - wall.yes} Nos, on ${quoted(wall)}`, { roast: true }));
+  const flags = rows.filter((r) => r.gaveUp);
+  const flag = clearLeader(tally(flags, (r) => r.by));
+  if (flag) {
+    const r = latest(flags, flag.id);
+    out.push(award('White flag', byId(flag.id), `Gave up on ${quoted(r)} with ${r.cap - r.used} names left`, { roast: true }));
   }
   return out.filter(Boolean);
 }

@@ -16,7 +16,7 @@
 // player still here has locked in — the gate counts the ACTIVE roster, so a
 // closed tab never wedges a room (settleIfComplete).
 
-import { award, clearLeader, longestRuns, tally } from '../../shared/utils/awards';
+import { award, clearLeader, longestRuns, tally, times } from '../../shared/utils/awards';
 
 /** A right pick. */
 export const PICK_POINTS = 2;
@@ -126,52 +126,97 @@ export function nextRound(game) {
 }
 
 /**
- * The final screen's superlatives, from the log. Each is a clear leader or
- * nothing — a tie drops it rather than picking by seat — and the card
- * (shared/utils/awards.js's pickAwards) chooses what shows. Lines from before
- * `picks` was logged skip the awards that need it.
+ * The final screen's superlatives, from the log: five good, five roasts, each
+ * a clear leader or nothing (a tie drops it rather than picking by seat). The
+ * card (shared/utils/awards.js's pickAwards) shows two of each. `nameOf(round,
+ * key)` names a dealt card and `oddOf(round)` the round's odd one out, for the
+ * detail lines. Lines from before `picks` was logged skip the awards that
+ * need it.
  *
- *   Sharpest eye                the most odd ones out found (two or more)
- *   Mind reader                 the most reasons named (two or more, reasons on)
- *   Lone wolf                   the only one who found it, two rounds or more
+ *   Lone wolf                   the only one who found it
+ *   Full marks                  the only one with the odd one AND its reason
+ *   Perfect game                found every odd one out, three rounds or more
  *   Hot streak                  the most rounds in a row found (three or more)
- *   Contrarian                  a wrong card nobody else picked, two rounds or more
- *   Right for the wrong reason  found it three times or more, never named why (roast)
+ *   Against the grain           right, while everyone else fell for one card
  *   Fooled again                the most wrong picks (three or more, roast)
+ *   Contrarian                  a wrong card nobody else touched (roast)
+ *   Right for the wrong reason  found it three times or more, never named why (roast)
+ *   Herd mentality              fell for a card with two others or more (roast)
+ *   Blind spot                  the only one who missed it (roast)
  */
-export function outAwards(log = [], players = [], { reasonsOn = false } = {}) {
+export function outAwards(log = [], players = [], { reasonsOn = false, nameOf = () => '', oddOf = () => '' } = {}) {
   const byId = (id) => players.find((p) => p.id === id) ?? null;
   const lines = (log ?? []).filter(Boolean);
+  const card = (l, key) => nameOf(l.round, key) || 'a card';
+  const odd = (l) => oddOf(l.round) || 'the odd one';
+  const latest = (list, id) => list.filter((x) => x.by === id).at(-1);
   const out = [];
-  const eye = clearLeader(tally(lines, (l) => l.got), { min: 2 });
-  if (eye) out.push(award('Sharpest eye', byId(eye.id), `Found the odd one out ${eye.n} times`, { weight: 2 }));
-  const reader = clearLeader(tally(lines, (l) => l.reasons), { min: 2 });
-  if (reader) out.push(award('Mind reader', byId(reader.id), `Named the reason ${reader.n} times`, { weight: 2 }));
 
   // "The only one" needs somebody else to have tried.
   const contested = (l) => !l.picks || Object.keys(l.picks).length > 1;
-  const lone = clearLeader(tally(lines, (l) => (contested(l) && (l.got ?? []).length === 1 ? l.got : [])), { min: 2 });
-  if (lone) out.push(award('Lone wolf', byId(lone.id), `The only one who saw it, ${lone.n} times`, { weight: 2 }));
+  const solos = lines.filter((l) => contested(l) && (l.got ?? []).length === 1).map((l) => ({ by: l.got[0], l }));
+  const lone = clearLeader(tally(solos, (x) => x.by));
+  if (lone) {
+    out.push(award('Lone wolf', byId(lone.id), lone.n === 1
+      ? `The only one who spotted ${odd(latest(solos, lone.id).l)}`
+      : `The only one who saw it, ${times(lone.n, 'round')}`, { weight: 2 }));
+  }
+  if (reasonsOn) {
+    const fulls = lines.filter((l) => contested(l) && (l.reasons ?? []).length === 1).map((l) => ({ by: l.reasons[0], l }));
+    const full = clearLeader(tally(fulls, (x) => x.by));
+    if (full) {
+      out.push(award('Full marks', byId(full.id), full.n === 1
+        ? `The only one who knew why ${odd(latest(fulls, full.id).l)} was out`
+        : `The only one who knew why, ${times(full.n, 'round')}`, { weight: 2 }));
+    }
+  }
+  if (lines.length >= 3) {
+    const perfect = players.filter((p) => lines.every((l) => (l.got ?? []).includes(p.id)));
+    if (perfect.length === 1) out.push(award('Perfect game', perfect[0], `Found the odd one out all ${lines.length} rounds`, { weight: 3 }));
+  }
   const streak = clearLeader(longestRuns(lines, (l) => l.got), { min: 3 });
   if (streak) out.push(award('Hot streak', byId(streak.id), `${streak.n} rounds in a row`));
 
-  const wrong = (l) => Object.keys(l.picks ?? {}).filter((id) => !(l.got ?? []).includes(id));
-  const contrary = clearLeader(tally(lines, (l) => wrong(l).filter((id) => (
-    Object.values(l.picks).filter((card) => card === l.picks[id]).length === 1
-  ))), { min: 2 });
-  if (contrary) out.push(award('Contrarian', byId(contrary.id), `Picked a card nobody else touched, ${contrary.n} times`));
+  const wrongOf = (l) => Object.keys(l.picks ?? {}).filter((id) => !(l.got ?? []).includes(id));
+  const sameAs = (l, id) => Object.values(l.picks).filter((k) => k === l.picks[id]).length;
+  // Right, while every other player picked one and the same wrong card.
+  const grains = lines.filter((l) => (l.got ?? []).length === 1 && wrongOf(l).length >= 2
+    && new Set(wrongOf(l).map((id) => l.picks[id])).size === 1).map((l) => ({ by: l.got[0], l }));
+  const grain = clearLeader(tally(grains, (x) => x.by));
+  if (grain) {
+    const { l } = latest(grains, grain.id);
+    out.push(award('Against the grain', byId(grain.id), `Picked ${odd(l)} while everyone else fell for ${card(l, l.picks[wrongOf(l)[0]])}`));
+  }
 
+  const fooled = clearLeader(tally(lines, wrongOf), { min: 3 });
+  if (fooled) out.push(award('Fooled again', byId(fooled.id), `Picked wrong ${fooled.n} times`, { roast: true }));
+  const odds = lines.flatMap((l) => wrongOf(l).filter((id) => sameAs(l, id) === 1).map((by) => ({ by, l })));
+  const contrary = clearLeader(tally(odds, (x) => x.by));
+  if (contrary) {
+    const { l } = latest(odds, contrary.id);
+    out.push(award('Contrarian', byId(contrary.id), contrary.n === 1
+      ? `Picked ${card(l, l.picks[contrary.id])} — nobody else did, and with reason`
+      : `Picked a card nobody else touched, ${times(contrary.n)}`, { roast: true }));
+  }
   if (reasonsOn) {
     const found = tally(lines, (l) => l.got);
     const named = tally(lines, (l) => l.reasons);
     const clueless = clearLeader(Object.fromEntries(Object.entries(found).filter(([id]) => !named[id])), { min: 3 });
-    if (clueless) {
-      out.push(award('Right for the wrong reason', byId(clueless.id),
-        `Found it ${clueless.n} times, never knew why`, { roast: true }));
-    }
+    if (clueless) out.push(award('Right for the wrong reason', byId(clueless.id), `Found it ${clueless.n} times, never knew why`, { roast: true }));
   }
-  const fooled = clearLeader(tally(lines, wrong), { min: 3 });
-  if (fooled) out.push(award('Fooled again', byId(fooled.id), `Picked wrong ${fooled.n} times`, { roast: true }));
+  const herds = lines.flatMap((l) => wrongOf(l).filter((id) => sameAs(l, id) >= 3).map((by) => ({ by, l })));
+  const herd = clearLeader(tally(herds, (x) => x.by));
+  if (herd) {
+    const { l } = latest(herds, herd.id);
+    out.push(award('Herd mentality', byId(herd.id), `Fell for ${card(l, l.picks[herd.id])} with ${sameAs(l, herd.id) - 1} others`, { roast: true }));
+  }
+  const blinds = lines.filter((l) => wrongOf(l).length === 1 && (l.got ?? []).length >= 2).map((l) => ({ by: wrongOf(l)[0], l }));
+  const blind = clearLeader(tally(blinds, (x) => x.by));
+  if (blind) {
+    out.push(award('Blind spot', byId(blind.id), blind.n === 1
+      ? `The only one who missed ${odd(latest(blinds, blind.id).l)}`
+      : `The only one who missed it, ${times(blind.n, 'round')}`, { roast: true }));
+  }
   return out.filter(Boolean);
 }
 

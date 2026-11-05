@@ -474,9 +474,9 @@ export function normalizeGame(raw) {
 // ── The draft's story ────────────────────────────────────────────────────
 
 /**
- * The final screen's superlatives, from the log. Each is a clear leader or
- * nothing — a tie drops it rather than picking by seat — and the card
- * (shared/utils/awards.js's pickAwards) chooses what shows.
+ * The final screen's superlatives, from the log: five good, five roasts, each
+ * a clear leader or nothing (a tie drops it rather than picking by seat). The
+ * card (shared/utils/awards.js's pickAwards) shows two of each.
  *
  * Built from the tallies alone, never the ballots: the reveal shows how many
  * votes each team drew, not who cast them, so no award may say who voted for
@@ -484,11 +484,15 @@ export function normalizeGame(raw) {
  * need them.
  *
  *   Unanimous           a card that took every vote for its role
- *   Silver tongue       the most roles won with a "why" line (2+)
+ *   People’s champ      the card that drew the most votes in the game
+ *   Dynasty             the most roles won in one round (3+)
+ *   Silver tongue       a role won with a "why" line, quoted
  *   Steal of the draft  the latest pick to win a role (after the first lap)
  *   Benchwarmer         a whole team without one vote in a round (roast)
- *   Autopilot           the most picks the clock made for them (2+, roast)
  *   First-round bust    an opening-lap pick that drew no votes (roast)
+ *   Hot take            a "why" line that drew no votes, quoted (roast)
+ *   Bridesmaid          the most roles lost by a single vote (2+, roast)
+ *   Autopilot           the most picks the clock made for them (2+, roast)
  */
 export function draftAwards(log = [], players = []) {
   const byId = (id) => players.find((p) => p.id === id) ?? null;
@@ -501,23 +505,38 @@ export function draftAwards(log = [], players = []) {
       if (!card) return null;
       const counts = e.tally?.[slot] ?? {};
       const total = Object.values(counts).reduce((a, n) => a + n, 0);
+      const top = Math.max(0, ...Object.values(counts));
       return {
-        by, card, slot, round: e.round, role: roleOf(e.roles?.[slot]).name,
+        by, card, slot, round: e.round, role: roleOf(e.roles?.[slot]).name, top,
         votes: counts[by] ?? 0, total, won: winnersOf(counts, order).includes(by), seats: order.length,
       };
     }).filter(Boolean));
   });
+  const latest = (list, id) => list.filter((c) => c.by === id).at(-1);
 
   const sweeps = cards.filter((c) => c.seats >= 3 && c.total >= 2 && c.votes === c.total);
   const sweep = clearLeader(countIds(sweeps, (c) => c.by));
   if (sweep) {
-    const c = sweeps.filter((x) => x.by === sweep.id).at(-1);
+    const c = latest(sweeps, sweep.id);
     out.push(award('Unanimous', byId(sweep.id), sweep.n === 1
       ? `Every vote for ${c.card.name} as ${c.role}`
       : `Took every vote for a role ${times(sweep.n)}`, { weight: 3 }));
   }
-  const silver = clearLeader(countIds(cards, (c) => (c.won && c.card.why ? c.by : null)), { min: 2 });
-  if (silver) out.push(award('Silver tongue', byId(silver.id), `Won ${silver.n} roles with a why line`, { weight: 2 }));
+  const champ = clearBest(cards.filter((c) => c.votes >= 2), (c) => c.votes);
+  if (champ && !sweeps.includes(champ)) out.push(award('People’s champ', byId(champ.by), `${champ.card.name} drew ${champ.votes} votes as ${champ.role}`, { weight: 2 }));
+  const hauls = entries.flatMap((e) => Object.keys(e.teams ?? {}).map((by) => ({
+    by, round: e.round, n: cards.filter((c) => c.round === e.round && c.by === by && c.won).length,
+  })));
+  const dynasty = clearBest(hauls.filter((h) => h.n >= 3), (h) => h.n);
+  if (dynasty) out.push(award('Dynasty', byId(dynasty.by), `Won ${dynasty.n} of ${ROLES_PER_ROUND} roles in round ${dynasty.round + 1}`, { weight: 2 }));
+  const pitches = cards.filter((c) => c.won && c.card.why);
+  const silver = clearLeader(countIds(pitches, (c) => c.by));
+  if (silver) {
+    const c = latest(pitches, silver.id);
+    out.push(award('Silver tongue', byId(silver.id), silver.n === 1
+      ? `Won ${c.role} with “${c.card.why}”`
+      : `Won ${silver.n} roles with a why line, “${c.card.why}” among them`));
+  }
   const steal = clearBest(cards.filter((c) => c.won && Number.isInteger(c.card.pick) && c.card.pick > c.seats), (c) => c.card.pick);
   if (steal) out.push(award('Steal of the draft', byId(steal.by), `Pick ${steal.card.pick}, ${steal.card.name}, won ${steal.role}`));
 
@@ -526,13 +545,10 @@ export function draftAwards(log = [], players = []) {
   )).map((by) => ({ by, round: e.round })));
   const bench = clearLeader(countIds(benched, (b) => b.by));
   if (bench) {
-    const b = benched.filter((x) => x.by === bench.id).at(-1);
     out.push(award('Benchwarmer', byId(bench.id), bench.n === 1
-      ? `Not one vote in round ${b.round + 1}`
+      ? `Not one vote in round ${latest(benched, bench.id).round + 1}`
       : `Not one vote, ${times(bench.n, 'round')}`, { roast: true }));
   }
-  const auto = clearLeader(countIds(cards, (c) => (c.card.auto ? c.by : null)), { min: 2 });
-  if (auto) out.push(award('Autopilot', byId(auto.id), `The clock picked for them ${auto.n} times`, { roast: true }));
   const bust = clearBest(cards.filter((c) => Number.isInteger(c.card.pick) && c.card.pick <= c.seats && c.votes === 0 && c.total > 0),
     (c) => c.card.pick, { dir: 'min' });
   if (bust) {
@@ -540,5 +556,15 @@ export function draftAwards(log = [], players = []) {
       ? `Picked ${bust.card.name} first — not one vote`
       : `Pick ${bust.card.pick}, ${bust.card.name} — not one vote`, { roast: true }));
   }
+  const takes = cards.filter((c) => c.card.why && c.votes === 0 && c.total > 0);
+  const take = clearLeader(countIds(takes, (c) => c.by));
+  if (take) {
+    const c = latest(takes, take.id);
+    out.push(award('Hot take', byId(take.id), `“${c.card.why}” — not one vote for ${c.card.name}`, { roast: true }));
+  }
+  const close = clearLeader(countIds(cards.filter((c) => !c.won && c.top > 0 && c.votes === c.top - 1), (c) => c.by), { min: 2 });
+  if (close) out.push(award('Bridesmaid', byId(close.id), `Lost ${close.n} roles by a single vote`, { roast: true }));
+  const auto = clearLeader(countIds(cards, (c) => (c.card.auto ? c.by : null)), { min: 2 });
+  if (auto) out.push(award('Autopilot', byId(auto.id), `The clock picked for them ${auto.n} times`, { roast: true }));
   return out.filter(Boolean);
 }

@@ -12,9 +12,18 @@
 // A game hands the card everything its players earned; `pickAwards` decides
 // what the card shows (up to four), so how to choose is written once. Awards
 // carry a `weight` (how rare the feat is: a perfect board outranks a hot
-// streak) and `roast` (a playful jab at a bad or odd play — "Butterfingers",
-// "Bold strategy"). The roasts are half the fun, so the card always makes room
-// for one when one was earned.
+// streak) and `roast` (a playful jab at a bad or odd play — "Bold strategy",
+// "Rage quit"). The roasts are half the fun, so the card is half roasts.
+//
+// **What every game's list follows** (settled with Caden, 2026-11-05):
+//
+//   - five good and five roasts per game, so either side can fill its half;
+//   - every title unique across the arcade — an award names a moment of THIS
+//     game, and "Butterfingers" in five games named none of them;
+//   - a MOMENT over a count: the detail quotes the character, the clue, the
+//     bet or the answer ("Bet 1,200 on the Daily Double — and lost"), and a
+//     plain "most X" total stays only where the number is the joke
+//     ("Asked 23 questions").
 
 /**
  * Counts how many times each id appears across `lines`. `idsOf(line)` returns
@@ -111,8 +120,8 @@ export const times = (n, one = 'time', many = `${one}s`) => `${n} ${n === 1 ? on
 /**
  * One award, in the card's shape — or null when there is no player for it,
  * so a game can build every candidate unconditionally and let the card drop
- * what nobody earned. `weight` ranks it (default 1; ~3 for the rare feats),
- * `roast` marks a playful jab.
+ * what nobody earned. `weight` ranks it within its side (default 1; ~3 for
+ * the rare feats), and `roast` puts it on the bad side of the card.
  */
 export function award(title, player, detail, { weight = 1, roast = false } = {}) {
   if (!player) return null;
@@ -122,15 +131,17 @@ export function award(title, player, detail, { weight = 1, roast = false } = {})
 export const MAX_AWARDS = 4;
 
 /**
- * What the card shows, from everything the game says was earned:
+ * What the card shows, from everything the game says was earned: an even
+ * split of good and bad — two of each on a card of four — because a card of
+ * compliments is a press release and a card of roasts is a pile-on. A side
+ * that earned fewer than its half leaves its slots to the other.
  *
- *   1. the heaviest first (stable on the game's own order within a weight);
- *   2. one per player while anyone is still without one — the winner is
- *      already on the splash, and a card that names four different people
- *      is the one that gets the whole table talking;
- *   3. then whatever is left, heaviest first, into the empty slots;
- *   4. and if a roast was earned but none made it, the best roast takes the
- *      last slot — four compliments in a row is a press release.
+ *   1. each side heaviest first (stable on the game's own order within a
+ *      weight), so the rarer feat wins a slot;
+ *   2. the sides take turns, good first, and each turn goes to someone not
+ *      yet named while anyone is — the winner is already on the splash, and a
+ *      card that names four different people gets the whole table talking;
+ *   3. the card reads the good first, then the roasts.
  *
  * Titles are unique (the card keys rows by title; the first one wins), and
  * an award without a player is dropped.
@@ -143,25 +154,25 @@ export function pickAwards(list = [], { max = MAX_AWARDS } = {}) {
     seen.add(a.title);
     all.push({ a, i, w: a.weight ?? 1 });
   });
-  all.sort((x, y) => y.w - x.w || x.i - y.i);
-  const picked = [];
+  const order = (x, y) => y.w - x.w || x.i - y.i;
+  const sides = [all.filter((e) => !e.a.roast).sort(order), all.filter((e) => e.a.roast).sort(order)];
+  // Two halves, and whatever one side cannot fill goes to the other.
+  const goods = Math.min(sides[0].length, Math.max(Math.ceil(max / 2), max - sides[1].length));
+  const want = [goods, Math.min(sides[1].length, max - goods)];
+  const taken = [[], []];
   const named = new Set();
-  for (const e of all) {
-    if (picked.length >= max) break;
-    const who = e.a.player.id ?? e.a.player.name;
-    if (named.has(who)) continue;
-    picked.push(e);
-    named.add(who);
+  const who = (e) => e.a.player.id ?? e.a.player.name;
+  for (let turn = 0; taken[0].length + taken[1].length < max; turn++) {
+    const s = turn % 2;
+    if (taken[s].length >= want[s]) {
+      if (taken[1 - s].length >= want[1 - s]) break;
+      continue;
+    }
+    const left = sides[s].filter((e) => !taken[s].includes(e));
+    if (!left.length) break;
+    const next = left.find((e) => !named.has(who(e))) ?? left[0];
+    taken[s].push(next);
+    named.add(who(next));
   }
-  for (const e of all) {
-    if (picked.length >= max) break;
-    if (!picked.includes(e)) picked.push(e);
-  }
-  if (picked.length && !picked.some((e) => e.a.roast)) {
-    const roast = all.find((e) => e.a.roast);
-    if (roast) picked[picked.length - 1] = roast;
-  }
-  // Back in the game's own order within the card, heaviest first, so the
-  // card reads the same way every time for the same match.
-  return picked.sort((x, y) => y.w - x.w || x.i - y.i).map((e) => e.a);
+  return [...taken[0].sort(order), ...taken[1].sort(order)].map((e) => e.a);
 }

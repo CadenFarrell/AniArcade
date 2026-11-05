@@ -271,31 +271,36 @@ describe('the game log and its awards', () => {
     expect(rules.normalizeGame({ ...g, log: { 0: g.log[0] } }).log).toEqual(g.log);
   });
 
-  it('names the cheapest right name and the boldest miss, and drops a tie', () => {
-    const log = [
-      { by: 'a', bid: 6, tiles: 2, hints: 1, correct: true },
-      { by: 'b', bid: 3, tiles: 3, hints: 0, correct: true },
-      { by: 'c', bid: 2, tiles: 2, hints: 0, correct: false },
-    ];
-    expect(rules.peekAwards(log, players).map((x) => [x.title, x.player.id])).toEqual([['Eagle eye', 'b'], ['Boldest miss', 'c']]);
-    expect(rules.peekAwards([log[1], { ...log[1], by: 'a' }], players)).toEqual([]);
-  });
-
   const titles = (log) => Object.fromEntries(rules.peekAwards(log, players, { nameOf: (i) => ['Levi', 'Rem'][i] ?? '' })
     .map((x) => [x.title, [x.player.id, x.detail]]));
 
-  it('names the leftovers and the hint addict, and roasts the misses and the passes', () => {
+  it('names the eagle eye, the big payday, the leftovers and the clue collector, and drops a tie', () => {
     const log = [
-      { card: 0, by: 'a', bid: 9, tiles: 2, hints: 1, correct: true, passed: ['c'] },
-      { card: 1, by: 'b', bid: 3, tiles: 3, hints: 0, correct: false, text: 'Eren', passed: ['c'] },
-      { card: 0, by: 'b', bid: 4, tiles: 4, hints: 0, correct: false, passed: ['c'] },
-      { card: 1, by: 'a', bid: 14, tiles: 1, hints: 2, correct: true, passed: [] },
+      { card: 0, by: 'a', bid: 6, tiles: 2, hints: 1, correct: true, points: 29 },
+      { card: 1, by: 'b', bid: 3, tiles: 3, hints: 0, correct: true, points: 32 },
+      { card: 0, by: 'c', bid: 20, tiles: 1, hints: 2, correct: true, points: 15 },
     ];
     const t = titles(log);
-    expect(t.Leftovers).toEqual(['a', `Named them with ${14 - 1 - 2 * rules.HINT_COST} of their bid to spare`]);
-    expect(t['Hint addict']).toEqual(['a', 'Bought 3 hints']);
-    expect(t.Butterfingers).toEqual(['b', `Missed 2 times — the table banked ${2 * rules.WRONG_BONUS} each`]);
-    expect(t.Chicken).toEqual(['c', 'Passed 3 times in the bidding']);
-    expect(t['Confidently wrong']).toEqual(['b', 'Said “Eren” — it was Rem']);
+    expect(t['Eagle eye']).toEqual(['b', 'Named Rem from 3 tiles']);
+    expect(t['Big payday']).toBeUndefined(); // the eagle eye's own round
+    expect(t.Leftovers).toEqual(['c', `Named Levi with ${20 - 1 - 2 * rules.HINT_COST} of their bid to spare`]);
+    expect(t['Clue collector']).toEqual(['c', 'Bought 2 hints, then named Levi']);
+    expect(titles([log[0], { ...log[1], points: 20 }])['Big payday']).toEqual(['a', '29 points for Levi']);
+    expect(rules.peekAwards([log[1], { ...log[1], by: 'a' }], players).map((x) => x.title)).not.toContain('Eagle eye');
+  });
+
+  it('roasts the overconfident, seeing things, the staring contest, the window shopper and cold feet', () => {
+    const log = [
+      { card: 0, by: 'a', bid: 9, tiles: 12, hints: 0, correct: false, passed: ['c'] },
+      { card: 1, by: 'b', bid: 3, tiles: 3, hints: 0, correct: false, text: 'Eren', passed: ['c'] },
+      { card: 0, by: 'b', bid: 14, tiles: 4, hints: 2, correct: false, passed: ['c'] },
+    ];
+    const t = titles(log);
+    expect(t.Overconfident).toEqual(['b', 'Bid 3 on Rem and missed']);
+    expect(t['Seeing things']).toEqual(['b', 'Said “Eren” — it was Rem']);
+    expect(t['Staring contest']).toEqual(['a', 'Uncovered 12 tiles and still missed Levi']);
+    expect(t['Window shopper']).toEqual(['b', 'Bought 2 hints and still missed Levi']);
+    expect(t['Cold feet']).toEqual(['c', 'Passed 3 times in the bidding']);
+    expect(t.Vulture).toEqual(['c', `Banked ${3 * rules.WRONG_BONUS} off other people’s misses`]);
   });
 });

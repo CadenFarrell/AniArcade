@@ -126,26 +126,46 @@ describe('the game log and its awards', () => {
     expect(normalizeGame({ log: [{ round: 1, picks: { p1: 'a' } }] }).log[0].picks).toEqual({ p1: 'a' });
   });
 
-  it('names a clear leader, and drops a tie', () => {
-    const log = [{ got: ['p1', 'p2'], reasons: ['p1'] }, { got: ['p1'], reasons: ['p1'] }];
-    expect(outAwards(log, players).map((a) => [a.title, a.player.id])).toEqual([['Sharpest eye', 'p1'], ['Mind reader', 'p1']]);
+  const three = [...players, { id: 'p3', name: 'Cat' }];
+  const names = { odd: 'Levi', x: 'Rem', y: 'Emilia', z: 'Ram', w: 'Subaru', v: 'Beatrice' };
+  const opts = { reasonsOn: true, nameOf: (r, key) => names[key] ?? '', oddOf: () => 'Levi' };
+  const titles = (log) => Object.fromEntries(outAwards(log, three, opts).map((a) => [a.title, [a.player.id, a.detail]]));
+  const line = (got, picks, reasons = []) => ({ got, reasons, picks });
+
+  it('names the lone wolf, the streak, full marks and the perfect game', () => {
+    const log = [
+      line(['p1'], { p1: 'odd', p2: 'x', p3: 'y' }, ['p1']),
+      line(['p1', 'p3'], { p1: 'odd', p2: 'x', p3: 'odd' }, ['p1', 'p3']),
+      line(['p1', 'p3'], { p1: 'odd', p2: 'z', p3: 'odd' }, ['p3']),
+    ];
+    const t = titles(log);
+    expect(t['Lone wolf']).toEqual(['p1', 'The only one who spotted Levi']);
+    expect(t['Hot streak']).toEqual(['p1', '3 rounds in a row']);
+    expect(t['Perfect game']).toEqual(['p1', 'Found the odd one out all 3 rounds']);
+    expect(t['Full marks']).toBeUndefined(); // p1 once, p3 once
     expect(outAwards([{ got: ['p1', 'p2'] }, { got: ['p1', 'p2'] }], players)).toEqual([]);
   });
 
-  it('names the lone wolf, the streak and the contrarian, and roasts the fooled and the reasonless', () => {
-    const three = [...players, { id: 'p3', name: 'Cat' }];
-    const line = (got, picks, reasons = []) => ({ got, reasons, picks });
+  it('names against the grain, and roasts the herd, the contrarian, the fooled and the blind spot', () => {
+    const four = [...three, { id: 'p4', name: 'Dan' }];
+    const t = Object.fromEntries(outAwards([
+      line(['p1'], { p1: 'odd', p2: 'x', p3: 'x', p4: 'x' }),
+      line(['p1', 'p3', 'p4'], { p1: 'odd', p2: 'y', p3: 'odd', p4: 'odd' }),
+      line(['p3'], { p1: 'w', p2: 'v', p3: 'odd', p4: 'w' }),
+    ], four, opts).map((a) => [a.title, [a.player.id, a.detail]]));
+    expect(t['Against the grain']).toEqual(['p1', 'Picked Levi while everyone else fell for Rem']);
+    expect(t['Herd mentality']).toBeUndefined(); // p2, p3 and p4 all did
+    expect(t['Blind spot']).toEqual(['p2', 'The only one who missed Levi']);
+    expect(t['Fooled again']).toEqual(['p2', 'Picked wrong 3 times']);
+    expect(t.Contrarian).toEqual(['p2', 'Picked a card nobody else touched, 2 times']);
+  });
+
+  it('roasts the reasonless', () => {
     const log = [
-      line(['p1'], { p1: 'odd', p2: 'x', p3: 'y' }),
-      line(['p1'], { p1: 'odd', p2: 'x', p3: 'x' }),
-      line(['p1', 'p3'], { p1: 'odd', p2: 'z', p3: 'odd' }),
-      line(['p3'], { p1: 'w', p2: 'v', p3: 'odd' }, ['p3']),
+      line(['p1'], { p1: 'odd', p2: 'x' }),
+      line(['p1'], { p1: 'odd', p2: 'x' }),
+      line(['p1', 'p2'], { p1: 'odd', p2: 'odd' }, ['p2']),
     ];
-    const t = Object.fromEntries(outAwards(log, three, { reasonsOn: true }).map((a) => [a.title, [a.player.id, a.detail]]));
-    expect(t['Lone wolf']).toEqual(['p1', 'The only one who saw it, 2 times']);
-    expect(t['Hot streak']).toEqual(['p1', '3 rounds in a row']);
-    expect(t.Contrarian).toEqual(['p2', 'Picked a card nobody else touched, 3 times']);
-    expect(t['Fooled again']).toEqual(['p2', 'Picked wrong 4 times']);
-    expect(t['Right for the wrong reason']).toEqual(['p1', 'Found it 3 times, never knew why']);
+    expect(titles(log)['Right for the wrong reason']).toEqual(['p1', 'Found it 3 times, never knew why']);
   });
 });

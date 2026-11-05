@@ -325,44 +325,52 @@ describe('the clue log and awards', () => {
     let g = startGame(IDS, deal);
     g = apply(g, pickCell(g, deal, 'ann', '0-4'));
     g = apply(g, submitAnswer(g, deal, 'ann', 'a4', IDS));
-    expect(g.log).toEqual([{ final: false, dd: false, top: true, answers: { ann: { correct: true, delta: 1000, blank: false } } }]);
+    expect(g.log).toEqual([{
+      final: false, dd: false, top: true, low: false, answer: 'a4', answers: { ann: { correct: true, delta: 1000, blank: false } },
+    }]);
     g = apply(g, advance(g, deal, IDS));
     g = apply(g, pickCell(g, deal, 'bo', '0-0'));
     g = apply(g, submitAnswer(g, deal, 'bo', '', IDS));
-    expect(g.log[1].answers.bo).toEqual({ correct: false, delta: -200, blank: true });
+    expect(g.log[1]).toMatchObject({ low: true, answer: 'a0', answers: { bo: { correct: false, delta: -200, blank: true } } });
     expect(normalizeGame(JSON.parse(JSON.stringify(g))).log).toEqual(g.log);
     expect(normalizeGame({ phase: 'board' }).log).toEqual([]);
   });
 
   const a = (correct, delta, extra = {}) => ({ correct, delta, blank: false, ...extra });
-  const line = (answers, extra = {}) => ({ final: false, dd: false, top: false, answers, ...extra });
+  const line = (answers, extra = {}) => ({ final: false, dd: false, top: false, low: false, answer: 'Levi', answers, ...extra });
 
-  it('names the streak, the big game hunter, all in and the comeback', () => {
+  it('names the hot hand, the big game hunter, the jackpot, all in and the comeback', () => {
     const log = [
       line({ ann: a(false, -400) }),
       line({ bo: a(true, 1000) }, { top: true }),
       line({ ann: a(true, 200) }),
       line({ bo: a(true, 1000) }, { top: true }),
       line({ ann: a(true, 600) }),
+      line({ cy: a(true, 1500, { wager: 1500, before: 2000 }) }, { dd: true, answer: 'Rem' }),
       line({ ann: a(true, 800) }),
       line({ ann: a(true, 1200, { wager: 1200, before: 1200 }), bo: a(false, -500, { wager: 500, before: 2000 }) }, { final: true }),
     ];
-    const t = titles(log, { ann: 2400, bo: 1500, cy: 0 });
-    expect(t['On fire']).toEqual(['ann', '4 right in a row']);
+    const t = titles(log, { ann: 2400, bo: 1500, cy: 1500 });
+    expect(t['Hot hand']).toEqual(['ann', '4 right in a row']);
     expect(t['Big game hunter']).toEqual(['bo', 'Took 2 of the 1,000s']);
+    expect(t.Jackpot).toEqual(['cy', '+1,500 on the Daily Double on Rem']);
     expect(t['All in']).toEqual(['ann', 'Bet all 1,200 on the final — and got it']);
     expect(t['Comeback kid']).toEqual(['ann', 'From −400 to first']);
     expect(t['Bold strategy']).toEqual(['bo', 'Bet 500 on the final — and lost']);
   });
 
-  it('roasts the butterfingers and the silent', () => {
+  it('roasts the brain freeze, the gimme, rock bottom and the silent', () => {
     const log = [
-      line({ cy: a(false, -200) }), line({ cy: a(false, -400) }), line({ cy: a(false, -600) }),
+      line({ cy: a(false, -200) }, { low: true, answer: 'Naruto' }),
+      line({ cy: a(false, -1000) }, { answer: 'Gintoki' }),
+      line({ cy: a(false, -600) }),
       line({ bo: a(false, -200, { blank: true }) }), line({ bo: a(false, -200, { blank: true }) }),
     ];
-    const t = titles(log, { ann: 0, bo: -400, cy: -1200 });
-    expect(t.Butterfingers).toEqual(['cy', 'Missed 3 (−1,200)']);
-    expect(t['Radio silence']).toEqual(['bo', 'Left 2 clues blank']);
+    const t = titles(log, { ann: 0, bo: -400, cy: -1800 });
+    expect(t['Brain freeze']).toEqual(['cy', 'Lost 1,000 on Gintoki']);
+    expect(t['Missed the gimme']).toEqual(['cy', 'Missed the 200 on Naruto']);
+    expect(t['Rock bottom']).toEqual(['cy', 'Sank to −1,800']);
+    expect(t['Cat got your tongue']).toEqual(['bo', 'Left 2 clues blank']);
     expect(t['Comeback kid']).toBeUndefined();
   });
 });
