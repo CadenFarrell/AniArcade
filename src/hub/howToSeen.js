@@ -3,7 +3,7 @@
 // The sheet opens by itself the first time each game is opened here, and never
 // again: a player new to a game needs the rules before the first round, while a
 // sheet over every visit is how help turns into a nag (welcomeSeen.js's reason).
-// The top bar's "How to play" brings it back at any point.
+// The "How to play" buttons (top bar, cover) bring it back at any point.
 //
 // One key holding a list of game ids rather than a key per game, so the arcade
 // keeps one name in storage for the whole feature. localStorage, guarded like

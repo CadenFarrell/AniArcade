@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useOpenHowTo } from '../context/howToContext';
 import { useInvite } from '../context/inviteContext';
 import { useTileCharacter } from '../context/tileCharacterContext';
 import { useOnline } from '../hooks/useOnline';
@@ -6,7 +7,7 @@ import { firebaseEnabled } from '../services/firebase';
 import { playSound } from '../services/sound';
 import { accentBg } from '../ui/accents';
 import { splitTitle } from '../utils/splitTitle';
-import { Backdrop, HubButton, Icon, Kana, Screen } from '../ui';
+import { Backdrop, Button, HubButton, Icon, Kana, Screen } from '../ui';
 
 // A game's cover page: the first screen after its hub tile, where a player picks
 // how to play. It was seven hand-copied files each centring a wordmark over two
@@ -27,6 +28,7 @@ export default function ModePicker({ game, tagline, onLocal, onOnline, onExit })
   const character = useTileCharacter();
   const [broken, setBroken] = useState(null);
   const invite = useInvite();
+  const openHowTo = useOpenHowTo();
   const online = useOnline();
   const canGoOnline = firebaseEnabled && online;
 
@@ -138,6 +140,19 @@ export default function ModePicker({ game, tagline, onLocal, onOnline, onExit })
             onClick={onOnline}
           />
         </div>
+
+        {/* The rules, from the page where a player decides whether to start.
+            The top bar's button does the same on every screen, but as a bare ?
+            on a phone it was easy to miss. Outline, under the cards: help, not
+            a third way to play. Absent with no HubScreen around the game. */}
+        {openHowTo && (
+          <Button variant="secondary" fullWidth onClick={openHowTo} className="mt-4">
+            <span className="inline-flex items-center justify-center gap-2">
+              <Icon name="help" className="text-xl" />
+              How to play
+            </span>
+          </Button>
+        )}
       </Screen>
     </>
   );

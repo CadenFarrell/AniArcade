@@ -172,7 +172,14 @@ buttons anyway.
 included — a friend joining by link is the newest player at the table. `openGame` sets it
 inside the wipe, so it is up when the cover appears; closing it any way marks it seen. After
 that the top bar's "How to play" (`HowToButton`, passed as the bar's `end` while a game is
-open) brings it back on any screen. Both dialogs render outside the view branches, since the
+open; icon-only on a phone, with its words from `sm`) brings it back on any screen, and the
+cover has a labelled one under the mode cards (`ModePicker`, through
+`shared/context/howToContext.js`, which HubScreen provides; null for a game mounted alone).
+**The sheet is paged**, goal first and then one `sections` entry a page, all drawn in one
+grid cell so every page is the tallest's height and Back/Next stay put; the panel is capped
+to the screen with only the page area scrolling, as a last resort. **Exactly one "Got it" on
+every page** (a quiet link, then the last page's Next becomes it): the bots close the sheet
+by that name from page 1. Both dialogs render outside the view branches, since the
 feedback box opens from the menu's footer ("Feedback", beside Credits) and from a sheet's
 "Send feedback", which arrives with the game chosen. `renderArcade` marks every game seen
 unless passed `{ showHowTo: true }`; the bots close a sheet by "Got it"

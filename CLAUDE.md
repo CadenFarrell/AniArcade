@@ -124,9 +124,9 @@ Tile sizing, the tile characters, the blurb's two homes and `ArcadeMark` are in
 **Every game ships a rules sheet: `howTo: () => import('./howTo')`**, whose `HOW_TO` is
 `{ goal, players, sections: [{ title, items }] }` built from the game's own `rules.js` and
 `prefs.js` constants, so a retuned number reaches the sheet by itself. `HubScreen` shows it
-(`shared/components/HowToSheet.jsx`) from a "How to play" button in the top bar on every
-screen of a game, and by itself the first time a game is opened on a device
-(`hub/howToSeen.js`). `hub/howTo.test.js` fails a game without one, or one printing
+(`shared/components/HowToSheet.jsx`, one section a page so it fits a phone) from a "How to
+play" button in the top bar on every screen of a game and another on its cover, and by
+itself the first time a game is opened on a device (`hub/howToSeen.js`). `hub/howTo.test.js` fails a game without one, or one printing
 `undefined`. Change a game's rules, check its sheet.
 
 ### rules.js — the central invariant

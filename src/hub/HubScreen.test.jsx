@@ -7,12 +7,13 @@
 // path is caught by the per-game ErrorBoundary, which a player sees as one game
 // being broken and which no rules test would ever notice.
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, screen, waitFor } from '@testing-library/react';
+import { cleanup, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { readFile } from 'node:fs/promises';
 import HubScreen from './HubScreen';
 import { games } from './registry';
 import { makeProfile, renderArcade, seedProfiles } from '../shared/testing/arcade';
+import { howToPages } from '../shared/utils/howToPages';
 
 // vitest loads .env.local, and that file points at PRODUCTION Firebase. Forcing
 // the unconfigured build is what keeps this suite off the network — and it is
@@ -277,6 +278,10 @@ describe.each(games.map((g) => [g.title, g]))('%s', (_title, game) => {
 // `showHowTo`; every other test here lands on the cover with no dialog.
 describe('how to play and feedback', () => {
   const sheetHeading = () => screen.queryByRole('heading', { name: 'How to play' });
+  // The top bar's button. The cover has a labelled one of its own (ModePicker,
+  // via shared/context/howToContext.js), so a bare name finds two there.
+  // Waited for, since the bar the hub shows during the wipe is a different one.
+  const barHowTo = () => waitFor(() => within(screen.getByRole('banner')).getByRole('button', { name: 'How to play' }));
 
   it('opens a game’s rules by itself the first time, and only the first time', async () => {
     seedProfiles([makeProfile('Caden')]);
@@ -312,15 +317,75 @@ describe('how to play and feedback', () => {
     const { HOW_TO } = await game.howTo();
 
     await user.click(tileFor(game));
-    const button = await screen.findByRole('button', { name: 'How to play' });
-    expect(button.closest('header')).toBeTruthy();
-    await user.click(button);
+    await user.click(await barHowTo());
     expect(await screen.findByText(HOW_TO.goal)).toBeTruthy();
     await user.click(screen.getByRole('button', { name: 'Got it' }));
 
     await user.click(await screen.findByRole('button', { name: /play on this device/i }));
     await user.click(screen.getByRole('button', { name: 'How to play' }));
     expect(await screen.findByText(HOW_TO.goal)).toBeTruthy();
+    expect(errors).toEqual([]);
+  });
+
+  it('opens the rules from the cover page’s own button too', async () => {
+    seedProfiles([makeProfile('Caden')]);
+    const user = userEvent.setup();
+    renderArcade(<HubScreen />);
+    const game = games[1];
+    const { HOW_TO } = await game.howTo();
+
+    await user.click(tileFor(game));
+    await screen.findByRole('button', { name: /play on this device/i });
+    const onCover = screen.getAllByRole('button', { name: 'How to play' }).find((b) => !b.closest('header'));
+    expect(onCover).toBeTruthy();
+    await user.click(onCover);
+    expect(await screen.findByText(HOW_TO.goal)).toBeTruthy();
+  });
+
+  // One section to a page (HowToSheet.jsx), so the sheet fits a phone: Back
+  // and Next between them, and exactly one "Got it" on every page — the quiet
+  // link until the last, where Next becomes it — because the bots close the
+  // sheet by that name from whichever page it is on.
+  it('pages through the rules, one section at a time', async () => {
+    seedProfiles([makeProfile('Caden')]);
+    const user = userEvent.setup();
+    renderArcade(<HubScreen />);
+    const game = games[0];
+    const { HOW_TO } = await game.howTo();
+    const list = howToPages(HOW_TO);
+    const pages = list.length;
+    const shown = () => screen.getByRole('dialog').querySelector('.grid > :not([aria-hidden])');
+
+    await user.click(tileFor(game));
+    await user.click(await barHowTo());
+    await screen.findByText(HOW_TO.goal);
+    expect(shown().textContent).toContain(HOW_TO.goal);
+    expect(screen.getByText(`Page 1 of ${pages}`)).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Back' }).disabled).toBe(true);
+    expect(screen.getAllByRole('button', { name: 'Got it' })).toHaveLength(1);
+
+    await user.click(screen.getByRole('button', { name: 'Next' }));
+    expect(shown().textContent).toContain(list[1].title);
+    expect(screen.getByText(`Page 2 of ${pages}`)).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: 'Back' }));
+    expect(shown().textContent).toContain(HOW_TO.goal);
+
+    // The arrow keys page too, and stop at either end.
+    await user.keyboard('{ArrowLeft}');
+    expect(screen.getByText(`Page 1 of ${pages}`)).toBeTruthy();
+    for (let i = 1; i < pages + 2; i += 1) await user.keyboard('{ArrowRight}');
+    expect(screen.getByText(`Page ${pages} of ${pages}`)).toBeTruthy();
+    expect(shown().textContent).toContain(list.at(-1).title);
+    expect(screen.queryByRole('button', { name: 'Next' })).toBeNull();
+    expect(screen.getAllByRole('button', { name: 'Got it' })).toHaveLength(1);
+
+    await user.click(screen.getByRole('button', { name: 'Got it' }));
+    expect(sheetHeading()).toBeNull();
+
+    // Opened again, it starts from the goal.
+    await user.click(await barHowTo());
+    await screen.findByText(`Page 1 of ${pages}`);
+    expect(shown().textContent).toContain(HOW_TO.goal);
     expect(errors).toEqual([]);
   });
 
@@ -346,7 +411,7 @@ describe('how to play and feedback', () => {
     const game = games[2];
 
     await user.click(tileFor(game));
-    await user.click(await screen.findByRole('button', { name: 'How to play' }));
+    await user.click(await barHowTo());
     await user.click(await screen.findByRole('button', { name: 'Send feedback' }));
     expect(sheetHeading()).toBeNull();
     expect(screen.getByRole('heading', { name: 'Send feedback' })).toBeTruthy();

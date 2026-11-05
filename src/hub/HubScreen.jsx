@@ -26,6 +26,7 @@ import TopBar from '../shared/components/TopBar';
 import { useProfileStore } from '../shared/context/profileContext';
 import { InviteContext } from '../shared/context/inviteContext';
 import { TileCharacterContext } from '../shared/context/tileCharacterContext';
+import { HowToContext } from '../shared/context/howToContext';
 import { CoverGameContext } from '../shared/context/coverGameContext';
 import { useWakeLock } from '../shared/hooks/useWakeLock';
 import { playSound } from '../shared/services/sound';
@@ -65,10 +66,13 @@ const BOARD_STYLE = {
 
 // The open game's rules, from the top bar — the one place on every screen of a
 // game (cover, setup, a round, the lobby, results), so the rules are never more
-// than a press away and no game screen had to grow a button. Icon-only because
-// on a phone the bar already holds Hub, a room's code and Leave, and Mute; its
-// name is the words. Styled as the Mute toggle beside it, a quiet glyph in the
-// bar rather than a block that competes with Hub.
+// than a press away and no game screen had to grow a button. Icon-only on a
+// phone, where the bar already holds Hub, a room's code and Leave, and Mute;
+// from `sm` up the words show beside it, because a bare ? was easy to miss.
+// The words are the aria-label's own, so the name a voice user says is the one
+// on screen (WCAG 2.5.3). Styled as the Mute toggle beside it, quiet ink in
+// the bar rather than a block that competes with Hub. The cover page has a
+// labelled one of its own (shared/context/howToContext.js).
 function HowToButton({ onClick }) {
   return (
     <button
@@ -76,10 +80,13 @@ function HowToButton({ onClick }) {
       onClick={onClick}
       aria-label="How to play"
       title="How to play"
-      className="focus-pop grid h-10 w-10 place-items-center rounded-pop-sm text-xl text-fg-icon
-        transition-colors hover:bg-wash hover:text-fg-strong"
+      className="focus-pop flex h-10 min-w-10 items-center justify-center gap-1.5 rounded-pop-sm text-fg-icon
+        transition-colors hover:bg-wash hover:text-fg-strong sm:px-2"
     >
-      <Icon name="help" />
+      <Icon name="help" className="text-xl" />
+      <span aria-hidden="true" className="hidden font-display text-sm font-bold uppercase tracking-wide sm:inline">
+        How to play
+      </span>
     </button>
   );
 }
@@ -395,6 +402,10 @@ export default function HubScreen() {
   });
 
   const active = games.find((g) => g.id === gameId);
+  // The rules sheet's opener, for the top bar and the cover's own button
+  // (HowToContext). Memoised on the game so the context does not change on
+  // every render of the hub.
+  const openHowTo = useMemo(() => (active ? () => setHowToFor(active.id) : null), [active]);
   // The screen stays on while a game is open: one call here covers every game,
   // local and online. See useWakeLock.js for why a dimmed phone is a dropped
   // player, not just a dark screen.
@@ -436,7 +447,7 @@ export default function HubScreen() {
     // produced it; going back to the menu unmounts the boundary anyway, and
     // the key makes that true even if this branch is ever reused.
     content = (
-      <TopBar title={active.title} kana={active.kana} end={<HowToButton onClick={() => setHowToFor(active.id)} />}>
+      <TopBar title={active.title} kana={active.kana} end={<HowToButton onClick={openHowTo} />}>
         <ErrorBoundary key={active.id} gameId={active.id} onBack={backToMenu}>
           {/* Inside the boundary, so a game whose code never arrives lands on the
               boundary's reload screen rather than taking down the arcade. */}
@@ -446,7 +457,9 @@ export default function HubScreen() {
             <TileCharacterContext.Provider value={tiles[active.id] ?? null}>
               <CoverGameContext.Provider value={active}>
                 <InviteContext.Provider value={inviteValue}>
-                  <Game onExit={backToMenu} />
+                  <HowToContext.Provider value={openHowTo}>
+                    <Game onExit={backToMenu} />
+                  </HowToContext.Provider>
                 </InviteContext.Provider>
               </CoverGameContext.Provider>
             </TileCharacterContext.Provider>
