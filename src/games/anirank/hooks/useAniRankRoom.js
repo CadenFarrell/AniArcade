@@ -376,11 +376,12 @@ export function useAniRankRoom() {
     settings: state?.settings ?? null,
     totalScores: state?.totalScores ?? {},
     matchRound: state?.matchRound ?? 0,
-    // In round order. A line's `readers` and `perfect` come back absent when
-    // empty (RTDB stores neither an empty array nor an empty object).
+    // In round order. A line's `readers`, `perfect`, `marks` and `worst` come
+    // back absent when empty (RTDB stores neither an empty array nor an empty
+    // object), and `best` when null.
     matchLog: Object.keys(state?.matchLog ?? {})
       .sort((a, b) => Number(a) - Number(b))
-      .map((k) => ({ readers: [], perfect: {}, ...state.matchLog[k] })),
+      .map((k) => ({ readers: [], perfect: {}, marks: {}, worst: {}, best: null, ...state.matchLog[k] })),
     rounds: state?.settings?.rounds ?? 0,
     nextRound, endMatch,
     roundScores: state?.roundScores ?? {},

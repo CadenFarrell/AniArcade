@@ -38,6 +38,8 @@
 // and rank 0 means "belongs at the top" either way, so nothing below this line
 // has to know which direction trueOrder sorts in.
 
+import { award, clearBest, clearLeader, sumBy, tally, times } from '../../shared/utils/awards';
+
 export const BOARD_SIZE = 10;
 
 // A match: this many rounds, then a final scoreboard (shared/utils/match.js; 0
@@ -601,51 +603,102 @@ export function applyRoundScores(totalScores, roundScores) {
 
 // --- the match -----------------------------------------------------------------
 //
-// One line per banked round, for the final screen's awards: the round's scores,
-// who was the subject, who read them best, and the best board's comparisons.
+// One line per banked round, for the final screen's awards: who was the
+// subject, who read them best, who got every comparison right, the best board
+// (null on a tie: two equal boards are nobody's), and each judged board's own
+// numbers — `marks[id]` is `{ c, of, exact }` (comparisons right, out of, cards
+// in exactly the right slot) and `worst[id]` the card it put furthest from home,
+// as `{ title, slot, trueSlot }` (1-based). The subject of an opinion round has
+// neither: they are the key.
 export function roundLogEntry(state, playerIds, { opinion = false, scoring = true } = {}) {
-  const scores = finalScores(state, playerIds, { opinion, scoring });
   const truth = scoring ? truthFor(state, { opinion }) : null;
-  let best = null;
-  if (truth) {
-    for (const id of playerIds) {
-      if (opinion && id === state.subjectId) continue;
-      const { score, perfect } = scoreBoard(state.boards?.[id], state.deck, truth);
-      if (!best || score > best.score) best = { id, score, perfect };
+  const judged = truth ? playerIds.filter((id) => !(opinion && id === state.subjectId)) : [];
+  const marks = {};
+  const worst = {};
+  for (const id of judged) {
+    const { concordant, comparisons, exact, slots } = explainBoard(state.boards?.[id], state.deck, truth);
+    if (!comparisons) continue;
+    marks[id] = { c: concordant, of: comparisons, exact };
+    const far = slots.reduce((a, s) => (s.item && Math.abs(s.drift ?? 0) > Math.abs(a?.drift ?? 0) ? s : a), null);
+    if (far && far.trueSlot != null) {
+      worst[id] = { title: far.item.title ?? '', slot: far.slot + 1, trueSlot: far.trueSlot, off: Math.abs(far.drift) };
     }
   }
+  const scores = finalScores(state, playerIds, { opinion, scoring });
+  const top = Math.max(0, ...Object.values(marks).map((m) => m.c));
+  const atTop = Object.keys(marks).filter((id) => marks[id].c === top);
   return {
     subjectId: opinion ? state.subjectId ?? null : null,
     readers: opinion ? bestReaders(scores, state.subjectId) : [],
-    perfect: Object.fromEntries(playerIds
-      .filter((id) => truth && !(opinion && id === state.subjectId)
-        && scoreBoard(state.boards?.[id], state.deck, truth).perfect)
-      .map((id) => [id, true])),
-    best: best ? best.id : null,
+    perfect: Object.fromEntries(Object.entries(marks)
+      .filter(([id]) => scoreBoard(state.boards?.[id], state.deck, truth).perfect)
+      .map(([id]) => [id, true])),
+    best: top > 0 && atTop.length === 1 ? atTop[0] : null,
+    marks,
+    worst,
   };
 }
 
 /**
- * The final screen's superlatives. A clear leader or nothing.
+ * The final screen's superlatives. Each is a clear leader or nothing — a tie
+ * drops it — and the card (shared/utils/awards.js's pickAwards) chooses what
+ * shows. Lines from before `marks`/`worst` were logged just skip those awards.
  *
- *   Mind reader    read the subject best the most times (opinion rounds)
- *   Perfect board  got every comparison right, the rarest thing this game makes
+ *   Perfect board     got every comparison right, the rarest thing this game makes
+ *   Mind reader       read the subject best the most times (opinion rounds)
+ *   Top of the class  the best board in the most rounds (2+)
+ *   Bullseye          the most cards in exactly the right slot (5+ across the match)
+ *   Open book         as the subject, the table read them best (2+ subjects)
+ *   Enigma            as the subject, the table read them worst (2+ subjects)
+ *   Upside down       the worst single board, 40% or under (roast)
+ *   Way off           the furthest any card landed from home, 5+ slots (roast)
  */
 export function matchAwards(log = [], players = []) {
   const lines = (log ?? []).filter(Boolean);
   const byId = (id) => players.find((p) => p.id === id) ?? null;
   const out = [];
-  const reads = {};
-  for (const l of lines) for (const id of l.readers ?? []) reads[id] = (reads[id] || 0) + 1;
-  const r = Object.entries(reads).sort((a, b) => b[1] - a[1]);
-  if (r.length && !(r[1] && r[1][1] === r[0][1]) && byId(r[0][0])) {
-    out.push({ title: 'Mind reader', player: byId(r[0][0]), detail: `Read the subject best ${r[0][1]} ${r[0][1] === 1 ? 'time' : 'times'}` });
+
+  const perfect = clearLeader(tally(lines, (l) => Object.keys(l.perfect ?? {})));
+  if (perfect) {
+    out.push(award('Perfect board', byId(perfect.id),
+      `Every comparison right${perfect.n > 1 ? `, ${perfect.n} times` : ''}`, { weight: 3 }));
   }
-  const perfects = {};
-  for (const l of lines) for (const id of Object.keys(l.perfect ?? {})) perfects[id] = (perfects[id] || 0) + 1;
-  const p = Object.entries(perfects).sort((a, b) => b[1] - a[1]);
-  if (p.length && !(p[1] && p[1][1] === p[0][1]) && byId(p[0][0])) {
-    out.push({ title: 'Perfect board', player: byId(p[0][0]), detail: `Every comparison right${p[0][1] > 1 ? `, ${p[0][1]} times` : ''}` });
+  const reader = clearLeader(tally(lines, (l) => l.readers ?? []));
+  if (reader) out.push(award('Mind reader', byId(reader.id), `Read the subject best ${times(reader.n)}`, { weight: 2 }));
+
+  const top = clearLeader(tally(lines, (l) => l.best), { min: 2 });
+  if (top) out.push(award('Top of the class', byId(top.id), `The best board in ${top.n} rounds`));
+
+  const exact = clearLeader(sumBy(lines, (l) => Object.fromEntries(
+    Object.entries(l.marks ?? {}).map(([id, m]) => [id, m?.exact]),
+  )), { min: 5 });
+  if (exact) out.push(award('Bullseye', byId(exact.id), `${exact.n} cards in exactly the right slot`));
+
+  // How well the table read each subject: the mean of their guessers' boards.
+  const subjects = lines.filter((l) => l.subjectId && Object.keys(l.marks ?? {}).length).map((l) => {
+    const ms = Object.values(l.marks);
+    return { by: l.subjectId, v: ms.reduce((a, m) => a + m.c / m.of, 0) / ms.length };
+  });
+  if (new Set(subjects.map((s) => s.by)).size > 1) {
+    const open = clearBest(subjects, (s) => s.v);
+    const enigma = clearBest(subjects, (s) => s.v, { dir: 'min' });
+    if (open && enigma && open.by !== enigma.by) {
+      out.push(award('Open book', byId(open.by), `The table read them at ${Math.round(open.v * 100)}%`));
+      out.push(award('Enigma', byId(enigma.by), `Nobody could read them: ${Math.round(enigma.v * 100)}%`));
+    }
   }
-  return out;
+
+  const boards = lines.flatMap((l) => Object.entries(l.marks ?? {})
+    .filter(([, m]) => m?.of > 0).map(([by, m]) => ({ by, ...m })));
+  const flop = clearBest(boards, (b) => b.c / b.of, { dir: 'min' });
+  if (flop && flop.c / flop.of <= 0.4) {
+    out.push(award('Upside down', byId(flop.by), `${flop.c} of ${flop.of} comparisons right`, { roast: true }));
+  }
+
+  const misses = lines.flatMap((l) => Object.entries(l.worst ?? {}).map(([by, w]) => ({ by, ...w })));
+  const far = clearBest(misses, (w) => w.off);
+  if (far && far.off >= 5) {
+    out.push(award('Way off', byId(far.by), `Put ${far.title || 'a card'} at #${far.slot} — it belongs at #${far.trueSlot}`, { roast: true }));
+  }
+  return out.filter(Boolean);
 }

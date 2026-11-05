@@ -75,6 +75,7 @@ export default function OnlineGame({ onBack, onExit }) {
       <QuizResults
         players={seated}
         scores={game.scores}
+        log={game.log}
         departedIds={room.departedIds}
         onPlayAgain={room.isHost ? room.returnToLobby : null}
       />,

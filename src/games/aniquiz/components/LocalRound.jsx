@@ -40,7 +40,7 @@ export default function LocalRound({ players, deal, settings, pack, onPlayAgain,
   const table = players.length > 1;
 
   if (game.phase === 'finished') {
-    return <QuizResults players={players} scores={game.scores} onPlayAgain={onPlayAgain} onBack={onBack} />;
+    return <QuizResults players={players} scores={game.scores} log={game.log} onPlayAgain={onPlayAgain} onBack={onBack} />;
   }
 
   const scoreboard = (

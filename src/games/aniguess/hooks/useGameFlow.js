@@ -156,14 +156,15 @@ export function useGameFlow({ view, setView }) {
 
   // The current guesser gives up (GameScreen confirms first).
   const handleGiveUp = useCallback(() => {
+    // questionLogs too: the lock counts the round's questions for the awards.
     const { patch, next } = rules.giveUp(
-      { gameSession, currentPlayerIndex, lockedPositions, turnCounts }, [], characterOf(currentPlayerIndex),
+      { gameSession, currentPlayerIndex, lockedPositions, questionLogs, turnCounts }, [], characterOf(currentPlayerIndex),
     );
     if (!patch.lockedPositions) return;
     setLockedPositions(patch.lockedPositions);
     if ('currentPlayerIndex' in patch) setCurrentPlayerIndex(patch.currentPlayerIndex);
     setView(next);
-  }, [gameSession, currentPlayerIndex, lockedPositions, turnCounts, characterOf, setView]);
+  }, [gameSession, currentPlayerIndex, lockedPositions, questionLogs, turnCounts, characterOf, setView]);
 
   // Called when current player guesses correctly
   const handleCorrectGuess = useCallback((logEntry) => {

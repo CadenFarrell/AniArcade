@@ -1,4 +1,5 @@
 import { getSpectrum } from './spectra';
+import { award, clearBest, clearLeader, tally } from '../../shared/utils/awards';
 
 // All AniWave logic: no React, no storage, no network. Each function takes a
 // slice of round state and returns a { patch } for the caller to apply however
@@ -633,35 +634,36 @@ export function roundLogEntry(state, playerIds = []) {
     bestId: best?.playerId ?? null,
     bestDistance: best?.distance ?? null,
     psychicPoints: state.psychicId ? (scores[state.psychicId] ?? 0) : 0,
+    // Every placed dial's distance from the target, for the awards' averages
+    // and the biggest miss. A guesser with no dial is absent, not far off.
+    dials: Object.fromEntries(rows.map((r) => [r.playerId, r.distance])),
   };
 }
 
 /**
- * The final screen's superlatives. A clear leader or nothing — a tie drops the
- * award rather than picking a name by seat.
+ * The final screen's superlatives. Each is a clear leader or nothing — a tie
+ * drops it rather than picking a name by seat — and the card
+ * (shared/utils/awards.js's pickAwards) chooses what shows. Lines from before
+ * `dials` was logged skip the awards that need it.
  *
- *   Bullseye    the closest single dial of the session
- *   Mind meld   the psychic whose clues the table read best, on average
+ *   Bullseye               the closest single dial of the session
+ *   Mind meld              the psychic whose clues the table read best, on average
+ *   Steady hand            the lowest average distance, over three dials or more
+ *   Wrong end of the dial  the biggest single miss, 40 or more (roast)
+ *   Radio static           a clue that scored the table nothing (roast)
  */
 export function sessionAwards(log = [], players = []) {
-  const lines = log.filter(Boolean);
+  const lines = (log ?? []).filter(Boolean);
   const byId = (id) => players.find((p) => p.id === id) ?? null;
+  const on = (l) => `${l.left} → ${l.right}`;
   const out = [];
 
-  const dials = lines.filter((l) => l.bestId != null && Number.isFinite(l.bestDistance));
-  if (dials.length) {
-    const closest = Math.min(...dials.map((l) => l.bestDistance));
-    const hits = dials.filter((l) => l.bestDistance === closest);
-    if (new Set(hits.map((l) => l.bestId)).size === 1 && byId(hits[0].bestId)) {
-      const h = hits[0];
-      out.push({
-        title: 'Bullseye',
-        player: byId(h.bestId),
-        detail: closest === 0
-          ? `Dead on the target, ${h.left} → ${h.right}`
-          : `Off by ${closest} on ${h.left} → ${h.right}`,
-      });
-    }
+  const hits = lines.filter((l) => l.bestId != null && Number.isFinite(l.bestDistance));
+  const h = clearBest(hits, (l) => l.bestDistance, { dir: 'min', whoOf: (l) => l.bestId });
+  if (h) {
+    out.push(award('Bullseye', byId(h.bestId), h.bestDistance === 0
+      ? `Dead on the target, ${on(h)}`
+      : `Off by ${h.bestDistance} on ${on(h)}`, { weight: 2 }));
   }
 
   const psychic = {};
@@ -671,15 +673,40 @@ export function sessionAwards(log = [], players = []) {
     psychic[l.psychicId].sum += l.psychicPoints;
     psychic[l.psychicId].n += 1;
   }
-  const avgs = Object.entries(psychic).map(([id, { sum, n }]) => [id, sum / n]).filter(([, a]) => a > 0)
-    .sort((a, b) => b[1] - a[1]);
-  if (avgs.length && !(avgs[1] && avgs[1][1] === avgs[0][1]) && byId(avgs[0][0])) {
-    const [id, avg] = avgs[0];
-    out.push({
-      title: 'Mind meld',
-      player: byId(id),
-      detail: `The table scored ${Number.isInteger(avg) ? avg : avg.toFixed(1)} a round off their clues`,
-    });
+  const avgs = Object.fromEntries(Object.entries(psychic).map(([id, { sum, n }]) => [id, sum / n]).filter(([, a]) => a > 0));
+  const meld = clearLeader(avgs, { min: Number.MIN_VALUE });
+  if (meld) {
+    const avg = meld.n;
+    out.push(award('Mind meld', byId(meld.id),
+      `The table scored ${Number.isInteger(avg) ? avg : avg.toFixed(1)} a round off their clues`, { weight: 2 }));
   }
-  return out;
+
+  const dials = lines.flatMap((l) => Object.entries(l.dials ?? {})
+    .filter(([, d]) => Number.isFinite(d)).map(([by, d]) => ({ by, d, l })));
+  const per = {};
+  for (const { by, d } of dials) {
+    per[by] ??= { sum: 0, n: 0 };
+    per[by].sum += d;
+    per[by].n += 1;
+  }
+  const steadyField = Object.fromEntries(Object.entries(per).filter(([, v]) => v.n >= 3).map(([id, v]) => [id, v.sum / v.n]));
+  const steady = Object.keys(steadyField).length > 1 ? clearLeader(steadyField, { dir: 'min' }) : null;
+  if (steady) {
+    out.push(award('Steady hand', byId(steady.id), `Averaged ${Math.round(steady.n)} off across ${per[steady.id].n} dials`));
+  }
+
+  const far = clearBest(dials, (x) => x.d);
+  if (far && far.d >= 40) out.push(award('Wrong end of the dial', byId(far.by), `Off by ${far.d} on ${on(far.l)}`, { roast: true }));
+
+  // A clue the table read at nothing, among the rounds anybody dialled.
+  const flat = lines.filter((l) => l.psychicId && l.psychicPoints === 0
+    && (l.dials ? Object.keys(l.dials).length > 0 : l.bestId != null));
+  const statik = clearLeader(tally(flat, (l) => l.psychicId));
+  if (statik) {
+    const l = flat.filter((x) => x.psychicId === statik.id).at(-1);
+    out.push(award('Radio static', byId(statik.id), l.clue
+      ? `“${l.clue}” scored the table nothing`
+      : `A clue that scored the table nothing, on ${on(l)}`, { roast: true }));
+  }
+  return out.filter(Boolean);
 }

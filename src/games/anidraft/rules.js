@@ -28,6 +28,9 @@
 // the current pick began, server time) plus `pickClock` seconds; locally the
 // clock is off and `now` is null.
 
+import { award, clearBest, clearLeader, tally as countIds, times } from '../../shared/utils/awards';
+import { roleOf } from './roles';
+
 export const MIN_PLAYERS = 3;
 // Eight teams of five is a 60-card board — already a long scroll on a phone —
 // and an eight-way ballot per role.
@@ -107,6 +110,20 @@ export function teamSlots(game, id) {
     slots[p.slot] = card && p.why ? { ...card, why: p.why } : card;
   }
   return slots;
+}
+
+/**
+ * A team as the log files it: teamSlots, each card also stamped with its
+ * overall pick number this round (`pick`, from 1) and `auto` when the clock
+ * made it — for the awards, since `picks` is gone with the next round.
+ */
+function loggedSlots(game, id) {
+  return teamSlots(game, id).map((card, slot) => {
+    if (!card) return card;
+    const at = game.picks.findIndex((p) => p.by === id && p.slot === slot);
+    if (at < 0) return card;
+    return { ...card, pick: at + 1, ...(game.picks[at].auto ? { auto: true } : {}) };
+  });
 }
 
 /** The slot indexes a player still has to fill. */
@@ -268,7 +285,7 @@ export function closeVote(game, activeIds = null) {
   const entry = {
     round: game.round,
     roles: game.roles,
-    teams: Object.fromEntries(game.order.map((id) => [id, teamSlots(game, id)])),
+    teams: Object.fromEntries(game.order.map((id) => [id, loggedSlots(game, id)])),
     tally,
   };
   return { patch: { phase: 'reveal', shown: 0, scores, votesWon, log: [...game.log, entry] } };
@@ -390,9 +407,16 @@ const slotsOf = (raw, n, fn) => Array.from({ length: n }, (_, i) => fn(raw?.[i])
 export function normalizeCard(raw) {
   if (!raw || typeof raw !== 'object' || !str(raw.name) || !str(raw.key)) return null;
   const card = { key: raw.key, name: raw.name, series: str(raw.series) ?? '', imageUrl: str(raw.imageUrl) ?? '' };
-  // A drafted card in the log carries its pick's reason (teamSlots).
+  // A drafted card in the log carries its pick's reason (teamSlots), its pick
+  // number and whether the clock made it (loggedSlots).
   const why = cleanWhy(str(raw.why));
-  return why ? { ...card, why } : card;
+  const pick = Number.isInteger(raw.pick) && raw.pick > 0 ? raw.pick : null;
+  return {
+    ...card,
+    ...(why ? { why } : {}),
+    ...(pick ? { pick } : {}),
+    ...(raw.auto === true ? { auto: true } : {}),
+  };
 }
 
 const counts = (raw) => {
@@ -445,4 +469,76 @@ export function normalizeGame(raw) {
     used: listOf(raw.used).filter((k) => typeof k === 'string'),
     log: listOf(raw.log).map((e) => normalizeEntry(e, order)).filter(Boolean),
   };
+}
+
+// ── The draft's story ────────────────────────────────────────────────────
+
+/**
+ * The final screen's superlatives, from the log. Each is a clear leader or
+ * nothing — a tie drops it rather than picking by seat — and the card
+ * (shared/utils/awards.js's pickAwards) chooses what shows.
+ *
+ * Built from the tallies alone, never the ballots: the reveal shows how many
+ * votes each team drew, not who cast them, so no award may say who voted for
+ * whom. Entries from before `pick`/`auto` were logged skip the awards that
+ * need them.
+ *
+ *   Unanimous           a card that took every vote for its role
+ *   Silver tongue       the most roles won with a "why" line (2+)
+ *   Steal of the draft  the latest pick to win a role (after the first lap)
+ *   Benchwarmer         a whole team without one vote in a round (roast)
+ *   Autopilot           the most picks the clock made for them (2+, roast)
+ *   First-round bust    an opening-lap pick that drew no votes (roast)
+ */
+export function draftAwards(log = [], players = []) {
+  const byId = (id) => players.find((p) => p.id === id) ?? null;
+  const entries = (log ?? []).filter(Boolean);
+  const out = [];
+  // Every drafted card with its role, its votes and whether it won.
+  const cards = entries.flatMap((e) => {
+    const order = Object.keys(e.teams ?? {});
+    return order.flatMap((by) => (e.teams[by] ?? []).map((card, slot) => {
+      if (!card) return null;
+      const counts = e.tally?.[slot] ?? {};
+      const total = Object.values(counts).reduce((a, n) => a + n, 0);
+      return {
+        by, card, slot, round: e.round, role: roleOf(e.roles?.[slot]).name,
+        votes: counts[by] ?? 0, total, won: winnersOf(counts, order).includes(by), seats: order.length,
+      };
+    }).filter(Boolean));
+  });
+
+  const sweeps = cards.filter((c) => c.seats >= 3 && c.total >= 2 && c.votes === c.total);
+  const sweep = clearLeader(countIds(sweeps, (c) => c.by));
+  if (sweep) {
+    const c = sweeps.filter((x) => x.by === sweep.id).at(-1);
+    out.push(award('Unanimous', byId(sweep.id), sweep.n === 1
+      ? `Every vote for ${c.card.name} as ${c.role}`
+      : `Took every vote for a role ${times(sweep.n)}`, { weight: 3 }));
+  }
+  const silver = clearLeader(countIds(cards, (c) => (c.won && c.card.why ? c.by : null)), { min: 2 });
+  if (silver) out.push(award('Silver tongue', byId(silver.id), `Won ${silver.n} roles with a why line`, { weight: 2 }));
+  const steal = clearBest(cards.filter((c) => c.won && Number.isInteger(c.card.pick) && c.card.pick > c.seats), (c) => c.card.pick);
+  if (steal) out.push(award('Steal of the draft', byId(steal.by), `Pick ${steal.card.pick}, ${steal.card.name}, won ${steal.role}`));
+
+  const benched = entries.flatMap((e) => Object.keys(e.teams ?? {}).filter((by) => (
+    (e.tally ?? []).every((counts) => !(counts?.[by] > 0))
+  )).map((by) => ({ by, round: e.round })));
+  const bench = clearLeader(countIds(benched, (b) => b.by));
+  if (bench) {
+    const b = benched.filter((x) => x.by === bench.id).at(-1);
+    out.push(award('Benchwarmer', byId(bench.id), bench.n === 1
+      ? `Not one vote in round ${b.round + 1}`
+      : `Not one vote, ${times(bench.n, 'round')}`, { roast: true }));
+  }
+  const auto = clearLeader(countIds(cards, (c) => (c.card.auto ? c.by : null)), { min: 2 });
+  if (auto) out.push(award('Autopilot', byId(auto.id), `The clock picked for them ${auto.n} times`, { roast: true }));
+  const bust = clearBest(cards.filter((c) => Number.isInteger(c.card.pick) && c.card.pick <= c.seats && c.votes === 0 && c.total > 0),
+    (c) => c.card.pick, { dir: 'min' });
+  if (bust) {
+    out.push(award('First-round bust', byId(bust.by), bust.card.pick === 1
+      ? `Picked ${bust.card.name} first — not one vote`
+      : `Pick ${bust.card.pick}, ${bust.card.name} — not one vote`, { roast: true }));
+  }
+  return out.filter(Boolean);
 }

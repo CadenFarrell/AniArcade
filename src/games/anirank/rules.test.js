@@ -4,7 +4,7 @@ import {
   pendingPlacers, placeItem, everyonePlaced, advanceCursor, trueOrder, scoreBoard,
   explainBoard, finalScores, applyRoundScores, rankMap, truthFor, subjectFor,
   isOpen, placeCard, clearSlot, lockIn, unplacedCards, roundFinished, roundUntouched,
-  READER_BONUS, bestReaders, isSeatPace, matchAwards,
+  READER_BONUS, bestReaders, isSeatPace, matchAwards, roundLogEntry,
 } from './rules';
 
 const show = (id, value) => ({ id, title: id, value, imageUrl: '' });
@@ -906,7 +906,54 @@ describe('matchAwards', () => {
   it('names a mind reader and a perfect board when someone clearly earned them', () => {
     const ps = [{ id: 'a', name: 'A' }, { id: 'b', name: 'B' }];
     const log = [{ readers: ['a'], perfect: { b: true } }, { readers: ['a', 'b'], perfect: {} }];
-    expect(matchAwards(log, ps).map((x) => [x.title, x.player.id])).toEqual([['Mind reader', 'a'], ['Perfect board', 'b']]);
+    expect(matchAwards(log, ps).map((x) => [x.title, x.player.id])).toEqual([['Perfect board', 'b'], ['Mind reader', 'a']]);
     expect(matchAwards([{ readers: ['a', 'b'], perfect: {} }], ps)).toEqual([]);
+  });
+
+  const ps = [{ id: 'a', name: 'A' }, { id: 'b', name: 'B' }, { id: 'c', name: 'C' }];
+  const titles = (log) => Object.fromEntries(matchAwards(log, ps).map((x) => [x.title, [x.player.id, x.detail]]));
+
+  it('logs each board’s marks, its furthest card and a tie-safe best', () => {
+    const sorted = perfectBoard();
+    // b swaps the top card to the bottom: one card nine slots from home.
+    const flipped = [...sorted.slice(1), sorted[0]];
+    const state = { deck: DECK, boards: { a: sorted, b: flipped, c: sorted } };
+    const line = roundLogEntry(state, ['a', 'b', 'c']);
+    expect(line.marks.a).toEqual({ c: PERFECT, of: PERFECT, exact: 10 });
+    expect(line.marks.b.c).toBe(PERFECT - 9);
+    expect(line.worst.b).toEqual({ title: sorted[0].title, slot: 10, trueSlot: 1, off: 9 });
+    expect(line.perfect).toEqual({ a: true, c: true });
+    expect(line.best).toBeNull();
+    expect(roundLogEntry({ ...state, boards: { a: sorted, b: flipped } }, ['a', 'b']).best).toBe('a');
+  });
+
+  it('names the top of the class, the bullseye, upside down and way off', () => {
+    const log = [
+      { best: 'a', marks: { a: { c: 40, of: 45, exact: 4 }, b: { c: 10, of: 45, exact: 0 } }, worst: { b: { title: 'Naruto', slot: 1, trueSlot: 9, off: 8 } } },
+      { best: 'a', marks: { a: { c: 42, of: 45, exact: 3 }, b: { c: 30, of: 45, exact: 1 } }, worst: { a: { title: 'Bleach', slot: 3, trueSlot: 4, off: 1 } } },
+    ];
+    const t = titles(log);
+    expect(t['Top of the class']).toEqual(['a', 'The best board in 2 rounds']);
+    expect(t.Bullseye).toEqual(['a', '7 cards in exactly the right slot']);
+    expect(t['Upside down']).toEqual(['b', '10 of 45 comparisons right']);
+    expect(t['Way off']).toEqual(['b', 'Put Naruto at #1 — it belongs at #9']);
+  });
+
+  it('names the open book and the enigma only across two subjects or more', () => {
+    const line = (subjectId, marks) => ({ subjectId, readers: [], perfect: {}, marks });
+    const log = [
+      line('a', { b: { c: 40, of: 45, exact: 0 }, c: { c: 36, of: 45, exact: 0 } }),
+      line('b', { a: { c: 20, of: 45, exact: 0 }, c: { c: 25, of: 45, exact: 0 } }),
+    ];
+    const t = titles(log);
+    expect(t['Open book']).toEqual(['a', 'The table read them at 84%']);
+    expect(t.Enigma).toEqual(['b', 'Nobody could read them: 50%']);
+    expect(titles([log[0]])['Open book']).toBeUndefined();
+  });
+
+  it('reads a log from before the board marks without them', () => {
+    expect(titles([{ readers: ['a'], perfect: {} }, { readers: ['a'], perfect: {} }])).toEqual({
+      'Mind reader': ['a', 'Read the subject best 2 times'],
+    });
   });
 });

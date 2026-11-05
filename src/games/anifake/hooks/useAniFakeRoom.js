@@ -653,10 +653,15 @@ export function useAniFakeRoom() {
     settings: state?.settings ?? null,
     totalScores: state?.totalScores ?? {},
     matchRound: state?.matchRound ?? 0,
-    // In round order; RTDB hands back `namedBy` dropped when nobody named the fake.
+    // In round order; RTDB hands back `namedBy`, `votes` and `timeouts`
+    // dropped when empty, and `stealGuess` when null.
     matchLog: Object.keys(state?.matchLog ?? {})
       .sort((a, b) => Number(a) - Number(b))
-      .map((k) => ({ ...state.matchLog[k], namedBy: state.matchLog[k]?.namedBy ?? [] })),
+      .map((k) => ({
+        votes: {}, timeouts: {}, stealGuess: null,
+        ...state.matchLog[k],
+        namedBy: state.matchLog[k]?.namedBy ?? [],
+      })),
     rounds: state?.settings?.rounds ?? 0,
     clueSeconds: state?.settings?.clueSeconds ?? 0,
     nextRound, endMatch, timeOutClue,

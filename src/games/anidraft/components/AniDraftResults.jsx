@@ -1,11 +1,11 @@
-import ResultsLayout, { Splash, Standings } from '../../../shared/components/Results';
+import ResultsLayout, { Awards, Splash, Standings } from '../../../shared/components/Results';
 import { StartBar } from '../../../shared/components/SetupLayout';
 import { useRecordResult } from '../../../shared/hooks/useRecordResult';
 import { fromRanked } from '../../../shared/utils/history';
 import { splitPodium } from '../../../shared/utils/podium';
 import { Avatar, Button, Card } from '../../../shared/ui';
 import { roleOf } from '../roles';
-import { standings, winnersOf } from '../rules';
+import { draftAwards, standings, winnersOf } from '../rules';
 import descriptor from '../index';
 
 const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
@@ -57,6 +57,7 @@ export default function AniDraftResults({ game, players, departedIds = [], onPla
         score={(p) => String(p.total)}
         extra={(p) => <span className="text-xs text-fg-helper">{plural(p.votes, 'vote')}</span>}
       />
+      <Awards awards={draftAwards(game.log, players)} />
       <Recap game={game} players={players} />
     </ResultsLayout>
   );

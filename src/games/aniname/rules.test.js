@@ -288,7 +288,7 @@ describe('the game log and its awards', () => {
     let g = toNaming();
     for (const k of ['x1', 'x2', 'x3', 'x4']) g = apply(g, addName(g, 'b', right(k), IDS, T0));
     g = apply(g, nextRound(g, IDS));
-    expect(g.log).toEqual([{ round: 0, by: 'b', n: 4, made: true, count: 4, void: null }]);
+    expect(g.log).toMatchObject([{ round: 0, by: 'b', n: 4, made: true, count: 4, void: null, wrong: 0, repeats: 0 }]);
     expect(normalizeGame({ ...g, log: { 0: g.log[0] } }).log).toEqual(g.log);
   });
 
@@ -296,5 +296,22 @@ describe('the game log and its awards', () => {
     const log = [{ by: 'a', n: 6, made: true, count: 6 }, { by: 'b', n: 4, made: true, count: 4 }, { by: 'c', n: 9, made: false, count: 5 }];
     expect(nameAwards(log, players).map((x) => [x.title, x.player.id])).toEqual([['Big talker', 'a'], ['Overreach', 'c']]);
     expect(nameAwards([log[0], { ...log[0], by: 'b' }], players)).toEqual([]);
+  });
+
+  it('names the freeloader, and roasts butterfingers, the broken record, the chicken and the wallflower', () => {
+    const log = [
+      { by: 'a', n: 6, made: false, count: 3, wrong: 2, repeats: 1, passed: ['c'] },
+      { by: 'a', n: 4, made: false, count: 2, wrong: 2, repeats: 0, passed: ['c', 'b'] },
+      { by: 'b', n: 5, made: true, count: 5, wrong: 0, repeats: 0, passed: ['c'] },
+    ];
+    const t = Object.fromEntries(nameAwards(log, players).map((x) => [x.title, [x.player.id, x.detail]]));
+    expect(t.Freeloader).toBeUndefined(); // b and c both banked 3 + 2
+    expect(t.Butterfingers).toEqual(['a', '4 wrong names']);
+    expect(t['Broken record']).toEqual(['a', 'Said the same name twice']);
+    expect(t.Chicken).toEqual(['c', 'Passed 3 times in the bidding']);
+    expect(t.Wallflower).toEqual(['c', 'Never won a bid in 3 rounds']);
+    const t2 = Object.fromEntries(nameAwards([...log, { by: 'c', n: 8, made: false, count: 1 }], players)
+      .map((x) => [x.title, [x.player.id, x.detail]]));
+    expect(t2.Freeloader).toEqual(['b', 'Banked 9 off other people falling short']);
   });
 });

@@ -342,6 +342,7 @@ export function useCategoriesRoom() {
       totalScores: {},
       bankedRound: null,
       seenCategories: null,
+      roundLog: null,
       game: rules.startRound(ids.length ? ids : playerIds, {
         round: 0,
         cap: nextSettings.proposalCap,
@@ -442,6 +443,8 @@ export function useCategoriesRoom() {
     const revealed = Object.values(game.results ?? {}).map((r) => r?.category).filter((c) => rules.toSpec(c));
     await patchState({
       seenCategories: [...(state?.seenCategories ?? []), ...revealed],
+      // The round's line again, now that every clause has been attached.
+      [`roundLog/${game.round}`]: rules.roundLogLine(game, playerIds),
       game: rules.startRound(ids, {
         round: game.round + 1,
         // Both from the ROUND rather than from settings, so neither can drift
@@ -453,8 +456,11 @@ export function useCategoriesRoom() {
   }, [isHost, game, state?.seenCategories, patchState, roster, playerIds]);
 
   const finish = useCallback(() => (
-    isHost ? patchState({ view: 'results' }) : undefined
-  ), [isHost, patchState]);
+    isHost ? patchState({
+      view: 'results',
+      ...(game ? { [`roundLog/${game.round}`]: rules.roundLogLine(game, playerIds) } : {}),
+    }) : undefined
+  ), [isHost, patchState, game, playerIds]);
 
   // Back to the lobby with the settings intact, so a table can retune and go
   // again without re-entering the room code.
@@ -557,11 +563,15 @@ export function useCategoriesRoom() {
         (cur) => (cur === game.round ? undefined : game.round),
       );
       if (!claim.committed) return;
+      // The round's line for the awards rides the same write, under the same
+      // claim (AniWave's roundLog). Keyed by round, so the rewrite at
+      // nextRound/finish — once every clause is attached — is idempotent.
       await patchState({
         totalScores: rules.applyRoundScores(
           state?.totalScores ?? {},
           rules.finalScores(game, playerIds),
         ),
+        [`roundLog/${game.round}`]: rules.roundLogLine(game, playerIds),
       });
     });
   }, [isHost, roomCode, game, state, playerIds, patchState, once]);
@@ -652,6 +662,11 @@ export function useCategoriesRoom() {
     explain: game ? rules.explainRound(game, playerIds) : [],
     roundScores: game ? rules.finalScores(game, playerIds) : {},
     totalScores: state?.totalScores ?? {},
+    // In round order; keyed by round, so it may come back as an object.
+    roundLog: Object.keys(state?.roundLog ?? {})
+      .sort((a, b) => Number(a) - Number(b))
+      .map((k) => state.roundLog[k])
+      .filter(Boolean),
     roundNumber: (game?.round ?? 0) + 1,
     totalRounds: settings?.rounds ?? 0,
     isFinalRound: (game?.round ?? 0) + 1 >= (settings?.rounds ?? 0),

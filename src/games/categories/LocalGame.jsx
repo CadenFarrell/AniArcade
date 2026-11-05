@@ -13,6 +13,8 @@ export default function LocalGame({ onExit, onBack }) {
   // { players, rounds, proposalCap, categoryPool, categorySource, customCategories }
   const [game, setGame] = useState(null);
   const [totals, setTotals] = useState({});
+  // The session's round lines, for the final screen's awards.
+  const [log, setLog] = useState([]);
   // Bumped per session so LocalSession remounts and re-deals rather than reusing
   // a hook whose lazy initializers have already run.
   const [sessionKey, setSessionKey] = useState(0);
@@ -20,6 +22,7 @@ export default function LocalGame({ onExit, onBack }) {
   const start = (settings) => {
     setGame(settings);
     setTotals({});
+    setLog([]);
     setSessionKey((k) => k + 1);
     setView('playing');
   };
@@ -35,7 +38,7 @@ export default function LocalGame({ onExit, onBack }) {
           categoryPool={game.categoryPool}
           categorySource={game.categorySource}
           customCategories={game.customCategories}
-          onFinish={(totalScores) => { setTotals(totalScores); setView('results'); }}
+          onFinish={(totalScores, lines = []) => { setTotals(totalScores); setLog(lines); setView('results'); }}
           onQuit={() => { setGame(null); setView('setup'); }}
         />
       );
@@ -46,6 +49,7 @@ export default function LocalGame({ onExit, onBack }) {
         <AniTagResults
           players={game.players}
           totalScores={totals}
+          log={log}
           onPlayAgain={() => start(game)}
           onBack={() => { setGame(null); setView('setup'); }}
         />

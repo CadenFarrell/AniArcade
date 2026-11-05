@@ -43,7 +43,7 @@ export default function AniPeekResults({
       )}
     >
       <Standings build ranked={rest} departedIds={departedIds} score={(p) => String(p.total)} />
-      <Awards awards={peekAwards(log, players)} />
+      <Awards awards={peekAwards(log, players, { nameOf: (i) => deal?.cards?.[i]?.name ?? '' })} />
       <Recap log={log} deal={deal} players={players} />
     </ResultsLayout>
   );

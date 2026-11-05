@@ -68,6 +68,9 @@
 // file branches on where it is running, and the local screen differs from the
 // online one only in that one device shows what three devices would.
 
+import { award, clearBest, clearLeader, sumBy, tally, times } from '../../shared/utils/awards';
+import { getCategory } from './categories';
+
 // A hot seat and one other player. Two is the number the game is built around —
 // nothing else in the arcade works at two, since AniGuess, AniFake and AniWave
 // all need a table — and it scales up with no change. At two, the table that
@@ -849,6 +852,87 @@ export function applyRoundScores(totalScores, roundScores) {
     out[id] = (out[id] || 0) + score;
   }
   return out;
+}
+
+// --- the session's story -------------------------------------------------------
+//
+// One line per finished round, for the final screen's awards — `startRound`
+// wipes the trails and results the next round, so this is all that survives.
+// Per player who took a go: solved or not, how many NAMES they offered (the
+// trail's names, never `used`, which weighs a missed guess as several), how
+// many guesses they missed, and their clause's label once it was attached
+// (null if it never was — online it rides on another device's write). Plus,
+// per voter, how many missed guesses they voted no on. Plain values, so a
+// line survives RTDB untouched; RTDB drops an empty `noVotes`.
+export function roundLogLine(state, playerIds = []) {
+  if (!state) return null;
+  const players = {};
+  const noVotes = {};
+  for (const id of playerIds) {
+    const result = state.results?.[id];
+    const trail = trailFor(state, id);
+    for (const entry of trail) {
+      if (entry?.kind !== 'declaration') continue;
+      for (const [voter, v] of Object.entries(entry.verdicts ?? {})) {
+        if (v === false) noVotes[voter] = (noVotes[voter] ?? 0) + 1;
+      }
+    }
+    if (!result) continue;
+    players[id] = {
+      solved: result.solved === true,
+      names: trail.filter((e) => e?.kind !== 'declaration').length,
+      misses: trail.filter((e) => e?.kind === 'declaration').length,
+      used: result.used ?? 0,
+      category: result.category ? getCategory(result.category).label : null,
+    };
+  }
+  return { round: state.round ?? 0, cap: state.cap ?? DEFAULT_CAP, players, noVotes };
+}
+
+/**
+ * The final screen's superlatives, from the session's round lines. Each is a
+ * clear leader or nothing — a tie drops it rather than picking by seat — and
+ * the card (shared/utils/awards.js's pickAwards) chooses what shows.
+ *
+ *   Called it       the solve in the fewest names, three or fewer
+ *   Detective       the most categories cracked (2+)
+ *   Tough crowd     voted down the most missed guesses (3+)
+ *   Butterfingers   the most missed guesses at their own clause (2+, roast)
+ *   Ran dry         spent every name and never got it (roast)
+ */
+export function tagAwards(log = [], players = []) {
+  const lines = (log ?? []).filter(Boolean);
+  const byId = (id) => players.find((p) => p.id === id) ?? null;
+  const rows = lines.flatMap((l) => Object.entries(l.players ?? {}).map(([by, r]) => ({ by, cap: l.cap, ...r })));
+  const quoted = (r) => (r.category ? `“${r.category}”` : 'their category');
+  const out = [];
+
+  const solves = rows.filter((r) => r.solved);
+  const quick = clearBest(solves, (r) => r.names, { dir: 'min' });
+  if (quick && quick.names <= 3) {
+    out.push(award('Called it', byId(quick.by), quick.names === 0
+      ? `Got ${quoted(quick)} without naming a thing`
+      : `Got ${quoted(quick)} in ${times(quick.names, 'name')}`, { weight: 3 }));
+  }
+  if (lines.length > 1) {
+    const sleuth = clearLeader(tally(solves, (r) => r.by), { min: 2 });
+    if (sleuth) out.push(award('Detective', byId(sleuth.id), `Cracked ${sleuth.n} categories`, { weight: 2 }));
+  }
+  const tough = clearLeader(sumBy(lines, (l) => l.noVotes), { min: 3 });
+  if (tough) out.push(award('Tough crowd', byId(tough.id), `Voted down ${tough.n} guesses`));
+
+  const butter = clearLeader(sumBy(rows, (r) => ({ [r.by]: r.misses })), { min: 2 });
+  if (butter) out.push(award('Butterfingers', byId(butter.id), `${butter.n} wrong guesses at their own category`, { roast: true }));
+
+  const dry = rows.filter((r) => !r.solved && r.used >= (r.cap ?? DEFAULT_CAP));
+  const ran = clearLeader(tally(dry, (r) => r.by));
+  if (ran) {
+    const r = dry.filter((x) => x.by === ran.id).at(-1);
+    out.push(award('Ran dry', byId(ran.id), ran.n === 1
+      ? `Spent all ${r.cap ?? DEFAULT_CAP} names on ${quoted(r)} and never got it`
+      : `Spent every name and never got it, ${times(ran.n, 'round')}`, { roast: true }));
+  }
+  return out.filter(Boolean);
 }
 
 // --- normalizers -------------------------------------------------------------

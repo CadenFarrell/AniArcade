@@ -203,7 +203,7 @@ export function useAniTurfRoom() {
       : rules.requestClaim(g, myTeam, cell, myPlayerId)))
   ), [applyGame, myTeam, myPlayerId]);
 
-  const stop = useCallback(() => applyGame((g) => rules.stopGuessing(g, myTeam)), [applyGame, myTeam]);
+  const stop = useCallback(() => applyGame((g) => rules.stopGuessing(g, myTeam, myPlayerId)), [applyGame, myTeam, myPlayerId]);
 
   // Banks the game exactly once (the bankedAt claim, as in AniFake), then
   // shows the results. Any device may press it.

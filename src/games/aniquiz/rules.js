@@ -36,6 +36,7 @@
 // local play asks for no shared deadline: there the clock belongs to whoever is
 // holding the device, and starts when they take it (see LocalRound.jsx).
 import { BOARD_VALUES, ROWS, asArray, isCorrect, normalizeClue, parseCell } from './clues';
+import { award, clearBest, clearLeader, sumBy, tally, times } from '../../shared/utils/awards';
 
 export const BOARD = 'board';
 export const QUIZ = 'quiz';
@@ -83,6 +84,9 @@ export function startGame(playerIds, deal, { timed = false, answerSeconds = 30 }
     picks: 0,
     pickerId: playerIds[0] ?? null,
     index: 0,
+    // One line per revealed clue (logLine), for the final screen's awards:
+    // `answers` is reset with every new clue, so this is all that survives.
+    log: [],
     ...clueReset(),
   };
   if (deal.format === QUIZ) {
@@ -213,7 +217,33 @@ function settle(game, deal, answers) {
     scores[id] = (scores[id] ?? 0) + delta;
     graded[id] = { ...a, delta };
   }
-  return { phase: 'revealed', answers: graded, scores, deadlineAt: null };
+  const line = logLine(game, deal, clue, wagered, graded);
+  return { phase: 'revealed', answers: graded, scores, deadlineAt: null, log: [...(game.log ?? []), line] };
+}
+
+const TOP_VALUE = Math.max(...BOARD_VALUES);
+
+// The revealed clue as the awards need it, kept small — it rides every reveal's
+// transaction (see the header on keeping `game` writes light). Per answerer:
+// right or not, the points it moved, whether it was blank (a pass or the
+// clock), and on a wager the stake and the score it was staked from. No
+// undefined anywhere: RTDB refuses a write carrying one.
+function logLine(game, deal, clue, wagered, graded) {
+  const answers = {};
+  for (const [id, a] of Object.entries(graded)) {
+    answers[id] = {
+      correct: Boolean(a.correct),
+      delta: a.delta,
+      blank: !a.correct && !String(a.text ?? '').trim(),
+      ...(wagered ? { wager: game.wagers?.[id] ?? 0, before: game.scores?.[id] ?? 0 } : {}),
+    };
+  }
+  return {
+    final: game.round === 'final',
+    dd: isDailyDouble(game, deal),
+    top: !wagered && deal?.format !== QUIZ && clue?.value === TOP_VALUE,
+    answers,
+  };
 }
 
 /** One player's answer. Graded now, hidden by the screens until the reveal. */
@@ -388,7 +418,23 @@ export function normalizeGame(raw) {
     answers: normalizeAnswers(raw.answers),
     wagers,
     deadlineAt: numberOr(raw.deadlineAt, null),
+    log: asArray(raw.log).filter((l) => l && typeof l === 'object').map(normalizeLogLine),
   };
+}
+
+// A clue line (logLine): a clue nobody answered comes back with no `answers`.
+function normalizeLogLine(raw) {
+  const answers = {};
+  for (const [id, a] of Object.entries(raw.answers ?? {})) {
+    if (!a || typeof a !== 'object') continue;
+    answers[id] = {
+      correct: Boolean(a.correct),
+      delta: numberOr(a.delta, 0),
+      blank: Boolean(a.blank),
+      ...(a.wager != null ? { wager: numberOr(a.wager, 0), before: numberOr(a.before, 0) } : {}),
+    };
+  }
+  return { final: Boolean(raw.final), dd: Boolean(raw.dd), top: Boolean(raw.top), answers };
 }
 
 export function normalizeDeal(raw) {
@@ -405,6 +451,78 @@ export function normalizeDeal(raw) {
     final: normalizeClue(raw.final),
     questions: asArray(raw.questions).map(normalizeClue).filter(Boolean),
   };
+}
+
+// ── The game's story ───────────────────────────────────────────────────────
+
+// Points as the scoreboard prints them, a negative with a real minus sign.
+const pts = (n) => (n < 0 ? `−${Math.abs(n).toLocaleString('en-US')}` : n.toLocaleString('en-US'));
+
+/**
+ * The final screen's superlatives, from the clue log. Each is a clear leader
+ * or nothing — a tie drops it rather than picking by seat — and the card
+ * (shared/utils/awards.js's pickAwards) chooses what shows. `scores` is the
+ * final scoreboard (for who finished first).
+ *
+ *   All in           staked their whole score on a wager, and got it
+ *   Comeback kid     finished first from below zero
+ *   On fire          the most right answers in a row (3+)
+ *   Big game hunter  the most top-value clues right (2+)
+ *   Bold strategy    the biggest stake lost (roast)
+ *   Butterfingers    the most wrong answers (3+), and what they cost (roast)
+ *   Radio silence    the most clues left blank (2+, roast)
+ */
+export function quizAwards(log = [], players = [], scores = {}) {
+  const lines = (log ?? []).filter(Boolean);
+  const byId = (id) => players.find((p) => p.id === id) ?? null;
+  const where = (l) => (l.final ? 'the final' : l.dd ? 'the Daily Double' : 'a clue');
+  const out = [];
+  const answers = lines.flatMap((l) => Object.entries(l.answers ?? {}).map(([by, a]) => ({ by, l, ...a })));
+
+  const allIn = answers.filter((a) => a.wager != null && a.correct && a.before > 0 && a.wager >= a.before);
+  const brave = clearBest(allIn, (a) => a.wager);
+  if (brave) {
+    out.push(award('All in', byId(brave.by), `Bet all ${pts(brave.wager)} on ${where(brave.l)} — and got it`, { weight: 3 }));
+  }
+
+  // The winner's running total at its lowest.
+  const leader = clearLeader(scores ?? {}, { min: -Infinity });
+  if (leader) {
+    let run = 0;
+    let low = 0;
+    for (const l of lines) {
+      run += l.answers?.[leader.id]?.delta ?? 0;
+      low = Math.min(low, run);
+    }
+    if (low < 0) out.push(award('Comeback kid', byId(leader.id), `From ${pts(low)} to first`, { weight: 3 }));
+  }
+
+  // A streak is a player's OWN answers in a row: one player takes each clue.
+  const best = {};
+  const run = {};
+  for (const a of answers) {
+    run[a.by] = a.correct ? (run[a.by] ?? 0) + 1 : 0;
+    best[a.by] = Math.max(best[a.by] ?? 0, run[a.by]);
+  }
+  const fire = clearLeader(best, { min: 3 });
+  if (fire) out.push(award('On fire', byId(fire.id), `${fire.n} right in a row`));
+
+  const hunter = clearLeader(tally(answers, (a) => (a.l.top && a.correct ? a.by : null)), { min: 2 });
+  if (hunter) out.push(award('Big game hunter', byId(hunter.id), `Took ${hunter.n} of the ${pts(TOP_VALUE)}s`));
+
+  const lost = answers.filter((a) => a.wager > 0 && !a.correct);
+  const bold = clearBest(lost, (a) => a.wager);
+  if (bold) out.push(award('Bold strategy', byId(bold.by), `Bet ${pts(bold.wager)} on ${where(bold.l)} — and lost`, { roast: true }));
+
+  const wrong = answers.filter((a) => !a.correct && !a.blank);
+  const butter = clearLeader(tally(wrong, (a) => a.by), { min: 3 });
+  if (butter) {
+    const cost = sumBy(wrong, (a) => ({ [a.by]: a.delta }))[butter.id] ?? 0;
+    out.push(award('Butterfingers', byId(butter.id), `Missed ${butter.n} (${pts(cost)})`, { roast: true }));
+  }
+  const silent = clearLeader(tally(answers, (a) => (a.blank ? a.by : null)), { min: 2 });
+  if (silent) out.push(award('Radio silence', byId(silent.id), `Left ${times(silent.n, 'clue')} blank`, { roast: true }));
+  return out.filter(Boolean);
 }
 
 /** Players best-first, ties sharing a place. */

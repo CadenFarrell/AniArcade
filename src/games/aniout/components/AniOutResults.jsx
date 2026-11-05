@@ -44,7 +44,7 @@ export default function AniOutResults({
       )}
     >
       <Standings build ranked={rest} departedIds={departedIds} score={(p) => String(p.total)} />
-      <Awards awards={outAwards(log, players)} />
+      <Awards awards={outAwards(log, players, { reasonsOn: Boolean(deal?.reasonsOn) })} />
       <Recap log={log} deal={deal} players={players} />
     </ResultsLayout>
   );

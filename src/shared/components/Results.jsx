@@ -13,6 +13,7 @@ import { useStagger } from '../hooks/useStagger';
 import { useStepCues } from '../hooks/useStepCues';
 import CountUp from './CountUp';
 import { useNextGameSlot } from '../context/nextGameContext';
+import { pickAwards } from '../utils/awards';
 import { CeremonyContext } from '../context/ceremonyContext';
 
 // The frame every results screen shares — the final standings of every game and
@@ -310,14 +311,17 @@ function StandingRow({ player, left, score, extra, scoreClass, style, staged }) 
 }
 
 /**
- * A final screen's superlatives: up to three, each a face, a title in display
+ * A final screen's superlatives: up to four, each a face, a title in display
  * caps and the line that earned it ("Fastest finger — 1.2s on Gurenge"). Each
  * game derives its own in a pure module from what the match already recorded,
- * so an award is a fact about the game, never a pat on the back for everyone.
- * An empty list draws nothing.
+ * so an award is a fact about the game, never a pat on the back for everyone —
+ * the good, the odd and the playful roasts ("Butterfingers — missed 4 clues").
+ * A game hands over everything its players earned and `pickAwards`
+ * (shared/utils/awards.js) chooses: rarest first, one per player while it
+ * can, and a roast when one was earned. An empty list draws nothing.
  */
-export function Awards({ awards = [], className = '' }) {
-  const shown = awards.filter(Boolean).slice(0, 3);
+export function Awards({ awards = [], max, className = '' }) {
+  const shown = pickAwards(awards, { max });
   if (!shown.length) return null;
   return (
     <Card title="Awards" padding="sm" className={`mb-6 ${className}`}>

@@ -20,6 +20,7 @@
 //   'miss'   scorched by a wrong claim — rubble, impassable to both
 //   'trap'   scorched by a sprung trap — rubble too, marked apart so the table
 //            can see where a trap was
+import { award, clearBest, clearLeader, tally } from '../../shared/utils/awards';
 import { characterNameKey } from '../../shared/utils/character';
 import { TEAMS, other, teamsReady as teamsReadyFor } from '../../shared/utils/teams';
 
@@ -538,9 +539,11 @@ export function canStop(game, team) {
   return game.claimsMade > 0 || claimable(game, team).length === 0;
 }
 
-export function stopGuessing(game, team) {
+// `by` is the guesser who pressed it, online, for the awards — null on one
+// shared device, where nobody knows who tapped.
+export function stopGuessing(game, team, by = null) {
   if (!canStop(game, team)) return { patch: {} };
-  return { patch: { ...endTurn(game, team), log: [...game.log, { kind: 'stop', team }] } };
+  return { patch: { ...endTurn(game, team), log: [...game.log, { kind: 'stop', team, by: by ?? null }] } };
 }
 
 /**
@@ -668,4 +671,80 @@ export function normalizeGame(raw) {
     }])) : null,
     seq: raw.seq ?? 0,
   };
+}
+
+// --- the game's story ----------------------------------------------------------
+
+/**
+ * The final screen's superlatives, from the game's log. Each is a clear
+ * leader or nothing — a tie drops it rather than picking by seat — and the
+ * card (shared/utils/awards.js's pickAwards) chooses what shows.
+ *
+ * Who did it: a clue is its clue-giver's (`by`); a claim, a miss or a stop is
+ * the guesser who tapped online (`by`). On one shared device nobody knows who
+ * tapped (`by` is null), so a claim or a miss falls to the team's clue-giver
+ * — the clue they were acting on — and the line says "their team", while an
+ * unattributed stop counts for nobody.
+ *
+ *   Finishing move  the claim that crossed the board
+ *   Best clue       the clue that landed the most claims (3+)
+ *   It's a trap!    the clue-giver whose traps were sprung most (2+)
+ *   Overpromised    the biggest clue (2+) that found nothing (roast)
+ *   Scorched earth  the most squares burned (2+, roast)
+ *   Played it safe  the most early stops (2+, roast)
+ */
+export function turfAwards(game, players = []) {
+  const byId = (id) => players.find((p) => p.id === id) ?? null;
+  const log = game?.log ?? [];
+  const nameAt = (i) => game?.board?.[i]?.name ?? 'the last square';
+  const said = (c) => `“${c.word} · ${c.number}”`;
+  const out = [];
+
+  // Every claim, miss and trap under the clue it was acting on.
+  const clues = [];
+  const lastClue = {};
+  const acts = [];
+  for (const e of log) {
+    if (e?.kind === 'clue') {
+      const c = { ...e, claims: 0 };
+      clues.push(c);
+      lastClue[e.team] = c;
+    } else if (e && ['claim', 'miss', 'trap', 'stop'].includes(e.kind)) {
+      const clue = lastClue[e.team] ?? null;
+      if (e.kind === 'claim' && clue) clue.claims += 1;
+      acts.push({ ...e, clue, planter: lastClue[other(e.team)]?.by ?? game?.clueGivers?.[other(e.team)] ?? null });
+    }
+  }
+  const actor = (e) => e.by ?? e.clue?.by ?? null;
+
+  if (game?.winBy === 'connect') {
+    const last = [...acts].reverse().find((e) => e.kind === 'claim' && e.team === game.winner);
+    if (last && actor(last)) {
+      out.push(award('Finishing move', byId(actor(last)), last.by
+        ? `Claimed ${nameAt(last.cell)} to cross the board`
+        : `Their clue ${said(last.clue)} crossed the board`, { weight: 3 }));
+    }
+  }
+
+  const best = clearBest(clues.filter((c) => c.by), (c) => c.claims);
+  if (best && best.claims >= 3) out.push(award('Best clue', byId(best.by), `${said(best)} landed ${best.claims} claims`, { weight: 2 }));
+
+  const trap = clearLeader(tally(acts, (e) => (e.kind === 'trap' ? e.planter : null)), { min: 2 });
+  if (trap) out.push(award('It’s a trap!', byId(trap.id), `${trap.n} of their traps sprung`));
+
+  const dud = clearBest(clues.filter((c) => c.by && c.number >= 2 && c.claims === 0), (c) => c.number);
+  if (dud) out.push(award('Overpromised', byId(dud.by), `${said(dud)} found nothing`, { roast: true }));
+
+  const misses = acts.filter((e) => e.kind === 'miss' && actor(e));
+  const burn = clearLeader(tally(misses, actor), { min: 2 });
+  if (burn) {
+    const blind = misses.filter((e) => actor(e) === burn.id).every((e) => !e.by);
+    out.push(award('Scorched earth', byId(burn.id), blind
+      ? `Their team burned ${burn.n} squares on their clues`
+      : `Burned ${burn.n} squares`, { roast: true }));
+  }
+
+  const safe = clearLeader(tally(acts, (e) => (e.kind === 'stop' ? e.by : null)), { min: 2 });
+  if (safe) out.push(award('Played it safe', byId(safe.id), `Stopped early ${safe.n} times`, { roast: true }));
+  return out.filter(Boolean);
 }

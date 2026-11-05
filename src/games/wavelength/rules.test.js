@@ -753,6 +753,7 @@ describe('the session log and its awards', () => {
     };
     expect(rules.roundLogEntry(r, ids)).toMatchObject({
       psychicId: 'a', left: SPECTRA[1].leftLabel, right: SPECTRA[1].rightLabel, clue: 'beach episode', target: 40, bestId: 'b', bestDistance: 2,
+      dials: { b: 2, c: 30 },
     });
     expect(rules.roundLogEntry({ ...r, abandoned: true }, ids)).toBeNull();
   });
@@ -779,5 +780,29 @@ describe('the session log and its awards', () => {
       { round: 1, psychicId: 'b', bestId: 'c', bestDistance: 2, psychicPoints: 2 },
     ];
     expect(rules.sessionAwards(tie, players)).toEqual([]);
+  });
+
+  const titles = (log) => Object.fromEntries(rules.sessionAwards(log, players).map((a) => [a.title, [a.player.id, a.detail]]));
+  const line = (round, psychicId, dials, extra = {}) => ({
+    round, psychicId, left: 'Hot', right: 'Cold', clue: `clue ${round}`, dials, psychicPoints: 2, ...extra,
+  });
+
+  it('names a steady hand over three dials, and roasts the wrong end and the static', () => {
+    const log = [
+      line(0, 'a', { b: 5, c: 20 }),
+      line(1, 'a', { b: 8, c: 62 }),
+      line(2, 'a', { b: 2, c: 10 }),
+      line(3, 'b', { c: 30, a: 35 }, { psychicPoints: 0 }),
+    ];
+    const t = titles(log);
+    expect(t['Steady hand']).toEqual(['b', 'Averaged 5 off across 3 dials']);
+    expect(t['Wrong end of the dial']).toEqual(['c', 'Off by 62 on Hot → Cold']);
+    expect(t['Radio static']).toEqual(['b', '“clue 3” scored the table nothing']);
+  });
+
+  it('wants a field of two for a steady hand, and a miss of 40 to call it the wrong end', () => {
+    const t = titles([line(0, 'a', { b: 5 }), line(1, 'a', { b: 8 }), line(2, 'a', { b: 39 })]);
+    expect(t['Steady hand']).toBeUndefined();
+    expect(t['Wrong end of the dial']).toBeUndefined();
   });
 });

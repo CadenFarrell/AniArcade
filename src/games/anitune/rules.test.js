@@ -600,7 +600,7 @@ describe('the song log', () => {
     const r = startRound(ALL, RACE);
     const won = { ...r, ...buzz(r, 'ben', T0).patch };
     const { patch } = resolveBuzz(won, QUESTION, RIGHT, ALL, T0);
-    expect(patch.log).toEqual([{ i: 0, got: { ben: -1 } }]);
+    expect(patch.log).toEqual([{ i: 0, got: { ben: -1 }, miss: {}, blank: [] }]);
   });
 });
 
@@ -636,10 +636,52 @@ describe('roundAwards', () => {
     ];
     const awards = roundAwards(log, ALL, { mode: SIMULTANEOUS, titleOf: () => 'Bebop' });
     expect(awards.map((a) => [a.title, a.player.id])).toEqual([
-      ['Fastest finger', 'ana'], ['Hot streak', 'ana'], ['Deep cut', 'ana'],
+      ['Fastest finger', 'ana'], ['Hot streak', 'ana'], ['Deep cut', 'ana'], ['Clutch', 'ana'],
     ]);
     expect(awards[0].detail).toBe('1.2s on Bebop');
+    expect(awards[3].detail).toBe('Got the last song, Bebop, in 2.5s');
     expect(roundAwards([{ i: 0, got: { ana: 900, ben: 900 } }], ALL)).toEqual([]);
+  });
+
+  const titles = (log, opts) => Object.fromEntries(roundAwards(log, ALL, { mode: SIMULTANEOUS, ...opts })
+    .map((a) => [a.title, [a.player.id, a.detail]]));
+
+  it('roasts the slowpoke, the trigger happy, the confidently wrong and the silent', () => {
+    const log = [
+      { i: 0, got: { ana: 1000, ben: 12500 }, miss: { cleo: 'Naruto' } },
+      { i: 1, got: { ana: 2000 }, miss: { cleo: 'Bleach' }, blank: ['ben'] },
+      { i: 2, got: { ben: 3000 }, miss: { cleo: 'One Piece' } },
+      { i: 3, got: { ana: 500 }, blank: ['ben'] },
+      { i: 4, got: {}, miss: { ana: '' }, blank: ['ben'] },
+    ];
+    const t = titles(log, { titleOf: (i) => ['Bebop', 'Gurenge', 'Unravel', 'Tank!', 'Kick Back'][i] });
+    expect(t.Slowpoke).toEqual(['ben', 'Took 12.5s on Bebop']);
+    expect(t['Trigger happy']).toEqual(['cleo', '3 wrong answers']);
+    expect(t['Confidently wrong']).toEqual(['cleo', 'Said “One Piece” for Unravel']);
+    expect(t['Radio silence']).toEqual(['ben', 'Left 3 songs blank']);
+  });
+
+  it('catches a player missing their own songs, but not after they were knocked out', () => {
+    const log = [{ i: 0, got: { ben: 1 } }, { i: 1, got: { ben: 1 } }, { i: 2, got: { ben: 1 } }];
+    const ownersOf = () => ['ana'];
+    expect(titles(log, { ownersOf })['Stranger to their own list']).toEqual(['ana', 'Missed 3 songs from their own list']);
+    expect(titles(log, { ownersOf, eliminatedAt: { ana: 0 } })['Stranger to their own list']).toBeUndefined();
+  });
+
+  it('names the first out in Lives, and drops a shared exit', () => {
+    const log = [{ i: 0, got: {} }, { i: 1, got: {} }];
+    expect(titles(log, { mode: LIVES, eliminatedAt: { cleo: 1, ben: 3 } })['First out']).toEqual(['cleo', 'Out on song 2']);
+    expect(titles(log, { mode: LIVES, eliminatedAt: { cleo: 1, ben: 1 } })['First out']).toBeUndefined();
+  });
+
+  it('logs each song\u2019s misses and blanks for the roasts', () => {
+    const answers = {
+      ana: { text: 'Bebop', correct: true, ms: 1000 },
+      ben: { text: 'Naruto', correct: false, ms: 2000 },
+      cleo: { text: '', correct: false, ms: null },
+    };
+    const { patch } = revealNow({ ...startRound(ALL, SIMULTANEOUS), answers });
+    expect(patch.log.at(-1)).toMatchObject({ got: { ana: 1000 }, miss: { ben: 'Naruto' }, blank: ['cleo'] });
   });
 });
 

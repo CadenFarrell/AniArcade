@@ -1,9 +1,9 @@
-import ResultsLayout, { Splash, Standings } from '../../../shared/components/Results';
+import ResultsLayout, { Awards, Splash, Standings } from '../../../shared/components/Results';
 import { StartBar } from '../../../shared/components/SetupLayout';
 import { computeRankedPlayers } from '../../../shared/utils/ranking';
 import { Badge, Button } from '../../../shared/ui';
 import { KANA } from '../../../shared/ui/kanaText';
-import { TEAM_NAMES, teamOf } from '../rules';
+import { TEAM_NAMES, teamOf, turfAwards } from '../rules';
 import ClueLog from './ClueLog';
 import TurfBoard from './TurfBoard';
 import { TEAM_STYLE } from './teamStyle';
@@ -71,6 +71,7 @@ export default function AniTurfResults({
           return team ? <Badge tone={TEAM_STYLE[team].tone}>{TEAM_STYLE[team].name}</Badge> : null;
         }}
       />
+      <Awards awards={turfAwards(game, players)} />
       <TurfBoard board={game.board} marks={game.marks} reveal={game.reveal} />
       {/* Online a key is revealed by its own clue-giver's phone; one who left
           took theirs with them. Only said for a giver who HAS left — a reveal

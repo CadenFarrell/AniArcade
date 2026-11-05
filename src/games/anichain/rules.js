@@ -35,6 +35,7 @@
 // **Time.** Nothing here reads a clock. A rule that needs "now" takes it
 // (server time online); locally it is null and the guess window is the
 // table's own pace, since the guesses are shouted.
+import { award, clearBest, clearLeader, sumBy, tally, times } from '../../shared/utils/awards';
 import { TEAMS, teamOf } from '../../shared/utils/teams';
 import { MAX_WORD } from './chainWords';
 
@@ -201,6 +202,8 @@ function turnStart(game, round, turn, activeIds) {
     phase: 'deal',
     deal: (game.deal ?? 0) + 1,
     skips: 0,
+    // Who asked for each re-deal this turn, for the awards (`skips` is the count).
+    skipBy: [],
     dealt: null,
     chain: [],
     wordAt: null,
@@ -247,7 +250,11 @@ export function enoughPlayers(game, activeIds) {
 export function skip(game, by) {
   const early = game.phase === 'deal' || (game.phase === 'chain' && !game.chain.length);
   if (!early || !game.givers.includes(by) || game.skips >= SKIPS) return { patch: {} };
-  return { patch: { phase: 'deal', deal: game.deal + 1, skips: game.skips + 1, dealt: null } };
+  return {
+    patch: {
+      phase: 'deal', deal: game.deal + 1, skips: game.skips + 1, skipBy: [...(game.skipBy ?? []), by], dealt: null,
+    },
+  };
 }
 
 /**
@@ -343,6 +350,12 @@ function endTurn(game, kind, by = null, n = null) {
     lost: lostCount(game),
     character: null,
     skipped: [],
+    // For the awards: who turned a character down, whose words the clock
+    // took, and each guesser's wrong guesses (online; the guesses themselves
+    // are cleared with the next turn).
+    skipBy: [...(game.skipBy ?? [])],
+    lostBy: game.chain.filter((w) => w.lost).map((w) => w.by),
+    wrong: game.guesses.reduce((m, g) => (g.verdict === 'wrong' ? { ...m, [g.by]: (m[g.by] ?? 0) + 1 } : m), {}),
   };
   return { phase: 'over', scores, teamScores, result, log: [...game.log, entry] };
 }
@@ -510,6 +523,9 @@ function normalizeEntry(e) {
     lost: numberOr(e.lost, 0),
     character: normalizeCharacter(e.character),
     skipped: listOf(e.skipped).map(normalizeCharacter).filter(Boolean),
+    skipBy: listOf(e.skipBy),
+    lostBy: listOf(e.lostBy),
+    wrong: Object.fromEntries(Object.entries(e.wrong ?? {}).map(([id, n]) => [id, numberOr(n, 0)])),
   };
 }
 
@@ -539,6 +555,7 @@ export function normalizeGame(raw) {
     phase: phases.includes(raw.phase) ? raw.phase : 'deal',
     deal: numberOr(raw.deal, 0),
     skips: numberOr(raw.skips, 0),
+    skipBy: listOf(raw.skipBy),
     dealt: numberOr(raw.dealt, null),
     chain: listOf(raw.chain)
       .filter((w) => w && typeof w === 'object' && w.by != null)
@@ -557,4 +574,50 @@ export function normalizeGame(raw) {
     reveal,
     log: listOf(raw.log).map(normalizeEntry).filter(Boolean),
   };
+}
+
+// --- the game's story ----------------------------------------------------------
+
+/**
+ * The final screen's superlatives, from the turn log. Each is a clear leader
+ * or nothing — a tie drops it rather than picking by seat — and the card
+ * (shared/utils/awards.js's pickAwards) chooses what shows. Entries from
+ * before `skipBy`/`lostBy`/`wrong` were logged skip the awards that need them.
+ *
+ *   Mind reader         guessed one in the fewest words, three or fewer
+ *   Set-up artist       said the word right before the most guesses (2+)
+ *   Slip of the tongue  said a banned word (roast; local, where it is said aloud)
+ *   Wild guesser        the most wrong guesses (3+, roast; online, where guesses are typed)
+ *   Picky               turned down the most characters (2+, roast)
+ *   Staller             the most words lost to the clock (2+, roast; local)
+ */
+export function chainAwards(log = [], players = []) {
+  const byId = (id) => players.find((p) => p.id === id) ?? null;
+  const entries = (log ?? []).filter(Boolean);
+  const gots = entries.filter((e) => e.kind === 'got' && e.by && Number.isFinite(e.n));
+  const out = [];
+
+  const quick = clearBest(gots, (e) => e.n, { dir: 'min' });
+  if (quick && quick.n <= 3) {
+    const who = quick.character?.name;
+    out.push(award('Mind reader', byId(quick.by), `Got ${who ?? 'it'} after ${times(quick.n, 'word')}`, { weight: 3 }));
+  }
+  // The givers take the words in turn from the first, lost words included
+  // (nextGiver), so word n was said by givers[(n - 1) % 2].
+  const setup = clearLeader(tally(gots, (e) => e.givers?.[(e.n - 1) % (e.givers?.length || 1)] ?? null), { min: 2 });
+  if (setup) out.push(award('Set-up artist', byId(setup.id), `Their word set up ${setup.n} guesses`, { weight: 2 }));
+
+  const slip = clearLeader(tally(entries, (e) => (e.kind === 'banned' ? e.by : null)));
+  if (slip) {
+    out.push(award('Slip of the tongue', byId(slip.id), slip.n === 1
+      ? 'Said a banned word'
+      : `Said a banned word ${times(slip.n)}`, { roast: true }));
+  }
+  const wild = clearLeader(sumBy(entries, (e) => e.wrong), { min: 3 });
+  if (wild) out.push(award('Wild guesser', byId(wild.id), `${wild.n} wrong guesses, all with confidence`, { roast: true }));
+  const picky = clearLeader(tally(entries, (e) => e.skipBy ?? []), { min: 2 });
+  if (picky) out.push(award('Picky', byId(picky.id), `Turned down ${picky.n} characters`, { roast: true }));
+  const stall = clearLeader(tally(entries, (e) => e.lostBy ?? []), { min: 2 });
+  if (stall) out.push(award('Staller', byId(stall.id), `Lost ${stall.n} words to the clock`, { roast: true }));
+  return out.filter(Boolean);
 }

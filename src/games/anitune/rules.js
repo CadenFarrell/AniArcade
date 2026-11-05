@@ -17,6 +17,7 @@
 // behaviour below is testable against a fake number.
 import { isCorrectTitleGuess } from './utils/titleMatch';
 import { QUESTION_POINTS, speedBonus } from '../../shared/utils/deadline';
+import { award, clearBest, clearLeader, longestRuns, tally, times } from '../../shared/utils/awards';
 
 export const RACE = 'race';
 export const SIMULTANEOUS = 'simultaneous';
@@ -269,12 +270,23 @@ function settle(state, answers, graded) {
   // The song's line in the round's log: who got it, and how fast (-1 where no
   // time was measured — RTDB keeps a number, not a null). Appended here because
   // every path to a reveal runs through settle exactly once per song.
+  //
+  // The misses ride along for the final screen's roasts, since `answers` is
+  // reset every song: `miss` is each wrong answer that said something (the
+  // typed text, or '' for one said out loud), `blank` who answered nothing
+  // before the clock. A race song keeps every wrong buzz in `answers`, so a
+  // player who buzzed wrong and watched someone else get it is here too.
   const got = {};
+  const miss = {};
+  const blank = [];
   for (const [id, answer] of Object.entries(answers)) {
     if (answer?.correct) got[id] = answer.ms ?? -1;
+    else if (answer?.aloud || answer?.text) miss[id] = answer.aloud ? '' : String(answer.text).slice(0, 60);
+    else if (answer) blank.push(id);
   }
+  const line = { i: state.index, got, miss, blank };
   if (!hasLives(state.mode)) {
-    return { scores, log: [...(state.log ?? []), { i: state.index, got }] };
+    return { scores, log: [...(state.log ?? []), line] };
   }
 
   const lives = { ...state.lives };
@@ -298,7 +310,7 @@ function settle(state, answers, graded) {
       eliminatedAt[id] = state.index;
     }
   }
-  const log = [...(state.log ?? []), { i: state.index, got, lost }];
+  const log = [...(state.log ?? []), { ...line, lost }];
   return { scores, lives, eliminated, eliminatedAt, log };
 }
 
@@ -768,62 +780,97 @@ export function activePlayerId(state) {
 // --- The round's story ----------------------------------------------------------
 
 /**
- * The final screen's superlatives, from the round's log (settle). A clear
- * leader or nothing — a tie drops the award rather than picking one by seat.
+ * The final screen's superlatives, from the round's log (settle). Each is a
+ * clear leader or nothing — a tie drops it rather than picking one by seat —
+ * and the card (shared/utils/awards.js's pickAwards) chooses what shows.
  *
- *   Fastest finger   the quickest right answer of the round
- *   Hot streak       the most songs in a row got right (three or more)
- *   Deep cut         the most songs only they got (everyone-guesses modes)
+ *   Fastest finger      the quickest right answer of the round
+ *   Hot streak          the most songs in a row got right (three or more)
+ *   Deep cut            the most songs only they got (everyone-guesses modes)
+ *   Clutch              the quickest on the last song
+ *   Slowpoke            the slowest right answer, 10s or more (roast)
+ *   Trigger happy       the most wrong answers, three or more (roast)
+ *   Confidently wrong   a wrong title, quoted (roast)
+ *   Radio silence       the most songs left blank, three or more (roast)
+ *   Stranger to their own list   two or more songs off their own list missed (roast)
+ *   First out           the first knocked out, in Lives (roast)
  *
- * `titleOf(i)` names song i for the detail line.
+ * `titleOf(i)` names song i for the detail line; `ownersOf(i)` the ids whose
+ * list song i came from; `eliminatedAt` is Lives' who-went-out-when. Lines from
+ * before `miss`/`blank` were logged simply have none.
  */
-export function roundAwards(log = [], players = [], { mode = RACE, titleOf = () => '' } = {}) {
-  const lines = (log ?? []).filter(Boolean);
+export function roundAwards(log = [], players = [], {
+  mode = RACE, titleOf = () => '', ownersOf = () => [], eliminatedAt = {},
+} = {}) {
+  const lines = [...(log ?? []).filter(Boolean)].sort((a, b) => a.i - b.i);
   const byId = (id) => players.find((p) => p.id === id) ?? null;
+  const on = (i) => (titleOf(i) ? ` on ${titleOf(i)}` : '');
+  const secs = (ms) => `${(ms / 1000).toFixed(1)}s`;
   const out = [];
 
   const timed = lines.flatMap((l) => Object.entries(l.got ?? {})
-    .filter(([, ms]) => ms >= 0).map(([id, ms]) => ({ id, ms, i: l.i })));
-  if (timed.length) {
-    const best = Math.min(...timed.map((t) => t.ms));
-    const at = timed.filter((t) => t.ms === best);
-    if (new Set(at.map((t) => t.id)).size === 1 && byId(at[0].id)) {
-      const title = titleOf(at[0].i);
-      out.push({
-        title: 'Fastest finger',
-        player: byId(at[0].id),
-        detail: `${(best / 1000).toFixed(1)}s${title ? ` on ${title}` : ''}`,
-      });
-    }
+    .filter(([, ms]) => ms >= 0).map(([by, ms]) => ({ by, ms, i: l.i })));
+  const fast = clearBest(timed, (t) => t.ms, { dir: 'min' });
+  if (fast) out.push(award('Fastest finger', byId(fast.by), `${secs(fast.ms)}${on(fast.i)}`, { weight: 2 }));
+  const slow = clearBest(timed, (t) => t.ms);
+  if (slow && slow.ms >= 10000 && slow !== fast) {
+    out.push(award('Slowpoke', byId(slow.by), `Took ${secs(slow.ms)}${on(slow.i)}`, { roast: true }));
   }
 
-  const ordered = [...lines].sort((a, b) => a.i - b.i);
-  const streak = {};
-  for (const p of players) {
-    let run = 0;
-    let longest = 0;
-    for (const l of ordered) {
-      run = l.got?.[p.id] != null ? run + 1 : 0;
-      longest = Math.max(longest, run);
-    }
-    streak[p.id] = longest;
-  }
-  const streaks = Object.entries(streak).sort((a, b) => b[1] - a[1]);
-  if (streaks.length && streaks[0][1] >= 3 && !(streaks[1] && streaks[1][1] === streaks[0][1]) && byId(streaks[0][0])) {
-    out.push({ title: 'Hot streak', player: byId(streaks[0][0]), detail: `${streaks[0][1]} songs in a row` });
-  }
+  const streak = clearLeader(longestRuns(lines, (l) => Object.keys(l.got ?? {})), { min: 3 });
+  if (streak) out.push(award('Hot streak', byId(streak.id), `${streak.n} songs in a row`));
 
   if (!isRace(mode) && players.length > 1) {
-    const solo = {};
-    for (const l of lines) {
+    const solo = clearLeader(tally(lines, (l) => {
       const ids = Object.keys(l.got ?? {});
-      if (ids.length === 1) solo[ids[0]] = (solo[ids[0]] || 0) + 1;
-    }
-    const rows = Object.entries(solo).sort((a, b) => b[1] - a[1]);
-    if (rows.length && !(rows[1] && rows[1][1] === rows[0][1]) && byId(rows[0][0])) {
-      const n = rows[0][1];
-      out.push({ title: 'Deep cut', player: byId(rows[0][0]), detail: `The only one to get ${n} ${n === 1 ? 'song' : 'songs'}` });
+      return ids.length === 1 ? ids : [];
+    }));
+    if (solo) out.push(award('Deep cut', byId(solo.id), `The only one to get ${times(solo.n, 'song')}`, { weight: 2 }));
+  }
+
+  // The last song of a round of several: the one everyone remembers. Untimed
+  // answers (-1) all tie at "no time", so there the only clutch is being the
+  // one person who got it.
+  const last = lines.at(-1);
+  if (last && lines.length > 1) {
+    const got = Object.entries(last.got ?? {}).map(([by, ms]) => ({ by, ms }));
+    const clutch = got.length === 1 ? got[0] : clearBest(got.filter((g) => g.ms >= 0), (g) => g.ms, { dir: 'min' });
+    if (clutch) {
+      const how = clutch.ms >= 0 ? ` in ${secs(clutch.ms)}` : '';
+      const what = titleOf(last.i) ? `, ${titleOf(last.i)},` : '';
+      out.push(award('Clutch', byId(clutch.by), `Got the last song${what}${how}`.replace(/,$/, ''), { weight: 2 }));
     }
   }
-  return out;
+
+  const trigger = clearLeader(tally(lines, (l) => Object.keys(l.miss ?? {})), { min: 3 });
+  if (trigger) out.push(award('Trigger happy', byId(trigger.id), times(trigger.n, 'wrong answer'), { roast: true }));
+
+  // The quote: whoever typed the most wrong titles, and their latest one.
+  const typed = lines.flatMap((l) => Object.entries(l.miss ?? {})
+    .filter(([, text]) => text).map(([by, text]) => ({ by, text, i: l.i })));
+  const wrongest = clearLeader(tally(typed, (t) => t.by));
+  if (wrongest) {
+    const t = typed.filter((x) => x.by === wrongest.id).at(-1);
+    out.push(award('Confidently wrong', byId(t.by),
+      `Said “${t.text}”${titleOf(t.i) ? ` for ${titleOf(t.i)}` : ''}`, { roast: true }));
+  }
+
+  const silent = clearLeader(tally(lines, (l) => l.blank ?? []), { min: 3 });
+  if (silent) out.push(award('Radio silence', byId(silent.id), `Left ${silent.n} songs blank`, { roast: true }));
+
+  // A song off your own list that you did not get — while you were still in.
+  const stranger = clearLeader(tally(lines, (l) => (ownersOf(l.i) ?? []).filter((id) => (
+    l.got?.[id] == null && !(eliminatedAt?.[id] != null && eliminatedAt[id] < l.i)
+  ))), { min: 2 });
+  if (stranger) {
+    out.push(award('Stranger to their own list', byId(stranger.id),
+      `Missed ${stranger.n} songs from their own list`, { roast: true }));
+  }
+
+  if (hasLives(mode) && players.length > 2) {
+    const outAt = Object.fromEntries(Object.entries(eliminatedAt ?? {}).filter(([, at]) => Number.isFinite(at)));
+    const first = clearLeader(outAt, { dir: 'min' });
+    if (first) out.push(award('First out', byId(first.id), `Out on song ${first.n + 1}`, { roast: true }));
+  }
+  return out.filter(Boolean);
 }

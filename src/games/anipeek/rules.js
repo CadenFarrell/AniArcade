@@ -31,6 +31,7 @@
 //
 // Online every move is a transaction on `game` alone, so the writes stay small
 // and every rule takes the deal as an argument.
+import { award, clearBest, clearLeader, sumBy, tally, times } from '../../shared/utils/awards';
 import { characterNameKey } from '../../shared/utils/character';
 
 // 5 across × 7 down over AniList's 2:3 portrait, so each tile is nearly square
@@ -287,8 +288,10 @@ export function skipCard(game, deal, activeIds = null) {
 export function nextRound(game, activeIds = null) {
   if (game?.phase !== 'revealed') return { patch: {} };
   // The round just revealed, kept for the final screen's portrait strip: the
-  // card (its index into the deal), the bid, what it cost, and how it ended.
+  // card (its index into the deal), the bid, what it cost, and how it ended —
+  // plus, for the awards, who passed in the bidding and a wrong answer's words.
   const r = game.result;
+  const missedWith = !r?.correct && !r?.void && r?.text ? String(r.text).slice(0, 60) : '';
   const line = {
     card: game.cardIndex,
     by: r?.by ?? game.bid?.by ?? null,
@@ -298,6 +301,8 @@ export function nextRound(game, activeIds = null) {
     correct: Boolean(r?.correct),
     points: r?.points ?? 0,
     void: r?.void ?? null,
+    passed: Object.keys(game.passed ?? {}).filter((id) => game.passed[id]),
+    ...(missedWith ? { text: missedWith } : {}),
   };
   const log = [...(game.log ?? []), line];
   const round = game.round + 1;
@@ -313,26 +318,61 @@ export function nextRound(game, activeIds = null) {
 }
 
 /**
- * The final screen's superlatives, from the log: a clear leader or nothing.
+ * The final screen's superlatives, from the log. Each is a clear leader or
+ * nothing — a tie drops it rather than picking by seat — and the card
+ * (shared/utils/awards.js's pickAwards) chooses what shows. `nameOf(card)` is
+ * the dealt character's name, for the detail lines. Lines from before
+ * `passed`/`text` were logged skip the awards that need them.
  *
- *   Eagle eye     the right name from the fewest tiles, hints counted at cost
- *   Boldest miss  the lowest bid that missed
+ *   Eagle eye          the right name from the fewest tiles, hints counted at cost
+ *   Leftovers          the most of their own bid left unspent on a right name (2+)
+ *   Boldest miss       the lowest bid that missed
+ *   Hint addict        the most hints bought (3+)
+ *   Butterfingers      the most misses (2+), paid out to the table (roast)
+ *   Chicken            the most passes in the bidding (3+, roast)
+ *   Confidently wrong  a wrong name, quoted (roast)
  */
-export function peekAwards(log = [], players = []) {
+export function peekAwards(log = [], players = [], { nameOf = () => '' } = {}) {
   const byId = (id) => players.find((p) => p.id === id) ?? null;
-  const lines = (log ?? []).filter((l) => l && !l.void && l.by);
+  const all = (log ?? []).filter(Boolean);
+  const lines = all.filter((l) => !l.void && l.by);
   const out = [];
   const cost = (l) => l.tiles + l.hints * HINT_COST;
-  const rights = lines.filter((l) => l.correct).sort((a, b) => cost(a) - cost(b));
-  if (rights.length && (rights.length === 1 || cost(rights[1]) > cost(rights[0])) && byId(rights[0].by)) {
-    const l = rights[0];
-    out.push({ title: 'Eagle eye', player: byId(l.by), detail: `Named one from ${l.tiles} tile${l.tiles === 1 ? '' : 's'}${l.hints ? ` and ${l.hints} hint${l.hints === 1 ? '' : 's'}` : ''}` });
+  const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
+
+  const rights = lines.filter((l) => l.correct);
+  const eagle = clearBest(rights, cost, { dir: 'min' });
+  if (eagle) {
+    out.push(award('Eagle eye', byId(eagle.by),
+      `Named one from ${plural(eagle.tiles, 'tile')}${eagle.hints ? ` and ${plural(eagle.hints, 'hint')}` : ''}`, { weight: 2 }));
   }
-  const misses = lines.filter((l) => !l.correct && Number.isInteger(l.bid)).sort((a, b) => a.bid - b.bid);
-  if (misses.length && (misses.length === 1 || misses[1].bid > misses[0].bid) && byId(misses[0].by)) {
-    out.push({ title: 'Boldest miss', player: byId(misses[0].by), detail: `Bid ${misses[0].bid} and missed` });
+  const spare = clearBest(rights.filter((l) => Number.isInteger(l.bid)), (l) => l.bid - cost(l));
+  if (spare && spare.bid - cost(spare) >= 2 && spare !== eagle) {
+    out.push(award('Leftovers', byId(spare.by), `Named them with ${spare.bid - cost(spare)} of their bid to spare`));
   }
-  return out;
+  const bold = clearBest(lines.filter((l) => !l.correct && Number.isInteger(l.bid)), (l) => l.bid, { dir: 'min' });
+  if (bold) out.push(award('Boldest miss', byId(bold.by), `Bid ${bold.bid} and missed`));
+
+  const addict = clearLeader(sumBy(lines, (l) => ({ [l.by]: l.hints })), { min: 3 });
+  if (addict) out.push(award('Hint addict', byId(addict.id), `Bought ${addict.n} hints`));
+
+  const missed = lines.filter((l) => !l.correct);
+  const butter = clearLeader(tally(missed, (l) => l.by), { min: 2 });
+  if (butter) {
+    out.push(award('Butterfingers', byId(butter.id),
+      `Missed ${times(butter.n)} — the table banked ${butter.n * WRONG_BONUS} each`, { roast: true }));
+  }
+  const chicken = clearLeader(tally(all, (l) => l.passed ?? []), { min: 3 });
+  if (chicken) out.push(award('Chicken', byId(chicken.id), `Passed ${times(chicken.n)} in the bidding`, { roast: true }));
+
+  const quotes = missed.filter((l) => l.text);
+  const wrongest = clearLeader(tally(quotes, (l) => l.by));
+  if (wrongest) {
+    const l = quotes.filter((x) => x.by === wrongest.id).at(-1);
+    const was = nameOf(l.card);
+    out.push(award('Confidently wrong', byId(l.by), `Said “${l.text}”${was ? ` — it was ${was}` : ''}`, { roast: true }));
+  }
+  return out.filter(Boolean);
 }
 
 /**
@@ -443,6 +483,8 @@ export function normalizeGame(raw) {
       correct: Boolean(l.correct),
       points: numberOr(l.points, 0),
       void: l.void === 'left' || l.void === 'broken' ? l.void : null,
+      passed: listOf(l.passed).filter((id) => typeof id === 'string'),
+      ...(typeof l.text === 'string' && l.text ? { text: l.text } : {}),
     })),
   };
 }

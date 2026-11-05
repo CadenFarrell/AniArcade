@@ -70,7 +70,15 @@ function normalizeGame(game) {
     finalIndex: game.finalIndex ?? null,
     log: (Array.isArray(game.log) ? game.log : Object.values(game.log ?? {}))
       .filter(Boolean)
-      .map((l) => ({ i: l.i ?? 0, got: l.got ?? {}, lost: l.lost ?? [] })),
+      // `miss`/`blank` (the awards' misses) are dropped empty as well, and an
+      // array may come back index-keyed.
+      .map((l) => ({
+        i: l.i ?? 0,
+        got: l.got ?? {},
+        miss: l.miss ?? {},
+        blank: Array.isArray(l.blank) ? l.blank : Object.values(l.blank ?? {}),
+        lost: l.lost ?? [],
+      })),
   };
 }
 

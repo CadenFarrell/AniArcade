@@ -1014,6 +1014,7 @@ describe('the match log and awards', () => {
     const r = round({ mode: 'blind', votes: { a: 'c', b: 'c', c: 'a' } });
     expect(rules.roundLogEntry(r, { fakeId: 'c' })).toEqual({
       fakeId: 'c', escaped: false, stole: false, namedBy: ['a', 'b'], secretKey: null, secretName: null,
+      votes: { a: 'c', b: 'c', c: 'a' }, timeouts: {}, stealGuess: null,
     });
     // The secret rides along once it is public, from a published card (key) or a pool entry (id).
     expect(rules.roundLogEntry(r, { fakeId: 'c', secret: { key: 'levi', name: 'Levi' } }))
@@ -1032,9 +1033,52 @@ describe('the match log and awards', () => {
       null,
     ];
     const awards = rules.matchAwards(log, players);
-    expect(awards.map((a) => [a.title, a.player.id])).toEqual([['Best liar', 'a'], ['Sharpest eye', 'b']]);
+    expect(awards.map((a) => [a.title, a.player.id])).toEqual([['Best liar', 'a'], ['Sharpest eye', 'b'], ['Lone wolf', 'b']]);
 
     const tied = [{ fakeId: 'a', escaped: true, namedBy: [] }, { fakeId: 'b', escaped: true, namedBy: [] }];
     expect(rules.matchAwards(tied, players)).toEqual([]);
+  });
+
+  it('logs the deciding ballot, the clock-outs and a wrong steal', () => {
+    const r = round({
+      mode: 'blind',
+      votes: { a: 'b', b: 'c', c: 'a' },
+      runoff: { candidates: ['a', 'b'], votes: { a: 'b', b: 'a', c: 'b' } },
+      clues: [{ by: 'a', text: 'x', lap: 0 }, { by: 'b', text: '', lap: 0, timedOut: true }, { by: 'b', text: '', lap: 1, timedOut: true }],
+      steal: { name: 'Goku' },
+    });
+    expect(rules.roundLogEntry(r, { fakeId: 'b', secret: { key: 'levi', name: 'Levi' } })).toMatchObject({
+      votes: { a: 'b', b: 'a', c: 'b' }, timeouts: { b: 2 }, stealGuess: 'Goku',
+    });
+  });
+
+  const titles = (log) => Object.fromEntries(rules.matchAwards(log, players).map((a) => [a.title, [a.player.id, a.detail]]));
+
+  it('names the master thief, the worst poker face and the wild stab', () => {
+    const t = titles([
+      { fakeId: 'a', escaped: false, stole: true, namedBy: ['b', 'c'], secretName: 'Levi' },
+      { fakeId: 'b', escaped: false, namedBy: ['a', 'c'], stealGuess: 'Goku', secretName: 'Rem' },
+      { fakeId: 'b', escaped: false, namedBy: ['a', 'c'] },
+    ]);
+    expect(t['Master thief']).toEqual(['a', 'Caught, but stole the win by naming Levi']);
+    expect(t['Worst poker face']).toEqual(['b', 'Caught all 2 times as the fake']);
+    expect(t['Wild stab']).toEqual(['b', 'Guessed Goku — it was Rem']);
+  });
+
+  it('roasts friendly fire, the scapegoat and the frozen', () => {
+    const t = titles([
+      { fakeId: 'a', escaped: true, namedBy: [], votes: { b: 'c', c: 'b' }, timeouts: { c: 1 } },
+      { fakeId: 'a', escaped: true, namedBy: [], votes: { b: 'c', c: 'a' }, timeouts: { c: 1 } },
+      { fakeId: 'b', escaped: false, namedBy: ['a'], votes: { a: 'b', c: 'a' } },
+      { fakeId: 'a', escaped: false, namedBy: ['b'], votes: { b: 'a', c: 'b' } },
+    ]);
+    expect(t['Friendly fire']).toEqual(['c', 'Voted for an innocent 3 times']);
+    expect(t.Frozen).toEqual(['c', 'Ran out of time on 2 clues']);
+    expect(t.Scapegoat).toBeUndefined();
+    expect(titles([
+      { fakeId: 'a', escaped: true, namedBy: [], votes: { b: 'c', a: 'c' } },
+      { fakeId: 'a', escaped: true, namedBy: [], votes: { b: 'c' } },
+      { fakeId: 'a', escaped: true, namedBy: [], votes: { b: 'c' } },
+    ]).Scapegoat).toEqual(['c', 'Innocent, but drew 3 votes']);
   });
 });

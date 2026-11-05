@@ -267,7 +267,7 @@ describe('the game log and its awards', () => {
     g = apply(g, rules.uncoverTile(g, 'a', 3));
     g = apply(g, rules.submitAnswer(g, deal, 'a', 'Levi Ackerman', ids));
     g = apply(g, rules.nextRound(g, ids));
-    expect(g.log).toEqual([{ card: 0, by: 'a', bid: 4, tiles: 1, hints: 0, correct: true, points: TILES - 4, void: null }]);
+    expect(g.log).toEqual([{ card: 0, by: 'a', bid: 4, tiles: 1, hints: 0, correct: true, points: TILES - 4, void: null, passed: ['b', 'c'] }]);
     expect(rules.normalizeGame({ ...g, log: { 0: g.log[0] } }).log).toEqual(g.log);
   });
 
@@ -279,5 +279,23 @@ describe('the game log and its awards', () => {
     ];
     expect(rules.peekAwards(log, players).map((x) => [x.title, x.player.id])).toEqual([['Eagle eye', 'b'], ['Boldest miss', 'c']]);
     expect(rules.peekAwards([log[1], { ...log[1], by: 'a' }], players)).toEqual([]);
+  });
+
+  const titles = (log) => Object.fromEntries(rules.peekAwards(log, players, { nameOf: (i) => ['Levi', 'Rem'][i] ?? '' })
+    .map((x) => [x.title, [x.player.id, x.detail]]));
+
+  it('names the leftovers and the hint addict, and roasts the misses and the passes', () => {
+    const log = [
+      { card: 0, by: 'a', bid: 9, tiles: 2, hints: 1, correct: true, passed: ['c'] },
+      { card: 1, by: 'b', bid: 3, tiles: 3, hints: 0, correct: false, text: 'Eren', passed: ['c'] },
+      { card: 0, by: 'b', bid: 4, tiles: 4, hints: 0, correct: false, passed: ['c'] },
+      { card: 1, by: 'a', bid: 14, tiles: 1, hints: 2, correct: true, passed: [] },
+    ];
+    const t = titles(log);
+    expect(t.Leftovers).toEqual(['a', `Named them with ${14 - 1 - 2 * rules.HINT_COST} of their bid to spare`]);
+    expect(t['Hint addict']).toEqual(['a', 'Bought 3 hints']);
+    expect(t.Butterfingers).toEqual(['b', `Missed 2 times — the table banked ${2 * rules.WRONG_BONUS} each`]);
+    expect(t.Chicken).toEqual(['c', 'Passed 3 times in the bidding']);
+    expect(t['Confidently wrong']).toEqual(['b', 'Said “Eren” — it was Rem']);
   });
 });

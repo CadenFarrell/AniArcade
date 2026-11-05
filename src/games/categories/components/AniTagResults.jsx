@@ -1,4 +1,4 @@
-import ResultsLayout, { Splash, Standings } from '../../../shared/components/Results';
+import ResultsLayout, { Awards, Splash, Standings } from '../../../shared/components/Results';
 import { StartBar } from '../../../shared/components/SetupLayout';
 import { Button } from '../../../shared/ui';
 import { computeRankedPlayers } from '../../../shared/utils/ranking';
@@ -6,6 +6,7 @@ import { splitPodium } from '../../../shared/utils/podium';
 import descriptor from '../index';
 import { useRecordResult } from '../../../shared/hooks/useRecordResult';
 import { fromRanked } from '../../../shared/utils/history';
+import { tagAwards } from '../rules';
 
 // End of session. computeRankedPlayers handles the tie rule (two players tied
 // for 2nd are both 2nd, and the next is 3rd) so this screen never does its own
@@ -15,7 +16,7 @@ import { fromRanked } from '../../../shared/utils/history';
 // their profiles when they have one — the same faces the setup slots wore —
 // and a player with none gets the bare panel and their initial.
 export default function AniTagResults({
-  players, totalScores, onPlayAgain, onBack,
+  players, totalScores, log = [], onPlayAgain, onBack,
   playAgainLabel = 'Play again', backLabel = 'Change settings',
 }) {
   const ranked = computeRankedPlayers(players, totalScores);
@@ -45,6 +46,7 @@ export default function AniTagResults({
       )}
     >
       <Standings build ranked={rest} />
+      <Awards awards={tagAwards(log, players)} />
     </ResultsLayout>
   );
 }

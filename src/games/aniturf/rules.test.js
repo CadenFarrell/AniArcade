@@ -489,3 +489,44 @@ describe('normalizeGame', () => {
     expect(g.marks[12]).toBe(null);
   });
 });
+
+describe('turfAwards', () => {
+  const players = ['r1', 'r2', 'b1', 'b2'].map((id) => ({ id, name: id }));
+  const board = Array.from({ length: 25 }, (_, i) => ({ name: `C${i}` }));
+  const base = { board, clueGivers: { red: 'r1', blue: 'b1' }, teams: { red: ['r1', 'r2'], blue: ['b1', 'b2'] } };
+  const titles = (game) => Object.fromEntries(rules.turfAwards({ ...base, ...game }, players).map((a) => [a.title, [a.player.id, a.detail]]));
+  const clue = (team, word, number, by) => ({ kind: 'clue', team, word, number, by });
+  const act = (kind, team, cell, by = null) => ({ kind, team, cell, by });
+
+  it('names the finishing move, the best clue and the trap-setter online', () => {
+    const log = [
+      clue('red', 'Ninja', 3, 'r1'), act('claim', 'red', 0, 'r2'), act('claim', 'red', 5, 'r2'), act('claim', 'red', 10, 'r2'),
+      clue('blue', 'Sword', 2, 'b1'), act('trap', 'blue', 3, 'b2'),
+      clue('red', 'Pirate', 1, 'r1'), act('trap', 'red', 7, 'r2'),
+      clue('blue', 'Mecha', 2, 'b1'), act('trap', 'blue', 8, 'b2'),
+      clue('red', 'Isekai', 1, 'r1'), act('claim', 'red', 20, 'r2'),
+    ];
+    const t = titles({ log, winBy: 'connect', winner: 'red' });
+    expect(t['Finishing move']).toEqual(['r2', 'Claimed C20 to cross the board']);
+    expect(t['Best clue']).toEqual(['r1', '“Ninja · 3” landed 3 claims']);
+    expect(t['It’s a trap!']).toEqual(['r1', '2 of their traps sprung']);
+    expect(t.Overpromised).toEqual(['b1', '“Sword · 2” found nothing']);
+  });
+
+  it('falls back to the clue-giver on a shared device, and counts no unattributed stop', () => {
+    const log = [
+      clue('blue', 'Robot', 2, 'b1'), act('miss', 'blue', 1), { kind: 'stop', team: 'blue', by: null },
+      clue('blue', 'Space', 1, 'b1'), act('miss', 'blue', 2), { kind: 'stop', team: 'blue' },
+      clue('red', 'Ninja', 1, 'r1'), act('claim', 'red', 4),
+    ];
+    const t = titles({ log, winBy: 'connect', winner: 'red' });
+    expect(t['Scorched earth']).toEqual(['b1', 'Their team burned 2 squares on their clues']);
+    expect(t['Finishing move']).toEqual(['r1', 'Their clue “Ninja · 1” crossed the board']);
+    expect(t['Played it safe']).toBeUndefined();
+  });
+
+  it('logs who stopped', () => {
+    expect(rules.stopGuessing({ phase: 'guess', turn: 'red', claimsMade: 1, log: [], marks: [], claimOrder: { red: [], blue: [] } }, 'red', 'r2')
+      .patch.log.at(-1)).toEqual({ kind: 'stop', team: 'red', by: 'r2' });
+  });
+});

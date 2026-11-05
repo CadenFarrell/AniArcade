@@ -257,3 +257,35 @@ describe('normalizeGame', () => {
     expect(rules.normalizeGame(g)).toEqual({ ...g, dealt: null, wordAt: null });
   });
 });
+
+describe('chainAwards', () => {
+  const players = ['a', 'b', 'c', 'd'].map((id) => ({ id, name: id }));
+  const titles = (log) => Object.fromEntries(rules.chainAwards(log, players).map((x) => [x.title, [x.player.id, x.detail]]));
+  const got = (by, n, givers, extra = {}) => ({ kind: 'got', by, n, givers, character: { name: 'Levi' }, ...extra });
+
+  it('names the mind reader and the set-up artist', () => {
+    const t = titles([got('c', 2, ['a', 'b']), got('d', 4, ['a', 'b']), got('a', 5, ['c', 'd'])]);
+    expect(t['Mind reader']).toEqual(['c', 'Got Levi after 2 words']);
+    expect(t['Set-up artist']).toEqual(['b', 'Their word set up 2 guesses']);
+  });
+
+  it('roasts the slip, the wild guesser, the picky and the staller', () => {
+    const t = titles([
+      { kind: 'banned', by: 'a', givers: ['a', 'b'] },
+      { kind: 'out', givers: ['c', 'd'], skipBy: ['c', 'c'], lostBy: ['d', 'd'], wrong: { a: 2, b: 1 } },
+      { kind: 'out', givers: ['a', 'b'], skipBy: ['a'], wrong: { a: 1 } },
+    ]);
+    expect(t['Slip of the tongue']).toEqual(['a', 'Said a banned word']);
+    expect(t['Wild guesser']).toEqual(['a', '3 wrong guesses, all with confidence']);
+    expect(t.Picky).toEqual(['c', 'Turned down 2 characters']);
+    expect(t.Staller).toEqual(['d', 'Lost 2 words to the clock']);
+  });
+
+  it('remembers who asked for each re-deal, through the room', () => {
+    let g = pairGame();
+    const [first] = g.givers;
+    g = apply(g, rules.skip(g, first));
+    expect(g.skipBy).toEqual([first]);
+    expect(rules.normalizeGame(JSON.parse(JSON.stringify(g))).skipBy).toEqual([first]);
+  });
+});

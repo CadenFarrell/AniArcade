@@ -99,7 +99,14 @@ export default function AniTuneResults({
         extra={lastManStanding ? livesBadge : undefined}
       />
 
-      <Awards awards={roundAwards(log, players, { mode, titleOf: (i) => round[i]?.animeTitle ?? '' })} />
+      <Awards
+        awards={roundAwards(log, players, {
+          mode,
+          titleOf: (i) => round[i]?.animeTitle ?? '',
+          ownersOf: (i) => round[i]?.owners ?? [],
+          eliminatedAt,
+        })}
+      />
 
       {/* The round's setlist. Not a spoiler measure — the reveal already names
           the song and its performers as each one is played — just the

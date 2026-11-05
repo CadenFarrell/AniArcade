@@ -16,6 +16,8 @@
 // player still here has locked in — the gate counts the ACTIVE roster, so a
 // closed tab never wedges a room (settleIfComplete).
 
+import { award, clearLeader, longestRuns, tally } from '../../shared/utils/awards';
+
 /** A right pick. */
 export const PICK_POINTS = 2;
 /** A right reason, on top of a right pick — never on its own. */
@@ -98,13 +100,17 @@ export function settleIfComplete(game, deal, activeIds) {
 }
 
 // The round just revealed, as one line of the game's story: who found the odd
-// one out and who also named the reason. Plain ids, so it survives RTDB.
+// one out, who also named the reason, and which card everyone picked (so a
+// wrong pick can be told from a player who never picked — they left — and
+// two wrong picks on one card from two on different ones). Plain values, so
+// it survives RTDB.
 function logLine(game) {
   const picks = Object.entries(game.picks ?? {});
   return {
     round: game.round,
     got: picks.filter(([, p]) => p.correct).map(([id]) => id),
     reasons: picks.filter(([, p]) => p.reasonRight).map(([id]) => id),
+    picks: Object.fromEntries(picks.filter(([, p]) => p?.card != null).map(([id, p]) => [id, String(p.card)])),
   };
 }
 
@@ -120,27 +126,53 @@ export function nextRound(game) {
 }
 
 /**
- * The final screen's superlatives, from the log: a clear leader or nothing (a
- * tie drops the award rather than picking one by seat).
+ * The final screen's superlatives, from the log. Each is a clear leader or
+ * nothing — a tie drops it rather than picking by seat — and the card
+ * (shared/utils/awards.js's pickAwards) chooses what shows. Lines from before
+ * `picks` was logged skip the awards that need it.
  *
- *   Sharpest eye   the most odd ones out found (two or more)
- *   Mind reader    the most reasons named (two or more, reasons on)
+ *   Sharpest eye                the most odd ones out found (two or more)
+ *   Mind reader                 the most reasons named (two or more, reasons on)
+ *   Lone wolf                   the only one who found it, two rounds or more
+ *   Hot streak                  the most rounds in a row found (three or more)
+ *   Contrarian                  a wrong card nobody else picked, two rounds or more
+ *   Right for the wrong reason  found it three times or more, never named why (roast)
+ *   Fooled again                the most wrong picks (three or more, roast)
  */
-export function outAwards(log = [], players = []) {
+export function outAwards(log = [], players = [], { reasonsOn = false } = {}) {
   const byId = (id) => players.find((p) => p.id === id) ?? null;
-  const leader = (field) => {
-    const counts = {};
-    for (const line of log ?? []) for (const id of line?.[field] ?? []) counts[id] = (counts[id] ?? 0) + 1;
-    const ranked = Object.entries(counts).sort((a, b) => b[1] - a[1]);
-    if (!ranked.length || ranked[0][1] < 2 || ranked[1]?.[1] === ranked[0][1]) return null;
-    return { player: byId(ranked[0][0]), n: ranked[0][1] };
-  };
+  const lines = (log ?? []).filter(Boolean);
   const out = [];
-  const eye = leader('got');
-  if (eye?.player) out.push({ title: 'Sharpest eye', player: eye.player, detail: `Found the odd one out ${eye.n} times` });
-  const reader = leader('reasons');
-  if (reader?.player) out.push({ title: 'Mind reader', player: reader.player, detail: `Named the reason ${reader.n} times` });
-  return out;
+  const eye = clearLeader(tally(lines, (l) => l.got), { min: 2 });
+  if (eye) out.push(award('Sharpest eye', byId(eye.id), `Found the odd one out ${eye.n} times`, { weight: 2 }));
+  const reader = clearLeader(tally(lines, (l) => l.reasons), { min: 2 });
+  if (reader) out.push(award('Mind reader', byId(reader.id), `Named the reason ${reader.n} times`, { weight: 2 }));
+
+  // "The only one" needs somebody else to have tried.
+  const contested = (l) => !l.picks || Object.keys(l.picks).length > 1;
+  const lone = clearLeader(tally(lines, (l) => (contested(l) && (l.got ?? []).length === 1 ? l.got : [])), { min: 2 });
+  if (lone) out.push(award('Lone wolf', byId(lone.id), `The only one who saw it, ${lone.n} times`, { weight: 2 }));
+  const streak = clearLeader(longestRuns(lines, (l) => l.got), { min: 3 });
+  if (streak) out.push(award('Hot streak', byId(streak.id), `${streak.n} rounds in a row`));
+
+  const wrong = (l) => Object.keys(l.picks ?? {}).filter((id) => !(l.got ?? []).includes(id));
+  const contrary = clearLeader(tally(lines, (l) => wrong(l).filter((id) => (
+    Object.values(l.picks).filter((card) => card === l.picks[id]).length === 1
+  ))), { min: 2 });
+  if (contrary) out.push(award('Contrarian', byId(contrary.id), `Picked a card nobody else touched, ${contrary.n} times`));
+
+  if (reasonsOn) {
+    const found = tally(lines, (l) => l.got);
+    const named = tally(lines, (l) => l.reasons);
+    const clueless = clearLeader(Object.fromEntries(Object.entries(found).filter(([id]) => !named[id])), { min: 3 });
+    if (clueless) {
+      out.push(award('Right for the wrong reason', byId(clueless.id),
+        `Found it ${clueless.n} times, never knew why`, { roast: true }));
+    }
+  }
+  const fooled = clearLeader(tally(lines, wrong), { min: 3 });
+  if (fooled) out.push(award('Fooled again', byId(fooled.id), `Picked wrong ${fooled.n} times`, { roast: true }));
+  return out.filter(Boolean);
 }
 
 /** The room emptied below ONLINE_MIN_PLAYERS: straight to the results. */
@@ -202,7 +234,14 @@ export function normalizeGame(raw) {
     // RTDB drops empty arrays, inside a line as well as the log itself.
     log: listOf(raw.log)
       .filter((l) => l && typeof l === 'object')
-      .map((l) => ({ round: numberOr(l.round, 0), got: listOf(l.got), reasons: listOf(l.reasons) })),
+      .map((l) => ({
+        round: numberOr(l.round, 0),
+        got: listOf(l.got),
+        reasons: listOf(l.reasons),
+        // Absent (not empty) on a line from before picks were logged, which
+        // the awards read as "unknown" rather than "nobody picked".
+        ...(l.picks && typeof l.picks === 'object' ? { picks: { ...l.picks } } : {}),
+      })),
   };
 }
 

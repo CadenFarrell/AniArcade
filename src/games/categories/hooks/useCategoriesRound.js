@@ -61,6 +61,8 @@ export function useCategoriesRound(players, {
       round: 0, cap: proposalCap, source: categorySource,
     }),
     history: [],
+    // One line per finished round (rules.roundLogLine), for the awards.
+    log: [],
   }));
   const [categories, setCategories] = useState(deal);
   const state = session.round;
@@ -153,7 +155,12 @@ export function useCategoriesRound(players, {
       if (!patch || Object.keys(patch).length === 0) return s;
       const round = { ...s.round, ...patch };
       if (round.phase !== 'roundEnd') return { ...s, round };
-      return { ...s, round, history: [...s.history, rules.finalScores(round, playerIds)] };
+      return {
+        ...s,
+        round,
+        history: [...s.history, rules.finalScores(round, playerIds)],
+        log: [...s.log, rules.roundLogLine(round, playerIds)],
+      };
     });
   }, [playerIds]);
 
@@ -232,6 +239,7 @@ export function useCategoriesRound(players, {
     explain: rules.explainRound(state, playerIds, categories),
     roundScores: rules.finalScores(state, playerIds),
     totalScores,
+    log: session.log,
     pick,
     propose,
     declare,

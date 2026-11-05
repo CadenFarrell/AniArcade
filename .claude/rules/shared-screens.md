@@ -65,6 +65,20 @@ stamped. Online, a FINAL results screen also carries the "Next game" card under 
 (`NextGame.jsx`, slotted in by `RoomShell` — `.claude/rules/online-rooms.md`); its buttons are
 "Play <Game> next", which the bots' fallback never presses.
 
+**Every FINAL results screen carries `Awards`** (never a between-rounds stop): superlatives
+for the good, the odd and the playful roasts ("Butterfingers — missed 4 clues"). Each game
+derives its own in its `rules.js` (`matchAwards`, `quizAwards`, `turfAwards`…, whose doc
+comment lists them) from what its match log recorded, with `shared/utils/awards.js`'s helpers:
+`tally`/`sumBy`/`longestRuns` per player, then `clearLeader`/`clearBest` — **a tie drops the
+award** (never picked by seat) and a count has a minimum, so one slip is not a "most". A game
+hands the card everything earned (`award(title, player, detail, { weight, roast })`) and
+`pickAwards` chooses up to four: heaviest `weight` first (~3 for the rare feats), one per
+player while anyone has none, and a roast always makes the cut when one was earned. A log
+field an award needs goes into the round's log line and its normalizer — RTDB drops empties,
+and most normalizers rebuild from named fields — and an award reads a line from before the
+field existed as "unknown", never as zero. Awards say nothing a game hides: AniDraft's come
+from the tallies, never the ballots.
+
 **In-round, the faces are the thread.** `TablePortraits.jsx` shares portraits once (seat
 order) for everything past setup — `RoomShell` provides it online, each `LocalGame` locally —
 and `usePlayerPortrait(player)` looks one up by id, so a player wears one character everywhere.

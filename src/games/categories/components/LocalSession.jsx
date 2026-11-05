@@ -71,7 +71,7 @@ export default function LocalSession({
           isFinalRound={round.isFinalRound}
           canAdvance
           onNext={round.nextRound}
-          onFinish={() => onFinish(round.totalScores)}
+          onFinish={() => onFinish(round.totalScores, round.log)}
           onBack={onQuit}
           backLabel="← Quit session"
         />

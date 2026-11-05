@@ -1,4 +1,4 @@
-import ResultsLayout, { Splash, Standings } from '../../../shared/components/Results';
+import ResultsLayout, { Awards, Splash, Standings } from '../../../shared/components/Results';
 import { StartBar } from '../../../shared/components/SetupLayout';
 import { TEAM_STYLE } from '../../../shared/components/teams/teamStyle';
 import { useRecordResult } from '../../../shared/hooks/useRecordResult';
@@ -7,7 +7,7 @@ import { splitPodium } from '../../../shared/utils/podium';
 import { teamOf } from '../../../shared/utils/teams';
 import { Avatar, Badge, Button, Card } from '../../../shared/ui';
 import { KANA } from '../../../shared/ui/kanaText';
-import { isTeamShape, standings, winningTeams } from '../rules';
+import { chainAwards, isTeamShape, standings, winningTeams } from '../rules';
 import descriptor from '../index';
 
 // Final standings — the one screen that records the game (play-history rule:
@@ -80,6 +80,7 @@ export default function AniChainResults({ game, players, departedIds = [], onPla
       ) : (
         <Standings build ranked={rest} departedIds={departedIds} score={(p) => String(p.total)} />
       )}
+      <Awards awards={chainAwards(game.log, players)} />
       <Recap game={game} players={players} />
     </ResultsLayout>
   );

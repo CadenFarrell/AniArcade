@@ -1,8 +1,8 @@
-import ResultsLayout, { Splash, Standings } from '../../../shared/components/Results';
+import ResultsLayout, { Awards, Splash, Standings } from '../../../shared/components/Results';
 import { StartBar } from '../../../shared/components/SetupLayout';
 import { Button } from '../../../shared/ui';
 import { splitPodium } from '../../../shared/utils/podium';
-import { standings } from '../rules';
+import { quizAwards, standings } from '../rules';
 import descriptor from '../index';
 import { useRecordResult } from '../../../shared/hooks/useRecordResult';
 import { fromRanked } from '../../../shared/utils/history';
@@ -13,7 +13,9 @@ const signed = (n) => (n < 0 ? `−${Math.abs(n).toLocaleString()}` : n.toLocale
 
 // Final standings. A table of one is a real game here (a quiz on your own), and
 // splitPodium stamps it "Finished" rather than crowning the only player.
-export default function QuizResults({ players, scores, departedIds = [], onPlayAgain, onBack, againLabel = 'Play again' }) {
+export default function QuizResults({
+  players, scores, log = [], departedIds = [], onPlayAgain, onBack, againLabel = 'Play again',
+}) {
   const ranked = standings(players, scores);
   const { winners, rest, stamp, kana } = splitPodium(ranked);
   // The finished game, into each seated profile's history (utils/history.js).
@@ -55,6 +57,7 @@ export default function QuizResults({ players, scores, departedIds = [], onPlayA
         score={(p) => signed(p.total)}
         scoreClass={(p) => (p.total < 0 ? 'text-pop-red' : 'text-pop-amber')}
       />
+      <Awards awards={quizAwards(log, players, scores)} />
     </ResultsLayout>
   );
 }

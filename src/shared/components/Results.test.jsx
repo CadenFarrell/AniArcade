@@ -78,11 +78,25 @@ describe('the results ceremony', () => {
 });
 
 describe('Awards', () => {
-  it('draws up to three, and nothing for none', () => {
-    const awards = ['One', 'Two', 'Three', 'Four'].map((title) => ({ title, player: players[0], detail: 'why' }));
+  it('draws up to four, and nothing for none', () => {
+    const awards = ['One', 'Two', 'Three', 'Four', 'Five'].map((title) => ({ title, player: players[0], detail: 'why' }));
     const { container, rerender } = render(<Awards awards={awards} />);
-    expect(container.querySelectorAll('li')).toHaveLength(3);
+    expect(container.querySelectorAll('li')).toHaveLength(4);
     rerender(<Awards awards={[]} />);
     expect(container.textContent).toBe('');
+  });
+
+  it('names everyone it can before giving anyone a second', () => {
+    const awards = [
+      { title: 'One', player: players[0], detail: 'a' },
+      { title: 'Two', player: players[0], detail: 'b' },
+      { title: 'Three', player: players[1], detail: 'c' },
+      { title: 'Four', player: players[2], detail: 'd' },
+    ];
+    const { container } = render(<Awards awards={awards} max={3} />);
+    const rows = [...container.querySelectorAll('li')].map((li) => li.textContent);
+    expect(rows).toHaveLength(3);
+    for (const name of ['Ann', 'Ben', 'Cat']) expect(rows.some((r) => r.includes(name))).toBe(true);
+    expect(rows.some((r) => r.includes('Two'))).toBe(false);
   });
 });

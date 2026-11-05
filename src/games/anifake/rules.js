@@ -27,6 +27,7 @@
 // round state it does touch — `reveal` — is written only once the vote has
 // closed. See deriveTruth for how the answer comes back without anyone having
 // been trusted to hold it.
+import { award, clearLeader, sumBy, tally, times } from '../../shared/utils/awards';
 import { characterNameKey } from '../../shared/utils/character';
 import { shuffle } from '../../shared/utils/random';
 import { DEFAULT_FAME_ID } from './fame';
@@ -868,11 +869,22 @@ export function roundLogEntry(state, { fakeId, secret } = {}) {
       if (voter !== fakeId && target === fakeId) named.add(voter);
     }
   }
+  // For the awards' roasts: the ballot that decided the round (the runoff's,
+  // when there was one — the opening ballot was superseded), each player's
+  // clues lost to the clock, and a steal that named the wrong character. All
+  // public by now: the reveal shows the ballot, the clue list and the steal.
+  const votes = { ...((state.runoff ? state.runoff.votes : state.votes) ?? {}) };
+  const timeouts = {};
+  for (const c of state.clues ?? []) if (c?.timedOut && c.by) timeouts[c.by] = (timeouts[c.by] ?? 0) + 1;
+  const stole = caught === fakeId && state.mode === 'blind' && stealIsCorrect(state.steal, secret);
   return {
     fakeId,
     escaped: caught !== fakeId,
-    stole: caught === fakeId && state.mode === 'blind' && stealIsCorrect(state.steal, secret),
+    stole,
     namedBy: [...named],
+    votes,
+    timeouts,
+    stealGuess: !stole && state.steal?.name ? String(state.steal.name).slice(0, 60) : null,
     // The round's character, for the recap and so a later round of the match
     // does not deal it again. Public by now: every card was published at the
     // reveal this line is written after. `key` online (a published card), the
@@ -896,33 +908,70 @@ export function pastSecrets(log) {
 /**
  * The final screen's superlatives, from the match log. Each is a fact with a
  * clear winner or it is left out — a tie for "Best liar" between everyone who
- * escaped once says nothing, so ties drop the award rather than picking one.
+ * escaped once says nothing, so ties drop the award rather than picking one —
+ * and the card (shared/utils/awards.js's pickAwards) chooses what shows. Lines
+ * from before `votes`/`timeouts`/`stealGuess` were logged skip those awards.
  *
- *   Best liar      most escapes as the fake
- *   Sharpest eye   most times named the fake
+ *   Master thief      caught, but stole the win by naming the character (blind)
+ *   Best liar         most escapes as the fake
+ *   Sharpest eye      most times named the fake
+ *   Lone wolf         the only one to name the fake
+ *   Worst poker face  the fake twice or more, caught every time (roast)
+ *   Friendly fire     the most votes for an innocent, two or more (roast)
+ *   Scapegoat         innocent, and drew the most votes, three or more (roast)
+ *   Frozen            the most clues lost to the clock, two or more (roast)
+ *   Wild stab         a steal that named the wrong character (roast)
  */
 export function matchAwards(log = [], players = []) {
-  const entries = log.filter(Boolean);
+  const entries = (log ?? []).filter(Boolean);
   const byId = (id) => players.find((p) => p.id === id) ?? null;
-  const top = (counts) => {
-    const rows = Object.entries(counts).filter(([, n]) => n > 0).sort((a, b) => b[1] - a[1]);
-    if (!rows.length || (rows[1] && rows[1][1] === rows[0][1])) return null;
-    return { id: rows[0][0], n: rows[0][1] };
-  };
-  const escapes = {};
-  const reads = {};
-  for (const e of entries) {
-    if (e.escaped) escapes[e.fakeId] = (escapes[e.fakeId] || 0) + 1;
-    for (const id of e.namedBy ?? []) reads[id] = (reads[id] || 0) + 1;
-  }
   const out = [];
-  const liar = top(escapes);
-  if (liar && byId(liar.id)) {
-    out.push({ title: 'Best liar', player: byId(liar.id), detail: `Got away ${liar.n} ${liar.n === 1 ? 'time' : 'times'} as the fake` });
+
+  const thefts = entries.filter((e) => e.stole);
+  const thief = clearLeader(tally(thefts, (e) => e.fakeId));
+  if (thief) {
+    const last = thefts.filter((e) => e.fakeId === thief.id).at(-1);
+    out.push(award('Master thief', byId(thief.id), last.secretName
+      ? `Caught, but stole the win by naming ${last.secretName}`
+      : `Caught, but stole the win ${times(thief.n)}`, { weight: 3 }));
   }
-  const eye = top(reads);
-  if (eye && byId(eye.id)) {
-    out.push({ title: 'Sharpest eye', player: byId(eye.id), detail: `Named the fake ${eye.n} ${eye.n === 1 ? 'time' : 'times'}` });
+  const liar = clearLeader(tally(entries, (e) => (e.escaped ? e.fakeId : null)));
+  if (liar) out.push(award('Best liar', byId(liar.id), `Got away ${times(liar.n)} as the fake`, { weight: 2 }));
+  const eye = clearLeader(tally(entries, (e) => e.namedBy ?? []));
+  if (eye) out.push(award('Sharpest eye', byId(eye.id), `Named the fake ${times(eye.n)}`));
+  const lone = clearLeader(tally(entries, (e) => ((e.namedBy ?? []).length === 1 ? e.namedBy : [])));
+  if (lone) {
+    out.push(award('Lone wolf', byId(lone.id), lone.n === 1
+      ? 'The only one to name the fake'
+      : `The only one to name the fake, ${times(lone.n)}`, { weight: 2 }));
   }
-  return out;
+
+  // Fake at least twice and never got away: whoever was fake the most of
+  // those, or nobody on a tie.
+  const asFake = tally(entries, (e) => e.fakeId);
+  const escapes = tally(entries, (e) => (e.escaped ? e.fakeId : null));
+  const caughtOut = Object.fromEntries(Object.entries(asFake).filter(([id, n]) => n >= 2 && !escapes[id]));
+  const poker = clearLeader(caughtOut);
+  if (poker) out.push(award('Worst poker face', byId(poker.id), `Caught all ${poker.n} times as the fake`, { roast: true }));
+
+  const innocentVotes = (e) => Object.entries(e.votes ?? {}).filter(([voter, target]) => (
+    voter !== e.fakeId && target && target !== e.fakeId
+  ));
+  const friendly = clearLeader(tally(entries, (e) => innocentVotes(e).map(([voter]) => voter)), { min: 2 });
+  if (friendly) out.push(award('Friendly fire', byId(friendly.id), `Voted for an innocent ${times(friendly.n)}`, { roast: true }));
+  const goat = clearLeader(tally(entries, (e) => innocentVotes(e).map(([, target]) => target)), { min: 3 });
+  if (goat) out.push(award('Scapegoat', byId(goat.id), `Innocent, but drew ${goat.n} votes`, { roast: true }));
+
+  const frozen = clearLeader(sumBy(entries, (e) => e.timeouts), { min: 2 });
+  if (frozen) out.push(award('Frozen', byId(frozen.id), `Ran out of time on ${frozen.n} clues`, { roast: true }));
+
+  const stabs = entries.filter((e) => e.stealGuess && !e.stole);
+  const stab = clearLeader(tally(stabs, (e) => e.fakeId));
+  if (stab) {
+    const last = stabs.filter((e) => e.fakeId === stab.id).at(-1);
+    out.push(award('Wild stab', byId(stab.id), last.secretName
+      ? `Guessed ${last.stealGuess} — it was ${last.secretName}`
+      : `Guessed ${last.stealGuess}, and missed`, { roast: true }));
+  }
+  return out.filter(Boolean);
 }
