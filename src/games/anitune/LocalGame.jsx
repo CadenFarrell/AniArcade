@@ -247,7 +247,7 @@ export default function LocalGame({ onExit, onBack }) {
           // rather than discarding it.
           confirm={
             view === 'round'
-              ? 'Return to the hub? Your game is saved — you can resume it next time.'
+              ? 'Your game is saved — you can resume it next time.'
               : null
           }
         />

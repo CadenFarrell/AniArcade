@@ -191,7 +191,6 @@ async function runOne(game, strategy, seed) {
     if (!HARNESS_NOISE.test(msg) && !FIREBASE_NOISE.test(msg)) errors.push(msg.slice(0, 600));
   });
   vi.spyOn(console, 'warn').mockImplementation(() => {});
-  vi.spyOn(window, 'confirm').mockImplementation(() => true);
   installMediaStubs();
   stubNetwork(offsite);
   const user = userEvent.setup({ delay: null });

@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { HistoryScopeContext } from '../context/historyScopeContext';
 import { NextGameSlotContext } from '../context/nextGameContext';
 import { useTopBar } from '../context/topBarContext';
+import { useConfirm } from '../hooks/useConfirm';
 import { Banner, HubButton } from '../ui';
 import TablePortraits from './TablePortraits';
 import { FollowScreen, NextGamePicker } from './NextGame';
@@ -34,17 +35,31 @@ import { FollowScreen, NextGamePicker } from './NextGame';
 //   it, through NextGameSlotContext). Once a pick is in, every device but the
 //   host's shows FollowScreen in place of whatever the room was on, whatever
 //   the view, and moves on by itself when the new room's code lands.
+// Both ways out of a room ask the same question: the room outlives you while
+// anyone is still in it (useRoomCore's leaveRoom), so nothing is lost yet.
+const LEAVE_ROOM = {
+  title: 'Leave the room?',
+  message: 'You can rejoin with the same name and room code while anyone is still in it.',
+};
+
 export default function RoomShell({ room, onExit, codeInPage = false, nextGame = false, children }) {
   const bar = useTopBar();
   // Results are recorded on each player's own device (useRecordResult).
   const historyScope = useMemo(() => ({ onlyId: room.myPlayerId ?? null }), [room.myPlayerId]);
   const next = room.handoff?.next ?? null;
   const following = next != null && next.by !== room.myPlayerId;
+  // Leave asks on the game's pause screen, as Hub does (HubButton): rendered
+  // below in the shell, never in the bar's portal, whose backdrop-blur would
+  // trap the fixed sheet inside the bar.
+  const { ask, dialog } = useConfirm();
 
-  const handleLeave = () => {
-    if (!window.confirm('Leave this room? You can rejoin with the same name and room code while anyone is still in it.')) return;
-    room.leaveRoom();
-  };
+  const handleLeave = () => ask({
+    kind: 'pause',
+    title: LEAVE_ROOM.title,
+    message: LEAVE_ROOM.message,
+    confirmLabel: 'Leave the room',
+    onConfirm: () => room.leaveRoom(),
+  });
 
   const handleExitToHub = () => {
     room.leaveRoom();
@@ -76,10 +91,8 @@ export default function RoomShell({ room, onExit, codeInPage = false, nextGame =
 
   return (
     <div className="relative">
-      <HubButton
-        onClick={handleExitToHub}
-        confirm="Leave this room and return to the hub? You can rejoin with the same name and room code while anyone is still in it."
-      />
+      <HubButton onClick={handleExitToHub} confirm={LEAVE_ROOM} />
+      {dialog}
       {bar
         ? bar.right && createPortal(roomControls, bar.right)
         // No bar (a game mounted on its own, as in a component test): the

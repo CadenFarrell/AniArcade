@@ -11,6 +11,7 @@ import WavelengthResults from './components/WavelengthResults';
 import WaitingScreen from '../../shared/components/WaitingScreen';
 import RoomShell from '../../shared/components/RoomShell';
 import { useSoundCue } from '../../shared/hooks/useSoundCue';
+import { useConfirm } from '../../shared/hooks/useConfirm';
 import { Button, HubButton, Screen } from '../../shared/ui';
 
 // The online view-router. Same shape as src/games/anifake/OnlineGame.jsx: a
@@ -65,6 +66,11 @@ export default function OnlineGame({ onBack, onExit }) {
     room.view === 'round' && iAmPsychic && room.game?.phase === 'clue' ? roundIndex : null,
   );
 
+  // The host's two "are you sure?"s (abandon, reveal now), drawn in the shell.
+  // Scoped to the round's phase: a question still open when the dials reveal
+  // is about a round that has ended, and answering it must not reach the next.
+  const { ask, dialog } = useConfirm(`${room.view}:${roundIndex}:${room.game?.phase ?? ''}`);
+
   if (!room.roomCode) {
     return (
       <>
@@ -90,7 +96,9 @@ export default function OnlineGame({ onBack, onExit }) {
 
   // Every in-room screen goes through RoomShell: the way out, the room code and
   // Leave in the top bar, and the connection banners.
-  const shell = (children, opts) => <RoomShell room={room} onExit={onExit} {...opts}>{children}</RoomShell>;
+  const shell = (children, opts) => (
+    <RoomShell room={room} onExit={onExit} {...opts}>{children}{dialog}</RoomShell>
+  );
 
   if (!room.view) return shell(<WaitingScreen title="Loading room…" />);
   if (room.view === 'lobby') return shell(<OnlineLobby room={room} />, { codeInPage: true });
@@ -121,12 +129,13 @@ export default function OnlineGame({ onBack, onExit }) {
       variant="danger"
       size="lg"
       fullWidth
-      onClick={() => {
-        if (!window.confirm(
-          'Abandon this round? It scores nothing and everyone keeps the points they already have.',
-        )) return;
-        room.abandon();
-      }}
+      onClick={() => ask({
+        title: 'Abandon this round?',
+        message: 'It scores nothing, and everyone keeps the points they already have.',
+        confirmLabel: 'Abandon round',
+        cancelLabel: 'Not yet',
+        onConfirm: () => room.abandon(),
+      })}
     >
       Abandon this round
     </Button>
@@ -137,14 +146,17 @@ export default function OnlineGame({ onBack, onExit }) {
       variant="secondary"
       size="lg"
       fullWidth
-      onClick={() => {
-        // Names them, because this is the one control that decides for someone
-        // else. "Reveal now" with no list reads as ending your own wait.
-        if (!window.confirm(waitingOn
-          ? `Reveal now? ${waitingOn} has not dialled and will score nothing.`
-          : 'Reveal now?')) return;
-        room.revealNow();
-      }}
+      // Names them, because this is the one control that decides for someone
+      // else. "Reveal now" with no list reads as ending your own wait. Ink, not
+      // crimson: it destroys nothing, it only stops waiting.
+      onClick={() => ask({
+        title: 'Reveal now?',
+        message: waitingOn ? `${waitingOn} has not dialled and will score nothing.` : null,
+        confirmLabel: 'Reveal now',
+        cancelLabel: 'Keep waiting',
+        tone: 'primary',
+        onConfirm: () => room.revealNow(),
+      })}
     >
       Reveal now
     </Button>

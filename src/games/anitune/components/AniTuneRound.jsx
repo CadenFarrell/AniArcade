@@ -13,6 +13,7 @@ import { formatPoints } from '../../../shared/utils/deadline';
 import { Backdrop, Badge, Button, GhostButton, Screen, TimerBar } from '../../../shared/ui';
 import Lives from './Lives';
 import { useSoundCue } from '../../../shared/hooks/useSoundCue';
+import { useConfirm } from '../../../shared/hooks/useConfirm';
 import PlayerRow from '../../../shared/components/PlayerRow';
 import RoundHeader from '../../../shared/components/RoundHeader';
 
@@ -39,6 +40,7 @@ export default function AniTuneRound({
   // One <audio> for the whole round (hooks/usePrimedAudio): once a phone has
   // played song 1, every later song can start without a tap.
   const sharedAudio = usePrimedAudio();
+  const { ask, dialog } = useConfirm();
   // The clip plays the whole guessing window (ClipPlayer's note). Untimed, the
   // same number is how long before "Nobody got it" is offered.
   const windowSeconds = settings.guessSeconds ?? 20;
@@ -291,16 +293,22 @@ export default function AniTuneRound({
 
         <div className="mt-6 text-center">
           {/* Asks first: it ends the game and throws away its save, one tap
-              from the Next button. Same window.confirm HubButton uses. */}
+              from the Next button. The same pause screen HubButton asks with,
+              since this leaves the game as surely as Hub does. */}
           <GhostButton
-            onClick={() => {
-              if (window.confirm('Back to setup? This game ends, and its scores are lost.')) onBackToSetup();
-            }}
+            onClick={() => ask({
+              kind: 'pause',
+              title: 'Back to setup?',
+              message: 'This game ends, and its scores are lost.',
+              confirmLabel: 'Back to setup',
+              onConfirm: onBackToSetup,
+            })}
           >
             ← Back to setup
           </GhostButton>
         </div>
       </Screen>
+      {dialog}
     </>
   );
 }

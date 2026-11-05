@@ -6,6 +6,7 @@ import ListImport from './ListImport';
 import Portrait from './Portrait';
 import PortraitPicker from './PortraitPicker';
 import { Badge, Button, Icon, Input, Label, Modal } from '../ui';
+import { useConfirm } from '../hooks/useConfirm';
 
 // Pick who you are, once, for the whole arcade.
 //
@@ -55,6 +56,10 @@ export default function ProfilePicker({
   } = useProfileStore();
   const [nameInput, setNameInput] = useState('');
   const [creating, setCreating] = useState(false);
+  // "Delete <name>?" — a dialog over this one, rendered beside it rather than
+  // inside its panel (Modal's root scrolls, and a fixed dialog inside it would
+  // scroll away with the list). useDialogLayer gives Escape to the top one.
+  const { ask, dialog } = useConfirm();
   // A new profile's import is open.
   const [importing, setImporting] = useState(false);
   // The profile whose character is being chosen. Its picker replaces this
@@ -89,10 +94,15 @@ export default function ProfilePicker({
   };
 
   const handleDelete = (row) => {
-    const warning = row.characters > 0
-      ? `Delete ${row.name}? Their ${row.shows} show${row.shows === 1 ? '' : 's'} and ${row.characters} characters will be gone, and re-importing takes a couple of minutes.`
-      : `Delete ${row.name}?`;
-    if (window.confirm(warning)) removeProfile(row.id);
+    ask({
+      title: `Delete ${row.name}?`,
+      message: row.characters > 0
+        ? `Their ${row.shows} show${row.shows === 1 ? '' : 's'} and ${row.characters} characters will be gone, and re-importing takes a couple of minutes.`
+        : null,
+      confirmLabel: `Delete ${row.name}`,
+      cancelLabel: 'Keep',
+      onConfirm: () => removeProfile(row.id),
+    });
   };
 
   const handleRow = (row) => {
@@ -235,96 +245,99 @@ export default function ProfilePicker({
   }
 
   return (
-    <Modal onClose={onClose} width="sm">
-      <div className="mb-2 flex items-center justify-between">
-        <h2 className="font-display text-2xl font-extrabold text-fg-strong">
-          {adding ? 'Add a player' : 'Your profiles'}
-        </h2>
-        <button
-          onClick={onClose}
-          aria-label="Close"
-          className="focus-pop -mr-2 grid h-11 w-11 place-items-center rounded-pop-sm text-xl font-black text-fg-icon hover:text-fg-strong"
-        >
-          ✕
-        </button>
-      </div>
-
-      {/* The one sentence that explains the whole model. Without it, "main" and
-          "also saved" read as an arbitrary sort order. */}
-      <p className="mb-6 text-sm text-fg-helper">
-        {adding
-          ? 'Anyone saved on this device. Adding someone here won’t change your main profile.'
-          : 'Your main profile is who you are in online games. The rest stay saved on this device for pass-and-play.'}
-      </p>
-
-      {rows.length === 0 && !creating && (
-        <p className="mb-5 text-center text-fg-subtle">
-          No profiles yet. Bring your list once — every game uses it.
-        </p>
-      )}
-
-      {mainRow && (
-        <div className="mb-5">
-          <p className="mb-2 font-display text-xs font-bold uppercase tracking-widest text-fg-subtle">
-            Main profile
-          </p>
-          {renderRow(mainRow)}
-        </div>
-      )}
-
-      {otherRows.length > 0 && (
-        <div className="mb-5">
-          {!adding && (
-            <p className="mb-2 font-display text-xs font-bold uppercase tracking-widest text-fg-subtle">
-              Also saved on this device
-            </p>
-          )}
-          <div className="space-y-3">{otherRows.map(renderRow)}</div>
-        </div>
-      )}
-
-      {creating ? (
-        <div>
-          <Label htmlFor="new-profile-name">New profile name</Label>
-          <Input
-            id="new-profile-name"
-            type="text"
-            value={nameInput}
-            onChange={(e) => setNameInput(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && nameInput.trim() && handleCreate()}
-            placeholder={adding ? 'Player name...' : 'Enter your name...'}
-            autoFocus
-            className="mb-3 text-lg"
-          />
-          <div className="flex gap-3">
-            <Button variant="neutral" onClick={() => { setCreating(false); setNameInput(''); }}>
-              Cancel
-            </Button>
-            <Button
-              variant="success"
-              className="flex-1"
-              onClick={handleCreate}
-              disabled={!nameInput.trim()}
-            >
-              {adding ? 'Add' : 'Create'}
-            </Button>
-          </div>
-        </div>
-      ) : (
-        <div>
-          {/* Primary only when it is the one thing to do here. */}
-          <Button variant={rows.length === 0 ? 'primary' : 'neutral'} fullWidth onClick={() => setImporting(true)}>
-            {adding ? 'New player from their list' : 'New profile from my list'}
-          </Button>
+    <>
+      <Modal onClose={onClose} width="sm">
+        <div className="mb-2 flex items-center justify-between">
+          <h2 className="font-display text-2xl font-extrabold text-fg-strong">
+            {adding ? 'Add a player' : 'Your profiles'}
+          </h2>
           <button
-            type="button"
-            onClick={() => setCreating(true)}
-            className="focus-pop mt-2 min-h-6 w-full rounded-pop-sm text-sm text-fg-subtle hover:text-fg-strong"
+            onClick={onClose}
+            aria-label="Close"
+            className="focus-pop -mr-2 grid h-11 w-11 place-items-center rounded-pop-sm text-xl font-black text-fg-icon hover:text-fg-strong"
           >
-            Just a name, no list
+            ✕
           </button>
         </div>
-      )}
-    </Modal>
+
+        {/* The one sentence that explains the whole model. Without it, "main" and
+            "also saved" read as an arbitrary sort order. */}
+        <p className="mb-6 text-sm text-fg-helper">
+          {adding
+            ? 'Anyone saved on this device. Adding someone here won’t change your main profile.'
+            : 'Your main profile is who you are in online games. The rest stay saved on this device for pass-and-play.'}
+        </p>
+
+        {rows.length === 0 && !creating && (
+          <p className="mb-5 text-center text-fg-subtle">
+            No profiles yet. Bring your list once — every game uses it.
+          </p>
+        )}
+
+        {mainRow && (
+          <div className="mb-5">
+            <p className="mb-2 font-display text-xs font-bold uppercase tracking-widest text-fg-subtle">
+              Main profile
+            </p>
+            {renderRow(mainRow)}
+          </div>
+        )}
+
+        {otherRows.length > 0 && (
+          <div className="mb-5">
+            {!adding && (
+              <p className="mb-2 font-display text-xs font-bold uppercase tracking-widest text-fg-subtle">
+                Also saved on this device
+              </p>
+            )}
+            <div className="space-y-3">{otherRows.map(renderRow)}</div>
+          </div>
+        )}
+
+        {creating ? (
+          <div>
+            <Label htmlFor="new-profile-name">New profile name</Label>
+            <Input
+              id="new-profile-name"
+              type="text"
+              value={nameInput}
+              onChange={(e) => setNameInput(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && nameInput.trim() && handleCreate()}
+              placeholder={adding ? 'Player name...' : 'Enter your name...'}
+              autoFocus
+              className="mb-3 text-lg"
+            />
+            <div className="flex gap-3">
+              <Button variant="neutral" onClick={() => { setCreating(false); setNameInput(''); }}>
+                Cancel
+              </Button>
+              <Button
+                variant="success"
+                className="flex-1"
+                onClick={handleCreate}
+                disabled={!nameInput.trim()}
+              >
+                {adding ? 'Add' : 'Create'}
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <div>
+            {/* Primary only when it is the one thing to do here. */}
+            <Button variant={rows.length === 0 ? 'primary' : 'neutral'} fullWidth onClick={() => setImporting(true)}>
+              {adding ? 'New player from their list' : 'New profile from my list'}
+            </Button>
+            <button
+              type="button"
+              onClick={() => setCreating(true)}
+              className="focus-pop mt-2 min-h-6 w-full rounded-pop-sm text-sm text-fg-subtle hover:text-fg-strong"
+            >
+              Just a name, no list
+            </button>
+          </div>
+        )}
+      </Modal>
+      {dialog}
+    </>
   );
 }

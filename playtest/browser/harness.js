@@ -167,6 +167,13 @@ export function pageAdapter(page, { errors, prefix }) {
     async exitToHub() {
       await page.getByRole('button', { name: /^\s*hub\s*$/i }).first().click({ timeout: 3000 }).catch(() => {});
       await page.waitForTimeout(100);
+      // Mid-round Hub pauses the game and asks (PauseScreen); at setup or
+      // results it just leaves, so the answer is pressed only if it is there.
+      const leave = page.getByRole('button', { name: /^\s*leave to the hub\s*$/i });
+      if (await leave.count()) {
+        await leave.first().click({ timeout: 3000 }).catch(() => {});
+        await page.waitForTimeout(100);
+      }
       await afterWipe();
     },
     async crash() { adapter.alive = false; await page.context().close().catch(() => {}); },

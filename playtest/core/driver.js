@@ -6,7 +6,7 @@
 //   perform(action)   → click / fill / select / wait, then let the screen settle
 //   errors()          → console errors and page errors since the last call
 //   reload()          → a fresh page load over the same storage
-//   exitToHub()       → the in-game Hub button, confirm accepted
+//   exitToHub()       → the in-game Hub button, then "Leave to the hub" if it pauses
 //
 // Each step: look, check, decide, act. The decision goes, first to last:
 // the arcade's shared screens (hub, mode picker, profile picker), the

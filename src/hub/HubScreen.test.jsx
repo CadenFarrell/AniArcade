@@ -262,10 +262,10 @@ describe.each(games.map((g) => [g.title, g]))('%s', (_title, game) => {
     await user.click(await findHub());
     await user.click(await findTile(game));
     await user.click(await screen.findByRole('button', { name: /play on this device/i }));
-    // Setup is not mid-session, so the Hub button must leave without a confirm.
-    const confirm = vi.spyOn(window, 'confirm');
+    // Setup is not mid-session, so the Hub button must leave without pausing
+    // to ask (HubButton's PauseScreen).
     await user.click(await findHub());
-    expect(confirm).not.toHaveBeenCalled();
+    expect(screen.queryByRole('button', { name: 'Leave to the hub' })).toBeNull();
     await findTile(game);
     for (const g of games) expect(tileFor(g)).toBeTruthy();
     expect(errors).toEqual([]);

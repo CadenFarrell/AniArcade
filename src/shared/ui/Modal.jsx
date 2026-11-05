@@ -1,7 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { useEscapeKey } from '../hooks/useEscapeKey';
-import { playSound } from '../services/sound';
-import { inertOutside } from '../utils/inertOutside';
+import { useDialogLayer } from '../hooks/useDialogLayer';
 
 // There were six hand-rolled copies of this overlay, and only three of them
 // wired up Escape. Folding the hook in here means every dialog gets keyboard
@@ -27,46 +24,16 @@ export default function Modal({
   // sound of its own (AniGuess's "Not quite!" plays `wrong`), so the two do
   // not land on top of each other.
   sound = 'open',
+  // The id of the dialog's heading, so a screen reader announces it as the
+  // dialog's name (ConfirmDialog passes one).
+  labelledBy = undefined,
   className = '',
   children,
 }) {
   const canDismiss = dismissible && typeof onClose === 'function';
-  useEscapeKey(canDismiss, onClose);
-
-  // A dialog opening is an event the player should hear. Once per mount; a
-  // dialog that opened without any gesture (a resume prompt on load) is simply
-  // silent, because the sound engine will not start outside one.
-  useEffect(() => {
-    if (sound) playSound(sound);
-    // Once per mount, whatever the prop does afterwards.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // The page behind is out of reach while the dialog is open: inert for
-  // keyboards, screen readers and the playtest bots, as the scrim already made
-  // it for pointers (shared/utils/inertOutside.js says why it was not before).
-  //
-  // Focus goes with it. Making the background inert drops focus from the
-  // button that opened the dialog, so the panel takes it, unless something in
-  // the dialog already has it (an autoFocus field). Children's autoFocus runs
-  // before this parent's layout effect, so the check sees it. On close, focus
-  // goes back to that button, if it is still on the page and live. The opener
-  // is read in the first RENDER, before any autoFocus inside has moved focus.
-  const rootRef = useRef(null);
-  const panelRef = useRef(null);
-  const [opener] = useState(() => (typeof document === 'undefined' ? null : document.activeElement));
-  useLayoutEffect(() => {
-    const undo = inertOutside(rootRef.current);
-    const panel = panelRef.current;
-    if (panel && !panel.contains(document.activeElement)) panel.focus({ preventScroll: true });
-    return () => {
-      // Un-inert first: an inert element refuses focus.
-      undo();
-      if (opener && opener !== document.body && opener.isConnected && !opener.closest('[inert]')) {
-        opener.focus?.({ preventScroll: true });
-      }
-    };
-  }, [opener]);
+  // The open sound, Escape (topmost dialog only), the inert page behind and
+  // focus in and back: shared/hooks/useDialogLayer.js, which PauseScreen uses too.
+  const { rootRef, panelRef } = useDialogLayer({ onEscape: canDismiss ? onClose : null, sound });
 
   return (
     <div
@@ -84,6 +51,7 @@ export default function Modal({
       onClick={canDismiss && closeOnBackdrop ? onClose : undefined}
       role="dialog"
       aria-modal="true"
+      aria-labelledby={labelledBy}
     >
       <div
         ref={panelRef}

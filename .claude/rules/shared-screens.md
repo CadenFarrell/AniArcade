@@ -86,3 +86,20 @@ and `usePlayerPortrait(player)` looks one up by id, so a player wears one charac
   screen that already says the result, never a layer that eats a tap.
 - The bots read "<name>'s Turn", "Clues", "I'm X — show me", "Accuse <name>". A dimmed player
   dims their FACE, never the text, which axe flags under 4.5:1.
+
+**Never `window.confirm`, `alert` or `prompt`** (`shared/hooks/noBrowserConfirm.test.js` fails
+one): the browser's box looks pasted in, says "OK", and on a phone holds the room's updates.
+Ask through `useConfirm()` (`{ ask, dialog }`, render `{dialog}` yourself):
+
+- **Leaving a game is `PauseScreen`** (`kind: 'pause'`) — a full sheet in the open game's ink
+  with ポーズ, "Keep playing" focused over the crimson leave. `HubButton`'s `confirm` (a message,
+  or `{ title, message }`) asks with it; so do a room's Leave and AniTune's Back to setup. The
+  bots press "Leave to the hub" in `exitToHub`.
+- **Anything else is `ConfirmDialog`** — a delete, a reset, a host ending a round. Cancel first
+  and focused; the confirm is `danger` unless `tone: 'primary'` (it destroys nothing).
+- Both buttons say their action ("Delete Mia" / "Keep", "Abandon round" / "Not yet").
+- **Never render the sheet inside a top-bar portal:** `TopBar`'s backdrop-blur makes it the
+  containing block for `fixed` children. A confirm over another dialog renders BESIDE that
+  `Modal`, not in its panel (the Modal root scrolls); Escape answers only the topmost dialog.
+- Online, pass a `scope` (round + phase, or the seat) so a question the room has moved past is
+  dropped rather than answered against the next round.

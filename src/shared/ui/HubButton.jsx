@@ -1,5 +1,6 @@
 import { createPortal } from 'react-dom';
 import { useTopBar } from '../context/topBarContext';
+import { useConfirm } from '../hooks/useConfirm';
 import { playSound } from '../services/sound';
 
 // The persistent way home. It lives at the left end of the top bar on every
@@ -40,16 +41,36 @@ import { playSound } from '../services/sound';
 // where `view` is shared room state — rewind the round for every other player.
 // Back-nav belongs on the specific screens where going back is provably safe.
 
-// `confirm`, when set, is the message to guard the exit with — used only while a
-// round is actually in progress, since setup and results have nothing to lose.
-// Same window.confirm pattern the online Leave button already uses.
+// `confirm`, when set, guards the exit — used only while a round is actually in
+// progress, since setup and results have nothing to lose. A string is the line
+// under the heading ("This game will be lost."), with "Leave the game?" as the
+// heading; `{ title, message }` names both (a room's "Leave the room?").
+//
+// It asks with PauseScreen, the game's own full-screen "paused" sheet, never
+// window.confirm: the browser's box looked pasted in, said "OK", and on a phone
+// held every other device's room updates while it was open.
+//
+// THE SHEET RENDERS BESIDE THE PORTAL, NOT IN IT. TopBar has backdrop-blur,
+// which makes the bar the containing block for `fixed` descendants, so a sheet
+// portalled with the button would be drawn 56px tall inside the bar.
+const DEFAULT_TITLE = 'Leave the game?';
+
 export default function HubButton({ onClick, confirm = null }) {
   const bar = useTopBar();
+  const { ask, dialog } = useConfirm();
 
-  const handleClick = () => {
-    if (confirm && !window.confirm(confirm)) return;
+  const leave = () => {
     playSound('back');
     onClick();
+  };
+
+  const handleClick = () => {
+    if (!confirm) {
+      leave();
+      return;
+    }
+    const { title = DEFAULT_TITLE, message = null } = typeof confirm === 'string' ? { message: confirm } : confirm;
+    ask({ kind: 'pause', title, message, confirmLabel: 'Leave to the hub', onConfirm: leave });
   };
 
   const button = (
@@ -70,10 +91,16 @@ export default function HubButton({ onClick, confirm = null }) {
     </button>
   );
 
-  if (!bar) return button;
   // A bar exists but has not attached its slot yet — one frame, on mount.
   // Nothing rather than the corner fallback, or the button flashes in the
   // wrong place.
-  if (!bar.left) return null;
-  return createPortal(button, bar.left);
+  let placed = null;
+  if (!bar) placed = button;
+  else if (bar.left) placed = createPortal(button, bar.left);
+  return (
+    <>
+      {placed}
+      {dialog}
+    </>
+  );
 }

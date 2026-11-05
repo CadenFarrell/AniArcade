@@ -179,7 +179,7 @@ export default function LocalGame({ onExit, onBack }) {
       <>
         <HubButton
           onClick={onExit}
-          confirm={view === 'round' ? 'Return to the hub? The board will be lost.' : null}
+          confirm={view === 'round' ? 'The board will be lost.' : null}
         />
         {body()}
       </>

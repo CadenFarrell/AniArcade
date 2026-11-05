@@ -66,7 +66,7 @@ export default function LocalGame({ onExit, onBack }) {
       <>
         <HubButton
           onClick={onExit}
-          confirm={view === 'playing' ? 'Return to the hub? The session will be lost.' : null}
+          confirm={view === 'playing' ? 'The session will be lost.' : null}
         />
         {body()}
       </>

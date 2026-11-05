@@ -12,6 +12,7 @@ import { DEFAULT_PREFS } from '../prefs';
 import { MIN_PLAYERS } from '../rules';
 import descriptor from '../index';
 import { Badge, Banner, Button, CardRow, Icon, Modal } from '../../../shared/ui';
+import { useConfirm } from '../../../shared/hooks/useConfirm';
 import {
   DndContext,
   closestCenter,
@@ -81,6 +82,7 @@ export default function PlayerSetup({ onStartGame, onGoToList, players, onPlayer
   // Whose character is being chosen — any seat, as on every other setup screen.
   const [choosing, setChoosing] = useState(null);
   const [showWins, setShowWins] = useState(false);
+  const { ask, dialog } = useConfirm();
   // Seeded from whatever this device last started a game with, not from the
   // literal defaults — see shared/hooks/useGamePrefs.js.
   const { prefs, savePrefs, resetPrefs } = useGamePrefs('aniguess', DEFAULT_PREFS);
@@ -125,12 +127,16 @@ export default function PlayerSetup({ onStartGame, onGoToList, players, onPlayer
 
   const winsEntries = showWins ? Object.entries(getWins()).sort((a, b) => b[1] - a[1]) : [];
 
-  const handleResetWins = () => {
-    if (window.confirm('Reset all-time wins? This cannot be undone.')) {
+  const handleResetWins = () => ask({
+    title: 'Reset all-time wins?',
+    message: 'Every player’s count goes back to zero. This cannot be undone.',
+    confirmLabel: 'Reset wins',
+    cancelLabel: 'Keep',
+    onConfirm: () => {
       resetWins();
       setShowWins(false);
-    }
-  };
+    },
+  });
 
   return (
     <>
@@ -243,6 +249,7 @@ export default function PlayerSetup({ onStartGame, onGoToList, players, onPlayer
           </div>
         </Modal>
       )}
+      {dialog}
     </>
   );
 }

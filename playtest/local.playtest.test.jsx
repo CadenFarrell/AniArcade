@@ -154,6 +154,11 @@ function makeAdapter(user, errors, offsite, app) {
       const hub = [...document.querySelectorAll('button')].find((b) => /^\s*(🏠\s*)?hub\s*$/i.test(b.textContent));
       if (hub) await user.click(hub);
       await settle();
+      // Mid-round the Hub button pauses the game and asks (PauseScreen); at
+      // setup or results it just leaves, and there is nothing to press.
+      const leave = [...document.querySelectorAll('button')].find((b) => /^\s*leave to the hub\s*$/i.test(b.textContent));
+      if (leave) await user.click(leave);
+      await settle();
     },
   };
 }
@@ -176,7 +181,6 @@ async function runOne(game, strategy, seed) {
   });
   // The game's own randomness, from the seed.
   vi.spyOn(Math, 'random').mockImplementation(mulberry32(gameSeed(seed)));
-  vi.spyOn(window, 'confirm').mockImplementation(() => true);
   vi.spyOn(window, 'alert').mockImplementation(() => {});
   installMediaStubs();
   vi.stubGlobal('fetch', vi.fn(async (url) => {

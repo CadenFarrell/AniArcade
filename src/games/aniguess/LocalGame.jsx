@@ -63,7 +63,7 @@ function App({ onExit, onBack }) {
   // Only guard the exit mid-game. Those are exactly the views useGameFlow
   // auto-saves, so the game really is waiting on the next visit.
   const exitConfirm = RESUMABLE_VIEWS.includes(view)
-    ? 'Return to the hub? Your game is saved — you can resume it next time.'
+    ? 'Your game is saved — you can resume it next time.'
     : null;
 
   // Faces shared out once for the whole table (see TablePortraits), so the turn

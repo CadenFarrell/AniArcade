@@ -4,6 +4,7 @@ import AnimeSearch from './AnimeSearch';
 import ListImport from './ListImport';
 import { canRefreshList } from '../services/listSources';
 import { Button, Icon } from '../ui';
+import { useConfirm } from '../hooks/useConfirm';
 
 // `className` carries the top padding, because the two callers genuinely differ:
 // AniGuess renders its own back/player-switcher header above this and needs only
@@ -18,6 +19,7 @@ export default function ListManager({ profile, onProfileUpdated, className = '' 
   const { saveProfile } = useProfileStore();
   const hasProfile = Boolean(profile);
   const [expandedAnime, setExpandedAnime] = useState(null);
+  const { ask, dialog } = useConfirm();
   // 'pick' opens the checklist; 'refresh' skips straight to importing whatever
   // is new. null means closed.
   const [importMode, setImportMode] = useState(null);
@@ -36,8 +38,17 @@ export default function ListManager({ profile, onProfileUpdated, className = '' 
   };
 
   const deleteAnime = (animeId) => {
-    if (!window.confirm('Delete this anime and all its characters?')) return;
-    saveUpdatedProfile({ ...profile, animeList: profile.animeList.filter((a) => a.id !== animeId) });
+    const title = profile.animeList.find((a) => a.id === animeId)?.title;
+    ask({
+      title: title ? `Delete ${title}?` : 'Delete this show?',
+      message: 'Its characters go with it. Searching it again, or re-importing the list, brings it back.',
+      confirmLabel: 'Delete show',
+      cancelLabel: 'Keep',
+      onConfirm: () => saveUpdatedProfile({
+        ...profile,
+        animeList: profile.animeList.filter((a) => a.id !== animeId),
+      }),
+    });
   };
 
   // Reachable if a caller navigates here without picking a player first —
@@ -140,6 +151,7 @@ export default function ListManager({ profile, onProfileUpdated, className = '' 
           ))}
         </div>
       )}
+      {dialog}
     </div>
   );
 }

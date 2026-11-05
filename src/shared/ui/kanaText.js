@@ -32,6 +32,7 @@ export const KANA = {
   pass: 'パス', // "pass" — the pass-the-device panel
   hit: 'ヒット', // "hit" — a right answer's impact frame
   miss: 'ミス', // "miss" — a wrong one's
+  pause: 'ポーズ', // "pause" — the leave-the-game screen (PauseScreen)
 };
 
 // The whole katakana block (U+30A0–30FF), so a new game's name never needs the

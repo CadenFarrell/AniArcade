@@ -11,6 +11,7 @@ import AniTagResults from './components/AniTagResults';
 import WaitingScreen from '../../shared/components/WaitingScreen';
 import RoomShell from '../../shared/components/RoomShell';
 import { useSoundCue } from '../../shared/hooks/useSoundCue';
+import { useConfirm } from '../../shared/hooks/useConfirm';
 import { HubButton, Screen } from '../../shared/ui';
 import { POOL_LABELS } from './prefs';
 import { verdictsOf } from './rules';
@@ -49,6 +50,13 @@ export default function OnlineGame({ onBack, onExit }) {
       : null,
   );
 
+  // The host's "End <name>'s round?", drawn in the shell. Scoped to the seat:
+  // the seat moves after every name, and a question left open across that move
+  // is about somebody else's go — answering it must not end theirs.
+  const { ask, dialog } = useConfirm(
+    `${room.view}:${room.roundNumber}:${room.game?.phase ?? ''}:${room.seat?.id ?? ''}`,
+  );
+
   if (!room.roomCode) {
     return (
       <>
@@ -73,7 +81,9 @@ export default function OnlineGame({ onBack, onExit }) {
 
   // Every in-room screen goes through RoomShell: the way out, the room code and
   // Leave in the top bar, and the connection banners.
-  const shell = (children, opts) => <RoomShell room={room} onExit={onExit} {...opts}>{children}</RoomShell>;
+  const shell = (children, opts) => (
+    <RoomShell room={room} onExit={onExit} {...opts}>{children}{dialog}</RoomShell>
+  );
 
   if (!room.view) return shell(<WaitingScreen title="Loading room…" />);
   if (room.view === 'lobby') return shell(<OnlineLobby room={room} />, { codeInPage: true });
@@ -223,12 +233,13 @@ export default function OnlineGame({ onBack, onExit }) {
           // Passed INTO the screen rather than rendered under it, so it inherits
           // the width instead of re-declaring max-w-md, and so it reads as the
           // escape hatch it is rather than as part of the turn controls.
-          onAbandon={room.isHost && !room.iAmSeat ? () => {
-            if (!window.confirm(
-              `End ${seatName}'s round? It scores nothing and everyone keeps the points they have.`,
-            )) return;
-            room.abandonTurn();
-          } : null}
+          onAbandon={room.isHost && !room.iAmSeat ? () => ask({
+            title: `End ${seatName}'s round?`,
+            message: 'It scores nothing, and everyone keeps the points they have.',
+            confirmLabel: 'End their round',
+            cancelLabel: 'Not yet',
+            onConfirm: () => room.abandonTurn(),
+          }) : null}
         />
       </Screen>
     );
@@ -239,6 +250,7 @@ export default function OnlineGame({ onBack, onExit }) {
       <AniTagResults
         players={room.players}
         totalScores={room.totalScores}
+        log={room.roundLog}
         onPlayAgain={room.isHost ? room.returnToLobby : null}
         playAgainLabel="Back to lobby"
         onBack={handleExitToHub}
