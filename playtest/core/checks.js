@@ -23,6 +23,10 @@ const BAD_TEXT = [
 
 export const CRASH = /something went wrong/i;
 
+// Controls that share a name because they share an action (see the duplicate
+// check in screenChecks).
+const SAME_ACTION = new Set(['How to play']);
+
 export function screenChecks(snap) {
   const out = [];
   if (CRASH.test(snap.text)) out.push({ kind: 'crash', severity: 'fail', message: 'ErrorBoundary is showing' });
@@ -43,9 +47,18 @@ export function screenChecks(snap) {
   // Several enabled controls sharing one name are indistinguishable to a
   // screen reader ("Accuse, button. Accuse, button.") — the name has to carry
   // what makes each one different, usually the player or row it acts on.
+  //
+  // Twins on purpose are the exception: two controls that DO the same thing
+  // should share a name (WCAG 3.2.4, consistent identification), and a screen
+  // reader user hearing it twice loses nothing — either press opens the same
+  // thing. "How to play" sits in the top bar on every screen of a game and again
+  // on its cover; both open the one rules sheet, so every game's cover tripped
+  // this on every run and buried the warnings that meant something. A name
+  // belongs here only if EVERY control carrying it does the same thing.
   const counts = new Map();
   for (const c of snap.controls) {
     if (c.disabled || !c.name || !['button', 'link', 'radio', 'option'].includes(c.role)) continue;
+    if (SAME_ACTION.has(c.name)) continue;
     counts.set(c.name, (counts.get(c.name) ?? 0) + 1);
   }
   for (const [name, n] of counts) {

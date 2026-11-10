@@ -259,10 +259,25 @@ export function auditor(page, { game, project, seen }) {
     for (const f of await page.evaluate(measureLayout).catch(() => [])) {
       record.findings.push({ ...f, severity: f.kind === 'overflow-x' || f.kind === 'offscreen' ? 'warn' : 'info', screen, shot: file });
     }
-    const axe = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa']).analyze().catch((e) => {
+    // Legacy mode runs axe inside THIS page. The default opens a second, blank
+    // page in the context on every analyze() just to merge frame results
+    // (finishRun), and on a loaded machine that newPage is what died: "Target
+    // crashed" on AniPeek's Name Them and AniOut's Final Scores (2026-11-05),
+    // and every audit after it in the run failed the same way, so the last
+    // screens of a game went unaudited. What legacy mode gives up is
+    // cross-origin iframe results, and the app has no iframes.
+    const axe = await new AxeBuilder({ page }).setLegacyMode(true).withTags(['wcag2a', 'wcag2aa']).analyze().catch((e) => {
       record.findings.push({ kind: 'audit-error', severity: 'info', message: `axe could not run: ${e.message.slice(0, 200)}`, screen });
       return null;
     });
+    // A screen axe could not read is not audited, so forget it was seen: the
+    // bot's next visit to the same layout tries again instead of the screen
+    // going a whole run (or, at one visit, a whole report) without an audit.
+    if (!axe) {
+      seen.delete(key);
+      counts.set(heading, nth - 1);
+      return;
+    }
     if (await liveHeading() !== before) return;
     for (const v of axe?.violations ?? []) {
       // A contrast miss says which colours and how far off, because a bare
