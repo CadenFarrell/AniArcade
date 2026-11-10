@@ -85,7 +85,14 @@ from WATCHING rather than from the end roll:
   carries every option's value for the reveal, best first.
 
 **Famous Lines** (`lines`, 2026-11-09) is the one topic not drawn from the pack. No source the
-arcade uses has quotes, so `famousLines.js` is a hand-curated list (164 lines, 70 shows),
+arcade uses has quotes. Outside ones were looked at (2026-11-10) and not used: AnimeChan's API
+(free tier 5 requests an hour, fan-compiled "inspirational" quotes) and the Hugging Face
+AnimeQuotes set (10k Japanese lines scraped from AnimeMotivation, no show column) — every line
+from either would still need checking, so they save nothing. The checking sources that work:
+Wikiquote's anime pages (episode-cited; `Category:Anime` lists which exist — most newer shows
+have none), then two independent quote sites agreeing. Fandom wikis refuse automated reads
+(402), and their BreezeWiki mirror sits behind bot protection. So `famousLines.js` is a
+hand-curated list (191 lines, 79 shows),
 bundled in AniQuiz's lazy chunk rather than shipped beside the pack: it is small, only this game
 parses it, and a correction is an ordinary deploy. The file header holds its rules — no
 spoilers, only lines whose wording and speaker are certain, English except where fans quote the

@@ -172,6 +172,20 @@ export const FAMOUS_LINES = [
     decoys: ['I’ll train every day for you', 'I’ll beat Neji for you', 'The springtime of youth demands it'],
     fame: 2,
   },
+  {
+    show: 'Naruto',
+    by: 'Deidara',
+    line: 'Art is [an explosion]!',
+    decoys: ['eternal', 'patience', 'a lie'],
+    fame: 1,
+  },
+  {
+    show: 'Naruto',
+    by: 'Sai',
+    line: 'The best way to defuse a troublesome situation is by smiling, even if it’s only [a fake smile].',
+    decoys: ['for a moment', 'at your enemy', 'to yourself'],
+    fame: 2,
+  },
 
   // ── ONE PIECE ──
   {
@@ -317,6 +331,21 @@ export const FAMOUS_LINES = [
     aka: ['Giyu Tomioka', 'Giyu'],
     line: 'Water Breathing, Eleventh Form: [Dead Calm].',
     decoys: ['Constant Flux', 'Whirlpool', 'Waterfall Basin'],
+    fame: 2,
+  },
+  {
+    show: 'Demon Slayer: Kimetsu no Yaiba',
+    by: 'Tanjirou Kamado',
+    aka: ['Tanjiro Kamado', 'Tanjiro'],
+    line: 'Don’t enter into someone else’s heart [without permission]!',
+    decoys: ['and break it', 'in their sleep', 'to steal their dreams'],
+    fame: 2,
+  },
+  {
+    show: 'Demon Slayer: Kimetsu no Yaiba',
+    by: 'Enmu',
+    line: 'Good morning. [You should have stayed asleep].',
+    decoys: ['Did you sleep well', 'The train is mine', 'Breakfast is served'],
     fame: 2,
   },
 
@@ -526,6 +555,36 @@ export const FAMOUS_LINES = [
     decoys: ['a whole life ahead of you', 'people waiting for you', 'nothing left to lose'],
     fame: 2,
   },
+  {
+    show: 'Fullmetal Alchemist: Brotherhood',
+    by: 'Edward Elric',
+    aka: ['Edward', 'Ed', 'Ed Elric'],
+    line: 'Don’t call me [little]!',
+    decoys: ['Fullmetal', 'kid', 'Edward'],
+    fame: 1,
+  },
+  {
+    show: 'Fullmetal Alchemist: Brotherhood',
+    by: 'Roy Mustang',
+    aka: ['Mustang'],
+    line: 'Keep moving, whatever it takes. Even if the way ahead lies through [a river of mud].',
+    decoys: ['a sea of fire', 'a field of graves', 'a wall of soldiers'],
+    fame: 2,
+  },
+  {
+    show: 'Fullmetal Alchemist: Brotherhood',
+    by: 'Edward Elric',
+    aka: ['Edward', 'Ed', 'Ed Elric'],
+    line: 'Nah, me and God... [we don’t get along too well].',
+    decoys: ['we’ve never met', 'we made a deal', 'we’re even'],
+    fame: 2,
+  },
+  {
+    show: 'Fullmetal Alchemist: Brotherhood',
+    line: 'Nothing is [impossible], alright?',
+    decoys: ['free', 'forever', 'mine'],
+    fame: 2,
+  },
 
   // ── Sword Art Online ──
   {
@@ -556,6 +615,14 @@ export const FAMOUS_LINES = [
     decoys: ['Falling in love', 'Dreaming', 'Braiding cords'],
     fame: 2,
   },
+  {
+    show: 'Your Name.',
+    by: 'Hitoha Miyamizu',
+    aka: ['Hitoha'],
+    line: 'Treasure the experience. [Dreams fade away after you wake up].',
+    decoys: ['Every thread comes undone', 'The gods are always watching', 'Your body remembers what you forget'],
+    fame: 2,
+  },
 
   // ── HAIKYU!! ──
   {
@@ -583,6 +650,14 @@ export const FAMOUS_LINES = [
     line: 'Oh my... [how cute].',
     decoys: ['how pathetic', 'how bold', 'how foolish'],
     fame: 1,
+  },
+  {
+    show: 'Kaguya-sama: Love is War',
+    by: 'Chika Fujiwara',
+    aka: ['Chika'],
+    line: 'It’s no fair to have girls’ talk without me! Please leave an issue like that to [Love Detective Chika]!',
+    decoys: ['the Student Council', 'President Shirogane', 'Kaguya-san'],
+    fame: 2,
   },
 
   // ── Dr. STONE ──
@@ -613,6 +688,14 @@ export const FAMOUS_LINES = [
     decoys: ['‘goodbye’', '‘thank you’', '‘freedom’'],
     fame: 1,
   },
+  {
+    show: 'Violet Evergarden',
+    by: 'Violet Evergarden',
+    aka: ['Violet'],
+    line: 'I will travel anywhere to meet your request. [Auto Memory Doll] Violet Evergarden, at your service.',
+    decoys: ['Postal Courier', 'Royal Scribe', 'Ghostwriter'],
+    fame: 1,
+  },
 
   // ── Vinland Saga ──
   {
@@ -622,6 +705,14 @@ export const FAMOUS_LINES = [
     line: 'You have no enemies. No one has any enemies. There is [no one that you should hurt].',
     alt: ['no one it’s okay to hurt'],
     decoys: ['no one you can’t forgive', 'no war worth fighting', 'no one stronger than you'],
+    fame: 1,
+  },
+  {
+    show: 'Vinland Saga',
+    by: 'Thorfinn Karlsefni',
+    aka: ['Thorfinn'],
+    line: 'I have [no enemies].',
+    decoys: ['nothing left', 'no regrets', 'no home'],
     fame: 1,
   },
 
@@ -919,6 +1010,22 @@ export const FAMOUS_LINES = [
     aka: ['Yamamoto', 'Genryusai Yamamoto', 'Head Captain Yamamoto'],
     line: 'All things in the universe, turn to ashes, [Ryūjin Jakka]!',
     decoys: ['Senbonzakura', 'Hyōrinmaru', 'Benihime'],
+    fame: 2,
+  },
+  {
+    show: 'Bleach',
+    by: 'Ichigo Kurosaki',
+    aka: ['Ichigo'],
+    line: 'A miracle only happens once, huh? So [what do you call this]?',
+    decoys: ['why am I still standing', 'let’s make it twice', 'I’ll make my own'],
+    fame: 2,
+  },
+  {
+    show: 'Bleach',
+    by: 'Ichigo Kurosaki',
+    aka: ['Ichigo'],
+    line: 'Become strong not just for your own sake, but [for your friends].',
+    decoys: ['for your pride', 'for Soul Society', 'for the ones who came before'],
     fame: 2,
   },
 
@@ -1343,6 +1450,13 @@ export const FAMOUS_LINES = [
     fame: 2,
   },
   {
+    show: 'Howl‘s Moving Castle',
+    by: 'Calcifer',
+    line: 'I don’t cook! I’m a scary and powerful [fire demon]!',
+    decoys: ['wizard', 'dragon', 'witch'],
+    fame: 2,
+  },
+  {
     show: 'Ponyo',
     by: 'Ponyo',
     line: 'Ponyo loves [Sosuke]!',
@@ -1431,6 +1545,14 @@ export const FAMOUS_LINES = [
     decoys: ['a Reaper strong', 'a soul whole', 'a weapon perfect'],
     fame: 2,
   },
+  {
+    show: 'Soul Eater',
+    by: 'Black☆Star',
+    aka: ['Black Star', 'BlackStar'],
+    line: 'I’m the man who will [surpass God]!',
+    decoys: ['become a Death Scythe', 'defeat the Kishin', 'be the strongest meister'],
+    fame: 1,
+  },
 
   // ── Hellsing ──
   {
@@ -1477,6 +1599,104 @@ export const FAMOUS_LINES = [
     aka: ['Korosensei', 'Koro sensei'],
     line: 'It would be nice if you could [kill me before graduation].',
     decoys: ['graduate with honors', 'beat me on a test', 'call me by my name'],
+    fame: 2,
+  },
+
+  // ── DARLING in the FRANXX ──
+  {
+    show: 'DARLING in the FRANXX',
+    by: 'Zero Two',
+    line: 'I [found you], my darling!',
+    decoys: ['lost you', 'chose you', 'warned you'],
+    fame: 1,
+  },
+
+  // ── SPY x FAMILY ──
+  {
+    show: 'SPY x FAMILY',
+    by: 'Anya Forger',
+    aka: ['Anya'],
+    line: 'I’m Anya. I’ve always been [Papa’s daughter].',
+    decoys: ['Mama’s favorite', 'a good girl', 'top of my class'],
+    fame: 2,
+  },
+
+  // ── The Disastrous Life of Saiki K. ──
+  {
+    show: 'The Disastrous Life of Saiki K.',
+    by: 'Kusuo Saiki',
+    aka: ['Saiki'],
+    line: 'Good [grief].',
+    decoys: ['riddance', 'gracious', 'luck'],
+    fame: 1,
+  },
+
+  // ── Made in Abyss ──
+  {
+    show: 'Made in Abyss',
+    by: 'Riko',
+    line: 'I want to become a White Whistle as soon as I can... and [catch up with my mother]!',
+    decoys: ['find a relic worth a fortune', 'beat every Red Whistle', 'see the bottom with Reg'],
+    fame: 2,
+  },
+  {
+    show: 'Made in Abyss',
+    line: 'Longing seizes people more powerfully than poison and [more deeply than illness].',
+    decoys: ['more surely than death', 'more swiftly than the curse', 'more gently than sleep'],
+    fame: 2,
+  },
+  {
+    show: 'Made in Abyss',
+    by: 'Bondrewd',
+    line: 'I am Bondrewd. Delver of the Abyss. [The Lord of Dawn], as some people call me.',
+    decoys: ['The Lord of Dusk', 'The Keeper of Orth', 'The Sovereign of the Deep'],
+    fame: 3,
+  },
+
+  // ── FLCL ──
+  {
+    show: 'FLCL',
+    by: 'Haruko Haruhara',
+    aka: ['Haruko'],
+    line: 'Nothing can happen till [you swing the bat].',
+    decoys: ['you plug in the guitar', 'the robot comes out', 'you grow up'],
+    fame: 2,
+  },
+
+  // ── Berserk ──
+  {
+    show: 'Berserk',
+    by: 'Griffith',
+    line: 'A dream... It’s something you do for yourself, [not for others].',
+    decoys: ['not for a king', 'not for gold', 'not for glory'],
+    fame: 2,
+  },
+
+  // ── Paprika ──
+  {
+    show: 'Paprika',
+    by: 'Paprika',
+    line: 'And now, boys and girls, [it’s show time]!',
+    decoys: ['dream on', 'wake up', 'it’s parade time'],
+    fame: 2,
+  },
+
+  // ── Another ──
+  {
+    show: 'Another',
+    by: 'Mei Misaki',
+    aka: ['Mei'],
+    line: 'That’s so cute. Did you think I was [a ghost]?',
+    decoys: ['a doll', 'a transfer student', 'your classmate'],
+    fame: 2,
+  },
+
+  // ── Darker than Black ──
+  {
+    show: 'Darker than Black',
+    by: 'Hei',
+    line: 'Contractors are liars. [I’m no different].',
+    decoys: ['They pay in blood', 'Trust no one', 'So are humans'],
     fame: 2,
   },
 ];
