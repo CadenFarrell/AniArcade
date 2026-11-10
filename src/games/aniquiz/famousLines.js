@@ -17,9 +17,12 @@
 //   the Japanese itself ("Yare yare daze", "Ki ni narimasu").
 // - **Only lines whose wording and speaker are certain.** A misremembered
 //   line marks a player who knows the show wrong. When in doubt it is left
-//   out — the list is short on purpose, not by accident. A new line is
+//   out — the list is short on purpose, not by accident. Every line has been
 //   checked against Wikiquote's episode-cited pages or several independent
-//   sources first; when they disagree on the speaker, it stays out.
+//   sources (2026-11-09): a close match was corrected to the sourced wording,
+//   a line no source has was removed, and a speaker the sources disagree on
+//   was dropped (the line stays, with no "who said it?"). A new line gets the
+//   same check before it goes in.
 // - **The blank is the part every translation shares.** Sub and dub differ
 //   around it ("I expect 'yes' or 'woof'" / "only 'yes' or 'woof'"), so the
 //   blank goes on the words that do not move ('woof').
@@ -63,7 +66,7 @@ export const FAMOUS_LINES = [
     show: 'Naruto',
     by: 'Naruto Uzumaki',
     aka: ['Naruto'],
-    line: 'I’m not gonna run away, and I never go back on my word! That’s [my nindo: my ninja way]!',
+    line: 'I never give up. I never go back on my word. That’s [my ninja way]!',
     decoys: ['the will of fire', 'what makes a Hokage', 'the promise of a lifetime'],
     fame: 1,
   },
@@ -125,7 +128,7 @@ export const FAMOUS_LINES = [
     show: 'Naruto',
     by: 'Might Guy',
     aka: ['Guy', 'Might Gai'],
-    line: 'Ah, the springtime of [youth]!',
+    line: 'The springtime of [youth] has yet to fade away!',
     decoys: ['life', 'love', 'friendship'],
     fame: 1,
   },
@@ -173,8 +176,8 @@ export const FAMOUS_LINES = [
     show: 'ONE PIECE',
     by: 'Zoro Roronoa',
     aka: ['Roronoa Zoro', 'Zoro'],
-    line: 'I’m going to become [the world’s greatest swordsman]!',
-    decoys: ['the King of the Pirates', 'a brave warrior of the sea', 'the man who finds the All Blue'],
+    line: 'My swords aim to be [the world’s greatest]. I refuse to lose to anyone who calls himself a swordsman.',
+    decoys: ['feared by every pirate', 'sharper than the sea', 'the last thing you see'],
     fame: 1,
   },
   {
@@ -188,8 +191,8 @@ export const FAMOUS_LINES = [
   {
     show: 'ONE PIECE',
     by: 'Shanks',
-    line: 'It’s just an arm. I bet [this arm] on the new era.',
-    decoys: ['my hat', 'my ship', 'my life'],
+    line: 'This arm? I [bet] it on the new era.',
+    decoys: ['lost', 'traded', 'sold'],
     fame: 2,
   },
   {
@@ -253,7 +256,7 @@ export const FAMOUS_LINES = [
     show: 'Attack on Titan',
     by: 'Levi',
     aka: ['Levi Ackerman'],
-    line: 'The only thing we’re allowed to do is believe that we [won’t regret the choice we made].',
+    line: 'The only thing we’re allowed to believe is that we [won’t regret the choice we made].',
     decoys: ['will live to see the walls fall', 'are stronger than the Titans', 'made the only choice we had'],
     fame: 2,
   },
@@ -261,8 +264,8 @@ export const FAMOUS_LINES = [
     show: 'Attack on Titan',
     by: 'Armin Arlert',
     aka: ['Armin'],
-    line: 'Someone who can’t sacrifice anything [can never change anything].',
-    decoys: ['can never protect anything', 'will never be free', 'has already lost'],
+    line: 'Someone who can’t sacrifice anything can never [change] anything.',
+    decoys: ['protect', 'save', 'understand'],
     fame: 2,
   },
   {
@@ -283,8 +286,8 @@ export const FAMOUS_LINES = [
     show: 'Demon Slayer: Kimetsu no Yaiba',
     by: 'Tanjirou Kamado',
     aka: ['Tanjiro Kamado', 'Tanjiro'],
-    line: 'I’ll definitely turn Nezuko back [into a human]!',
-    decoys: ['into a Demon Slayer', 'into her old self before nightfall', 'home to the mountain'],
+    line: 'Please tell me how I can turn Nezuko [back into a human]!',
+    decoys: ['into a Demon Slayer', 'safely home', 'away from the sun'],
     fame: 1,
     noShow: true,
   },
@@ -318,7 +321,7 @@ export const FAMOUS_LINES = [
     show: 'JUJUTSU KAISEN',
     by: 'Satoru Gojou',
     aka: ['Satoru Gojo', 'Gojo', 'Gojo Satoru'],
-    line: 'Domain Expansion: [Infinite Void].',
+    line: 'Domain Expansion: [Unlimited Void].',
     decoys: ['Malevolent Shrine', 'Chimera Shadow Garden', 'Coffin of the Iron Mountain'],
     fame: 1,
   },
@@ -352,8 +355,8 @@ export const FAMOUS_LINES = [
     show: 'Death Note',
     by: 'Light Yagami',
     aka: ['Light'],
-    line: 'I will become the god of [the new world].',
-    decoys: ['death', 'justice', 'this rotten world'],
+    line: 'I will become the god of [this new world].',
+    decoys: ['death', 'justice', 'the Shinigami'],
     fame: 1,
   },
   {
@@ -437,7 +440,7 @@ export const FAMOUS_LINES = [
     show: 'Hunter x Hunter (2011)',
     by: 'Hisoka Morow',
     aka: ['Hisoka'],
-    line: 'Bungee Gum possesses the properties of both [rubber and gum].',
+    line: 'Bungee Gum has the properties of both [rubber and gum].',
     decoys: ['steel and silk', 'glue and rope', 'candy and string'],
     fame: 1,
   },
@@ -471,14 +474,12 @@ export const FAMOUS_LINES = [
     show: 'Tokyo Ghoul',
     by: 'Ken Kaneki',
     aka: ['Kaneki'],
-    line: 'If I were to write a story with me in the lead role, it would certainly be... [a tragedy].',
+    line: 'If you were to write a story with me in the lead role, it would certainly be... [a tragedy].',
     decoys: ['a comedy', 'a love story', 'a mystery'],
     fame: 1,
   },
   {
     show: 'Tokyo Ghoul',
-    by: 'Yamori',
-    aka: ['Jason'],
     line: 'What’s 1000 [minus 7]?',
     decoys: ['minus 13', 'divided by 7', 'times 7'],
     fame: 1,
@@ -515,8 +516,8 @@ export const FAMOUS_LINES = [
     show: 'Sword Art Online',
     by: 'Akihiko Kayaba',
     aka: ['Kayaba'],
-    line: 'This may be a game, but it is [not something you play].',
-    decoys: ['the only world you have left', 'a fight to the death', 'no longer a game'],
+    line: 'This may be a [game], but it is not something you play.',
+    decoys: ['dream', 'test', 'story'],
     fame: 2,
   },
 
@@ -554,16 +555,6 @@ export const FAMOUS_LINES = [
     line: 'We’re like the blood in our veins. We must [flow without stopping].',
     decoys: ['never stop running', 'protect the heart', 'stay warm'],
     fame: 2,
-  },
-
-  // ── SPY x FAMILY ──
-  {
-    show: 'SPY x FAMILY',
-    by: 'Anya Forger',
-    aka: ['Anya'],
-    line: 'Anya likes [peanuts]!',
-    decoys: ['carrots', 'homework', 'broccoli'],
-    fame: 1,
   },
 
   // ── Kaguya-sama: Love is War ──
@@ -609,7 +600,7 @@ export const FAMOUS_LINES = [
     show: 'Vinland Saga',
     by: 'Thors Snorresson',
     aka: ['Thors'],
-    line: 'You have no enemies. No one in this world is your enemy. There is [no one you should hurt].',
+    line: 'You have no enemies. No one has any enemies. There is [no one that you should hurt].',
     decoys: ['no one you can’t forgive', 'no war worth fighting', 'no one stronger than you'],
     fame: 1,
   },
@@ -636,7 +627,7 @@ export const FAMOUS_LINES = [
     show: 'Code Geass: Lelouch of the Rebellion',
     by: 'Lelouch Lamperouge',
     aka: ['Lelouch', 'Lelouch vi Britannia'],
-    line: 'If the king doesn’t lead, [how can he expect his subordinates to follow]?',
+    line: 'If the king does not lead, [how can he expect his subordinates to follow]?',
     decoys: ['who will protect the throne', 'he is no king at all', 'the kingdom will fall'],
     fame: 2,
   },
@@ -714,7 +705,7 @@ export const FAMOUS_LINES = [
     show: 'JoJo\'s Bizarre Adventure (TV)',
     by: 'Dio Brando',
     aka: ['Dio'],
-    line: 'You thought it was your opponent, but it was me, [Dio]!',
+    line: 'Your first wasn’t JoJo! It was me, [Dio]!',
     decoys: ['Jotaro', 'Joseph', 'Kira'],
     fame: 1,
   },
@@ -722,7 +713,7 @@ export const FAMOUS_LINES = [
     show: 'JoJo\'s Bizarre Adventure (TV)',
     by: 'Dio Brando',
     aka: ['Dio'],
-    line: 'Do you remember how many [loaves of bread you’ve eaten in your life]?',
+    line: 'Can you remember how many [loaves of bread you’ve eaten in your entire life]?',
     decoys: ['people you’ve stepped on to get here', 'times you’ve cried', 'stars there are in the sky'],
     fame: 1,
   },
@@ -939,7 +930,7 @@ export const FAMOUS_LINES = [
     show: 'Fairy Tail',
     by: 'Natsu Dragneel',
     aka: ['Natsu'],
-    line: 'I’m all [fired up] now!',
+    line: 'I’m all [fired up]!',
     decoys: ['worn out', 'warmed up', 'burned out'],
     fame: 1,
   },
@@ -956,8 +947,8 @@ export const FAMOUS_LINES = [
   {
     show: 'KONOSUBA -God\'s blessing on this wonderful world!',
     by: 'Megumin',
-    line: 'My name is Megumin! An Arch Wizard who wields [explosion magic]!',
-    decoys: ['ice magic', 'healing magic', 'dark magic'],
+    line: 'My name is Megumin, the greatest archwizard of [the Crimson Demons]!',
+    decoys: ['the Axis Order', 'the Demon King’s army', 'the town of Axel'],
     fame: 1,
   },
 
@@ -1045,16 +1036,6 @@ export const FAMOUS_LINES = [
     fame: 2,
   },
 
-  // ── Love, Chunibyo & Other Delusions ──
-  {
-    show: 'Love, Chunibyo & Other Delusions',
-    by: 'Rikka Takanashi',
-    aka: ['Rikka'],
-    line: 'Explode, synapse! [Vanishment, this world]!',
-    decoys: ['Darkness, consume me', 'Tyrant’s Eye, awaken', 'Dark Flame Master, rise'],
-    fame: 2,
-  },
-
   // ── The Melancholy of Haruhi Suzumiya ──
   {
     show: 'The Melancholy of Haruhi Suzumiya',
@@ -1135,16 +1116,6 @@ export const FAMOUS_LINES = [
     fame: 1,
   },
 
-  // ── OSHI NO KO ──
-  {
-    show: 'OSHI NO KO',
-    by: 'Ai Hoshino',
-    aka: ['Ai'],
-    line: 'To me, lies are [love].',
-    decoys: ['armor', 'my job', 'everything'],
-    fame: 2,
-  },
-
   // ── Steins;Gate ──
   {
     show: 'Steins;Gate',
@@ -1170,7 +1141,7 @@ export const FAMOUS_LINES = [
     show: 'Hajime no Ippo: The Fighting!',
     by: 'Ippo Makunouchi',
     aka: ['Ippo'],
-    line: 'I want to know what it means to be [strong].',
+    line: 'What does it mean to be [strong]?',
     decoys: ['a champion', 'free', 'a man'],
     fame: 2,
   },
@@ -1242,7 +1213,7 @@ export const FAMOUS_LINES = [
     show: 'Trigun',
     by: 'Vash the Stampede',
     aka: ['Vash'],
-    line: 'Love and [peace]!',
+    line: 'This world is made of... love and [peace]!',
     decoys: ['war', 'money', 'donuts'],
     fame: 1,
   },
