@@ -17,7 +17,12 @@
 //   the Japanese itself ("Yare yare daze", "Ki ni narimasu").
 // - **Only lines whose wording and speaker are certain.** A misremembered
 //   line marks a player who knows the show wrong. When in doubt it is left
-//   out — the list is short on purpose, not by accident.
+//   out — the list is short on purpose, not by accident. A new line is
+//   checked against Wikiquote's episode-cited pages or several independent
+//   sources first; when they disagree on the speaker, it stays out.
+// - **The blank is the part every translation shares.** Sub and dub differ
+//   around it ("I expect 'yes' or 'woof'" / "only 'yes' or 'woof'"), so the
+//   blank goes on the words that do not move ('woof').
 //
 // Fields:
 //
@@ -124,6 +129,36 @@ export const FAMOUS_LINES = [
     decoys: ['life', 'love', 'friendship'],
     fame: 1,
   },
+  {
+    show: 'Naruto',
+    by: 'Kakashi Hatake',
+    aka: ['Kakashi'],
+    line: 'A ninja must see [underneath the underneath].',
+    decoys: ['through every illusion', 'with more than his eyes', 'the enemy before the enemy sees him'],
+    fame: 1,
+  },
+  {
+    show: 'Naruto',
+    by: 'Haku',
+    line: 'When a person has something precious that they want to protect, then [they become genuinely strong].',
+    decoys: ['they can never lose', 'they become afraid', 'they stop being a tool'],
+    fame: 2,
+  },
+  {
+    show: 'Naruto',
+    by: 'Hiruzen Sarutobi',
+    aka: ['Hiruzen', 'Third Hokage', 'The Third Hokage'],
+    line: 'Inside every ninja of the Hidden Leaf Village burns [the Will of Fire].',
+    decoys: ['the spirit of youth', 'the pride of the clan', 'the Hokage’s promise'],
+    fame: 1,
+  },
+  {
+    show: 'Naruto',
+    by: 'Rock Lee',
+    line: 'Please be my girlfriend! [I vow to protect you with my life]!',
+    decoys: ['I’ll train every day for you', 'I’ll beat Neji for you', 'The springtime of youth demands it'],
+    fame: 2,
+  },
 
   // ── ONE PIECE ──
   {
@@ -157,6 +192,53 @@ export const FAMOUS_LINES = [
     decoys: ['my hat', 'my ship', 'my life'],
     fame: 2,
   },
+  {
+    show: 'ONE PIECE',
+    by: 'Luffy Monkey',
+    aka: ['Monkey D. Luffy', 'Luffy', 'Monkey D Luffy'],
+    line: 'I don’t want to conquer anything. I just think the guy with the most freedom on this whole ocean is [the Pirate King]!',
+    decoys: ['the strongest man alive', 'the one who finds the treasure', 'the luckiest man in the world'],
+    fame: 2,
+  },
+  {
+    show: 'ONE PIECE',
+    by: 'Luffy Monkey',
+    aka: ['Monkey D. Luffy', 'Luffy', 'Monkey D Luffy'],
+    line: 'I decided long ago that I’m gonna be King of the Pirates. If I have to die fighting for that... [then I die]!',
+    decoys: ['I’ll just get back up', 'that’s a promise', 'Shanks will understand'],
+    fame: 2,
+  },
+  {
+    show: 'ONE PIECE',
+    by: 'Zoro Roronoa',
+    aka: ['Roronoa Zoro', 'Zoro'],
+    line: 'Scars on the back are [a swordsman’s shame].',
+    decoys: ['proof of a long journey', 'a captain’s burden', 'nothing to fear'],
+    fame: 1,
+  },
+  {
+    show: 'ONE PIECE',
+    by: 'Zoro Roronoa',
+    aka: ['Roronoa Zoro', 'Zoro'],
+    line: 'People can say whatever they want about me, but I’ve never done a single thing in my life [that I regret].',
+    decoys: ['without my swords', 'for money', 'halfway'],
+    fame: 2,
+  },
+  {
+    show: 'ONE PIECE',
+    by: 'Shanks',
+    line: 'Guns aren’t for threats, [they’re for actions].',
+    decoys: ['they’re for cowards', 'they’re for show', 'they’re for protecting friends'],
+    fame: 2,
+  },
+  {
+    show: 'ONE PIECE',
+    by: 'Dr. Hiriluk',
+    aka: ['Hiriluk', 'Dr Hiriluk'],
+    line: 'A man... dies when [people forget him].',
+    decoys: ['his heart stops', 'his dream ends', 'he stops fighting'],
+    fame: 1,
+  },
 
   // ── Attack on Titan ──
   {
@@ -187,6 +269,12 @@ export const FAMOUS_LINES = [
     show: 'Attack on Titan',
     line: 'On that day, humanity received a grim reminder. We lived in fear of the Titans and were disgraced to live [in these cages we called walls].',
     decoys: ['as cattle waiting for slaughter', 'without ever seeing the sea', 'in the shadow of our own fear'],
+    fame: 1,
+  },
+  {
+    show: 'Attack on Titan',
+    line: 'Dedicate your [hearts]!',
+    decoys: ['swords', 'lives', 'wings'],
     fame: 1,
   },
 
@@ -234,6 +322,22 @@ export const FAMOUS_LINES = [
     decoys: ['Malevolent Shrine', 'Chimera Shadow Garden', 'Coffin of the Iron Mountain'],
     fame: 1,
   },
+  {
+    show: 'JUJUTSU KAISEN',
+    by: 'Aoi Todo',
+    aka: ['Todo', 'Aoi Toudou'],
+    line: 'What kind of [girls] do you like?',
+    decoys: ['food', 'fights', 'music'],
+    fame: 1,
+  },
+  {
+    show: 'JUJUTSU KAISEN',
+    by: 'Satoru Gojou',
+    aka: ['Satoru Gojo', 'Gojo', 'Gojo Satoru'],
+    line: 'Don’t worry. [I’m the strongest].',
+    decoys: ['It’s only a curse', 'I never miss', 'You’re not dead yet'],
+    fame: 1,
+  },
 
   // ── Death Note ──
   {
@@ -258,6 +362,37 @@ export const FAMOUS_LINES = [
     line: 'Humans are so [interesting].',
     decoys: ['boring', 'fragile', 'predictable'],
     fame: 1,
+  },
+  {
+    show: 'Death Note',
+    by: 'Light Yagami',
+    aka: ['Light'],
+    line: 'I am [justice]! I protect the innocent and those who fear evil.',
+    decoys: ['the law', 'the hero', 'salvation'],
+    fame: 1,
+  },
+  {
+    show: 'Death Note',
+    by: 'Ryuk',
+    line: 'You’re asking me why? I did it ’cause [I was bored].',
+    decoys: ['I was hungry', 'it was fate', 'I lost a bet'],
+    fame: 1,
+  },
+  {
+    show: 'Death Note',
+    by: 'Light Yagami',
+    aka: ['Light'],
+    line: 'L, do you know [gods of death love apples]?',
+    decoys: ['what a Shinigami looks like', 'how many rules the notebook has', 'who Kira really is'],
+    fame: 1,
+  },
+  {
+    show: 'Death Note',
+    by: 'L Lawliet',
+    aka: ['L'],
+    line: 'Kira is childish and he hates losing... I am also childish and [I hate to lose].',
+    decoys: ['I love sweets', 'I never sleep', 'I’m never wrong'],
+    fame: 2,
   },
 
   // ── My Hero Academia ──
@@ -287,6 +422,14 @@ export const FAMOUS_LINES = [
     line: 'Young man... you can [become a hero].',
     decoys: ['become the strongest', 'save them all', 'stand on your own'],
     fame: 1,
+  },
+  {
+    show: 'My Hero Academia',
+    by: 'Shouta Aizawa',
+    aka: ['Aizawa', 'Shota Aizawa', 'Eraser Head'],
+    line: 'It was [a logical ruse].',
+    decoys: ['a test of nerve', 'a clerical error', 'a final warning'],
+    fame: 2,
   },
 
   // ── Hunter x Hunter (2011) ──
@@ -386,6 +529,14 @@ export const FAMOUS_LINES = [
     decoys: ['a famous idol in Tokyo', 'a cat in the big city', 'anyone but a shrine maiden'],
     fame: 1,
   },
+  {
+    show: 'Your Name.',
+    by: 'Hitoha Miyamizu',
+    aka: ['Hitoha'],
+    line: 'Tying thread is musubi. [Connecting people] is musubi.',
+    decoys: ['Falling in love', 'Dreaming', 'Braiding cords'],
+    fame: 2,
+  },
 
   // ── HAIKYU!! ──
   {
@@ -395,6 +546,14 @@ export const FAMOUS_LINES = [
     line: 'As long as I’m here, [you’re invincible].',
     decoys: ['you’ll never fall', 'we can’t lose', 'the ball will always find you'],
     fame: 1,
+  },
+  {
+    show: 'HAIKYU!!',
+    by: 'Tetsurou Kuroo',
+    aka: ['Kuroo', 'Tetsuro Kuroo'],
+    line: 'We’re like the blood in our veins. We must [flow without stopping].',
+    decoys: ['never stop running', 'protect the heart', 'stay warm'],
+    fame: 2,
   },
 
   // ── SPY x FAMILY ──
@@ -424,6 +583,14 @@ export const FAMOUS_LINES = [
     aka: ['Senku Ishigami', 'Senku'],
     line: 'This is [exhilarating]!',
     decoys: ['elementary', 'unbelievable', 'a breakthrough'],
+    fame: 1,
+  },
+  {
+    show: 'Dr. STONE',
+    by: 'Senkuu Ishigami',
+    aka: ['Senku Ishigami', 'Senku'],
+    line: 'I’m [ten billion percent] sure!',
+    decoys: ['a hundred percent', 'a million percent', 'ninety-nine percent'],
     fame: 1,
   },
 
@@ -473,6 +640,38 @@ export const FAMOUS_LINES = [
     decoys: ['who will protect the throne', 'he is no king at all', 'the kingdom will fall'],
     fame: 2,
   },
+  {
+    show: 'Code Geass: Lelouch of the Rebellion',
+    by: 'Lelouch Lamperouge',
+    aka: ['Lelouch', 'Lelouch vi Britannia', 'Zero'],
+    line: 'I, Lelouch vi Britannia, command you! Now, all of you... [die]!',
+    decoys: ['kneel', 'obey', 'run'],
+    fame: 1,
+  },
+  {
+    show: 'Code Geass: Lelouch of the Rebellion',
+    by: 'Lelouch Lamperouge',
+    aka: ['Lelouch', 'Lelouch vi Britannia', 'Zero'],
+    line: 'You can’t change the world [without getting your hands dirty].',
+    decoys: ['with words alone', 'by standing still', 'without a little help'],
+    fame: 2,
+  },
+  {
+    show: 'Code Geass: Lelouch of the Rebellion',
+    by: 'Lelouch Lamperouge',
+    aka: ['Lelouch', 'Lelouch vi Britannia', 'Zero'],
+    line: 'I am... [Zero].',
+    decoys: ['the Black Knight', 'Britannia', 'your enemy'],
+    fame: 1,
+  },
+  {
+    show: 'Code Geass: Lelouch of the Rebellion',
+    by: 'Suzaku Kururugi',
+    aka: ['Suzaku'],
+    line: 'A victory won through dishonest means [is no victory at all].',
+    decoys: ['is still a victory', 'is a debt to be repaid', 'shames the knight who wins it'],
+    fame: 2,
+  },
 
   // ── Neon Genesis Evangelion ──
   {
@@ -482,6 +681,22 @@ export const FAMOUS_LINES = [
     line: 'I mustn’t run away. I mustn’t run away. [I mustn’t run away].',
     decoys: ['I have to pilot it', 'I don’t want to die', 'I’m not a coward'],
     fame: 1,
+  },
+  {
+    show: 'Neon Genesis Evangelion',
+    by: 'Misato Katsuragi',
+    aka: ['Misato'],
+    line: 'Sometimes you need a little wishful thinking [to keep on living].',
+    decoys: ['to pilot an Eva', 'to get through the night', 'to fall asleep'],
+    fame: 2,
+  },
+  {
+    show: 'Neon Genesis Evangelion',
+    by: 'Shinji Ikari',
+    aka: ['Shinji'],
+    line: 'Why don’t you just [try smiling]?',
+    decoys: ['say thank you', 'go home', 'ask for help'],
+    fame: 2,
   },
 
   // ── Frieren ──
@@ -527,6 +742,22 @@ export const FAMOUS_LINES = [
     decoys: ['Hamon Overdrive', 'the Ripple', 'never give up'],
     fame: 2,
   },
+  {
+    show: 'JoJo\'s Bizarre Adventure (TV)',
+    by: 'Giorno Giovanna',
+    aka: ['Giorno'],
+    line: 'I, Giorno Giovanna, have [a dream].',
+    decoys: ['a plan', 'no regrets', 'a debt to repay'],
+    fame: 1,
+  },
+  {
+    show: 'JoJo\'s Bizarre Adventure (TV)',
+    by: 'Dio Brando',
+    aka: ['Dio', 'DIO'],
+    line: 'Za Warudo! [Toki yo tomare]!',
+    decoys: ['Muda muda muda', 'Wryyyy', 'Ora ora ora'],
+    fame: 1,
+  },
 
   // ── Cowboy Bebop ──
   {
@@ -551,6 +782,36 @@ export const FAMOUS_LINES = [
     decoys: ['who I really am', 'if she’s still waiting', 'what I left behind'],
     fame: 2,
   },
+  {
+    show: 'Cowboy Bebop',
+    by: 'Faye Valentine',
+    aka: ['Faye'],
+    line: 'You know the first rule of combat? [Shoot them before they shoot you].',
+    decoys: ['Never trust a partner', 'Always know your exit', 'Don’t fight fair'],
+    fame: 3,
+  },
+  {
+    show: 'Cowboy Bebop',
+    by: 'Spike Spiegel',
+    aka: ['Spike'],
+    line: 'Most things get better [when I kick them]...',
+    decoys: ['after a drink', 'when I ignore them', 'with a little luck'],
+    fame: 2,
+  },
+  {
+    show: 'Cowboy Bebop',
+    line: 'You’re gonna [carry that weight].',
+    decoys: ['pay for this', 'miss me', 'need a bigger ship'],
+    fame: 2,
+  },
+  {
+    show: 'Cowboy Bebop',
+    by: 'Spike Spiegel',
+    aka: ['Spike'],
+    line: 'I hate kids and pets. [They’re all a royal pain in the butt]!',
+    decoys: ['They never leave you alone', 'They eat all the food', 'They always find me'],
+    fame: 2,
+  },
 
   // ── Gurren Lagann ──
   {
@@ -562,10 +823,39 @@ export const FAMOUS_LINES = [
   },
   {
     show: 'Gurren Lagann',
-    by: 'Simon',
-    line: 'My drill is the drill that will [pierce the heavens]!',
+    by: 'Kamina',
+    line: 'Your drill is the drill that will [pierce the heavens]!',
     decoys: ['break the earth', 'save the world', 'dig to the core'],
     fame: 1,
+  },
+  {
+    show: 'Gurren Lagann',
+    by: 'Kamina',
+    line: 'Who the hell do you think [I am]?!',
+    decoys: ['you’re talking to', 'you’re messing with', 'you’re dealing with'],
+    fame: 1,
+  },
+  {
+    show: 'Gurren Lagann',
+    by: 'Kamina',
+    line: 'Go beyond the impossible and [kick reason to the curb]!',
+    decoys: ['never look back', 'believe in yourself', 'take the heavens by force'],
+    fame: 1,
+  },
+  {
+    show: 'Gurren Lagann',
+    by: 'Simon',
+    line: 'If you’re gonna dig, [dig to the heavens].',
+    decoys: ['dig deep', 'dig with your heart', 'dig for your friends'],
+    fame: 2,
+  },
+  {
+    show: 'Gurren Lagann',
+    by: 'Leeron',
+    aka: ['Leeron Littner'],
+    line: 'When you screw it in, give it [a hard manly twist].',
+    decoys: ['everything you’ve got', 'a gentle touch', 'one more turn'],
+    fame: 2,
   },
 
   // ── Kill la Kill ──
@@ -587,6 +877,38 @@ export const FAMOUS_LINES = [
     decoys: ['Senbonzakura Kageyoshi', 'Daiguren Hyorinmaru', 'Hihio Zabimaru'],
     fame: 1,
   },
+  {
+    show: 'Bleach',
+    by: 'Ichigo Kurosaki',
+    aka: ['Ichigo'],
+    line: 'I’m not fighting because I think I can win, [I’m fighting because I must win].',
+    decoys: ['I’m fighting because I like it', 'I’m fighting because Rukia asked', 'I’m fighting because I’m bored'],
+    fame: 2,
+  },
+  {
+    show: 'Bleach',
+    by: 'Byakuya Kuchiki',
+    aka: ['Byakuya'],
+    line: 'No matter how strong a defense, [a stronger offense will always shatter it].',
+    decoys: ['pride is stronger still', 'a captain never falls', 'it will crack in time'],
+    fame: 3,
+  },
+  {
+    show: 'Bleach',
+    by: 'Kisuke Urahara',
+    aka: ['Urahara'],
+    line: 'There’s no way I, a mere handsome and sexy shopkeeper, could possibly [have bankai]!',
+    decoys: ['be a captain', 'fight a Hollow', 'run a business'],
+    fame: 2,
+  },
+  {
+    show: 'Bleach',
+    by: 'Genryuusai Shigekuni Yamamoto',
+    aka: ['Yamamoto', 'Genryusai Yamamoto', 'Head Captain Yamamoto'],
+    line: 'All things in the universe, turn to ashes, [Ryūjin Jakka]!',
+    decoys: ['Senbonzakura', 'Hyōrinmaru', 'Benihime'],
+    fame: 2,
+  },
 
   // ── Black Clover ──
   {
@@ -603,6 +925,14 @@ export const FAMOUS_LINES = [
     decoys: ['a Magic Knight captain', 'the strongest swordsman', 'a royal knight'],
     fame: 1,
   },
+  {
+    show: 'Black Clover',
+    by: 'Yami Sukehiro',
+    aka: ['Yami'],
+    line: 'Surpass your limits. [Right here, right now]!',
+    decoys: ['No matter the cost', 'Or die trying', 'For the Black Bulls'],
+    fame: 1,
+  },
 
   // ── Fairy Tail ──
   {
@@ -612,6 +942,14 @@ export const FAMOUS_LINES = [
     line: 'I’m all [fired up] now!',
     decoys: ['worn out', 'warmed up', 'burned out'],
     fame: 1,
+  },
+  {
+    show: 'Fairy Tail',
+    by: 'Lucy Heartfilia',
+    aka: ['Lucy'],
+    line: 'Spirits aren’t shields! [I fight alongside them]! That’s my style!',
+    decoys: ['They’re my power', 'I just borrow them', 'They obey the keys'],
+    fame: 2,
   },
 
   // ── KONOSUBA ──
@@ -651,6 +989,22 @@ export const FAMOUS_LINES = [
     line: 'It’s not Zura, it’s [Katsura]!',
     decoys: ['Captain Katsura', 'Elizabeth', 'the Joui Patriot'],
     fame: 1,
+  },
+  {
+    show: 'Gintama',
+    by: 'Gintoki Sakata',
+    aka: ['Gintoki', 'Gin-san'],
+    line: 'This is Gintama! And [I’m the main character]!',
+    decoys: ['I’m the strongest', 'this is my house', 'nobody gets to cancel it'],
+    fame: 2,
+  },
+  {
+    show: 'Gintama',
+    by: 'Gintoki Sakata',
+    aka: ['Gintoki', 'Gin-san'],
+    line: 'A samurai doesn’t need a reason [to do what’s right].',
+    decoys: ['to draw his sword', 'to eat sweets', 'to skip work'],
+    fame: 2,
   },
 
   // ── Komi Can't Communicate ──
@@ -710,6 +1064,14 @@ export const FAMOUS_LINES = [
     decoys: ['step forward', 'I’ll find you', 'speak up now'],
     fame: 1,
   },
+  {
+    show: 'The Melancholy of Haruhi Suzumiya',
+    by: 'Mikuru Asahina',
+    aka: ['Mikuru'],
+    line: 'That’s [classified information].',
+    decoys: ['a time paradox', 'a long story', 'against the rules'],
+    fame: 1,
+  },
 
   // ── Bakemonogatari ──
   {
@@ -720,6 +1082,14 @@ export const FAMOUS_LINES = [
     decoys: ['I just pretend to', 'I only know about you', 'Nobody does'],
     fame: 1,
   },
+  {
+    show: 'Bakemonogatari',
+    by: 'Mayoi Hachikuji',
+    aka: ['Hachikuji', 'Mayoi'],
+    line: 'Shitsurei, [kamimashita].',
+    decoys: ['wasuremashita', 'makemashita', 'mayoimashita'],
+    fame: 2,
+  },
 
   // ── Puella Magi Madoka Magica ──
   {
@@ -729,6 +1099,22 @@ export const FAMOUS_LINES = [
     line: 'Make a contract with me and [become a magical girl]!',
     decoys: ['save the world', 'live forever', 'never be lonely again'],
     fame: 1,
+  },
+  {
+    show: 'Puella Magi Madoka Magica',
+    by: 'Mami Tomoe',
+    aka: ['Mami'],
+    line: 'I’m not afraid of anything anymore. Because... [I’m not alone anymore]!',
+    decoys: ['I’m a magical girl', 'I made a contract', 'I have nothing left to lose'],
+    fame: 2,
+  },
+  {
+    show: 'Puella Magi Madoka Magica',
+    by: 'Homura Akemi',
+    aka: ['Homura'],
+    line: 'Kindness sometimes leads to [even greater tragedy].',
+    decoys: ['a contract with Kyubey', 'regret', 'a broken promise'],
+    fame: 2,
   },
 
   // ── Fate/stay night ──
@@ -805,6 +1191,12 @@ export const FAMOUS_LINES = [
     fame: 1,
     noShow: true,
   },
+  {
+    show: 'Pokémon',
+    line: 'Looks like Team Rocket’s [blasting off again]!',
+    decoys: ['in trouble again', 'going down in flames', 'out of here'],
+    fame: 1,
+  },
 
   // ── Dragon Ball ──
   {
@@ -854,6 +1246,30 @@ export const FAMOUS_LINES = [
     decoys: ['war', 'money', 'donuts'],
     fame: 1,
   },
+  {
+    show: 'Trigun',
+    by: 'Vash the Stampede',
+    aka: ['Vash'],
+    line: 'Dangerous toys are fun, but [you could get hurt]!',
+    decoys: ['they’re not for kids', 'mine is better', 'I’d rather have donuts'],
+    fame: 2,
+  },
+  {
+    show: 'Trigun',
+    by: 'Nicholas D. Wolfwood',
+    aka: ['Wolfwood', 'Nicholas Wolfwood'],
+    line: 'I’m a man of God [for God’s sake]!',
+    decoys: ['with a cross to bear', 'and a man of the gun', 'not a saint'],
+    fame: 2,
+  },
+  {
+    show: 'Trigun',
+    by: 'Milly Thompson',
+    aka: ['Milly'],
+    line: 'You should never get between people and [their pudding].',
+    decoys: ['their money', 'their dreams', 'their guns'],
+    fame: 3,
+  },
 
   // ── Spice and Wolf ──
   {
@@ -893,10 +1309,33 @@ export const FAMOUS_LINES = [
     fame: 2,
   },
   {
+    show: 'Spirited Away',
+    by: 'Chihiro Ogino',
+    aka: ['Chihiro', 'Sen'],
+    line: 'I’m not leaving [till you give me a job]!',
+    decoys: ['without my parents', 'until you say my name', 'without Haku'],
+    fame: 2,
+  },
+  {
     show: 'Princess Mononoke',
     by: 'Ashitaka',
-    line: 'I came to see with eyes [unclouded by hate].',
+    line: 'To see with eyes [unclouded by hate].',
     decoys: ['that can see the forest spirits', 'wide open', 'of a child'],
+    fame: 2,
+  },
+  {
+    show: 'Princess Mononoke',
+    by: 'Jigo',
+    line: 'So you say you’re under a curse? Well so what. [So’s the whole damn world].',
+    decoys: ['Pay me first', 'Eat your soup', 'Curses wear off'],
+    fame: 2,
+  },
+  {
+    show: 'Princess Mononoke',
+    by: 'Lady Eboshi',
+    aka: ['Eboshi'],
+    line: 'Cut off a wolf’s head and [it still has the power to bite].',
+    decoys: ['the forest will be ours', 'the pack will scatter', 'the gods will fall'],
     fame: 2,
   },
   {
@@ -932,6 +1371,115 @@ export const FAMOUS_LINES = [
     show: 'The Girl Who Leapt Through Time',
     line: 'Time waits for [no one].',
     decoys: ['the brave', 'those who wait', 'tomorrow'],
+    fame: 2,
+  },
+
+  // ── Chainsaw Man ──
+  {
+    show: 'Chainsaw Man',
+    by: 'Makima',
+    line: 'I expect ‘yes’ or [‘woof’] for answers.',
+    decoys: ['‘meow’', '‘sir’', '‘of course’'],
+    fame: 1,
+  },
+  {
+    show: 'Chainsaw Man',
+    by: 'Denji',
+    line: 'Gonna put [jam] on my bread, and share it with you.',
+    decoys: ['butter', 'honey', 'peanut butter'],
+    fame: 1,
+  },
+
+  // ── Re:ZERO -Starting Life in Another World- ──
+  {
+    show: 'Re:ZERO -Starting Life in Another World-',
+    by: 'Rem',
+    line: 'Let’s start from here. From square one... no, [from zero]!',
+    decoys: ['from tomorrow', 'from the mansion', 'with Emilia-sama'],
+    fame: 1,
+  },
+
+  // ── Mob Psycho 100 ──
+  {
+    show: 'Mob Psycho 100',
+    by: 'Arataka Reigen',
+    aka: ['Reigen'],
+    line: 'When things go south, it’s okay to [run away]!',
+    decoys: ['give up', 'lose', 'fight dirty'],
+    fame: 2,
+  },
+
+  // ── Samurai Champloo ──
+  {
+    show: 'Samurai Champloo',
+    by: 'Mugen',
+    line: 'If living means bowing down to the likes of you bastards, [I’d rather die on my feet with my head held high].',
+    decoys: ['I’ll take my chances', 'count me out', 'I’ll cut you all down'],
+    fame: 2,
+  },
+  {
+    show: 'Samurai Champloo',
+    by: 'Jin',
+    line: 'You can’t fight the current, [you have to flow with it].',
+    decoys: ['you have to cut through it', 'you have to wait it out', 'it will take you anyway'],
+    fame: 3,
+  },
+
+  // ── Soul Eater ──
+  {
+    show: 'Soul Eater',
+    by: 'Death the Kid',
+    aka: ['Kid'],
+    line: 'Symmetry is what makes [the world beautiful].',
+    decoys: ['a Reaper strong', 'a soul whole', 'a weapon perfect'],
+    fame: 2,
+  },
+
+  // ── Hellsing ──
+  {
+    show: 'Hellsing',
+    by: 'Alucard',
+    line: 'Beautiful night, isn’t it, Police Girl? It’s especially beautiful, of course, [if you’re a bloodsucker].',
+    decoys: ['under a full moon', 'when someone dies', 'if you work for Hellsing'],
+    fame: 2,
+  },
+
+  // ── Akira ──
+  {
+    show: 'Akira',
+    by: 'Shoutarou Kaneda',
+    aka: ['Kaneda', 'Shotaro Kaneda'],
+    line: 'That’s [Mister Kaneda] to you, punk!',
+    decoys: ['Captain Kaneda', 'Lord Kaneda', 'Doctor Kaneda'],
+    fame: 1,
+  },
+
+  // ── Toradora! ──
+  {
+    show: 'Toradora!',
+    by: 'Taiga Aisaka',
+    aka: ['Taiga'],
+    line: 'Maybe that’s why the world keeps it hidden from everyone. If it’s hard to get, [that makes it even more special].',
+    decoys: ['nobody really wants it', 'you have to fight for it', 'it’s probably not real'],
+    fame: 2,
+  },
+
+  // ── Yu Yu Hakusho: Ghostfiles ──
+  {
+    show: 'Yu Yu Hakusho: Ghostfiles',
+    by: 'Hiei',
+    line: 'I have the power of the Black Dragon, because [now I am the dragon]!',
+    decoys: ['I was born in darkness', 'my Jagan Eye wills it', 'I fear nothing'],
+    fame: 3,
+  },
+
+  // ── Assassination Classroom ──
+  {
+    show: 'Assassination Classroom',
+    by: 'Koro-sensei',
+    aka: ['Korosensei', 'Koro sensei'],
+    line: 'It would be nice if you could [kill me before graduation].',
+    decoys: ['graduate with honors', 'beat me on a test', 'call me by my name'],
     fame: 2,
   },
 ];

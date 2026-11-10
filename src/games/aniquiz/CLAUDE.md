@@ -85,11 +85,16 @@ from WATCHING rather than from the end roll:
   carries every option's value for the reveal, best first.
 
 **Famous Lines** (`lines`, 2026-11-09) is the one topic not drawn from the pack. No source the
-arcade uses has quotes, so `famousLines.js` is a hand-curated list (~100 lines, ~60 shows),
+arcade uses has quotes, so `famousLines.js` is a hand-curated list (~170 lines, ~70 shows),
 bundled in AniQuiz's lazy chunk rather than shipped beside the pack: it is small, only this game
 parses it, and a correction is an ordinary deploy. The file header holds its rules — no
 spoilers, only lines whose wording and speaker are certain, English except where fans quote the
-Japanese — and `famousLines.test.js` holds every entry to them against the real pack. Each line
+Japanese — and `famousLines.test.js` holds every entry to them against the real pack. The
+second batch (2026-11-09) was checked line by line against Wikiquote's episode-cited pages or
+several independent quote sources; a line whose sources disagreed on the SPEAKER, or on the
+blanked words themselves, was left out (Frieza's "this isn't even my final form" is a line he
+never says). Where the wording around the blank varies by translation, the blank is chosen
+from the part every version shares. Each line
 makes three shapes (`lineFinish`, `lineSpeaker`, `lineShow`) on ONE subject, the line, so a
 column never quotes it twice; the show it spends is whichever of its shows (`also`: the same
 scene in a remake) is in play. Decisions worth keeping:
