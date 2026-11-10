@@ -9,6 +9,8 @@ import { Badge } from '../../../shared/ui';
 // hub's look, but hair and eye colour are half of recognising somebody. Its alt
 // text must not name them, or a screen reader reads the answer out; it says
 // what the picture is FOR instead. AniList's CDN, no referrer, like Portrait.
+const LONG_PROMPT = 110;
+
 export default function ClueCard({ clue, category, stakeLabel, className = '' }) {
   if (!clue) return null;
   return (
@@ -31,7 +33,13 @@ export default function ClueCard({ clue, category, stakeLabel, className = '' })
           className="mx-auto mb-4 aspect-[2/3] w-32 border-[3px] border-ink bg-surface-2 object-cover object-[50%_15%] shadow-pop-sm sm:w-40"
         />
       )}
-      <p className="font-display text-2xl font-bold leading-snug text-fg-strong sm:text-3xl">
+      {/* A Famous Lines prompt carries a whole quote and can run past 200
+          characters; at the usual size that is ten lines on a phone and the
+          options fall below the fold, so a long prompt steps down one size. */}
+      <p
+        className={`font-display font-bold leading-snug text-fg-strong
+          ${(clue.prompt?.length ?? 0) > LONG_PROMPT ? 'text-xl sm:text-2xl' : 'text-2xl sm:text-3xl'}`}
+      >
         {clue.prompt}
       </p>
     </section>

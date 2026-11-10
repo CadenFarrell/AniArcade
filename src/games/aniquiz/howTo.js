@@ -46,6 +46,7 @@ export const HOW_TO = {
         ...ANSWER_STYLES.map((s) => `${s.label}: ${s.blurb}`),
         'Pool: clues from shows everyone has watched, from anyone’s list, or from every show the arcade knows. The last needs no list at all.',
         `Categories: switch whole topics on or off. ${offByDefault} are harder credits trivia and start switched off. ${choiceOnly} need multiple choice.`,
+        `${titleOf('lines')}: finish a famous line, or say who says it and in which show. Finishing one needs multiple choice, since translations word it differently; with typed answers you get the other two.`,
         'Name That Character uses the portraits on your imported lists, so it needs at least one list.',
       ],
     },

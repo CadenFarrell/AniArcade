@@ -24,6 +24,7 @@
 import { subjectKeyForShow, subjectKeyForCharacter, resolveShowKey } from '../../shared/utils/facts';
 import { shuffle } from '../../shared/utils/random';
 import { FORMAT_NOUNS, SEASON_LABELS, SOURCE_LABELS } from '../../shared/utils/mediaLabels';
+import { FAMOUS_LINES } from './famousLines';
 
 export const ROWS = 5;
 // Board rows, top to bottom. Row 0 is the easiest band of its column.
@@ -59,11 +60,23 @@ const foldNumber = (s) => {
   return digits ? String(Number(digits)) : '';
 };
 
+// A finished line keeps its word order — "you can't win" and "win, you can't"
+// are not the same ending — so it gets foldName's cleaning without the sort.
+// Only ever compared against an option the player tapped (a line ending is
+// multiple choice only), so this just has to be the same fold both ways.
+const foldLine = (s) => String(s ?? '')
+  .normalize('NFD')
+  .replace(/\p{Diacritic}/gu, '')
+  .toLowerCase()
+  .replace(/[^\p{L}\p{N}]+/gu, ' ')
+  .trim();
+
 export const FOLDS = {
   show: (s) => subjectKeyForShow(String(s ?? '')),
   character: (s) => subjectKeyForCharacter(String(s ?? '')),
   name: foldName,
   number: foldNumber,
+  line: foldLine,
 };
 
 export function foldAnswer(kind, text) {
@@ -178,6 +191,13 @@ const FIELD_WEIGHT = {
   // A franchise's own opening is the one piece of credits trivia most fans can
   // hum, so naming the show from it sits with the cast clues, not the staff.
   themeShow: 0.3,
+  // Famous Lines: a line is something a viewer HEARD, so all three sit with the
+  // casual topics. Where it comes from is the easiest ask, then who says it;
+  // finishing it means recalling the words themselves. The line's own fame
+  // carries half of the obscurity side (see lineDifficulty).
+  lineShow: 0.1,
+  lineSpeaker: 0.2,
+  lineFinish: 0.25,
   season: 0.45,
   originalCreator: 0.45,
   studioYear: 0.45,
@@ -229,7 +249,7 @@ function percentiles(keys, measure) {
  * consulted for what a clue may ACCEPT and for distractors, because neither of
  * those is a statement about what the table has watched.
  */
-export function buildContext(index, showKeys, { portraits = null } = {}) {
+export function buildContext(index, showKeys, { portraits = null, lines = FAMOUS_LINES } = {}) {
   const packShows = index?.shows ?? new Map();
   const packChars = index?.characters ?? new Map();
 
@@ -265,8 +285,18 @@ export function buildContext(index, showKeys, { portraits = null } = {}) {
     },
   );
 
+  // Famous Lines in play: a line counts when its show — or any show it is also
+  // from, the same scene in a remake — is in play, and spends that show.
+  const playLines = [];
+  for (const l of preparedLines(lines, index)) {
+    const home = [l.key, ...l.also].find((k) => inPlay.has(k));
+    if (home) playLines.push({ ...l, home });
+  }
+
   return {
     index, packShows, packChars, shows, characters, showObscurity, charObscurity,
+    lines: playLines,
+    lineById: new Map(playLines.map((l) => [l.subject, l])),
     ...lookups(index),
     domains: new Map(),
     // Character key → portrait URL, from the players' own lists (see
@@ -366,8 +396,8 @@ function lookups(index) {
  * because the deal will leave it out. `portraits` is utils/portraits.js's map,
  * without which Name That Character counts nothing.
  */
-export function poolSummary(index, showKeys, topicsOff = [], { choices = true, portraits = null } = {}) {
-  const ctx = buildContext(index, showKeys, { portraits });
+export function poolSummary(index, showKeys, topicsOff = [], { choices = true, portraits = null, lines } = {}) {
+  const ctx = buildContext(index, showKeys, { portraits, lines });
   const on = new Set(enabledTopics(topicsOff).map((t) => t.id));
   const topics = TOPICS.map((t) => ({
     id: t.id,
@@ -378,7 +408,7 @@ export function poolSummary(index, showKeys, topicsOff = [], { choices = true, p
     enabled: on.has(t.id),
     typedOut: Boolean(t.choiceOnly) && !choices,
     usable: on.has(t.id) && (choices || !t.choiceOnly),
-    clues: new Set(candidatesFor(ctx, t).map((c) => c.subject)).size,
+    clues: new Set(candidatesFor(ctx, t, { choices }).map((c) => c.subject)).size,
   }));
   const live = topics.filter((t) => t.usable);
   return {
@@ -1070,6 +1100,180 @@ function mainCast(ctx, s) {
   };
 }
 
+// ── Famous Lines ───────────────────────────────────────────────────────────
+//
+// The one topic not drawn from the pack: famousLines.js is a hand-curated list
+// (no source the arcade uses has quotes), keyed to pack shows by title. Each
+// line makes up to three clues — finish it, who says it, which show — and all
+// three share one SUBJECT, the line, so dedupeBySubject keeps one of them per
+// line and a column never asks the same quote twice. The show it spends is the
+// one in play (`home`), for the spread.
+//
+// Finishing a line is multiple choice only (`choiceOnly` on the clue, not the
+// topic): sub and dub wordings differ ("the honored one" / "the strongest"), so
+// a typed ending would mark people who know the line wrong. A typed deal still
+// gets the other two shapes, which grade like any character or show clue.
+
+const BLANK = /\[([^\]]+)\]/;
+
+// Words that a title and a line share by accident rather than as a tell.
+const COMMON_WORDS = new Set(['that', 'this', 'with', 'from', 'your', 'what', 'when', 'will', 'have', 'there', 'they', 'them', 'just', 'only', 'more', 'than', 'into', 'over', 'ever', 'never', 'love', 'life', 'world']);
+
+const wordSet = (s, min) => new Set(words(s).trim().split(' ').filter((w) => w.length >= min && !COMMON_WORDS.has(w)));
+const shares = (line, names, min) => {
+  const inLine = wordSet(line, min);
+  return names.some((n) => [...wordSet(n, min)].some((w) => inLine.has(w)));
+};
+
+// "Satoru Gojou" → also "Gojou Satoru": AniList itself is inconsistent about
+// order ("Luffy Monkey"), so a typed speaker is accepted either way round.
+function bothOrders(name) {
+  const parts = String(name ?? '').trim().split(/\s+/).filter(Boolean);
+  return parts.length > 1 ? [parts.join(' '), [...parts].reverse().join(' ')] : parts;
+}
+
+// The list, resolved against one pack: its keys through the pack's aliases,
+// its blanks split out. Memoized per (list, index), like `lookups`, because
+// every deal and every pool report would otherwise redo it.
+const PREPARED_LINES = new WeakMap();
+
+function preparedLines(list, index) {
+  if (!Array.isArray(list) || !index) return [];
+  if (!PREPARED_LINES.has(list)) PREPARED_LINES.set(list, new WeakMap());
+  const byIndex = PREPARED_LINES.get(list);
+  if (byIndex.has(index)) return byIndex.get(index);
+  const shows = index.shows ?? new Map();
+  const resolve = (title) => resolveShowKey(index, subjectKeyForShow(String(title ?? '')));
+  const out = [];
+  for (const raw of list) {
+    const m = BLANK.exec(raw?.line ?? '');
+    const key = resolve(raw?.show);
+    if (!m || !shows.has(key)) continue;
+    const ending = m[1];
+    const full = raw.line.replace(BLANK, ending);
+    // Stable across builds, so recent.js can recognise a line it dealt: the
+    // show and the line's own opening words.
+    const id = `${key}|${words(full).trim().split(' ').slice(0, 8).join(' ')}`;
+    out.push({
+      subject: `line:${id}`,
+      key,
+      also: (raw.also ?? []).map(resolve).filter((k) => k !== key && shows.has(k)),
+      by: raw.by ?? null,
+      pack: raw.pack ?? null,
+      aka: Array.isArray(raw.aka) ? raw.aka : [],
+      full,
+      stem: raw.line.replace(BLANK, '___'),
+      ending,
+      decoys: Array.isArray(raw.decoys) ? raw.decoys : [],
+      fame: [1, 2, 3].includes(raw.fame) ? raw.fame : 2,
+      noShow: Boolean(raw.noShow),
+    });
+  }
+  byIndex.set(index, out);
+  return out;
+}
+
+// Half the show's obscurity in this pool, half the line's own fame: "I'm gonna
+// be King of the Pirates" is a 200 even on a table where One Piece is the
+// least-watched show, and a deep cut from the most-watched show is not.
+const lineDifficulty = (ctx, l, field) =>
+  blend(0.5 * (ctx.showObscurity.get(l.home) ?? 1) + 0.5 * ((l.fame - 1) / 2), field);
+
+const speakerNames = (l) => [l.by, l.pack, ...l.aka].filter(Boolean);
+
+const curly = (s) => `“${s}”`;
+
+const LINE_BUILDERS = {
+  lineFinish: (ctx, l) => {
+    if (l.decoys.length < CHOICES - 1) return null;
+    const title = ctx.packShows.get(l.key)?.title ?? l.key;
+    const whose = l.by ? `${l.by}’s line` : 'this line';
+    return {
+      id: `lineFinish:${l.subject}`,
+      topic: 'lines',
+      field: 'lineFinish',
+      subject: l.subject,
+      show: l.home,
+      prompt: `Finish ${whose} from ${quote(title)}: ${curly(l.stem)}`,
+      answer: l.ending,
+      kind: 'line',
+      accept: [foldLine(l.ending)],
+      domain: null,
+      choiceOnly: true,
+      // The whole line, on the reveal: the ending alone reads as a fragment.
+      detail: l.by ? `${curly(l.full)} — ${l.by}` : curly(l.full),
+      difficulty: lineDifficulty(ctx, l, 'lineFinish'),
+    };
+  },
+
+  // The prompt names the show, and the options are that show's own cast, so
+  // this asks who says it — not which show it is from, which is lineShow.
+  lineSpeaker: (ctx, l) => {
+    if (!l.by) return null;
+    // "It was me, Dio!" answers itself.
+    if (shares(l.full, speakerNames(l), 3)) return null;
+    const title = ctx.packShows.get(l.key)?.title ?? l.key;
+    const accept = [...new Set(speakerNames(l).flatMap(bothOrders).map(FOLDS.character))];
+    return {
+      id: `lineSpeaker:${l.subject}`,
+      topic: 'lines',
+      field: 'lineSpeaker',
+      subject: l.subject,
+      show: l.home,
+      prompt: `${curly(l.full)} Who says this in ${quote(title)}?`,
+      answer: l.by,
+      kind: 'character',
+      accept,
+      domain: 'character',
+      difficulty: lineDifficulty(ctx, l, 'lineSpeaker'),
+    };
+  },
+
+  // Never when the line gives its show away: a word of the title, the
+  // speaker's name, or a tell the list marks by hand (`noShow` — "Pikachu, I
+  // choose you!"). A line from a remade scene accepts every show it is from.
+  lineShow: (ctx, l) => {
+    if (l.noShow) return null;
+    const keys = [l.key, ...l.also];
+    const titles = keys.map((k) => ctx.packShows.get(k)?.title ?? k);
+    if (shares(l.full, titles, 4) || shares(l.full, speakerNames(l), 3)) return null;
+    return {
+      id: `lineShow:${l.subject}`,
+      topic: 'lines',
+      field: 'lineShow',
+      subject: l.subject,
+      show: l.home,
+      prompt: `Which show is this line from? ${curly(l.full)}`,
+      answer: titles[0],
+      kind: 'show',
+      accept: keys,
+      alsoAccepted: titles.slice(1),
+      domain: 'show',
+      detail: l.by ? `— ${l.by}` : null,
+      difficulty: lineDifficulty(ctx, l, 'lineShow'),
+    };
+  },
+};
+
+// A "who says this?" clue's wrong options: three of the show's own cast, never
+// the speaker under any of their names. Fewer than three and the clue has no
+// honest options — a name from another show would be the odd one out, which
+// answers it — so it is not dealt as multiple choice.
+function speakerDistractors(ctx, clue, rng) {
+  const l = ctx.lineById.get(clue.subject);
+  if (!l) return [];
+  const homes = new Set([l.key, ...l.also]);
+  const seen = new Set(clue.accept);
+  const cast = [];
+  for (const c of ctx.packChars.values()) {
+    if (GENERIC_NAME.test(c.name ?? '')) continue;
+    if (![...(c.appearsIn ?? []), ...(c.supportingIn ?? [])].some((k) => homes.has(k))) continue;
+    if (bothOrders(c.name).some((n) => seen.has(FOLDS.character(n)))) continue;
+    cast.push(c.name);
+  }
+  return sample([cast], CHOICES - 1, [new Set(seen)], FOLDS.character, rng);
+}
+
 // ── Topics ─────────────────────────────────────────────────────────────────
 //
 // A topic is a board column. Most mix two or three clue shapes, which is where
@@ -1081,6 +1285,9 @@ function mainCast(ctx, s) {
 // a title like "The Director's Chair" is a board heading, not a description.
 //
 // Listed roughly easiest first, which is the order the settings card shows.
+// A topic names its clue shapes by what they are built from: `show` (one per
+// show in play), `character` (one per character in play), or `line` (one per
+// Famous Lines entry in play, from famousLines.js rather than the pack).
 // Two flags:
 //
 //   choiceOnly  the options ARE the question ("which of these came first?"),
@@ -1098,6 +1305,12 @@ export const TOPICS = [
     character: ['portraitName', 'portraitShow'],
   },
   { id: 'cast', title: 'Who’s Who', blurb: 'Main characters and their shows', show: ['mainCast'], character: ['appearsIn'] },
+  {
+    id: 'lines',
+    title: 'Famous Lines',
+    blurb: 'Finish a famous line, or say who said it and in which show',
+    line: ['lineFinish', 'lineSpeaker', 'lineShow'],
+  },
   {
     id: 'firsts',
     title: 'Which Came First?',
@@ -1166,8 +1379,14 @@ export function dealableTopics(topicsOff, { choices = true } = {}) {
 
 const SHOW_BUILDERS = { ...BUILDERS, ...CASUAL_SHOW_BUILDERS, mainCast };
 
-/** Every clue a topic can make from the pool in play. Unordered, undeduped by subject. */
-export function candidatesFor(ctx, topic) {
+/**
+ * Every clue a topic can make from the pool in play. Unordered, undeduped by
+ * subject. `choices: false` (typed answers) leaves out the clues that are
+ * multiple choice only — a Famous Lines ending — BEFORE the dedupe, so a line
+ * that could have been asked "who says this?" is never lost to its own
+ * unaskable "finish it".
+ */
+export function candidatesFor(ctx, topic, { choices = true } = {}) {
   const out = [];
   for (const name of topic.show ?? []) {
     for (const s of ctx.shows) {
@@ -1179,6 +1398,12 @@ export function candidatesFor(ctx, topic) {
     for (const c of ctx.characters) {
       const clue = CHARACTER_BUILDERS[name](ctx, c);
       if (clue) out.push(clue);
+    }
+  }
+  for (const name of topic.line ?? []) {
+    for (const l of ctx.lines ?? []) {
+      const clue = LINE_BUILDERS[name](ctx, l);
+      if (clue && (choices || !clue.choiceOnly)) out.push(clue);
     }
   }
   return out;
@@ -1331,6 +1556,20 @@ function compareDetail(field, shows) {
  * deal prefer others (see domainDistractors).
  */
 export function withChoices(ctx, clue, rng = Math.random) {
+  // A line's ending: the list's own three decoys, written to be wrong in the
+  // character's voice. Nothing else could stand in — another line's ending is
+  // a different sentence, and an obvious one.
+  if (clue.field === 'lineFinish') {
+    const decoys = ctx.lineById?.get(clue.subject)?.decoys ?? [];
+    const wrong = decoys.filter((d) => foldLine(d) && !clue.accept.includes(foldLine(d))).slice(0, CHOICES - 1);
+    if (wrong.length < CHOICES - 1) return null;
+    return { ...clue, options: shuffle([clue.answer, ...wrong], rng) };
+  }
+  if (clue.field === 'lineSpeaker') {
+    const wrong = speakerDistractors(ctx, clue, rng);
+    if (wrong.length < CHOICES - 1) return null;
+    return { ...clue, options: shuffle([clue.answer, ...wrong], rng) };
+  }
   if (clue.compare) {
     const rivals = compareDistractors(ctx, clue, rng);
     if (rivals.length < CHOICES - 1) return null;
@@ -1501,10 +1740,11 @@ function spreadByShow(clues, rng) {
 
 // A comparison clue has no typed form; dealableTopics keeps its topics out of a
 // typed deal, and this refuses one that arrives anyway rather than ship a
-// "which of these" with nothing to choose from.
+// "which of these" with nothing to choose from. The same for a line's ending
+// (`choiceOnly` on the clue), which candidatesFor already leaves out.
 const finisher = (ctx, choices, rng) => (clue) => {
   if (choices) return withChoices(ctx, clue, rng);
-  return clue.compare ? null : clue;
+  return clue.compare || clue.choiceOnly ? null : clue;
 };
 
 /**
@@ -1524,9 +1764,9 @@ const finisher = (ctx, choices, rng) => (clue) => {
  */
 export function dealBoard(index, showKeys, {
   categories = 5, choices = true, dailyDouble = true, finalRound = true, topics = TOPICS, rng = Math.random,
-  recent = null, portraits = null,
+  recent = null, portraits = null, lines,
 } = {}) {
-  const ctx = buildContext(index, showKeys, { portraits });
+  const ctx = buildContext(index, showKeys, { portraits, lines });
   const finish = finisher(ctx, choices, rng);
   const st = spreadState(recent);
   const columns = [];
@@ -1536,7 +1776,7 @@ export function dealBoard(index, showKeys, {
   // `categories` simply deals a narrower board; the final draws from them too,
   // so a switched-off topic cannot sneak back in as the last question.
   for (const topic of shuffle(topics, rng)) {
-    const pool = dedupeBySubject(candidatesFor(ctx, topic), rng, st.recentIds);
+    const pool = dedupeBySubject(candidatesFor(ctx, topic, { choices }), rng, st.recentIds);
     if (columns.length >= categories || pool.length < ROWS) {
       leftovers.push(...pool);
       continue;
@@ -1599,13 +1839,13 @@ export function quizValue(difficulty) {
  * and a straight draw would be a voice-acting quiz.
  */
 export function dealQuiz(index, showKeys, {
-  count = 10, choices = true, topics = TOPICS, rng = Math.random, recent = null, portraits = null,
+  count = 10, choices = true, topics = TOPICS, rng = Math.random, recent = null, portraits = null, lines,
 } = {}) {
-  const ctx = buildContext(index, showKeys, { portraits });
+  const ctx = buildContext(index, showKeys, { portraits, lines });
   const finish = finisher(ctx, choices, rng);
   const st = spreadState(recent);
   const queues = shuffle(topics, rng)
-    .map((t) => spreadByShow(dedupeBySubject(candidatesFor(ctx, t), rng, st.recentIds), rng))
+    .map((t) => spreadByShow(dedupeBySubject(candidatesFor(ctx, t, { choices }), rng, st.recentIds), rng))
     .filter((q) => q.length);
   // A quiz never asks about one subject twice, however small the pool — it is
   // short enough that a repeat would be noticed — so its tiers stop there.

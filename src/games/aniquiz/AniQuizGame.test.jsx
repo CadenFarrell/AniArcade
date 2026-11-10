@@ -141,7 +141,7 @@ describe('AniQuiz, played locally', { timeout: 60000 }, () => {
     await openMoreSettings(user);
 
     // Everything but Theme Songs and Studio Credits (the hard three start off).
-    const off = ['The Squad', 'Name That Character', 'Who’s Who', 'Which Came First?', 'Fan Favourites', 'Air Dates', 'Voice Cast'];
+    const off = ['The Squad', 'Name That Character', 'Who’s Who', 'Famous Lines', 'Which Came First?', 'Fan Favourites', 'Air Dates', 'Voice Cast'];
     for (const title of off) {
       const name = new RegExp(`^${title.replace(/[?]/g, '\\?')}`);
       await user.click(screen.getByRole('checkbox', { name }));
@@ -153,12 +153,12 @@ describe('AniQuiz, played locally', { timeout: 60000 }, () => {
     expect(screen.getByText('Studio Credits')).toBeTruthy();
     expect(screen.queryByText('Voice Cast')).toBeNull();
     const saved = JSON.parse(localStorage.getItem('aniarcade_game_prefs')).aniquiz;
-    expect(saved.topicsOff).toEqual(['squad', 'portraits', 'cast', 'firsts', 'favourites', 'calendar', 'voices', 'staff', 'music', 'origins']);
+    expect(saved.topicsOff).toEqual(['squad', 'portraits', 'cast', 'lines', 'firsts', 'favourites', 'calendar', 'voices', 'staff', 'music', 'origins']);
   });
 
   it('will not start with every category switched off', async () => {
     seedProfiles([makeProfile('Caden')]);
-    seedPrefs({ format: 'quiz', pool: 'everything', topicsOff: ['squad', 'portraits', 'firsts', 'favourites', 'themes', 'calendar', 'studios', 'voices', 'staff', 'music', 'origins'] });
+    seedPrefs({ format: 'quiz', pool: 'everything', topicsOff: ['squad', 'portraits', 'lines', 'firsts', 'favourites', 'themes', 'calendar', 'studios', 'voices', 'staff', 'music', 'origins'] });
     const user = userEvent.setup();
     const start = await openSetup(user);
     await openMoreSettings(user);

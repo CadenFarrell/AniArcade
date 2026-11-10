@@ -34,16 +34,12 @@ characters from the table's lists, a snake draft into the roles, then a secret v
 Since shipped: a typed "why" line per pick for the vote, and a host-written role deck
 ("Built-in deck" / "Built-in + mine" / "Only mine").
 
-## 1. Finish the quote
-"I alone am the ___" — finish a famous anime line.
-- Recommendation: make it a question category inside AniQuiz rather than its own game.
-- The hard part is data: no source has quotes. It needs a hand-curated file (a few hundred
-  lines with show + character + accepted endings), shipped like the fact pack.
-- Translations differ (sub vs dub), so use multiple choice, or typed with loose matching
-  and several accepted endings.
-- Famous quotes cluster in ~40 big shows, so it won't follow players' lists closely; filter
-  to shows on the table's lists where possible.
-- Open questions: standalone vs AniQuiz category, who curates the quote list, typed vs choice.
+## Built: Famous Lines (was idea 1)
+A topic inside AniQuiz, not its own game: finish a famous line (multiple choice only, since
+translations differ), say who says it, or name the show. A hand-curated list of ~100 lines,
+`src/games/aniquiz/famousLines.js`, spoiler-free, filtered to the table's shows like every
+other topic. Notes in src/games/aniquiz/CLAUDE.md. Growing the list is the obvious next step:
+every entry needs a certain wording and speaker, and three decoys that don't mean the same.
 
 ## 3. Redacted bio
 A character's description with names blanked out, revealed one line at a time; guess

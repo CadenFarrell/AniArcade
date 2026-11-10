@@ -84,6 +84,37 @@ from WATCHING rather than from the end roll:
   options come from `compareDistractors` (same table-first, unshown-first order), and `detail`
   carries every option's value for the reveal, best first.
 
+**Famous Lines** (`lines`, 2026-11-09) is the one topic not drawn from the pack. No source the
+arcade uses has quotes, so `famousLines.js` is a hand-curated list (~100 lines, ~60 shows),
+bundled in AniQuiz's lazy chunk rather than shipped beside the pack: it is small, only this game
+parses it, and a correction is an ordinary deploy. The file header holds its rules — no
+spoilers, only lines whose wording and speaker are certain, English except where fans quote the
+Japanese — and `famousLines.test.js` holds every entry to them against the real pack. Each line
+makes three shapes (`lineFinish`, `lineSpeaker`, `lineShow`) on ONE subject, the line, so a
+column never quotes it twice; the show it spends is whichever of its shows (`also`: the same
+scene in a remake) is in play. Decisions worth keeping:
+
+- **Finishing a line is multiple choice only, per CLUE** (`choiceOnly` on the clue, not the
+  topic): sub and dub word endings differently, so a typed ending would mark people who know the
+  line wrong. `candidatesFor(ctx, topic, { choices })` drops those clues BEFORE the dedupe, or a
+  line's unaskable ending could win the dedupe over its askable speaker. A typed table still gets
+  the topic, and `poolSummary` counts only what it can ask.
+- **The wrong endings are hand-written** (`decoys`, three per line), never other lines' endings,
+  which would be different sentences and obvious. A decoy that MEANS the ending is a second right
+  answer: Ponyo also loves ham, Anya also likes spies, so neither is a decoy.
+- **A speaker's wrong options are the show's own pack cast** (main and supporting), never another
+  show's — the prompt names the show, so an outsider is the odd one out. Fewer than three and
+  the clue is not dealt as multiple choice. That is why `by` is spelt the pack's way
+  ("Tanjirou Kamado", "Luffy Monkey"): any other spelling could put the speaker beside
+  themselves as a wrong option, and a different romanization among the options is a tell.
+  `pack` covers a different NAME (All Might is "Toshinori Yagi" in the pack); `aka` and either
+  name order are accepted typed.
+- **A line that gives itself away is not asked that way**: a title word in the line blocks
+  `lineShow`, the speaker's name blocks both `lineShow` and `lineSpeaker`, and `noShow` marks the
+  tells only a person sees ("Pikachu, I choose you!").
+- **Priced half by the show's obscurity in the pool and half by the line's own `fame`** (1–3),
+  so "King of the Pirates" is cheap even on a table where One Piece is the least-watched show.
+
 The credits topics (`staff`, `music`, `origins`) are flagged **`hard`**, badged "Harder" on the
 card, and are `DEFAULT_PREFS.topicsOff` — so a table that never opened the card plays the
 watchable ones, while one that ever touched the switches keeps its saved list (mergePrefs).
