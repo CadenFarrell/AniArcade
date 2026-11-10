@@ -28,7 +28,13 @@
 //   sources (2026-11-09): a close match was corrected to the sourced wording,
 //   a line no source has was removed, and a speaker the sources disagree on
 //   was dropped (the line stays, with no "who said it?"). A new line gets the
-//   same check before it goes in.
+//   same check before it goes in. Since 2026-11-10 the bar is looser, at the
+//   user's call — coverage matters more than a perfect source for every
+//   show: when sources disagree, the most credible one's wording goes in, and
+//   a line only fan quote sites carry goes in with the wording fans use. The
+//   batch added that way is marked by its comment in the git history ("fifth
+//   batch"); those are the lines to revisit if a subtitle file ever settles
+//   the exact words.
 // - **Translations differ; the blank stays meaningful.** Sub and dub word
 //   things differently ("can never change anything" / "can change nothing").
 //   The line takes the official wording, and the blank stays on the ending
@@ -1838,5 +1844,318 @@ export const FAMOUS_LINES = [
     line: 'The only thing humans are equal in is [death].',
     decoys: ['fear', 'sin', 'loneliness'],
     fame: 1,
+  },
+
+  // ── Sword Art Online ──
+  {
+    show: 'Sword Art Online',
+    by: 'Kazuto Kirigaya',
+    aka: ['Kirito'],
+    line: 'Everybody can fight. It’s just a choice of [whether you should].',
+    decoys: ['who you fight for', 'when to stop', 'how you lose'],
+    fame: 2,
+  },
+
+  // ── A Silent Voice ──
+  {
+    show: 'A Silent Voice',
+    by: 'Shouya Ishida',
+    aka: ['Shoya Ishida', 'Shoya', 'Ishida'],
+    line: 'I wanted to tell you... [that I’m sorry]. For everything.',
+    decoys: ['that I missed you', 'that I’m leaving', 'that it wasn’t me'],
+    fame: 2,
+  },
+
+  // ── Rascal Does Not Dream of Bunny Girl Senpai ──
+  {
+    show: 'Rascal Does Not Dream of Bunny Girl Senpai',
+    by: 'Mai Sakurajima',
+    aka: ['Mai'],
+    line: 'If you’re lying, I’ll make you eat Pocky [through your nose].',
+    decoys: ['for a whole week', 'off the floor', 'until you cry'],
+    fame: 1,
+  },
+
+  // ── The Rising of the Shield Hero ──
+  {
+    show: 'The Rising of the Shield Hero',
+    by: 'Naofumi Iwatani',
+    aka: ['Naofumi'],
+    line: 'I’ll fight [an entire country] if I must!',
+    decoys: ['the other three heroes', 'the Waves alone', 'the church itself'],
+    fame: 2,
+  },
+
+  // ── Blue Exorcist ──
+  {
+    show: 'Blue Exorcist',
+    by: 'Rin Okumura',
+    aka: ['Rin'],
+    line: 'I’ll become an exorcist and [kick Satan’s ass]!',
+    decoys: ['protect my brother', 'save the True Cross Academy', 'prove I’m human'],
+    fame: 1,
+  },
+
+  // ── Kakegurui ──
+  {
+    show: 'Kakegurui',
+    by: 'Yumeko Jabami',
+    aka: ['Yumeko'],
+    line: 'I want to gamble [more and more]!',
+    decoys: ['with my life', 'against the council', 'one last time'],
+    fame: 2,
+  },
+
+  // ── ERASED ──
+  {
+    show: 'ERASED',
+    by: 'Satoru Fujinuma',
+    aka: ['Satoru'],
+    line: 'The future is always blank. Only [your willpower] can leave footsteps there.',
+    decoys: ['your memories', 'the people you save', 'a hero'],
+    fame: 2,
+  },
+
+  // ── Your lie in April ──
+  {
+    show: 'Your lie in April',
+    by: 'Kaori Miyazono',
+    aka: ['Kaori'],
+    line: 'Whether you’re sad, you’re a mess, or you’ve hit rock bottom, [you still have to play]!',
+    decoys: ['you still have to smile', 'the music won’t wait', 'spring will come again'],
+    fame: 2,
+  },
+
+  // ── The Promised Neverland ──
+  {
+    show: 'The Promised Neverland',
+    by: 'Emma',
+    line: 'Even if it’s impossible, I want to [escape with everyone].',
+    decoys: ['see the outside world', 'protect Norman', 'find our real parents'],
+    fame: 1,
+  },
+
+  // ── Horimiya ──
+  {
+    show: 'Horimiya',
+    by: 'Izumi Miyamura',
+    aka: ['Miyamura'],
+    line: 'I don’t think there’s a person in this world [you can’t eventually be friends with].',
+    decoys: ['who’s truly alone', 'who doesn’t hide something', 'worth hating forever'],
+    fame: 2,
+  },
+
+  // ── Noragami ──
+  {
+    show: 'Noragami',
+    by: 'Yato',
+    line: 'I want to become someone who can [make people happy]!',
+    decoys: ['build my own shrine', 'never be forgotten', 'cut ties for good'],
+    fame: 2,
+  },
+
+  // ── Parasyte -the maxim- ──
+  {
+    show: 'Parasyte -the maxim-',
+    by: 'Migi',
+    line: 'Upon researching the concept of demons, I believe that, among all life, [humans are the closest thing to it].',
+    decoys: ['parasites are the furthest from it', 'none deserve the name', 'only you could become one'],
+    fame: 2,
+  },
+
+  // ── Death Parade ──
+  {
+    show: 'Death Parade',
+    by: 'Decim',
+    line: 'Life is always full of [unfairness].',
+    decoys: ['surprises', 'regret', 'choices'],
+    fame: 2,
+  },
+
+  // ── That Time I Got Reincarnated as a Slime ──
+  {
+    show: 'That Time I Got Reincarnated as a Slime',
+    by: 'Rimuru Tempest',
+    aka: ['Rimuru'],
+    line: 'I may have underestimated you, but [not as much as you underestimated me].',
+    decoys: ['I won’t make that mistake twice', 'you overestimated yourself', 'a slime never forgets'],
+    fame: 2,
+  },
+
+  // ── Mushoku Tensei: Jobless Reincarnation ──
+  {
+    show: 'Mushoku Tensei: Jobless Reincarnation',
+    by: 'Rudeus Greyrat',
+    aka: ['Rudeus'],
+    line: 'There’s only one thing I need to do. [Train as much as I can] while I grow up.',
+    decoys: ['Stay out of trouble', 'Find a good teacher', 'Never leave this house'],
+    fame: 3,
+  },
+
+  // ── Tokyo Revengers ──
+  {
+    show: 'Tokyo Revengers',
+    by: 'Manjirou Sano',
+    aka: ['Mikey', 'Manjiro Sano'],
+    line: 'This gang is [nothing without you guys].',
+    decoys: ['my whole world', 'the strongest in Tokyo', 'not for the weak'],
+    fame: 2,
+  },
+
+  // ── PSYCHO-PASS ──
+  {
+    show: 'PSYCHO-PASS',
+    by: 'Shougo Makishima',
+    aka: ['Makishima', 'Shogo Makishima'],
+    line: 'I think the only time people really have value is when [they act according to their own will].',
+    decoys: ['the Sibyl System measures them', 'they are afraid', 'they stop thinking'],
+    fame: 2,
+  },
+
+  // ── Miss Kobayashi's Dragon Maid ──
+  {
+    show: 'Miss Kobayashi\'s Dragon Maid',
+    by: 'Tohru',
+    line: 'Living here with you [is my life now].',
+    decoys: ['is only temporary', 'is a dragon’s duty', 'beats any other world'],
+    fame: 2,
+  },
+
+  // ── BLUE LOCK ──
+  {
+    show: 'BLUE LOCK',
+    by: 'Jinpachi Ego',
+    aka: ['Ego'],
+    line: 'You will not become the greatest strikers in the world, unless you have [the ego to match].',
+    decoys: ['the team behind you', 'the talent to back it up', 'a reason to win'],
+    fame: 2,
+  },
+
+  // ── Solo Leveling ──
+  {
+    show: 'Solo Leveling',
+    by: 'Jin-U Seong',
+    aka: ['Sung Jinwoo', 'Jinwoo', 'Jinwoo Sung', 'Sung Jin-Woo'],
+    line: '[Arise].',
+    decoys: ['Kneel', 'Obey', 'Begone'],
+    fame: 1,
+  },
+
+  // ── Angel Beats! ──
+  {
+    show: 'Angel Beats!',
+    by: 'Yuri Nakamura',
+    aka: ['Yuri'],
+    line: 'We have no choice but to accept [the one and only life we’re given].',
+    decoys: ['Angel’s rules', 'whatever God decides', 'that we’re already dead'],
+    fame: 2,
+  },
+
+  // ── The Future Diary ──
+  {
+    show: 'The Future Diary',
+    by: 'Yuno Gasai',
+    aka: ['Yuno'],
+    line: 'I’m crazy!? What’s crazy is [this world that refuses to let me be with you]!',
+    decoys: ['the diary that wrote it', 'every other diary holder', 'a god who plays games'],
+    fame: 1,
+  },
+
+  // ── Anohana: The Flower We Saw That Day ──
+  {
+    show: 'Anohana: The Flower We Saw That Day',
+    by: 'Meiko Honma',
+    aka: ['Menma'],
+    line: 'I love you, [Jintan].',
+    decoys: ['Yukiatsu', 'Poppo', 'Anaru'],
+    fame: 1,
+  },
+
+  // ── Cyberpunk: Edgerunners ──
+  {
+    show: 'Cyberpunk: Edgerunners',
+    by: 'Lucy',
+    aka: ['Lucyna Kushinada'],
+    line: 'You don’t make a name as a cyberpunk by how you live. You’re remembered [by how you die].',
+    decoys: ['by the chrome you wear', 'by who you take down', 'by the eddies you leave'],
+    fame: 1,
+  },
+
+  // ── DAN DA DAN ──
+  {
+    show: 'DAN DA DAN',
+    by: 'Momo Ayase',
+    aka: ['Momo'],
+    line: 'Okarun, [see you tomorrow]!',
+    decoys: ['don’t be late', 'thanks for today', 'stay away from tunnels'],
+    fame: 1,
+    noShow: true,
+  },
+
+  // ── Fire Force ──
+  {
+    show: 'Fire Force',
+    line: 'The flame is the soul’s breath. The black smoke, the soul’s release. [Latom].',
+    decoys: ['Ignis', 'Sol', 'Ashes'],
+    fame: 2,
+  },
+
+  // ── The Quintessential Quintuplets ──
+  {
+    show: 'The Quintessential Quintuplets',
+    by: 'Fuutarou Uesugi',
+    aka: ['Fuutarou', 'Futaro Uesugi'],
+    line: 'Love? That is the stupidest, [furthest removed act from academics].',
+    decoys: ['biggest waste of study time', 'most expensive habit there is', 'least logical thing a student can do'],
+    fame: 2,
+  },
+
+  // ── Bungo Stray Dogs ──
+  {
+    show: 'Bungo Stray Dogs',
+    by: 'Osamu Dazai',
+    aka: ['Dazai'],
+    line: 'You can’t do a [double suicide] alone...',
+    decoys: ['duet', 'heist', 'stakeout'],
+    fame: 2,
+  },
+
+  // ── Tower of God ──
+  {
+    show: 'Tower of God',
+    by: 'Rachel',
+    line: 'I want to [see the stars].',
+    decoys: ['go home', 'be free', 'find my mother'],
+    fame: 1,
+  },
+
+  // ── Hell’s Paradise ──
+  {
+    show: 'Hell’s Paradise',
+    by: 'Gabimaru',
+    line: 'I am [hollow]!',
+    decoys: ['immortal', 'a shinobi', 'a monster'],
+    fame: 1,
+  },
+
+  // ── Wotakoi: Love is Hard for Otaku ──
+  {
+    show: 'Wotakoi: Love is Hard for Otaku',
+    by: 'Hirotaka Nifuji',
+    aka: ['Hirotaka'],
+    line: 'If we dated, I would help you [grind for materials or levels] whenever you wanted.',
+    decoys: ['carry your bags at every con', 'read every doujin you like', 'never touch your consoles'],
+    fame: 2,
+  },
+
+  // ── Overlord ──
+  {
+    show: 'Overlord',
+    by: 'Ainz Ooal Gown',
+    pack: 'Momonga',
+    aka: ['Ainz', 'Momonga'],
+    line: 'Let’s show them [the power of Nazarick]!',
+    decoys: ['the fear of death', 'what a guild can do', 'the might of the undead'],
+    fame: 2,
   },
 ];
