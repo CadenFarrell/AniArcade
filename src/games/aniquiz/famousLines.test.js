@@ -38,11 +38,13 @@ describe('the list', () => {
     // Every show it names is a pack show, or it can never be in play.
     expect(real.shows.has(keyOf(l.show)), l.show).toBe(true);
     for (const a of l.also ?? []) expect(real.shows.has(keyOf(a)), a).toBe(true);
-    // Three decoys, all different, none the ending under another spelling.
+    // Three decoys, all different, none the ending — or one of its other
+    // accepted wordings — under another spelling.
     const ending = /\[([^\]]+)\]/.exec(l.line)[1];
-    const folds = [ending, ...l.decoys].map((d) => foldAnswer('line', d));
+    const alts = l.alt ?? [];
+    const folds = [ending, ...alts, ...l.decoys].map((d) => foldAnswer('line', d));
     expect(l.decoys).toHaveLength(CHOICES - 1);
-    expect(new Set(folds).size).toBe(CHOICES);
+    expect(new Set(folds).size).toBe(CHOICES + alts.length);
     expect([1, 2, 3]).toContain(l.fame);
     // A speaker the pack lists is spelt the pack's way: the options are the
     // show's pack cast, so any other spelling would put them beside themselves.
@@ -108,6 +110,7 @@ const LIST = [
     by: 'Kenji Arata',
     aka: ['Kenji'],
     line: 'I will never sheathe [this sword]!',
+    alt: ['this blade'],
     decoys: ['my pride', 'my anger', 'the truth'],
     fame: 1,
   },
@@ -136,6 +139,28 @@ describe('the three shapes', () => {
     expect([...dealt.options].sort()).toEqual(['my anger', 'my pride', 'the truth', 'this sword']);
     expect(isCorrect(dealt, 'this sword')).toBe(true);
     expect(isCorrect(dealt, 'my pride')).toBe(false);
+  });
+
+  it('accepts another wording of the ending, names it on the reveal, and never offers it', () => {
+    const ctx = ctxFor();
+    const clue = clueOf(ctx, 'lineFinish', 'sheathe');
+    expect(isCorrect(clue, 'this blade')).toBe(true);
+    expect(clue.alsoAccepted).toEqual(['this blade']);
+    // The option is the official wording alone — no "this sword / this blade".
+    for (let seed = 1; seed <= 5; seed++) {
+      const dealt = withChoices(ctxFor(), clueOf(ctxFor(), 'lineFinish', 'sheathe'), seeded(seed));
+      expect(dealt.options).toContain('this sword');
+      expect(dealt.options).not.toContain('this blade');
+      expect(dealt.options.every((o) => !o.includes('/'))).toBe(true);
+    }
+  });
+
+  it('never offers a decoy that is one of the accepted wordings', () => {
+    const raw = { ...LIST[0], alt: ['my pride'] };
+    const c = buildContext(index, allKeys, { lines: [raw] });
+    const clue = candidatesFor(c, LINES).find((x) => x.field === 'lineFinish');
+    // Two honest decoys are left, which is not enough for four options.
+    expect(withChoices(c, clue, seeded(1))).toBeNull();
   });
 
   it('says “this line” when nobody in particular says it, and asks no speaker', () => {

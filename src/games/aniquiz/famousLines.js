@@ -23,9 +23,12 @@
 //   a line no source has was removed, and a speaker the sources disagree on
 //   was dropped (the line stays, with no "who said it?"). A new line gets the
 //   same check before it goes in.
-// - **The blank is the part every translation shares.** Sub and dub differ
-//   around it ("I expect 'yes' or 'woof'" / "only 'yes' or 'woof'"), so the
-//   blank goes on the words that do not move ('woof').
+// - **Translations differ; the blank stays meaningful.** Sub and dub word
+//   things differently ("can never change anything" / "can change nothing").
+//   The line takes the official wording, and the blank stays on the ending
+//   that makes the line; every other sourced wording of it goes in `alt`.
+//   Wording that differs only AROUND the blank ("I expect 'yes' or 'woof'" /
+//   "only 'yes' or 'woof'") needs nothing: the blank does not move.
 //
 // Fields:
 //
@@ -51,6 +54,12 @@
 //            familiar spellings). Either order of any name is accepted anyway.
 //   line     the line, with the part a "finish it" clue blanks in [brackets].
 //            Exactly one blank, usually the end.
+//   alt      other wordings of the ending people know the line by — another
+//            translation, or the fan spelling ("Infinite Void" beside the
+//            official "Unlimited Void"). Only for wordings a source has. The
+//            option always shows `line`'s own (official) wording, never a
+//            slash of both, which would give the answer away; an `alt` is
+//            accepted and named on the reveal ("Also accepted: Infinite Void").
 //   decoys   three wrong endings for multiple choice — plausible in the
 //            character's voice, never a paraphrase of the real one (a decoy
 //            that means the same thing is a second right answer marked wrong).
@@ -67,6 +76,7 @@ export const FAMOUS_LINES = [
     by: 'Naruto Uzumaki',
     aka: ['Naruto'],
     line: 'I never give up. I never go back on my word. That’s [my ninja way]!',
+    alt: ['my nindo, my ninja way'],
     decoys: ['the will of fire', 'what makes a Hokage', 'the promise of a lifetime'],
     fame: 1,
   },
@@ -191,8 +201,9 @@ export const FAMOUS_LINES = [
   {
     show: 'ONE PIECE',
     by: 'Shanks',
-    line: 'This arm? I [bet] it on the new era.',
-    decoys: ['lost', 'traded', 'sold'],
+    line: 'This arm? I bet it on [the new era].',
+    alt: ['the new age', 'the next generation'],
+    decoys: ['my crew', 'the One Piece', 'a game of dice'],
     fame: 2,
   },
   {
@@ -264,8 +275,9 @@ export const FAMOUS_LINES = [
     show: 'Attack on Titan',
     by: 'Armin Arlert',
     aka: ['Armin'],
-    line: 'Someone who can’t sacrifice anything can never [change] anything.',
-    decoys: ['protect', 'save', 'understand'],
+    line: 'Someone who can’t sacrifice anything [can never change anything].',
+    alt: ['can change nothing', 'can never hope to change anything'],
+    decoys: ['can never protect anything', 'will never be free', 'has already lost'],
     fame: 2,
   },
   {
@@ -322,6 +334,7 @@ export const FAMOUS_LINES = [
     by: 'Satoru Gojou',
     aka: ['Satoru Gojo', 'Gojo', 'Gojo Satoru'],
     line: 'Domain Expansion: [Unlimited Void].',
+    alt: ['Infinite Void'],
     decoys: ['Malevolent Shrine', 'Chimera Shadow Garden', 'Coffin of the Iron Mountain'],
     fame: 1,
   },
@@ -356,6 +369,7 @@ export const FAMOUS_LINES = [
     by: 'Light Yagami',
     aka: ['Light'],
     line: 'I will become the god of [this new world].',
+    alt: ['the new world'],
     decoys: ['death', 'justice', 'the Shinigami'],
     fame: 1,
   },
@@ -363,6 +377,7 @@ export const FAMOUS_LINES = [
     show: 'Death Note',
     by: 'Ryuk',
     line: 'Humans are so [interesting].',
+    alt: ['much fun'],
     decoys: ['boring', 'fragile', 'predictable'],
     fame: 1,
   },
@@ -441,6 +456,7 @@ export const FAMOUS_LINES = [
     by: 'Hisoka Morow',
     aka: ['Hisoka'],
     line: 'Bungee Gum has the properties of both [rubber and gum].',
+    alt: ['rubber and chewing gum'],
     decoys: ['steel and silk', 'glue and rope', 'candy and string'],
     fame: 1,
   },
@@ -516,8 +532,9 @@ export const FAMOUS_LINES = [
     show: 'Sword Art Online',
     by: 'Akihiko Kayaba',
     aka: ['Kayaba'],
-    line: 'This may be a [game], but it is not something you play.',
-    decoys: ['dream', 'test', 'story'],
+    line: 'This may be a game, but it is [not something you play].',
+    alt: ['not meant to be played', 'not a plaything'],
+    decoys: ['the only world you have left', 'a fight to the death', 'no longer a game'],
     fame: 2,
   },
 
@@ -527,6 +544,7 @@ export const FAMOUS_LINES = [
     by: 'Mitsuha Miyamizu',
     aka: ['Mitsuha'],
     line: 'Please make me [a handsome Tokyo boy] in my next life!',
+    alt: ['a handsome boy in the city'],
     decoys: ['a famous idol in Tokyo', 'a cat in the big city', 'anyone but a shrine maiden'],
     fame: 1,
   },
@@ -581,6 +599,7 @@ export const FAMOUS_LINES = [
     by: 'Senkuu Ishigami',
     aka: ['Senku Ishigami', 'Senku'],
     line: 'I’m [ten billion percent] sure!',
+    alt: ['10 billion percent'],
     decoys: ['a hundred percent', 'a million percent', 'ninety-nine percent'],
     fame: 1,
   },
@@ -601,6 +620,7 @@ export const FAMOUS_LINES = [
     by: 'Thors Snorresson',
     aka: ['Thors'],
     line: 'You have no enemies. No one has any enemies. There is [no one that you should hurt].',
+    alt: ['no one it’s okay to hurt'],
     decoys: ['no one you can’t forgive', 'no war worth fighting', 'no one stronger than you'],
     fame: 1,
   },
@@ -714,6 +734,7 @@ export const FAMOUS_LINES = [
     by: 'Dio Brando',
     aka: ['Dio'],
     line: 'Can you remember how many [loaves of bread you’ve eaten in your entire life]?',
+    alt: ['breads you have eaten in your life'],
     decoys: ['people you’ve stepped on to get here', 'times you’ve cried', 'stars there are in the sky'],
     fame: 1,
   },
@@ -1004,6 +1025,7 @@ export const FAMOUS_LINES = [
     by: 'Shouko Komi',
     aka: ['Shoko Komi', 'Komi'],
     line: 'My dream is to make [a hundred friends].',
+    alt: ['100 friends'],
     decoys: ['one true friend', 'a thousand friends', 'it through a whole conversation'],
     fame: 1,
   },
@@ -1042,6 +1064,7 @@ export const FAMOUS_LINES = [
     by: 'Haruhi Suzumiya',
     aka: ['Haruhi'],
     line: 'I have no interest in ordinary humans. If there are any aliens, time travelers, sliders or espers here, [come join me]!',
+    alt: ['come see me'],
     decoys: ['step forward', 'I’ll find you', 'speak up now'],
     fame: 1,
   },
@@ -1122,6 +1145,7 @@ export const FAMOUS_LINES = [
     by: 'Rintarou Okabe',
     aka: ['Rintaro Okabe', 'Okabe', 'Hououin Kyouma', 'Kyouma Hououin'],
     line: 'It is the choice of Steins Gate. [El Psy Kongroo].',
+    alt: ['El Psy Congroo'],
     decoys: ['Operation Skuld', 'Tutturu', 'Mwahahaha'],
     fame: 1,
   },
@@ -1247,6 +1271,7 @@ export const FAMOUS_LINES = [
     show: 'Spice and Wolf',
     by: 'Holo',
     line: 'I am Holo [the Wisewolf]!',
+    alt: ['the Wise Wolf'],
     decoys: ['the Moon Hunter', 'the Silver Fang', 'the Wolf Queen'],
     fame: 2,
   },
@@ -1257,6 +1282,7 @@ export const FAMOUS_LINES = [
     by: 'Lain Iwakura',
     aka: ['Lain'],
     line: 'No matter where you go, [everyone’s connected].',
+    alt: ['everyone is always connected'],
     decoys: ['you’re never alone', 'the Wired follows', 'someone is watching'],
     fame: 2,
   },

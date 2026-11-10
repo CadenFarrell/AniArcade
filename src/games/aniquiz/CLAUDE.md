@@ -94,9 +94,16 @@ line was checked (2026-11-09) against Wikiquote's episode-cited pages or several
 quote sources: close matches were corrected to the sourced wording ("Unlimited Void", not
 "Infinite Void"), lines no source has were removed ("Anya likes peanuts" is a fan meme), a
 speaker the sources disagree on was dropped rather than guessed ("What's 1000 minus 7?" is
-both Yamori's and Kaneki's), and a line that turned out to be a death scene went too (Frieza's
-"this isn't even my final form" is a line he never says). Where the wording around the blank varies by translation, the blank is chosen
-from the part every version shares. Each line
+both Yamori's and Kaneki's), and lines from a death scene went too (Ai's "lies are love").
+Frieza's "this isn't even my final form" never went in: he never says it.
+
+**Close wordings get leeway, never a slash** (2026-11-09, at the user's request: they know it
+as "Infinite Void", officially "Unlimited Void"). A line's `alt` lists the other sourced
+wordings of its ending. The option always shows the official wording alone — "Unlimited Void /
+Infinite Void" would be the only option with a slash, which answers the clue by its shape —
+and the reveal names the rest under "Also accepted". The alternates are in `accept`, which
+also keeps a decoy from ever being one of them. Finishing a line stays multiple choice only
+(the user's call: an `alt` list cannot cover every way a person might type an ending). Each line
 makes three shapes (`lineFinish`, `lineSpeaker`, `lineShow`) on ONE subject, the line, so a
 column never quotes it twice; the show it spends is whichever of its shows (`also`: the same
 scene in a remake) is in play. Decisions worth keeping:

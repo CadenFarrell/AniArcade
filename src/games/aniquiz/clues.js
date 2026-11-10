@@ -1164,6 +1164,7 @@ function preparedLines(list, index) {
       full,
       stem: raw.line.replace(BLANK, '___'),
       ending,
+      alt: Array.isArray(raw.alt) ? raw.alt.filter((a) => typeof a === 'string' && a.trim()) : [],
       decoys: Array.isArray(raw.decoys) ? raw.decoys : [],
       fame: [1, 2, 3].includes(raw.fame) ? raw.fame : 2,
       noShow: Boolean(raw.noShow),
@@ -1195,9 +1196,17 @@ const LINE_BUILDERS = {
       subject: l.subject,
       show: l.home,
       prompt: `Finish ${whose} from ${quote(title)}: ${curly(l.stem)}`,
+      // The option always shows the official wording (`ending`); the other
+      // wordings people know it by (`alt`: "Infinite Void" for "Unlimited
+      // Void") are accepted and named on the reveal, but never put on the
+      // option itself — "Unlimited Void / Infinite Void" would be the one option
+      // with a slash in it, which answers the clue by its shape. Accepting them
+      // also keeps a decoy from ever being one of them (withChoices filters
+      // decoys against `accept`).
       answer: l.ending,
       kind: 'line',
-      accept: [foldLine(l.ending)],
+      accept: [...new Set([l.ending, ...l.alt].map(foldLine))],
+      alsoAccepted: l.alt,
       domain: null,
       choiceOnly: true,
       // The whole line, on the reveal: the ending alone reads as a fragment.
