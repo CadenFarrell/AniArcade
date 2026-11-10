@@ -92,7 +92,7 @@ from either would still need checking, so they save nothing. The checking source
 Wikiquote's anime pages (episode-cited; `Category:Anime` lists which exist — most newer shows
 have none), then two independent quote sites agreeing. Fandom wikis refuse automated reads
 (402), and their BreezeWiki mirror sits behind bot protection. So `famousLines.js` is a
-hand-curated list (325 lines, 163 shows),
+hand-curated list (400 lines, 185 shows),
 bundled in AniQuiz's lazy chunk rather than shipped beside the pack: it is small, only this game
 parses it, and a correction is an ordinary deploy. The file header holds its rules — spoilers
 allowed (since 2026-11-10: the user's call, a table is assumed to have finished the anime; it was
@@ -107,7 +107,7 @@ both Yamori's and Kaneki's). Lines left out as spoilers then (Ai's "lies are lov
 Frieza's "this isn't even my final form" never went in: he never says it.
 Since 2026-11-10 the bar is looser (the user's call: the topic needs lines for a lot of shows to
 work): where sources disagree, the most credible one's wording goes in, and a line only fan quote
-sites carry goes in as fans word it. The lines added that way (commits "fifth batch" through "seventh batch") are
+sites carry goes in as fans word it. The lines added that way (commits "fifth batch" through "eighth batch") are
 the ones to revisit first if better sources turn up.
 
 **Close wordings get leeway, never a slash** (2026-11-09, at the user's request: they know it
