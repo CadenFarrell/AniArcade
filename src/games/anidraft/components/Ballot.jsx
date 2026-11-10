@@ -35,7 +35,7 @@ export default function Ballot({ game, players, voter, onCast, title = 'Your Vot
         hint="Pick the best character for each role. Your own team isn’t on the ballot."
       />
       {game.roles.map((roleId, i) => {
-        const role = roleOf(roleId);
+        const role = roleOf(roleId, game.customRoles);
         return (
           <Card key={roleId} title={role.name} padding="sm" className="mb-4">
             {role.hint && <p className="-mt-1 mb-2 px-1 text-sm text-fg-helper">{role.hint}</p>}

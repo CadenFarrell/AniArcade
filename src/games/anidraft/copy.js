@@ -1,4 +1,4 @@
-import { MAX_PLAYERS, MIN_PLAYERS, boardSize, picksPerRound } from './rules';
+import { MAX_PLAYERS, MIN_PLAYERS, ROLES_PER_ROUND, boardSize, picksPerRound } from './rules';
 
 export const TAGLINE = 'Draft a team from everyone’s lists — the table votes on the best';
 
@@ -10,12 +10,16 @@ export const TAGLINE = 'Draft a team from everyone’s lists — the table votes
  */
 export const cardsNeeded = (players, rounds) => picksPerRound(players) * rounds + (boardSize(players) - picksPerRound(players));
 
+/** "Only mine" needs a round's worth of written roles: a round deals five different ones. */
+export const MIN_OWN_ROLES = ROLES_PER_ROUND;
+
 /**
  * The StartBar line for setup and the lobby, and whether Start is open — one
  * function, so the two screens cannot disagree about why a game will not
- * start. `poolSize` is how many characters the lists could deal.
+ * start. `poolSize` is how many characters the lists could deal, `ownRoles`
+ * how many roles this device has written.
  */
-export function setupStatus({ count, settings, poolSize, online = false }) {
+export function setupStatus({ count, settings, poolSize, ownRoles = 0, online = false }) {
   if (count < MIN_PLAYERS) {
     return {
       ready: false,
@@ -25,5 +29,8 @@ export function setupStatus({ count, settings, poolSize, online = false }) {
   if (count > MAX_PLAYERS) return { ready: false, status: `AniDraft seats up to ${MAX_PLAYERS} players.` };
   const need = cardsNeeded(count, settings.rounds);
   if (poolSize < need) return { ready: false, status: `These lists hold ${poolSize} characters — the game needs ${need}.` };
+  if (settings.roleDeck === 'mine' && ownRoles < MIN_OWN_ROLES) {
+    return { ready: false, status: `Write at least ${MIN_OWN_ROLES} roles, or deal from the built-in deck.` };
+  }
   return { ready: true, status: `${count} teams · ${settings.rounds} round${settings.rounds === 1 ? '' : 's'} · ${boardSize(count)} cards a board` };
 }

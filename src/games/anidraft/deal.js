@@ -5,7 +5,7 @@
 //
 // Pure, with an injectable rng, so a seed is a replay.
 import { characterOwners, hasPortrait } from '../../shared/utils/characterPool';
-import { dealRoles } from './roles';
+import { dealRoles, deckIds } from './roles';
 import { ROLES_PER_ROUND, boardSize, draftedKeys } from './rules';
 
 const isMain = (entry) => /main/i.test(entry?.role ?? '');
@@ -67,13 +67,20 @@ export function dealBoard(players, { size, pool = 'main', used = [], drafted = [
   return cards.map(toCard);
 }
 
-/** The first round's board and roles, for rules.startGame. */
-export function firstDeal(players, { pool = 'main' } = {}, rng = Math.random) {
+/**
+ * The first round's board and roles, for rules.startGame. The roles come from
+ * the game's deck: `roleDeck` over `customRoles`, the written roles the game
+ * will carry (roles.js's deckRoles builds them from the host's list).
+ */
+export function firstDeal(players, { pool = 'main', roleDeck = 'builtin', customRoles = {} } = {}, rng = Math.random) {
   return {
     board: dealBoard(players, { size: boardSize(players.length), pool }, rng),
-    roles: dealRoles(ROLES_PER_ROUND, rng),
+    roles: dealRoles(ROLES_PER_ROUND, rng, [], deckIds(roleDeck, customRoles)),
   };
 }
+
+/** A reshuffle's roles: from the game's own deck, avoiding the ones on the table. */
+export const reshuffleDeal = (game, rng = Math.random) => dealRoles(ROLES_PER_ROUND, rng, game.roles, deckIds(game.roleDeck, game.customRoles));
 
 /**
  * The next round's board and roles, for rules.nextRound: avoiding everything
@@ -86,6 +93,6 @@ export function roundDeal(players, game, rng = Math.random) {
     board: dealBoard(players, {
       size: boardSize(game.order.length), pool: game.pool, used: game.used, drafted: draftedKeys(game),
     }, rng),
-    roles: dealRoles(ROLES_PER_ROUND, rng, game.roles),
+    roles: dealRoles(ROLES_PER_ROUND, rng, game.roles, deckIds(game.roleDeck, game.customRoles)),
   };
 }

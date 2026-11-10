@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import * as rules from './rules';
-import { ROLE_DECK, dealRoles } from './roles';
+import { ROLE_DECK, dealRoles, deckIds, deckRoles, normalizeCustomRole, roleOf } from './roles';
 
 const { ROLES_PER_ROUND } = rules;
 const ids = ['a', 'b', 'c'];
@@ -247,6 +247,64 @@ describe('the role deck', () => {
     expect(new Set(roles).size).toBe(ROLES_PER_ROUND);
     const again = dealRoles(ROLES_PER_ROUND, Math.random, roles);
     expect(again.some((r) => roles.includes(r))).toBe(false);
+  });
+
+  it('tops a small deck up from the last deal instead of maybe dealing it again', () => {
+    const seven = ['r1', 'r2', 'r3', 'r4', 'r5', 'r6', 'r7'];
+    const first = ['r1', 'r2', 'r3', 'r4', 'r5'];
+    const again = dealRoles(ROLES_PER_ROUND, Math.random, first, seven);
+    expect(again).toHaveLength(ROLES_PER_ROUND);
+    expect(new Set(again).size).toBe(ROLES_PER_ROUND);
+    expect(again).toEqual(expect.arrayContaining(['r6', 'r7']));
+  });
+});
+
+describe('written roles', () => {
+  const own = [
+    { id: 'mine-a', name: '  Karaoke   Partner ', hint: 'Knows every opening' },
+    { name: 'Group Chat Admin' },
+    { name: '   ' },
+  ];
+
+  it('cleans a draft, keeps an own id, mints one otherwise, and drops a nameless one', () => {
+    expect(normalizeCustomRole(own[0])).toEqual({ id: 'mine-a', name: 'Karaoke Partner', hint: 'Knows every opening' });
+    const minted = normalizeCustomRole(own[1]);
+    expect(minted.id).toMatch(/^mine-[\w-]+$/);
+    expect(minted).not.toHaveProperty('hint');
+    expect(normalizeCustomRole(own[2])).toBeNull();
+    // A built-in id cannot be borrowed: a written role is always `mine-`.
+    expect(normalizeCustomRole({ id: 'captain', name: 'Mine now' }).id).toMatch(/^mine-/);
+  });
+
+  it('carries only the roles the chosen deck deals', () => {
+    expect(deckRoles('builtin', own)).toEqual({});
+    const mine = deckRoles('mine', own);
+    expect(Object.keys(mine)).toHaveLength(2);
+    expect(mine['mine-a']).toEqual({ name: 'Karaoke Partner', hint: 'Knows every opening' });
+    expect(deckIds('mine', mine)).toEqual(Object.keys(mine));
+    expect(deckIds('both', mine)).toHaveLength(ROLE_DECK.length + 2);
+    expect(deckIds('builtin', mine)).toHaveLength(ROLE_DECK.length);
+  });
+
+  it('names a written role from the game, and an unknown id as a Wildcard', () => {
+    const mine = { 'mine-a': { name: 'Karaoke Partner' } };
+    expect(roleOf('mine-a', mine)).toEqual({ id: 'mine-a', name: 'Karaoke Partner', hint: '' });
+    expect(roleOf('captain', mine).name).toBe('Captain');
+    expect(roleOf('mine-gone', mine).name).toBe('Wildcard');
+  });
+
+  it('stores the deck on the game, and normalizeGame repairs what RTDB drops', () => {
+    const customRoles = { 'mine-a': { name: 'Karaoke Partner', hint: 'Knows every opening' }, 'mine-b': { name: 'Admin' } };
+    const g = start({ roleDeck: 'mine', customRoles });
+    expect(g.roleDeck).toBe('mine');
+    expect(g.customRoles).toEqual(customRoles);
+    // An empty map is not stored at all, and a game from before written roles
+    // has no deck: both read back as the built-in deck with nothing written.
+    const { customRoles: _gone, roleDeck: _old, ...bare } = g;
+    expect(rules.normalizeGame(bare)).toMatchObject({ roleDeck: 'builtin', customRoles: {} });
+    // A role saved without a name is dropped; one missing its hint keeps the name.
+    const damaged = { ...g, customRoles: { 'mine-a': { hint: 'no name' }, 'mine-b': { name: 'Admin' } } };
+    expect(rules.normalizeGame(damaged).customRoles).toEqual({ 'mine-b': { name: 'Admin' } });
   });
 });
 

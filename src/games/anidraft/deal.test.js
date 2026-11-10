@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { dealBoard, draftPool, firstDeal, roundDeal } from './deal';
+import { dealBoard, draftPool, firstDeal, reshuffleDeal, roundDeal } from './deal';
+import { ROLE_DECK } from './roles';
 import * as rules from './rules';
 
 const show = (title, names, role = 'MAIN', pictured = true) => ({
@@ -71,5 +72,24 @@ describe('a game’s deals', () => {
     const next = roundDeal(players, game);
     expect(next.board.some((c) => game.used.includes(c.key))).toBe(false);
     expect(next.roles.some((r) => game.roles.includes(r))).toBe(false);
+  });
+});
+
+describe('the role deck', () => {
+  const customRoles = Object.fromEntries(Array.from({ length: 6 }, (_, i) => [`mine-${i}`, { name: `Role ${i}` }]));
+  const ids = players.map((p) => p.id);
+
+  it('deals only written roles from "Only mine", in every round and on a reshuffle', () => {
+    const deal = firstDeal(players, { roleDeck: 'mine', customRoles });
+    expect(deal.roles.every((r) => r in customRoles)).toBe(true);
+    const game = rules.startGame({ ids, rounds: 2, roleDeck: 'mine', customRoles, ...deal });
+    expect(reshuffleDeal(game).every((r) => r in customRoles)).toBe(true);
+    expect(roundDeal(players, game).roles.every((r) => r in customRoles)).toBe(true);
+  });
+
+  it('deals only built-in roles from the built-in deck, whatever the game carries', () => {
+    const deal = firstDeal(players, { roleDeck: 'builtin', customRoles });
+    const builtIn = new Set(ROLE_DECK.map((r) => r.id));
+    expect(deal.roles.every((r) => builtIn.has(r))).toBe(true);
   });
 });

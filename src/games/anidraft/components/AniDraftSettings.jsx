@@ -2,8 +2,11 @@ import MoreSettings from '../../../shared/components/MoreSettings';
 import SettingsFooter from '../../../shared/components/SettingsFooter';
 import SettingHelp, { DetailToggle } from '../../../shared/components/SettingHelp';
 import { Card, Field, Select } from '../../../shared/ui';
-import { CLOCK_OPTIONS, DEFAULT_PREFS, POOL_OPTIONS, ROUNDS_OPTIONS } from '../prefs';
+import { CLOCK_OPTIONS, DEFAULT_PREFS, POOL_OPTIONS, ROLE_DECK_OPTIONS, ROUNDS_OPTIONS } from '../prefs';
 import { ROLES_PER_ROUND } from '../rules';
+import { ROLE_DECK } from '../roles';
+
+const BUILT_IN_COUNT = ROLE_DECK.length;
 
 /**
  * AniDraft's Settings card, rendered by both the local setup screen and the
@@ -14,8 +17,11 @@ import { ROLES_PER_ROUND } from '../rules';
  * One `onChange(key, value)`, because the lobby's settings object is what
  * leaves the host's device. Every option reaches the game through
  * rules.startGame.
+ *
+ * `ownRoles` is how many roles this device has written (RoleEditor, under
+ * this card), which the Roles note counts so the choice says what it deals.
  */
-export default function AniDraftSettings({ values, onChange, onReset, host = false, online = false }) {
+export default function AniDraftSettings({ values, onChange, onReset, host = false, online = false, ownRoles = 0 }) {
   // The footer compares against what this screen can reach: locally the clock
   // is not on the card, so a saved online clock must not read as "changed".
   const shown = online ? values : { ...values, pickClock: DEFAULT_PREFS.pickClock };
@@ -31,6 +37,18 @@ export default function AniDraftSettings({ values, onChange, onReset, host = fal
         more="The first pick moves one seat each round, and so does the last — in a snake they are the same player’s back-to-back picks."
       >
         {`A round is one draft of ${ROLES_PER_ROUND} roles and one vote.`}
+      </SettingHelp>
+
+      <Field label="Roles" htmlFor="anidraft-roles" className="mb-2">
+        <Select id="anidraft-roles" value={values.roleDeck} onChange={(e) => onChange('roleDeck', e.target.value)}>
+          {ROLE_DECK_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+        </Select>
+      </Field>
+      <SettingHelp
+        className="mb-5"
+        more={`Write roles in “Your own roles” below. “Only mine” needs at least ${ROLES_PER_ROUND}; with fewer than ${ROLES_PER_ROUND} for each round, some come back in a later round.`}
+      >
+        {rolesNote(values.roleDeck, ownRoles)}
       </SettingHelp>
 
       {online && (
@@ -64,4 +82,13 @@ export default function AniDraftSettings({ values, onChange, onReset, host = fal
       <SettingsFooter values={shown} defaults={DEFAULT_PREFS} onReset={onReset} />
     </Card>
   );
+}
+
+// What the chosen deck deals, counted, so "Built-in + mine" with nothing
+// written does not read as though something of yours is in it.
+function rolesNote(deck, own) {
+  const yours = `${own} of your own`;
+  if (deck === 'builtin') return `${BUILT_IN_COUNT} built-in roles${own ? ` — your ${own} sit this one out` : ''}.`;
+  if (deck === 'mine') return own ? `Only the ${own} role${own === 1 ? '' : 's'} you wrote.` : 'Only roles you write — none yet.';
+  return own ? `${BUILT_IN_COUNT} built-in roles and ${yours}.` : `${BUILT_IN_COUNT} built-in roles — write your own below to add them.`;
 }

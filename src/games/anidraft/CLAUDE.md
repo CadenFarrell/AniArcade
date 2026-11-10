@@ -50,6 +50,31 @@ actually changes them. **A reshuffle is allowed only before the first pick**
 only the host may reshuffle, for the same reason only the host edits the lobby settings:
 two phones shuffling at once overwrite each other.
 
+## Written roles
+
+The host can write their own roles (`RoleEditor`, kept on the device by `useCustomRoles` under
+`anidraft_custom_roles`) and pick the deck in the settings card's "Roles" select (`roleDeck`):
+"Built-in deck", "Built-in + mine" (the default, which with nothing written is the built-in
+deck) or "Only mine". Settled with Caden (2026-11-09): the three-way choice, the random deal
+and reshuffle kept, and the hint line optional.
+
+- **The deck rides in the game** (`game.roleDeck`, `game.customRoles: { [id]: { name, hint? } }`),
+  unlike AniTag's written categories. Online, "Next round" is dealt by whichever phone presses
+  it, and a guest's phone holds none of the host's roles. So at Start the host's list goes in
+  (`deckRoles`), and only when the chosen deck deals from it. A later edit in the editor cannot
+  change a game being played.
+- **A written role's id starts `mine-`**, which no built-in id does, and which is a legal RTDB
+  key. `roleOf(id, game.customRoles)` reads the game's own roles first, so every screen
+  that names a role passes `game.customRoles`.
+- **RTDB drops an empty map and an absent hint**, so `normalizeGame` rebuilds both through
+  `normalizeCustomRole`. A role with no name is dropped, and its id then draws as a Wildcard.
+- **"Only mine" needs `MIN_OWN_ROLES` (5)** before Start opens (`setupStatus`). A small written
+  deck cannot avoid all of last round's roles, so `dealRoles` takes every fresh one and tops up
+  from the rest.
+- Online the editor shows on the host's lobby only; a guest's roles are never dealt.
+
+`smoke/anidraft.smoke.test.js` has a guest press "Next round" in an "Only mine" game.
+
 ## The board (`deal.js`)
 
 `draftPool` is AniChain's `chainPool` again: main characters by default, falling back to
@@ -130,6 +155,8 @@ There is no clock locally.
 The playtest strategy (`playtest/strategies/anidraft.js`) and `AniDraftGame.test.jsx` press
 these words:
 - "Shuffle roles", "Take <name>", "Draft as <role>"
+- the "Roles" select (`fixBlocked` turns "Only mine" back to "Built-in + mine" when nothing is
+  written)
 - "I'm <name> — vote", the "<character> as <role>" radios, "Cast votes"
 - "Next role", "Next round", "See results"
 

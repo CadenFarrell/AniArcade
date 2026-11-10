@@ -156,4 +156,39 @@ describe('AniDraft online', () => {
     expect(rest[0].r.game.scores[goneId]).toBe(5);
     expect(syncErrors(rest)).toEqual([]);
   });
+
+  // The host's written roles ride in the game, because the next round is dealt
+  // by whichever phone presses "Next round" — here a guest's, which never held
+  // them. One role has no hint, which RTDB must not turn into a blank.
+  it('deals the host’s written roles on every phone, a guest’s next round included', async () => {
+    const devs = [mk('h'), mk('i'), mk('j')];
+    await seatTable(devs, [lists('Hal'), lists('Ivy'), lists('Jo')]);
+    const customRoles = Object.fromEntries(Array.from({ length: 7 }, (_, i) => [
+      `mine-r${i}`, i === 0 ? { name: `Role ${i}` } : { name: `Role ${i}`, hint: `Hint ${i}` },
+    ]));
+    await devs[0].act((r) => r.startGame({ rounds: 2, pool: 'main', pickClock: 0, roleDeck: 'mine', customRoles }));
+    await until(() => devs.every((d) => d.r.game?.phase === 'draft'), { what: 'dealt' });
+    for (const d of devs) {
+      expect(d.r.game.roleDeck).toBe('mine');
+      expect(d.r.game.customRoles).toEqual(customRoles);
+      expect(d.r.game.roles.every((id) => id in customRoles)).toBe(true);
+    }
+
+    for (let i = 0; i < 15; i++) await pickOnce(devs);
+    await until(() => devs.every((d) => d.r.game.phase === 'vote'), { what: 'vote open' });
+    const order = devs[0].r.game.order;
+    for (const [i, id] of order.entries()) await byId(devs, id).act((r) => r.vote(Array(5).fill(order[(i + 1) % order.length])));
+    await until(() => devs.every((d) => d.r.game.phase === 'reveal'), { what: 'vote closed' });
+    for (let i = 0; i < 5; i++) {
+      await devs[0].act((r) => r.revealNext(i));
+      await until(() => devs.every((d) => d.r.game.shown === i + 1), { what: `role ${i + 1}` });
+    }
+
+    const guest = devs.find((d) => !d.r.isHost);
+    await guest.act((r) => r.next());
+    await until(() => devs.every((d) => d.r.game.round === 1 && d.r.game.phase === 'draft'), { what: 'round two' });
+    for (const d of devs) expect(d.r.game.roles.every((id) => id in customRoles)).toBe(true);
+    expect(same(devs, (r) => r.game.roles)).toBe(true);
+    expect(syncErrors(devs)).toEqual([]);
+  });
 });

@@ -161,4 +161,48 @@ describe('AniDraft, one device', { timeout: 60000 }, () => {
     expect(screen.getByText('Round 3')).toBeTruthy();
     expect(errors).not.toHaveBeenCalled();
   }, 60_000);
+
+  // Written roles: "Only mine" holds Start until five are written, then deals
+  // nothing else — on the team sheet, on the draft's role buttons, through a
+  // reshuffle, and on every ballot.
+  it('deals only the roles written in setup when the deck is "Only mine"', async () => {
+    const user = userEvent.setup();
+    const names = ['Ann', 'Ben', 'Cal'];
+    const written = ['Karaoke Partner', 'Group Chat Admin', 'Night Owl', 'Plus One', 'Tour Guide', 'Snack Dealer'];
+    seedProfiles(makeTable(names));
+    localStorage.setItem('aniarcade_game_prefs', JSON.stringify({ anidraft: { rounds: 1, pool: 'main', pickClock: 0, roleDeck: 'mine' } }));
+    localStorage.setItem('aniarcade_last_tables', JSON.stringify({ anidraft: names.map(profileIdFromName) }));
+    renderArcade(<AniDraftGame onExit={() => {}} />);
+    await user.click(screen.getByRole('button', { name: /play on this device/i }));
+
+    const go = await screen.findByRole('button', { name: /start game/i });
+    expect(go.disabled).toBe(true);
+    expect(screen.getAllByText(/Write at least 5 roles/).length).toBeGreaterThan(0);
+
+    for (const [i, role] of written.entries()) {
+      await user.type(screen.getByRole('textbox', { name: 'Role name' }), role);
+      // The hint is optional: every other role goes without one.
+      if (i % 2 === 0) await user.type(screen.getByRole('textbox', { name: /what it’s for/i }), `Hint ${i}`);
+      await user.click(screen.getByRole('button', { name: '+ Add role' }));
+    }
+    expect(screen.getByRole('button', { name: `Edit “${written[0]}”` })).toBeTruthy();
+    await waitFor(() => expect(go.disabled).toBe(false));
+    await user.click(go);
+
+    const dealt = () => screen.getAllByRole('button', { name: /^Take / });
+    expect(dealt().length).toBeGreaterThan(0);
+    await user.click(screen.getByRole('button', { name: 'Shuffle roles' }));
+    await user.click(dealt()[0]);
+    const roleButtons = screen.getAllByRole('button', { name: /^Draft as / }).map((b) => b.getAttribute('aria-label').slice('Draft as '.length));
+    expect(roleButtons).toHaveLength(5);
+    for (const role of roleButtons) expect(written).toContain(role);
+    await user.click(dealt()[0]);
+    await draftRound(user, names.length);
+
+    await user.click(screen.getByRole('button', { name: `I'm ${names[0]} — vote` }));
+    const groups = screen.getAllByRole('radiogroup').map((g) => g.getAttribute('aria-label'));
+    expect(groups).toHaveLength(5);
+    for (const role of groups) expect(written).toContain(role);
+    expect(errors).not.toHaveBeenCalled();
+  });
 });

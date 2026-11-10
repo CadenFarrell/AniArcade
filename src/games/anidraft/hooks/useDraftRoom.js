@@ -3,8 +3,7 @@ import { ref, runTransaction, set } from 'firebase/database';
 import { getFirebaseDb } from '../../../shared/services/firebase';
 import { useRoomCore } from '../../../shared/hooks/useRoomCore';
 import { useDeadline } from '../../../shared/hooks/useDeadline';
-import { dealRoles } from '../roles';
-import { firstDeal, roundDeal } from '../deal';
+import { firstDeal, reshuffleDeal, roundDeal } from '../deal';
 import * as rules from '../rules';
 
 // Per-game, so a saved AniDraft room cannot clobber another game's.
@@ -103,7 +102,9 @@ export function useDraftRoom() {
         rounds: settings.rounds,
         pool: settings.pool,
         pickClock: settings.pickClock,
-        ...firstDeal(here, { pool: settings.pool }),
+        roleDeck: settings.roleDeck,
+        customRoles: settings.customRoles,
+        ...firstDeal(here, settings),
         now: now(),
       }),
       view: 'round',
@@ -121,7 +122,7 @@ export function useDraftRoom() {
   // The host's alone, as the lobby's settings are: two phones shuffling at
   // once would each overwrite the other's roles.
   const reshuffle = useCallback(() => (isHost
-    ? applyGame((g) => rules.reshuffleRoles(g, dealRoles(rules.ROLES_PER_ROUND, Math.random, g.roles)))
+    ? applyGame((g) => rules.reshuffleRoles(g, reshuffleDeal(g)))
     : Promise.resolve()), [isHost, applyGame]);
   const vote = useCallback((choices) => applyGame((g) => rules.castBallot(g, me, choices)), [applyGame, me]);
   // Anyone may press these; `from` and the phase make a second press abort.

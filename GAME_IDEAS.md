@@ -31,7 +31,8 @@ Since shipped: a per-word clock and typed words for local play (both settings).
 Every player drafts a team: five roles dealt from a deck of 30, one shared board of
 characters from the table's lists, a snake draft into the roles, then a secret vote per role
 (never your own team), a point per role won. Notes in src/games/anidraft/CLAUDE.md.
-Possible follow-ups: a host-written role deck, a typed "why" line per pick for the vote.
+Since shipped: a typed "why" line per pick for the vote, and a host-written role deck
+("Built-in deck" / "Built-in + mine" / "Only mine").
 
 ## 1. Finish the quote
 "I alone am the ___" — finish a famous anime line.

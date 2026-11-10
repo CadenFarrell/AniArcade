@@ -1,3 +1,5 @@
+import { ROLE_DECKS } from './roles';
+
 // Every option AniDraft remembers between sessions, at its literal default — and
 // the schema useGamePrefs validates a saved blob against. Setup and the lobby
 // offer the same set through one AniDraftSettings card.
@@ -8,13 +10,18 @@
 //   pool: 'main'   — main characters: the ones a table has opinions about.
 //   pickClock: 0   — no pick clock. Online only (a table on one phone sets
 //                    its own pace); a host with a slow drafter turns it on.
+//   roleDeck: 'both' — the built-in roles plus any this device has written,
+//                    which with none written is just the built-in deck
+//                    (roles.js's ROLE_DECKS says why that is the default).
 export const DEFAULT_PREFS = {
   rounds: 3,
   pool: 'main',
   pickClock: 0,
+  roleDeck: 'both',
 };
 
 export const ROUNDS_OPTIONS = [1, 3, 5];
+export const ROLE_DECK_OPTIONS = ROLE_DECKS;
 export const POOL_OPTIONS = [
   { value: 'main', label: 'Main characters' },
   { value: 'all', label: 'Anyone on the lists' },
@@ -32,5 +39,6 @@ export function cleanPrefs(prefs) {
     rounds: pick(prefs?.rounds, ROUNDS_OPTIONS, DEFAULT_PREFS.rounds),
     pool: pick(prefs?.pool, POOL_OPTIONS.map((o) => o.value), DEFAULT_PREFS.pool),
     pickClock: pick(prefs?.pickClock, CLOCK_OPTIONS.map((o) => o.value), DEFAULT_PREFS.pickClock),
+    roleDeck: pick(prefs?.roleDeck, ROLE_DECK_OPTIONS.map((o) => o.value), DEFAULT_PREFS.roleDeck),
   };
 }

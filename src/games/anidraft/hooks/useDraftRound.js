@@ -1,6 +1,5 @@
 import { useCallback, useState } from 'react';
-import { dealRoles } from '../roles';
-import { firstDeal, roundDeal } from '../deal';
+import { firstDeal, reshuffleDeal, roundDeal } from '../deal';
 import * as rules from '../rules';
 
 // Local persistence for one AniDraft game: the rules decide, this only holds
@@ -14,7 +13,9 @@ export function useDraftRound(players, settings) {
     rounds: settings.rounds,
     pool: settings.pool,
     pickClock: 0,
-    ...firstDeal(players, { pool: settings.pool }),
+    roleDeck: settings.roleDeck,
+    customRoles: settings.customRoles,
+    ...firstDeal(players, settings),
   }));
 
   // Rules run inside the updater so two quick taps both see current state. A
@@ -29,7 +30,7 @@ export function useDraftRound(players, settings) {
   return {
     game,
     pick: useCallback((card, slot, why = null) => apply((g) => rules.makePick(g, rules.currentPicker(g), card, slot, { why })), [apply]),
-    reshuffle: useCallback(() => apply((g) => rules.reshuffleRoles(g, dealRoles(rules.ROLES_PER_ROUND, Math.random, g.roles))), [apply]),
+    reshuffle: useCallback(() => apply((g) => rules.reshuffleRoles(g, reshuffleDeal(g))), [apply]),
     // A ballot, and — when it was the last one — the vote's close in the same
     // update, so the reveal follows the last voter without another tap.
     vote: useCallback((voter, choices) => apply((g) => {

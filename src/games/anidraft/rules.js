@@ -8,8 +8,13 @@
 // slots. Then everyone votes, role by role, for the best pick in that role —
 // never their own — and each role's most-voted team scores a point.
 //
-//   game: { rounds, pool, pickClock, order, scores, votesWon, round, phase,
-//           roles, shuffles, board, picks, pickAt, ballots, shown, used, log }
+//   game: { rounds, pool, pickClock, roleDeck, customRoles, order, scores,
+//           votesWon, round, phase, roles, shuffles, board, picks, pickAt,
+//           ballots, shown, used, log }
+//
+// `roleDeck` and `customRoles` are the deck the game deals roles from: the
+// host's choice and the roles they wrote, copied in at Start because any
+// phone may deal the next round (roles.js, "Written roles").
 //
 //   phase: 'draft' → 'vote' → 'reveal' → (next round: 'draft' …) → 'finished'
 //
@@ -29,7 +34,7 @@
 // clock is off and `now` is null.
 
 import { award, clearBest, clearLeader, tally as countIds, times } from '../../shared/utils/awards';
-import { roleOf } from './roles';
+import { normalizeCustomRole, roleOf } from './roles';
 
 export const MIN_PLAYERS = 3;
 // Eight teams of five is a 60-card board — already a long scroll on a phone —
@@ -153,12 +158,16 @@ const validBoard = (board, teams) => Array.isArray(board) && board.length >= pic
  * A new game. `board` and `roles` are the first round's, dealt by the caller;
  * `now` starts the first pick's clock (null locally).
  */
-export function startGame({ ids, rounds = 3, pool = 'main', pickClock = 0, board, roles, now = null }) {
+export function startGame({
+  ids, rounds = 3, pool = 'main', pickClock = 0, roleDeck = 'builtin', customRoles = {}, board, roles, now = null,
+}) {
   const zero = Object.fromEntries(ids.map((id) => [id, 0]));
   const game = {
     rounds,
     pool,
     pickClock,
+    roleDeck: normalizeRoleDeck(roleDeck),
+    customRoles: normalizeCustomRoles(customRoles),
     order: ids,
     scores: zero,
     votesWon: { ...zero },
@@ -435,6 +444,24 @@ function normalizeEntry(e, order) {
   return { round: numberOr(e.round, 0), roles, teams, tally };
 }
 
+const ROLE_DECK_VALUES = ['builtin', 'both', 'mine'];
+// A game from before written roles has no deck, which is the built-in one.
+const normalizeRoleDeck = (v) => (ROLE_DECK_VALUES.includes(v) ? v : 'builtin');
+
+// The game's written roles, `{ [id]: { name, hint? } }`. RTDB drops the map when
+// it is empty and a hint when there is none, so each entry is rebuilt through
+// the editor's own normalizer; one with no name is dropped (roleOf then draws
+// its id as a Wildcard rather than a blank).
+function normalizeCustomRoles(raw) {
+  const out = {};
+  if (!raw || typeof raw !== 'object') return out;
+  for (const [id, r] of Object.entries(raw)) {
+    const role = normalizeCustomRole({ ...(r && typeof r === 'object' ? r : {}), id });
+    if (role && role.id === id) out[id] = role.hint ? { name: role.name, hint: role.hint } : { name: role.name };
+  }
+  return out;
+}
+
 export function normalizeGame(raw) {
   if (!raw || typeof raw !== 'object') return null;
   const order = listOf(raw.order).filter((id) => typeof id === 'string');
@@ -448,6 +475,8 @@ export function normalizeGame(raw) {
     rounds: numberOr(raw.rounds, 1),
     pool: raw.pool === 'all' ? 'all' : 'main',
     pickClock: numberOr(raw.pickClock, 0),
+    roleDeck: normalizeRoleDeck(raw.roleDeck),
+    customRoles: normalizeCustomRoles(raw.customRoles),
     order,
     scores: counts(raw.scores),
     votesWon: counts(raw.votesWon),
@@ -494,7 +523,7 @@ export function normalizeGame(raw) {
  *   Bridesmaid          the most roles lost by a single vote (2+, roast)
  *   Autopilot           the most picks the clock made for them (2+, roast)
  */
-export function draftAwards(log = [], players = []) {
+export function draftAwards(log = [], players = [], customRoles = null) {
   const byId = (id) => players.find((p) => p.id === id) ?? null;
   const entries = (log ?? []).filter(Boolean);
   const out = [];
@@ -507,7 +536,7 @@ export function draftAwards(log = [], players = []) {
       const total = Object.values(counts).reduce((a, n) => a + n, 0);
       const top = Math.max(0, ...Object.values(counts));
       return {
-        by, card, slot, round: e.round, role: roleOf(e.roles?.[slot]).name, top,
+        by, card, slot, round: e.round, role: roleOf(e.roles?.[slot], customRoles).name, top,
         votes: counts[by] ?? 0, total, won: winnersOf(counts, order).includes(by), seats: order.length,
       };
     }).filter(Boolean));

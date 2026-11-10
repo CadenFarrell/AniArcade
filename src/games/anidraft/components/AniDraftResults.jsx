@@ -57,7 +57,7 @@ export default function AniDraftResults({ game, players, departedIds = [], onPla
         score={(p) => String(p.total)}
         extra={(p) => <span className="text-xs text-fg-helper">{plural(p.votes, 'vote')}</span>}
       />
-      <Awards awards={draftAwards(game.log, players)} />
+      <Awards awards={draftAwards(game.log, players, game.customRoles)} />
       <Recap game={game} players={players} />
     </ResultsLayout>
   );
@@ -91,7 +91,7 @@ function Recap({ game, players }) {
                 <li key={roleId} className="flex items-center gap-3 border-b border-line px-2 py-2 last:border-0">
                   <Avatar src={card?.imageUrl} alt="" size="sm" />
                   <div className="min-w-0 flex-1">
-                    <p className="font-display text-xs font-bold uppercase tracking-[0.2em] text-fg-helper">{roleOf(roleId).name}</p>
+                    <p className="font-display text-xs font-bold uppercase tracking-[0.2em] text-fg-helper">{roleOf(roleId, game.customRoles).name}</p>
                     <p className="break-words font-display text-base font-bold uppercase tracking-wide text-fg-strong">
                       {wonWith.length ? wonWith.join(' / ') : 'No votes'}
                     </p>

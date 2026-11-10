@@ -13,6 +13,8 @@ describe('AniDraft prefs', () => {
   it('drops a saved value of the wrong type, and one the card does not offer', () => {
     expect(mergePrefs({ rounds: 'lots', pool: 'all' }, DEFAULT_PREFS)).toEqual({ ...DEFAULT_PREFS, pool: 'all' });
     expect(cleanPrefs({ ...DEFAULT_PREFS, rounds: 4, pickClock: 45 })).toEqual(DEFAULT_PREFS);
+    expect(cleanPrefs({ ...DEFAULT_PREFS, roleDeck: 'theirs' })).toEqual(DEFAULT_PREFS);
+    expect(cleanPrefs({ ...DEFAULT_PREFS, roleDeck: 'mine' }).roleDeck).toBe('mine');
   });
 });
 
@@ -25,5 +27,14 @@ describe('setupStatus', () => {
     expect(need).toBe(15 * 3 + 8);
     expect(setupStatus({ count: 3, settings, poolSize: need - 1 }).status).toMatch(/needs 53/);
     expect(setupStatus({ count: 3, settings, poolSize: need }).ready).toBe(true);
+  });
+
+  it('holds Start on "Only mine" until a round’s worth of roles is written', () => {
+    const mine = { ...settings, roleDeck: 'mine' };
+    const poolSize = cardsNeeded(3, settings.rounds);
+    expect(setupStatus({ count: 3, settings: mine, poolSize, ownRoles: 4 })).toMatchObject({ ready: false, status: expect.stringMatching(/at least 5 roles/) });
+    expect(setupStatus({ count: 3, settings: mine, poolSize, ownRoles: 5 }).ready).toBe(true);
+    // The other decks never need any.
+    expect(setupStatus({ count: 3, settings, poolSize, ownRoles: 0 }).ready).toBe(true);
   });
 });

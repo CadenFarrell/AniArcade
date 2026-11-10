@@ -8,10 +8,13 @@ import { useAutoSeat } from '../../../shared/hooks/useAutoSeat';
 import { useGamePrefs } from '../../../shared/hooks/useGamePrefs';
 import { Banner, Button } from '../../../shared/ui';
 import AniDraftSettings from './AniDraftSettings';
+import RoleEditor, { OwnRolesBanner } from './RoleEditor';
+import { useCustomRoles } from '../hooks/useCustomRoles';
+import { deckRoles } from '../roles';
 import { draftPool } from '../deal';
 import { DEFAULT_PREFS, cleanPrefs } from '../prefs';
 import { MIN_PLAYERS } from '../rules';
-import { TAGLINE, cardsNeeded, setupStatus } from '../copy';
+import { MIN_OWN_ROLES, TAGLINE, cardsNeeded, setupStatus } from '../copy';
 import descriptor from '../index';
 
 // Local setup: the couch, seated before anyone taps (useAutoSeat), and one
@@ -24,10 +27,12 @@ export default function DraftSetup({ onStart, onBack }) {
   const [importTarget, setImportTarget] = useState(null);
   const { prefs, savePrefs, resetPrefs } = useGamePrefs(descriptor.id, DEFAULT_PREFS);
   const [settings, setSettings] = useState(() => cleanPrefs(prefs));
+  const { roles: ownRoles, saveRole, deleteRole } = useCustomRoles();
 
   const ids = players.map((p) => p.id);
   const poolSize = useMemo(() => draftPool(players, settings.pool).length, [players, settings.pool]);
-  const { status, ready } = setupStatus({ count: players.length, settings, poolSize });
+  const { status, ready } = setupStatus({ count: players.length, settings, poolSize, ownRoles: ownRoles.length });
+  const fewOwn = settings.roleDeck === 'mine' && ownRoles.length < MIN_OWN_ROLES;
   const short = players.length >= MIN_PLAYERS && poolSize < cardsNeeded(players.length, settings.rounds);
 
   const handleImported = (merged) => {
@@ -61,11 +66,16 @@ export default function DraftSetup({ onStart, onBack }) {
           </>
         )}
         right={(
-          <AniDraftSettings
-            values={settings}
-            onChange={(key, value) => setSettings((s) => ({ ...s, [key]: value }))}
-            onReset={() => { setSettings({ ...DEFAULT_PREFS }); resetPrefs(); }}
-          />
+          <>
+            <AniDraftSettings
+              values={settings}
+              ownRoles={ownRoles.length}
+              onChange={(key, value) => setSettings((s) => ({ ...s, [key]: value }))}
+              onReset={() => { setSettings({ ...DEFAULT_PREFS }); resetPrefs(); }}
+            />
+            {fewOwn && <OwnRolesBanner count={ownRoles.length} />}
+            <RoleEditor roles={ownRoles} onSave={saveRole} onDelete={deleteRole} />
+          </>
         )}
         start={(
           <StartBar status={status} ready={ready}>
@@ -75,9 +85,11 @@ export default function DraftSetup({ onStart, onBack }) {
               disabled={!ready}
               onClick={() => {
                 // writePrefs merges, so the online-only clock survives a local save.
-                savePrefs({ rounds: settings.rounds, pool: settings.pool });
+                savePrefs({ rounds: settings.rounds, pool: settings.pool, roleDeck: settings.roleDeck });
                 remember(players);
-                onStart({ players, settings });
+                // The written roles go in with the game (roles.js, "Written
+                // roles"), so a later edit here cannot change a game mid-play.
+                onStart({ players, settings: { ...settings, customRoles: deckRoles(settings.roleDeck, ownRoles) } });
               }}
             >
               Start Game

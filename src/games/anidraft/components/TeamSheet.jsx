@@ -11,7 +11,7 @@ export function TeamSheet({ game, playerId, title, className = '' }) {
     <Card title={title} padding="sm" className={`mb-5 ${className}`}>
       <ol className="divide-y-2 divide-line">
         {game.roles.map((roleId, i) => {
-          const role = roleOf(roleId);
+          const role = roleOf(roleId, game.customRoles);
           const card = slots[i];
           return (
             // A round's roles are distinct, and their place is their identity.
@@ -51,16 +51,16 @@ export function AllTeams({ game, players, youId = null, activeId = null }) {
               </p>
               <ol className="flex gap-1.5" aria-label={`${name}’s team`}>
                 {slots.map((card, i) => (
-                  <li key={game.roles[i] ?? i} title={card ? `${roleOf(game.roles[i]).name}: ${card.name}` : roleOf(game.roles[i]).name}>
+                  <li key={game.roles[i] ?? i} title={card ? `${roleOf(game.roles[i], game.customRoles).name}: ${card.name}` : roleOf(game.roles[i], game.customRoles).name}>
                     {card ? (
                       <>
                         <Avatar src={card.imageUrl} alt="" size="sm" className="h-9! w-9!" />
-                        <span className="sr-only">{roleOf(game.roles[i]).name}: {card.name}</span>
+                        <span className="sr-only">{roleOf(game.roles[i], game.customRoles).name}: {card.name}</span>
                       </>
                     ) : (
                       <>
                         <EmptySlot small />
-                        <span className="sr-only">{roleOf(game.roles[i]).name}: empty</span>
+                        <span className="sr-only">{roleOf(game.roles[i], game.customRoles).name}: empty</span>
                       </>
                     )}
                   </li>

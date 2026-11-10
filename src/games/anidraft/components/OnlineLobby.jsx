@@ -5,10 +5,13 @@ import { useGamePrefs } from '../../../shared/hooks/useGamePrefs';
 import { useRepublishProfile } from '../../../shared/hooks/useRepublishProfile';
 import { Button } from '../../../shared/ui';
 import AniDraftSettings from './AniDraftSettings';
+import RoleEditor, { OwnRolesBanner } from './RoleEditor';
+import { useCustomRoles } from '../hooks/useCustomRoles';
+import { deckRoles } from '../roles';
 import { draftPool } from '../deal';
 import { DEFAULT_PREFS, cleanPrefs } from '../prefs';
 import { MIN_PLAYERS } from '../rules';
-import { TAGLINE, setupStatus } from '../copy';
+import { MIN_OWN_ROLES, TAGLINE, setupStatus } from '../copy';
 import descriptor from '../index';
 
 // The online lobby: the shared lobby pieces (code, roster, import, the guest's
@@ -18,6 +21,9 @@ export default function OnlineLobby({ room }) {
   const { prefs, savePrefs, resetPrefs } = useGamePrefs(descriptor.id, DEFAULT_PREFS);
   // ONE OBJECT, because it IS what leaves the host's device at Start.
   const [settings, setSettings] = useState(() => cleanPrefs(prefs));
+  // Only the host's are ever dealt, so only the host is shown the editor; a
+  // guest's written roles wait on their phone for a game they host.
+  const { roles: ownRoles, saveRole, deleteRole } = useCustomRoles();
 
   const players = room.players ?? [];
   const me = players.find((p) => p.id === room.myPlayerId) ?? null;
@@ -29,7 +35,8 @@ export default function OnlineLobby({ room }) {
   // Unmemoized: a few thousand characters folded once a render, and the
   // compiler cannot keep a memo over `active` (it comes off the room object).
   const poolSize = draftPool(active, settings.pool).length;
-  const gate = setupStatus({ count: active.length, settings, poolSize, online: true });
+  const gate = setupStatus({ count: active.length, settings, poolSize, ownRoles: ownRoles.length, online: true });
+  const fewOwn = settings.roleDeck === 'mine' && ownRoles.length < MIN_OWN_ROLES;
   const status = room.isHost ? gate.status : `Waiting for ${room.hostName || 'the host'} to start.`;
 
   return (
@@ -52,13 +59,18 @@ export default function OnlineLobby({ room }) {
         </>
       )}
       right={room.isHost ? (
-        <AniDraftSettings
-          values={settings}
-          host
-          online
-          onChange={(key, value) => setSettings((s) => ({ ...s, [key]: value }))}
-          onReset={() => { setSettings({ ...DEFAULT_PREFS }); resetPrefs(); }}
-        />
+        <>
+          <AniDraftSettings
+            values={settings}
+            host
+            online
+            ownRoles={ownRoles.length}
+            onChange={(key, value) => setSettings((s) => ({ ...s, [key]: value }))}
+            onReset={() => { setSettings({ ...DEFAULT_PREFS }); resetPrefs(); }}
+          />
+          {fewOwn && <OwnRolesBanner count={ownRoles.length} />}
+          <RoleEditor roles={ownRoles} onSave={saveRole} onDelete={deleteRole} />
+        </>
       ) : (
         <HostWaitCard hostName={room.hostName} needsList />
       )}
@@ -69,7 +81,12 @@ export default function OnlineLobby({ room }) {
               variant="primary"
               size="lg"
               disabled={!gate.ready}
-              onClick={() => { savePrefs(settings); room.startGame(settings); }}
+              onClick={() => {
+                savePrefs(settings);
+                // The deck goes into the game at Start: any phone may deal the
+                // next round, and only this one holds these roles.
+                room.startGame({ ...settings, customRoles: deckRoles(settings.roleDeck, ownRoles) });
+              }}
             >
               Start Game
             </Button>

@@ -12,7 +12,7 @@
 // "Shuffle roles" is pressed now and then before a round's first pick, so the
 // reshuffle path is exercised; online only the host sees it.
 import { makeStrategy } from './base.js';
-import { find, findAll, click, fill, has, wait } from '../core/generic.js';
+import { find, findAll, click, choose, fill, has, wait } from '../core/generic.js';
 
 // The optional "why them?" line, typed on some picks so the ballot and the
 // reveal render one (and the longest runs into the cap).
@@ -28,6 +28,17 @@ export default makeStrategy({
     // the clock's auto-pick happen whenever a bot dawdles past it (it never
     // does at 30s, but the seed axis keeps the path in the matrix).
     pickClock: [0, 30],
+    // Which deck the roles come from. The bots write no roles, so both of
+    // these deal the built-in 30; "Only mine" would only ever be refused
+    // (AniDraftGame.test.jsx writes five and plays them instead).
+    roleDeck: ['both', 'builtin'],
+  },
+  // A random settings tweak can land on "Only mine" with nothing written:
+  // Start says so, and a player would pick a deck that has roles.
+  fixBlocked(snap) {
+    const deck = find(snap, /^roles$/i, { role: 'combobox' });
+    if (deck && deck.value === 'mine' && has(snap, /write at least \d+ roles/i)) return choose(deck, 'both', 'a deck with roles in it');
+    return null;
   },
   onBlocked: () => ({ expected: true }),
 

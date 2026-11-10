@@ -28,7 +28,7 @@ export default function RoleReveal({ game, players, youId = null }) {
         </Card>
       )}
       {shown.map(({ roleId, i }) => {
-        const role = roleOf(roleId);
+        const role = roleOf(roleId, game.customRoles);
         const counts = entry.tally[i] ?? {};
         const winners = winnersOf(counts, game.order);
         const rows = [...game.order].sort((a, b) => (counts[b] ?? 0) - (counts[a] ?? 0));

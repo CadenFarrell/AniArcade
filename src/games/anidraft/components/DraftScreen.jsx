@@ -37,7 +37,7 @@ export default function DraftScreen({
   const open = openSlots(game, picker);
   const card = game.board.find((c) => c.key === selected) ?? null;
   const after = pickOrder(game.order, game.round)[game.picks.length + 1];
-  const roleNames = (slots) => slots.map((i) => roleOf(game.roles[i]).name).join(', ');
+  const roleNames = (slots) => slots.map((i) => roleOf(game.roles[i], game.customRoles).name).join(', ');
 
   const hint = [
     `Round ${game.round + 1}/${game.rounds}.`,
@@ -102,7 +102,7 @@ export default function DraftScreen({
             name keeps the whole phrase (it contains the visible words), and it
             is what the bots press. */}
         {canPick && card && open.map((i) => {
-          const role = roleOf(game.roles[i]).name;
+          const role = roleOf(game.roles[i], game.customRoles).name;
           return (
             <Button
               key={game.roles[i]}
