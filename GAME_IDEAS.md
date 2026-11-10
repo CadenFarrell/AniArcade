@@ -36,7 +36,7 @@ Since shipped: a typed "why" line per pick for the vote, and a host-written role
 
 ## Built: Famous Lines (was idea 1)
 A topic inside AniQuiz, not its own game: finish a famous line (multiple choice only, since
-translations differ), say who says it, or name the show. A hand-curated list of 290 sourced lines,
+translations differ), say who says it, or name the show. A hand-curated list of 325 sourced lines,
 `src/games/aniquiz/famousLines.js`, anime lines only, spoilers allowed, filtered to the table's shows like every
 other topic. Notes in src/games/aniquiz/CLAUDE.md. Growing the list is the obvious next step:
 every entry needs a certain wording and speaker, and three decoys that don't mean the same.

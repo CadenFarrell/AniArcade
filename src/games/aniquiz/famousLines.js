@@ -32,7 +32,7 @@
 //   user's call — coverage matters more than a perfect source for every
 //   show: when sources disagree, the most credible one's wording goes in, and
 //   a line only fan quote sites carry goes in with the wording fans use. The
-//   batches added that way are marked in the git history ("fifth" and "sixth
+//   batches added that way are marked in the git history ("fifth" to "seventh
 //   batch"); those are the lines to revisit if a subtitle file ever settles
 //   the exact words.
 // - **Translations differ; the blank stays meaningful.** Sub and dub word
@@ -1055,6 +1055,14 @@ export const FAMOUS_LINES = [
     decoys: ['strength', 'order', 'life'],
     fame: 2,
   },
+  {
+    show: 'Kill la Kill',
+    by: 'Ryuuko Matoi',
+    aka: ['Ryuko Matoi', 'Ryuko'],
+    line: 'I’ll take my own path [no matter what anyone else says].',
+    decoys: ['and wear what I want', 'till I find my father’s killer', 'even if it kills me'],
+    fame: 2,
+  },
 
   // ── Bleach ──
   {
@@ -1237,6 +1245,14 @@ export const FAMOUS_LINES = [
     decoys: ['one true friend', 'a thousand friends', 'it through a whole conversation'],
     fame: 1,
   },
+  {
+    show: 'Komi Can’t Communicate',
+    by: 'Hitohito Tadano',
+    aka: ['Tadano'],
+    line: 'Okay, then, I’ll be your first friend. And [I’ll help you get 99 more].',
+    decoys: ['I won’t tell anyone', 'I’ll talk for you', 'I’ll sit next to you'],
+    fame: 1,
+  },
 
   // ── Hyouka ──
   {
@@ -1264,6 +1280,14 @@ export const FAMOUS_LINES = [
     line: 'Youth is a lie. [It is evil].',
     decoys: ['It is a game', 'It is a crime', 'It is wasted on the young'],
     fame: 2,
+  },
+  {
+    show: 'My Teen Romantic Comedy SNAFU',
+    by: 'Hachiman Hikigaya',
+    aka: ['Hachiman', 'Hikigaya'],
+    line: 'I want something [genuine].',
+    decoys: ['simple', 'quiet', 'to be left alone'],
+    fame: 1,
   },
 
   // ── The Melancholy of Haruhi Suzumiya ──
@@ -1845,6 +1869,14 @@ export const FAMOUS_LINES = [
     decoys: ['a doll', 'a transfer student', 'your classmate'],
     fame: 2,
   },
+  {
+    show: 'Another',
+    by: 'Mei Misaki',
+    aka: ['Mei'],
+    line: '...Mei. [Mei Misaki].',
+    decoys: ['Mei Akazawa', 'Mei Mochizuki', 'Mei Sakaki'],
+    fame: 2,
+  },
 
   // ── Darker than Black ──
   {
@@ -1873,6 +1905,13 @@ export const FAMOUS_LINES = [
     decoys: ['said', 'asked for', 'believes'],
     fame: 1,
   },
+  {
+    show: 'The Seven Deadly Sins',
+    by: 'Meliodas',
+    line: 'I will get stronger for [what I must protect now].',
+    decoys: ['the Holy Knights', 'my own sake', 'the next fight'],
+    fame: 2,
+  },
 
   // ── Akame ga Kill! ──
   {
@@ -1897,6 +1936,14 @@ export const FAMOUS_LINES = [
     aka: ['Hodaka'],
     line: 'I want you more than [any blue sky]!',
     decoys: ['the sun itself', 'this whole city', 'any summer'],
+    fame: 2,
+  },
+  {
+    show: 'Weathering With You',
+    by: 'Hodaka Morishima',
+    aka: ['Hodaka'],
+    line: 'The weather can stay [crazy]!',
+    decoys: ['cold', 'this way', 'gray'],
     fame: 2,
   },
 
@@ -1926,6 +1973,14 @@ export const FAMOUS_LINES = [
     line: 'The only thing humans are equal in is [death].',
     decoys: ['fear', 'sin', 'loneliness'],
     fame: 1,
+  },
+  {
+    show: 'Monster',
+    by: 'Johan Liebert',
+    aka: ['Johan'],
+    line: 'Hatred is born when [people gather together].',
+    decoys: ['a name is lost', 'the strong rule', 'love is denied'],
+    fame: 2,
   },
 
   // ── Sword Art Online ──
@@ -2347,6 +2402,14 @@ export const FAMOUS_LINES = [
     decoys: ['biggest waste of study time', 'most expensive habit there is', 'least logical thing a student can do'],
     fame: 2,
   },
+  {
+    show: 'The Quintessential Quintuplets',
+    by: 'Itsuki Nakano',
+    aka: ['Itsuki'],
+    line: 'Please take [responsibility].',
+    decoys: ['a break', 'my hand', 'notes'],
+    fame: 2,
+  },
 
   // ── Bungo Stray Dogs ──
   {
@@ -2583,5 +2646,265 @@ export const FAMOUS_LINES = [
     line: 'Stay up until [you’re satisfied with your day], kid.',
     decoys: ['the sun comes up', 'you find a vampire', 'you can’t stand it'],
     fame: 1,
+  },
+
+  // ── K-ON! ──
+  {
+    show: 'K-ON!',
+    by: 'Yui Hirasawa',
+    aka: ['Yui'],
+    line: '[Fun things] are fun.',
+    decoys: ['Cute things', 'Sweet things', 'Loud things'],
+    fame: 1,
+  },
+
+  // ── Welcome to the N-H-K ──
+  {
+    show: 'Welcome to the N-H-K',
+    by: 'Tatsuhiro Satou',
+    aka: ['Satou', 'Satou Tatsuhiro', 'Tatsuhiro Sato'],
+    line: 'It’s [a conspiracy] of the NHK!',
+    decoys: ['the fault', 'a program', 'the secret'],
+    fame: 1,
+  },
+
+  // ── Danganronpa: The Animation ──
+  {
+    show: 'Danganronpa: The Animation',
+    by: 'Monokuma',
+    line: '[Upupupu]...!',
+    decoys: ['Muhahaha', 'Nyahaha', 'Kukuku'],
+    fame: 1,
+  },
+
+  // ── Yuri!!! on ICE ──
+  {
+    show: 'Yuri!!! on ICE',
+    by: 'Victor Nikiforov',
+    aka: ['Victor', 'Viktor Nikiforov', 'Viktor'],
+    line: 'I’m not going to go easy on you, though. [That’s just how I show my love].',
+    decoys: ['That’s what a coach is for', 'You’re my student now', 'Gold is all that counts'],
+    fame: 2,
+  },
+
+  // ── Delicious in Dungeon ──
+  {
+    show: 'Delicious in Dungeon',
+    by: 'Marcille Donato',
+    aka: ['Marcille'],
+    line: 'I’m sick and tired of [eating monsters]!',
+    decoys: ['this dungeon', 'Laios’s plans', 'walking'],
+    fame: 1,
+  },
+
+  // ── SAKAMOTO DAYS ──
+  {
+    show: 'SAKAMOTO DAYS',
+    line: '[No killing]. That’s the rule of the Sakamoto household.',
+    decoys: ['No lying', 'No gambling', 'No sweets'],
+    fame: 1,
+  },
+
+  // ── Lycoris Recoil ──
+  {
+    show: 'Lycoris Recoil',
+    by: 'Chisato Nishikigi',
+    aka: ['Chisato'],
+    line: 'Prioritize [what you want to do]!',
+    decoys: ['the mission', 'the café', 'staying alive'],
+    fame: 1,
+  },
+
+  // ── Perfect Blue ──
+  {
+    show: 'Perfect Blue',
+    by: 'Mima Kirigoe',
+    aka: ['Mima'],
+    line: 'Excuse me. [Who are you]?',
+    decoys: ['Where am I', 'Is this real', 'What day is it'],
+    fame: 1,
+  },
+
+  // ── Cells at Work! ──
+  {
+    show: 'Cells at Work!',
+    by: 'Platelet',
+    line: '[Anone], anone!',
+    decoys: ['Ano', 'Nee', 'Hai'],
+    fame: 1,
+  },
+
+  // ── Beyond the Boundary ──
+  {
+    show: 'Beyond the Boundary',
+    by: 'Mirai Kuriyama',
+    aka: ['Mirai'],
+    line: 'It’s because everyone is alone, senpai. Everyone is [all alone].',
+    decoys: ['a monster', 'a stranger', 'afraid'],
+    fame: 2,
+  },
+
+  // ── Angels of Death ──
+  {
+    show: 'Angels of Death',
+    by: 'Rachel Gardner',
+    aka: ['Rachel', 'Ray'],
+    line: 'Please... [kill me].',
+    decoys: ['save me', 'forgive me', 'leave me'],
+    fame: 1,
+  },
+
+  // ── Toilet-bound Hanako-kun ──
+  {
+    show: 'Toilet-bound Hanako-kun',
+    line: 'Hanako-san, Hanako-san, [are you there]?',
+    decoys: ['grant my wish', 'come out and play', 'are you watching'],
+    fame: 1,
+  },
+
+  // ── Maid-Sama! ──
+  {
+    show: 'Maid-Sama!',
+    by: 'Misaki Ayuzawa',
+    aka: ['Misaki'],
+    line: 'Usui, you [perverted outer space alien]!',
+    decoys: ['stuck-up rich boy', 'lazy good-for-nothing', 'shameless stalker'],
+    fame: 1,
+  },
+
+  // ── High School DxD ──
+  {
+    show: 'High School DxD',
+    by: 'Issei Hyoudou',
+    aka: ['Issei', 'Issei Hyodo'],
+    line: 'I’m going to become [the Harem King]!',
+    decoys: ['the Red Dragon Emperor', 'a High-Class Devil', 'Rias’s knight'],
+    fame: 1,
+  },
+
+  // ── Yona of the Dawn ──
+  {
+    show: 'Yona of the Dawn',
+    by: 'Yona',
+    line: 'Drawing a bow means taking and losing lives. My father hated pain. But, Father, if I do not take lives, [I cannot live].',
+    decoys: ['I cannot protect them', 'I am no princess', 'they will take mine'],
+    fame: 2,
+  },
+
+  // ── Magi: The Labyrinth of Magic ──
+  {
+    show: 'Magi: The Labyrinth of Magic',
+    by: 'Aladdin',
+    line: 'If you keep lying like that, no one, not even yourself, [will believe you anymore].',
+    decoys: ['can save you', 'will remember who you were', 'will follow you'],
+    fame: 2,
+  },
+
+  // ── March comes in like a lion ──
+  {
+    show: 'March comes in like a lion',
+    by: 'Rei Kiriyama',
+    aka: ['Rei'],
+    line: 'I don’t want to [lose].',
+    decoys: ['win', 'play', 'go home'],
+    fame: 2,
+  },
+
+  // ── Monthly Girls' Nozaki-kun ──
+  {
+    show: 'Monthly Girls\' Nozaki-kun',
+    by: 'Chiyo Sakura',
+    aka: ['Chiyo', 'Sakura'],
+    line: 'I’m your [fan]!',
+    decoys: ['friend', 'classmate', 'assistant'],
+    fame: 1,
+  },
+
+  // ── Guilty Crown ──
+  {
+    show: 'Guilty Crown',
+    by: 'Shuu Ouma',
+    aka: ['Shu Ouma', 'Shu'],
+    line: 'The right to use my friends as a weapon, that is [the sinful crown I shall adorn].',
+    decoys: ['the power of the King', 'the Void I was given', 'what makes me a king'],
+    fame: 2,
+  },
+
+  // ── The Ancient Magus' Bride ──
+  {
+    show: 'The Ancient Magus\' Bride',
+    by: 'Elias Ainsworth',
+    aka: ['Elias'],
+    line: 'If you were to disappear, [life without you would be dreadful].',
+    decoys: ['I would find you', 'the house would be quiet', 'I would have no apprentice'],
+    fame: 2,
+  },
+
+  // ── Log Horizon ──
+  {
+    show: 'Log Horizon',
+    by: 'Shiroe',
+    line: 'Being strong on your own [is meaningless].',
+    decoys: ['is lonely', 'is the goal', 'wins nothing'],
+    fame: 2,
+  },
+
+  // ── SK8 the Infinity ──
+  {
+    show: 'SK8 the Infinity',
+    by: 'Reki Kyan',
+    aka: ['Reki'],
+    line: 'No limits, only possibility. [Skating is infinite].',
+    decoys: ['S is waiting', 'Skating is freedom', 'Let’s ride'],
+    fame: 1,
+  },
+
+  // ── Blue Spring Ride ──
+  {
+    show: 'Blue Spring Ride',
+    by: 'Shuuko Murao',
+    aka: ['Shuuko', 'Murao'],
+    line: 'The feeling of not wanting to lose, everyone has it. If you find it unfair, [you’ll have to work harder yourself].',
+    decoys: ['you’ll have to let go', 'it isn’t love', 'you’ve already lost'],
+    fame: 2,
+  },
+
+  // ── Kiznaiver ──
+  {
+    show: 'Kiznaiver',
+    by: 'Katsuhira Agata',
+    aka: ['Katsuhira'],
+    line: 'I’m not perfect, I hurt people, but [when I say sorry I mean it].',
+    decoys: ['I can’t feel it', 'I’ll share the pain', 'I never mean to'],
+    fame: 2,
+  },
+
+  // ── The Case Study of Vanitas ──
+  {
+    show: 'The Case Study of Vanitas',
+    by: 'Vanitas',
+    line: 'I’ll do as I please, use methods I choose, and, no matter what you people want, [I will save you without fail]!',
+    decoys: ['I will find the Book', 'I will have my revenge', 'I will never be your friend'],
+    fame: 2,
+  },
+
+  // ── The Pet Girl of Sakurasou ──
+  {
+    show: 'The Pet Girl of Sakurasou',
+    by: 'Mashiro Shiina',
+    aka: ['Mashiro'],
+    line: 'It’s more interesting when [the future’s uncertain].',
+    decoys: ['Sorata is watching', 'there’s Baumkuchen', 'nobody knows me'],
+    fame: 2,
+  },
+
+  // ── Golden Time ──
+  {
+    show: 'Golden Time',
+    by: 'Kouko Kaga',
+    aka: ['Kouko', 'Koko Kaga', 'Koko'],
+    line: 'I don’t want to waste a single second or meter. From your first step and second of the day, [I want to be with you].',
+    decoys: ['I want you to remember me', 'I’ll be watching', 'you belong to me'],
+    fame: 2,
   },
 ];
