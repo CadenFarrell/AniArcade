@@ -225,6 +225,30 @@ describe('hub', () => {
     renderArcade(<HubScreen />);
     expect(tilePortraits().filter(Boolean)).toHaveLength(4);
   });
+
+  // useUniformCaptions.js: every caption box takes the tallest one's height
+  // from `--caption-h` on the board. The board is unmounted behind the title
+  // screen and the record, and comes back with the same draw — which once left
+  // it unmeasured, every box at its own height. jsdom has no layout, so each
+  // line is given a height by its length.
+  it('evens out the caption boxes on every board that mounts, not only a new draw', async () => {
+    vi.spyOn(HTMLElement.prototype, 'offsetHeight', 'get')
+      .mockImplementation(function height() { return this.textContent.length; });
+    seedProfiles([withPortraits('Caden', 14)]);
+    const user = userEvent.setup();
+    renderArcade(<HubScreen />, { showTitle: true });
+    const boardHeight = () =>
+      tileFor(games[0]).parentElement.style.getPropertyValue('--caption-h');
+
+    await user.click(screen.getByRole('button', { name: /press start/i }));
+    await findTile(games[0]);
+    expect(boardHeight()).toMatch(/^[1-9]\d*px$/);
+
+    await user.click(screen.getByRole('button', { name: 'Your record' }));
+    await user.click(await screen.findByRole('button', { name: '← Hub' }));
+    await findTile(games[0]);
+    expect(boardHeight()).toMatch(/^[1-9]\d*px$/);
+  });
 });
 
 describe.each(games.map((g) => [g.title, g]))('%s', (_title, game) => {
