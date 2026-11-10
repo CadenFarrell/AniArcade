@@ -9,9 +9,15 @@
 //
 // The rules every entry follows, because each one is a way a clue would lie:
 //
-// - **No spoilers.** No deaths, betrayals, twist reveals or last words — a
-//   board is played by people partway through things. A line from a scene
-//   that IS the premise (episode one, an opening narration) is fine.
+// - **Spoilers are fair game** (changed 2026-11-10, the user's call: a table
+//   is assumed to have finished what it watched). Deaths, reveals and last
+//   words are in — Whitebeard's "The One Piece is real!", Itachi's "Forgive
+//   me, Sasuke". This was "no spoilers" until then; nothing here relies on it.
+// - **Only lines spoken in an anime** (a series or a film). A line that is
+//   only in the manga or light novel — not animated yet, or cut — stays out,
+//   however famous: the topic is about what a viewer heard. Kayaba's "this may
+//   be a game, but it is not something you play" left on that rule (it is the
+//   light novel's epigraph).
 // - **Only lines the fandom actually quotes,** in the English most people
 //   know (the widest-known sub or dub wording). Romaji only where fans quote
 //   the Japanese itself ("Yare yare daze", "Ki ni narimasu").
@@ -186,6 +192,14 @@ export const FAMOUS_LINES = [
     decoys: ['for a moment', 'at your enemy', 'to yourself'],
     fame: 2,
   },
+  {
+    show: 'Naruto',
+    by: 'Itachi Uchiha',
+    aka: ['Itachi'],
+    line: 'Forgive me, Sasuke. [This is the last time].',
+    decoys: ['I had no choice', 'Live on', 'I was always watching'],
+    fame: 1,
+  },
 
   // ── ONE PIECE ──
   {
@@ -267,6 +281,14 @@ export const FAMOUS_LINES = [
     decoys: ['his heart stops', 'his dream ends', 'he stops fighting'],
     fame: 1,
   },
+  {
+    show: 'ONE PIECE',
+    by: 'Edward Newgate',
+    aka: ['Whitebeard'],
+    line: 'The One Piece... [is real]!',
+    decoys: ['is a lie', 'is mine', 'is gone'],
+    fame: 1,
+  },
 
   // ── Attack on Titan ──
   {
@@ -304,6 +326,22 @@ export const FAMOUS_LINES = [
     show: 'Attack on Titan',
     line: 'Dedicate your [hearts]!',
     decoys: ['swords', 'lives', 'wings'],
+    fame: 1,
+  },
+  {
+    show: 'Attack on Titan',
+    by: 'Reiner Braun',
+    aka: ['Reiner'],
+    line: 'My Titan is the [Armored] Titan, and his is the Colossal Titan.',
+    decoys: ['Female', 'Beast', 'Cart'],
+    fame: 1,
+  },
+  {
+    show: 'Attack on Titan',
+    by: 'Levi',
+    aka: ['Levi Ackerman'],
+    line: 'Give up on your dreams and [die].',
+    decoys: ['live', 'rest', 'run'],
     fame: 1,
   },
 
@@ -348,6 +386,14 @@ export const FAMOUS_LINES = [
     decoys: ['Did you sleep well', 'The train is mine', 'Breakfast is served'],
     fame: 2,
   },
+  {
+    show: 'Demon Slayer: Kimetsu no Yaiba',
+    by: 'Kyoujurou Rengoku',
+    aka: ['Rengoku', 'Kyojuro Rengoku'],
+    line: 'No matter how weak or unworthy you feel... [keep your heart burning], grit your teeth and move forward.',
+    decoys: ['protect the weak', 'sharpen your blade', 'never look back'],
+    fame: 1,
+  },
 
   // ── JUJUTSU KAISEN ──
   {
@@ -381,6 +427,14 @@ export const FAMOUS_LINES = [
     aka: ['Satoru Gojo', 'Gojo', 'Gojo Satoru'],
     line: 'Don’t worry. [I’m the strongest].',
     decoys: ['It’s only a curse', 'I never miss', 'You’re not dead yet'],
+    fame: 1,
+  },
+  {
+    show: 'JUJUTSU KAISEN',
+    by: 'Sukuna',
+    aka: ['Ryomen Sukuna'],
+    line: 'Be proud. [You are strong].',
+    decoys: ['You are weak', 'You are mine', 'You are forgiven'],
     fame: 1,
   },
 
@@ -441,6 +495,14 @@ export const FAMOUS_LINES = [
     decoys: ['I love sweets', 'I never sleep', 'I’m never wrong'],
     fame: 2,
   },
+  {
+    show: 'Death Note',
+    by: 'Light Yagami',
+    aka: ['Light'],
+    line: 'That’s right, [I am Kira].',
+    decoys: ['I am L', 'I’m innocent', 'I am the second L'],
+    fame: 1,
+  },
 
   // ── My Hero Academia ──
   {
@@ -495,6 +557,21 @@ export const FAMOUS_LINES = [
     aka: ['Ging'],
     line: 'You should enjoy the little detours to the fullest. Because that’s where you’ll find [the things more important than what you want].',
     decoys: ['the treasure you were really after', 'the friends who will carry you', 'the strength you didn’t know you had'],
+    fame: 2,
+  },
+  {
+    show: 'Hunter x Hunter (2011)',
+    by: 'Isaac Netero',
+    aka: ['Netero'],
+    line: 'You know nothing of [the bottomless malice within the human heart].',
+    decoys: ['the true strength of Nen', 'the weight of a prayer', 'the gratitude in these palms'],
+    fame: 2,
+  },
+  {
+    show: 'Hunter x Hunter (2011)',
+    by: 'Meruem',
+    line: 'Will you say [my name] one last time?',
+    decoys: ['goodbye', 'you’ll stay', 'that you forgive me'],
     fame: 2,
   },
 
@@ -583,17 +660,6 @@ export const FAMOUS_LINES = [
     show: 'Fullmetal Alchemist: Brotherhood',
     line: 'Nothing is [impossible], alright?',
     decoys: ['free', 'forever', 'mine'],
-    fame: 2,
-  },
-
-  // ── Sword Art Online ──
-  {
-    show: 'Sword Art Online',
-    by: 'Akihiko Kayaba',
-    aka: ['Kayaba'],
-    line: 'This may be a game, but it is [not something you play].',
-    alt: ['not meant to be played', 'not a plaything'],
-    decoys: ['the only world you have left', 'a fight to the death', 'no longer a game'],
     fame: 2,
   },
 
@@ -1026,6 +1092,14 @@ export const FAMOUS_LINES = [
     aka: ['Ichigo'],
     line: 'Become strong not just for your own sake, but [for your friends].',
     decoys: ['for your pride', 'for Soul Society', 'for the ones who came before'],
+    fame: 2,
+  },
+  {
+    show: 'Bleach',
+    by: 'Sousuke Aizen',
+    aka: ['Aizen', 'Sosuke Aizen'],
+    line: 'Admiration is the state [furthest away from understanding].',
+    decoys: ['closest to worship', 'of a fool', 'every captain envies'],
     fame: 2,
   },
 
@@ -1698,5 +1772,71 @@ export const FAMOUS_LINES = [
     line: 'Contractors are liars. [I’m no different].',
     decoys: ['They pay in blood', 'Trust no one', 'So are humans'],
     fame: 2,
+  },
+
+  // ── OSHI NO KO ──
+  {
+    show: 'OSHI NO KO',
+    by: 'Ai Hoshino',
+    aka: ['Ai'],
+    line: 'Idols sparkle through the magic of lies. Lies are [the most exquisite love]!',
+    decoys: ['the only truth', 'an idol’s armor', 'what fans want'],
+    fame: 1,
+  },
+
+  // ── The Seven Deadly Sins ──
+  {
+    show: 'The Seven Deadly Sins',
+    by: 'Escanor',
+    line: 'Who [decided] that?',
+    decoys: ['said', 'asked for', 'believes'],
+    fame: 1,
+  },
+
+  // ── Akame ga Kill! ──
+  {
+    show: 'Akame ga Kill!',
+    by: 'Esdeath',
+    line: 'The weak are destined to lie beneath [the boots of the strong].',
+    decoys: ['the feet of the Empire', 'the snows of the north', 'the shadow of the throne'],
+    fame: 2,
+  },
+
+  // ── Weathering With You ──
+  {
+    show: 'Weathering With You',
+    by: 'Hodaka Morishima',
+    aka: ['Hodaka'],
+    line: 'I want you more than [any blue sky]!',
+    decoys: ['the sun itself', 'this whole city', 'any summer'],
+    fame: 2,
+  },
+
+  // ── I Want to Eat Your Pancreas ──
+  {
+    show: 'I Want to Eat Your Pancreas',
+    line: 'I want to eat [your pancreas].',
+    decoys: ['your heart', 'your cooking', 'with you tonight'],
+    fame: 1,
+  },
+
+  // ── Classroom of the Elite ──
+  {
+    show: 'Classroom of the Elite',
+    by: 'Kiyotaka Ayanokouji',
+    aka: ['Ayanokouji', 'Ayanokoji', 'Kiyotaka Ayanokoji'],
+    line: 'I’ve never once thought of you as an ally. All people are nothing but [tools].',
+    decoys: ['strangers', 'obstacles', 'liars'],
+    fame: 1,
+  },
+
+  // ── Monster ──
+  {
+    show: 'Monster',
+    by: 'Johan Liebert',
+    aka: ['Johan'],
+    line: 'The only thing humans are equal in is [death].',
+    decoys: ['fear', 'sin', 'loneliness'],
+    fame: 1,
   },
 ];

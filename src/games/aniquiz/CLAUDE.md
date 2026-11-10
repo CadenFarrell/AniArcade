@@ -92,16 +92,18 @@ from either would still need checking, so they save nothing. The checking source
 Wikiquote's anime pages (episode-cited; `Category:Anime` lists which exist — most newer shows
 have none), then two independent quote sites agreeing. Fandom wikis refuse automated reads
 (402), and their BreezeWiki mirror sits behind bot protection. So `famousLines.js` is a
-hand-curated list (191 lines, 79 shows),
+hand-curated list (207 lines, 85 shows),
 bundled in AniQuiz's lazy chunk rather than shipped beside the pack: it is small, only this game
-parses it, and a correction is an ordinary deploy. The file header holds its rules — no
-spoilers, only lines whose wording and speaker are certain, English except where fans quote the
-Japanese — and `famousLines.test.js` holds every entry to them against the real pack. Every
+parses it, and a correction is an ordinary deploy. The file header holds its rules — spoilers
+allowed (since 2026-11-10: the user's call, a table is assumed to have finished the anime; it was
+"no spoilers" before), only lines spoken in an anime (never manga- or novel-only), only lines
+whose wording and speaker are certain, English except where fans quote the Japanese — and `famousLines.test.js` holds every entry to them against the real pack. Every
 line was checked (2026-11-09) against Wikiquote's episode-cited pages or several independent
 quote sources: close matches were corrected to the sourced wording ("Unlimited Void", not
 "Infinite Void"), lines no source has were removed ("Anya likes peanuts" is a fan meme), a
 speaker the sources disagree on was dropped rather than guessed ("What's 1000 minus 7?" is
-both Yamori's and Kaneki's), and lines from a death scene went too (Ai's "lies are love").
+both Yamori's and Kaneki's). Lines left out as spoilers then (Ai's "lies are love", Rengoku's
+"keep your heart burning") came back when spoilers were allowed.
 Frieza's "this isn't even my final form" never went in: he never says it.
 
 **Close wordings get leeway, never a slash** (2026-11-09, at the user's request: they know it
