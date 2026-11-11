@@ -925,6 +925,13 @@ export const FAMOUS_LINES = [
     decoys: ['always on a journey', 'to leave something behind', 'kind to everyone'],
     fame: 2,
   },
+  {
+    show: 'Frieren: Beyond Journey’s End',
+    by: 'Himmel',
+    line: 'You showed me a spell to create [a field of flowers].',
+    decoys: ['a sea of stars', 'a rain of light', 'a ring of fire'],
+    fame: 2,
+  },
 
   // ── JoJo's Bizarre Adventure ──
   {
@@ -1243,6 +1250,14 @@ export const FAMOUS_LINES = [
     line: 'We have no need for the past. All we need are [the present and the future].',
     decoys: ['revenge and nothing more', 'Sebastian and the contract', 'the Queen’s orders'],
     fame: 1,
+  },
+  {
+    show: 'Black Butler',
+    by: 'Sebastian Michaelis',
+    aka: ['Sebastian'],
+    line: 'Yes, [my lord].',
+    decoys: ['my lady', 'Your Majesty', 'master'],
+    fame: 2,
   },
 
   // ── The Eminence in Shadow ──
@@ -1866,6 +1881,13 @@ export const FAMOUS_LINES = [
     aka: ['Korosensei', 'Koro sensei'],
     line: 'An assassin who neglects to sharpen his blade [is no assassin at all].',
     decoys: ['will never graduate', 'deserves to fail', 'is just a student'],
+    fame: 2,
+  },
+  {
+    show: 'Assassination Classroom',
+    by: 'Koro-sensei',
+    line: 'Otherwise... you’ll never be able to kill me at my max speed of [Mach 20].',
+    decoys: ['Mach 10', 'Mach 5', 'the speed of light'],
     fame: 2,
   },
 
@@ -2665,6 +2687,7 @@ export const FAMOUS_LINES = [
     by: 'Ken Takakura',
     aka: ['Okarun', 'Takakura'],
     line: 'Give me back my [kintama]!',
+    alt: ['balls'],
     decoys: ['glasses', 'soul', 'phone'],
     fame: 1,
   },
@@ -2733,8 +2756,8 @@ export const FAMOUS_LINES = [
     show: 'Tower of God',
     by: 'Aguero Agnis Khun',
     aka: ['Khun Aguero Agnis', 'Khun'],
-    line: 'I will not be ruled. I make my own rules. [That is the mindset of a ruler].',
-    decoys: ['That is how you climb the Tower', 'That is what a Khun does', 'That is all I need'],
+    line: 'What’s more important is not to be controlled by their rules. You impose [your own rules].',
+    decoys: ['your own test', 'your own price', 'your own team'],
     fame: 2,
   },
 
@@ -2839,7 +2862,8 @@ export const FAMOUS_LINES = [
     show: 'Black Lagoon',
     by: 'Revy',
     aka: ['Rebecca Lee', 'Two Hands'],
-    line: 'You’ve got to enjoy life, or else [you’ll end up wasting it].',
+    line: 'Don’t cry, fool. You’ve gotta enjoy life, or [you’ll let it waste away].',
+    alt: ['you’ll end up wasting it'],
     decoys: ['someone takes it from you', 'you’re already dead', 'the bullets win'],
     fame: 2,
   },
@@ -2970,16 +2994,9 @@ export const FAMOUS_LINES = [
   // ── Fruits Basket (2019) ──
   {
     show: 'Fruits Basket (2019)',
-    line: 'When the snow melts, what does it become? [It becomes spring].',
+    line: 'What do you think comes of snow when it melts? [Spring comes]!',
+    alt: ['It becomes spring'],
     decoys: ['It becomes water', 'It becomes a river', 'It becomes the sea'],
-    fame: 1,
-  },
-  {
-    show: 'Fruits Basket (2019)',
-    by: 'Tooru Honda',
-    aka: ['Tohru Honda', 'Tohru'],
-    line: 'Sometimes living can be hard! But it’s only because we’re alive that we can [make each other laugh, cry, and be happy]!',
-    decoys: ['find someone to love', 'break the curse', 'eat together'],
     fame: 1,
   },
 
@@ -3073,8 +3090,8 @@ export const FAMOUS_LINES = [
     show: 'Lycoris Recoil',
     by: 'Chisato Nishikigi',
     aka: ['Chisato'],
-    line: 'Prioritize [what you want to do]!',
-    decoys: ['the mission', 'the café', 'staying alive'],
+    line: 'What I want to do always gets [top priority]!',
+    decoys: ['done last', 'turned into a mission', 'checked with Mika first'],
     fame: 1,
   },
 
@@ -3100,8 +3117,14 @@ export const FAMOUS_LINES = [
     show: 'Cells at Work!',
     by: 'Hakkekkyuu U-1146',
     aka: ['White Blood Cell', 'U-1146', 'Neutrophil'],
-    line: '[Die], you filthy germ!',
+    line: '[Die], germ!',
     decoys: ['Halt', 'Begone', 'Surrender'],
+    fame: 2,
+  },
+  {
+    show: 'Cells at Work!',
+    line: 'Inside the human body... roughly [37.2 trillion] cells are working hard every day.',
+    decoys: ['60 trillion', '100 billion', '3.7 million'],
     fame: 2,
   },
 
@@ -3221,15 +3244,8 @@ export const FAMOUS_LINES = [
     show: 'The Ancient Magus\' Bride',
     by: 'Elias Ainsworth',
     aka: ['Elias'],
-    line: 'If you were to disappear, [life without you would be dreadful].',
-    decoys: ['I would find you', 'the house would be quiet', 'I would have no apprentice'],
-    fame: 2,
-  },
-  {
-    show: 'The Ancient Magus\' Bride',
-    by: 'Elias Ainsworth',
-    aka: ['Elias'],
-    line: 'Your past doesn’t change the fact that [you’re here now].',
+    line: 'However your past or upbringing may have been, it makes no difference regarding the fact that [you’re here].',
+    alt: ['you’re here now'],
     decoys: ['you’re a Sleigh Beggy', 'you belong to me', 'you were sold'],
     fame: 1,
   },
@@ -3291,14 +3307,15 @@ export const FAMOUS_LINES = [
   {
     show: 'The Case Study of Vanitas',
     by: 'Vanitas',
-    line: 'I’ll do as I please, use methods I choose, and, no matter what you people want, [I will save you without fail]!',
-    decoys: ['I will find the Book', 'I will have my revenge', 'I will never be your friend'],
+    line: 'I will do as I please. I will use the methods I choose. It matters not what you people want! [I will save the vampires].',
+    decoys: ['I will find the Book of Vanitas', 'I will have my revenge', 'I will end the curse-bearers'],
     fame: 2,
   },
   {
     show: 'The Case Study of Vanitas',
     by: 'Vanitas',
-    line: 'It takes [one monster] to fight another.',
+    line: 'As one might expect, it takes [one monster] to battle another!',
+    alt: ['a monster'],
     decoys: ['a vampire', 'one liar', 'a doctor'],
     fame: 1,
   },
@@ -3360,6 +3377,14 @@ export const FAMOUS_LINES = [
     decoys: ['cute', 'perfect', 'delicate'],
     fame: 1,
   },
+  {
+    show: 'My Dress-Up Darling',
+    by: 'Marin Kitagawa',
+    aka: ['Marin'],
+    line: 'You need to speak up about how you’re feeling, [for your own sake].',
+    decoys: ['before it’s too late', 'even if it’s weird', 'no matter who’s listening'],
+    fame: 1,
+  },
 
   // ── Food Wars! ──
   {
@@ -3367,7 +3392,7 @@ export const FAMOUS_LINES = [
     by: 'Souma Yukihira',
     aka: ['Soma Yukihira', 'Soma', 'Souma'],
     line: '[Glad you enjoyed it]!',
-    alt: ['It wasn’t much', 'Osomatsu'],
+    alt: ['Glad you liked it', 'It wasn’t much', 'Osomatsu'],
     decoys: ['Bon appétit', 'Eat up', 'Itadakimasu'],
     fame: 2,
   },
@@ -3480,7 +3505,7 @@ export const FAMOUS_LINES = [
     show: 'The Misfit of Demon King Academy: History’s Strongest Demon King Reincarnates and Goes to School with His Descendants',
     by: 'Anos Voldigoad',
     aka: ['Anos'],
-    line: 'Save those tears for later. Right now, [do right by your mother].',
+    line: 'Save those tears for later. If you want to [do right by your mother], I’ll create an opportunity for you now.',
     decoys: ['finish this fight', 'stand up and walk', 'bow to the Demon King'],
     fame: 1,
   },
@@ -3506,9 +3531,9 @@ export const FAMOUS_LINES = [
     show: '86 EIGHTY-SIX',
     by: 'Shinei Nouzen',
     aka: ['Shin', 'Undertaker'],
-    line: 'I was the last one left back then, and that’s how it’s always been till now. That’s why [I have to take them with me].',
-    decoys: ['I can hear the Legion', 'I’m called the Reaper', 'I don’t need a Handler'],
-    fame: 1,
+    line: 'I remember them. Because [I have to take them with me].',
+    decoys: ['I can hear their voices', 'I promised I would', 'nobody else will'],
+    fame: 2,
   },
 
   // ── Is It Wrong to Try to Pick Up Girls in a Dungeon? ──
