@@ -713,6 +713,14 @@ export const FAMOUS_LINES = [
     decoys: ['never stop running', 'protect the heart', 'stay warm'],
     fame: 2,
   },
+  {
+    show: 'HAIKYU!!',
+    by: 'Shouyou Hinata',
+    aka: ['Hinata', 'Shoyo Hinata'],
+    line: 'The view from the top... [it’s a view I could never see on my own].',
+    decoys: ['it’s where the Little Giant stood', 'it’s worth every jump', 'it’s mine now'],
+    fame: 2,
+  },
 
   // ── Kaguya-sama: Love is War ──
   {
@@ -729,6 +737,12 @@ export const FAMOUS_LINES = [
     aka: ['Chika'],
     line: 'It’s no fair to have girls’ talk without me! Please leave an issue like that to [Love Detective Chika]!',
     decoys: ['the Student Council', 'President Shirogane', 'Kaguya-san'],
+    fame: 2,
+  },
+  {
+    show: 'Kaguya-sama: Love is War',
+    line: 'Love is war! [The person who falls in love loses]!',
+    decoys: ['The one who confesses wins', 'Only the clever survive', 'Pride comes before the fall'],
     fame: 2,
   },
 
@@ -749,6 +763,14 @@ export const FAMOUS_LINES = [
     alt: ['10 billion percent'],
     decoys: ['a hundred percent', 'a million percent', 'ninety-nine percent'],
     fame: 1,
+  },
+  {
+    show: 'Dr. STONE',
+    by: 'Senkuu Ishigami',
+    aka: ['Senku', 'Senku Ishigami'],
+    line: 'Science is just the name for the steady, [pain-in-the-ass effort] that goes into doing it.',
+    decoys: ['spark of genius', 'ten billion percent', 'leap of faith'],
+    fame: 2,
   },
 
   // ── Violet Evergarden ──
@@ -786,6 +808,14 @@ export const FAMOUS_LINES = [
     line: 'I have [no enemies].',
     decoys: ['nothing left', 'no regrets', 'no home'],
     fame: 1,
+  },
+  {
+    show: 'Vinland Saga',
+    by: 'Thors Snorresson',
+    aka: ['Thors'],
+    line: 'A true warrior [doesn’t need a sword].',
+    decoys: ['never runs from a fight', 'fights for his king', 'is never afraid'],
+    fame: 3,
   },
 
   // ── No Game, No Life ──
@@ -1184,9 +1214,17 @@ export const FAMOUS_LINES = [
     show: 'KONOSUBA -God\'s blessing on this wonderful world!',
     by: 'Kazuma Satou',
     aka: ['Kazuma', 'Kazuma Sato'],
-    line: 'As a true gender equalist, I am a fair man who can deliver [a dropkick] even against a girl.',
-    decoys: ['a lecture', 'an apology', 'a Steal'],
+    line: 'In the name of true gender equality, I will [dropkick] any rotten woman who deserves it!',
+    alt: ['deliver a dropkick to'],
+    decoys: ['steal from', 'spare', 'lecture'],
     fame: 1,
+  },
+  {
+    show: 'KONOSUBA -God\'s blessing on this wonderful world!',
+    by: 'Megumin',
+    line: '[Explosion]!',
+    decoys: ['Inferno', 'Lightning Strike', 'Freeze Gust'],
+    fame: 3,
   },
 
   // ── Black Butler ──
@@ -1396,6 +1434,14 @@ export const FAMOUS_LINES = [
     line: '[Tutturu]~! Mayushii desu!',
     decoys: ['Okarin', 'Nyan nyan', 'El Psy'],
     fame: 1,
+  },
+  {
+    show: 'Steins;Gate',
+    by: 'Rintarou Okabe',
+    aka: ['Okabe', 'Okarin', 'Hououin Kyouma'],
+    line: 'The world only needs [one mad scientist]!',
+    decoys: ['one time machine', 'one lab', 'one lab assistant'],
+    fame: 2,
   },
 
   // ── Kuroko's Basketball ──
@@ -1663,6 +1709,13 @@ export const FAMOUS_LINES = [
     decoys: ['butter', 'honey', 'peanut butter'],
     fame: 1,
   },
+  {
+    show: 'Chainsaw Man',
+    by: 'Power',
+    line: 'Prostrate yourselves, humans! For [I am Power]!',
+    decoys: ['I am the Blood Fiend', 'I am your queen', 'I hunger for blood'],
+    fame: 2,
+  },
 
   // ── Re:ZERO -Starting Life in Another World- ──
   {
@@ -1675,8 +1728,14 @@ export const FAMOUS_LINES = [
   {
     show: 'Re:ZERO -Starting Life in Another World-',
     by: 'Emilia',
-    line: 'A million sorries [is not equal to one thank you].',
-    decoys: ['won’t bring them back', 'is still not enough', 'costs nothing at all'],
+    line: 'It’s more satisfying to hear a single [“thank you”] than a lot of “sorry”s.',
+    decoys: ['“I love you”', '“good job”', '“welcome back”'],
+    fame: 2,
+  },
+  {
+    show: 'Re:ZERO -Starting Life in Another World-',
+    line: 'My brain [trembles]...',
+    decoys: ['burns', 'aches', 'sings'],
     fame: 2,
   },
 
@@ -1695,6 +1754,14 @@ export const FAMOUS_LINES = [
     aka: ['Reigen'],
     line: 'You should never accept money [you feel you haven’t earned].',
     decoys: ['from a spirit', 'from a minor', 'without a receipt'],
+    fame: 2,
+  },
+  {
+    show: 'Mob Psycho 100',
+    by: 'Arataka Reigen',
+    aka: ['Reigen'],
+    line: '[Salt Splash]!',
+    decoys: ['Spirit Punch', 'Holy Water Mist', 'Banishing Kick'],
     fame: 2,
   },
 
@@ -1817,6 +1884,14 @@ export const FAMOUS_LINES = [
     decoys: ['my partner', 'my pilot', 'my prey'],
     fame: 2,
   },
+  {
+    show: 'DARLING in the FRANXX',
+    by: 'Zero Two',
+    aka: ['002'],
+    line: 'Wow, your taste makes my heart race. [The taste of danger].',
+    decoys: ['The taste of honey', 'The taste of a human', 'The taste of my darling'],
+    fame: 2,
+  },
 
   // ── SPY x FAMILY ──
   {
@@ -1831,24 +1906,27 @@ export const FAMOUS_LINES = [
     show: 'SPY x FAMILY',
     by: 'Anya Forger',
     aka: ['Anya'],
-    line: 'A spy... an assassin... [waku waku]!',
-    decoys: ['so scary', 'Anya’s new family', 'peanuts'],
-    fame: 1,
-  },
-  {
-    show: 'SPY x FAMILY',
-    by: 'Loid Forger',
-    aka: ['Loid', 'Twilight'],
-    line: 'Making a world where kids don’t need to cry... [that was the whole reason I became a spy].',
-    decoys: ['that is Operation Strix', 'that is what Westalis wants', 'that is what a father does'],
+    line: 'A spy... An assassin... I’m... [so excited]!',
+    alt: ['waku waku'],
+    decoys: ['so scared', 'so hungry', 'so confused'],
     fame: 2,
   },
   {
     show: 'SPY x FAMILY',
     by: 'Loid Forger',
     aka: ['Loid', 'Twilight'],
-    line: 'In sickness... and in sorrow... no matter what kind of trouble awaits us... [let’s help each other].',
-    decoys: ['let’s keep our secrets', 'I’ll protect this family', 'the mission comes first'],
+    line: 'To create a world where children won’t have to cry... [That’s why I became a spy].',
+    alt: ['that was the whole reason I became a spy'],
+    decoys: ['That’s what Operation Strix is for', 'That’s what Westalis wants', 'That’s what a father does'],
+    fame: 2,
+  },
+  {
+    show: 'SPY x FAMILY',
+    by: 'Loid Forger',
+    aka: ['Loid', 'Twilight'],
+    line: 'Even in sickness, or in sadness... No matter what hardships await us, [let us be there for one another].',
+    alt: ['let’s help each other'],
+    decoys: ['let us keep our secrets', 'I will protect this family', 'the mission comes first'],
     fame: 1,
   },
 
@@ -2065,10 +2143,10 @@ export const FAMOUS_LINES = [
   },
   {
     show: 'Classroom of the Elite',
-    by: 'Suzune Horikita',
-    aka: ['Horikita'],
-    line: 'Being alone is [not synonymous with being lonely].',
-    decoys: ['the price of being superior', 'how I prefer it', 'a sign of strength'],
+    by: 'Kiyotaka Ayanokouji',
+    aka: ['Ayanokouji', 'Ayanokoji'],
+    line: 'In this world, [winning is everything].',
+    decoys: ['talent is everything', 'nobody can be trusted', 'the strong make the rules'],
     fame: 2,
   },
 
@@ -2103,8 +2181,8 @@ export const FAMOUS_LINES = [
     show: 'Sword Art Online',
     by: 'Kazuto Kirigaya',
     aka: ['Kirito'],
-    line: 'If you haven’t changed, that means [you haven’t improved].',
-    decoys: ['you’re still alive', 'you never left the game', 'nobody saved you'],
+    line: '[Starburst Stream]!',
+    decoys: ['Vorpal Strike', 'Sonic Leap', 'Horizontal Square'],
     fame: 3,
   },
 
@@ -2141,6 +2219,14 @@ export const FAMOUS_LINES = [
     aka: ['Sakuta'],
     line: 'Even if the whole world hated me, I could keep living if [that person needed me].',
     decoys: ['Mai-san remembered me', 'Kaede smiled at me', 'nobody could see me'],
+    fame: 2,
+  },
+  {
+    show: 'Rascal Does Not Dream of Bunny Girl Senpai',
+    by: 'Sakuta Azusagawa',
+    aka: ['Sakuta'],
+    line: 'To Mai Sakurajima-senpai, in class 3-1... I’m [in love with you], Sakurajima-senpai!',
+    decoys: ['not going to forget you', 'sorry for everything', 'waiting for you'],
     fame: 2,
   },
 
@@ -2203,8 +2289,8 @@ export const FAMOUS_LINES = [
     show: 'ERASED',
     by: 'Satoru Fujinuma',
     aka: ['Satoru'],
-    line: 'The future is always blank. Only [your willpower] can leave footsteps there.',
-    decoys: ['your memories', 'the people you save', 'a hero'],
+    line: 'I call the phenomenon [“Revival”].',
+    decoys: ['“Rewind”', '“Replay”', '“Return”'],
     fame: 2,
   },
   {
@@ -2214,6 +2300,14 @@ export const FAMOUS_LINES = [
     line: '“Believing” is really [a term of hope of wanting to believe].',
     decoys: ['just another word for giving up', 'something only children can do', 'the same as knowing'],
     fame: 3,
+  },
+  {
+    show: 'ERASED',
+    by: 'Kayo Hinazuki',
+    aka: ['Kayo', 'Hinazuki'],
+    line: '[Are you stupid]?',
+    decoys: ['Are you lost', 'Are you following me', 'Are you okay'],
+    fame: 2,
   },
 
   // ── Your lie in April ──
@@ -2272,14 +2366,6 @@ export const FAMOUS_LINES = [
     line: 'Everyone has a side of them [they don’t want anyone to know about].',
     decoys: ['that only family sees', 'they’re proud of', 'that comes out at night'],
     fame: 2,
-  },
-  {
-    show: 'Horimiya',
-    by: 'Izumi Miyamura',
-    aka: ['Miyamura'],
-    line: 'You can have the bad days so you can [love the good days even more].',
-    decoys: ['learn from them', 'forget them later', 'share them with Hori'],
-    fame: 1,
   },
 
   // ── Noragami ──
@@ -2372,14 +2458,6 @@ export const FAMOUS_LINES = [
     show: 'Tokyo Revengers',
     by: 'Manjirou Sano',
     aka: ['Mikey', 'Manjiro Sano'],
-    line: 'This gang is [nothing without you guys].',
-    decoys: ['my whole world', 'the strongest in Tokyo', 'not for the weak'],
-    fame: 2,
-  },
-  {
-    show: 'Tokyo Revengers',
-    by: 'Manjirou Sano',
-    aka: ['Mikey', 'Manjiro Sano'],
     line: 'Put one finger on my Street Hawk and [I’ll kill you].',
     decoys: ['you’re out of Toman', 'you buy me a new one', 'Draken pays for it'],
     fame: 2,
@@ -2394,11 +2472,9 @@ export const FAMOUS_LINES = [
   },
   {
     show: 'Tokyo Revengers',
-    by: 'Takemichi Hanagaki',
-    aka: ['Takemichi'],
-    line: 'I don’t give up. Even if I die, [I will not give up]!',
-    decoys: ['I’ll save Hinata', 'I’ll go back again', 'Toman will win'],
-    fame: 1,
+    line: 'Please save everyone... Our [crybaby hero].',
+    decoys: ['time leaper', 'Toman captain', 'first friend'],
+    fame: 2,
   },
 
   // ── PSYCHO-PASS ──
@@ -2596,7 +2672,7 @@ export const FAMOUS_LINES = [
   // ── Fire Force ──
   {
     show: 'Fire Force',
-    line: 'The flame is the soul’s breath. The black smoke, the soul’s release. [Latom].',
+    line: 'The flame is the soul’s breath. The black smoke is the soul’s release. [Látom].',
     decoys: ['Ignis', 'Sol', 'Ashes'],
     fame: 2,
   },
@@ -2604,8 +2680,8 @@ export const FAMOUS_LINES = [
     show: 'Fire Force',
     by: 'Shinra Kusakabe',
     aka: ['Shinra'],
-    line: 'I will become a hero. [I’ll make sure no one ever has to go through the same pain I did].',
-    decoys: ['I’ll find out who started the fire', 'I’ll be the strongest Fire Soldier', 'I’ll bring my brother home'],
+    line: 'I swore that I’d become a hero! [I will save everything]!',
+    decoys: ['I will find my brother', 'I will beat Burns', 'I will never run'],
     fame: 2,
   },
 
@@ -3258,30 +3334,30 @@ export const FAMOUS_LINES = [
   // ── Charlotte ──
   {
     show: 'Charlotte',
-    by: 'Nao Tomori',
-    aka: ['Nao'],
-    line: 'I’m not jealous, I’m just territorial. Because when you’re jealous, [you want something that’s not yours].',
-    decoys: ['you’ve already lost', 'you can’t hide it', 'you act like a child'],
-    fame: 1,
+    by: 'Yuu Otosaka',
+    aka: ['Yuu', 'Yu Otosaka'],
+    line: 'I will go plunder the ability of every wielder [all over the world], and save them.',
+    decoys: ['at the academy', 'in Japan', 'before they break out'],
+    fame: 2,
   },
 
   // ── The Devil is a Part-Timer! ──
   {
     show: 'The Devil is a Part-Timer!',
-    by: 'Emilia Justina',
-    aka: ['Emi Yusa', 'Emi', 'Emilia'],
-    line: 'Don’t you dare [tell me what to do].',
-    decoys: ['run away again', 'call me Hero', 'touch my food'],
-    fame: 1,
+    by: 'Satan Jacob',
+    aka: ['Sadao Maou', 'Maou', 'Satan'],
+    line: 'Hear me, Emilia: I shall become [a regular employee] in this world!',
+    decoys: ['the ruler', 'the shift manager', 'a hero'],
+    fame: 2,
   },
 
   // ── My Dress-Up Darling ──
   {
     show: 'My Dress-Up Darling',
-    by: 'Marin Kitagawa',
-    aka: ['Marin'],
-    line: 'When you feel things, you owe it to yourself to [tell people].',
-    decoys: ['cosplay them', 'write them down', 'keep them close'],
+    by: 'Wakana Gojou',
+    aka: ['Wakana', 'Gojo', 'Gojou'],
+    line: 'I couldn’t believe something so [beautiful] could exist in this world.',
+    decoys: ['cute', 'perfect', 'delicate'],
     fame: 1,
   },
 
@@ -3290,8 +3366,8 @@ export const FAMOUS_LINES = [
     show: 'Food Wars!',
     by: 'Souma Yukihira',
     aka: ['Soma Yukihira', 'Soma', 'Souma'],
-    line: '[It wasn’t much]!',
-    alt: ['Osomatsu'],
+    line: '[Glad you enjoyed it]!',
+    alt: ['It wasn’t much', 'Osomatsu'],
     decoys: ['Bon appétit', 'Eat up', 'Itadakimasu'],
     fame: 2,
   },
@@ -3438,11 +3514,9 @@ export const FAMOUS_LINES = [
   // ── Is It Wrong to Try to Pick Up Girls in a Dungeon? ──
   {
     show: 'Is It Wrong to Try to Pick Up Girls in a Dungeon?',
-    by: 'Bell Cranel',
-    aka: ['Bell'],
-    line: 'If I don’t stand up here... If I don’t reach higher here... [When am I ever going to do it]?',
-    decoys: ['How will I face Aiz', 'Who will protect Hestia', 'What was it all for'],
-    fame: 1,
+    line: 'I am [Ganesha]!',
+    decoys: ['Hestia', 'Loki', 'Freya'],
+    fame: 2,
   },
   {
     show: 'Is It Wrong to Try to Pick Up Girls in a Dungeon?',
@@ -3458,7 +3532,7 @@ export const FAMOUS_LINES = [
     show: 'Zom 100: Bucket List of the Dead',
     by: 'Akira Tendou',
     aka: ['Akira', 'Akira Tendo'],
-    line: 'I don’t have to [go to work] today!',
+    line: 'Starting today... I don’t have to [go to work] anymore?',
     decoys: ['see my boss', 'wake up early', 'wear a tie'],
     fame: 2,
   },
@@ -3534,5 +3608,165 @@ export const FAMOUS_LINES = [
     line: 'If you lose your sword, then hit with your fists! If you lose your fists, then [bite with your teeth]!',
     decoys: ['pray to the gods', 'fight with your will', 'use your head'],
     fame: 1,
+  },
+
+  // ── The Apothecary Diaries ──
+  {
+    show: 'The Apothecary Diaries',
+    by: 'Maomao',
+    line: 'About what kind of [poison] I would use to die.',
+    decoys: ['herb', 'knife', 'medicine'],
+    fame: 2,
+  },
+  {
+    show: 'The Apothecary Diaries',
+    by: 'Maomao',
+    line: 'I guess I’m the only one that enjoys [eating poison].',
+    decoys: ['being a food taster', 'working in the rear palace', 'Master Jinshi’s company'],
+    fame: 2,
+  },
+
+  // ── Rent-a-Girlfriend ──
+  {
+    show: 'Rent-a-Girlfriend',
+    by: 'Kazuya Kinoshita',
+    aka: ['Kazuya'],
+    line: 'She may be a rental, but Mizuhara is... [the best girlfriend anyone could ask for]!',
+    decoys: ['way out of my league', 'my grandma’s favourite person', 'just doing her job'],
+    fame: 2,
+  },
+
+  // ── Saga of Tanya the Evil ──
+  {
+    show: 'Saga of Tanya the Evil',
+    by: 'Tanya Degurechaff',
+    aka: ['Tanya'],
+    line: 'Damn you, [Being X].',
+    decoys: ['General Zettour', 'the Republic', 'Lieutenant Weiss'],
+    fame: 2,
+  },
+  {
+    show: 'Saga of Tanya the Evil',
+    by: 'Tanya Degurechaff',
+    aka: ['Tanya'],
+    line: 'Safe, rear-echelon deployments... [How I love you]!',
+    decoys: ['Where did you go', 'You were a lie', 'How I miss you'],
+    fame: 1,
+  },
+
+  // ── Masamune-kun's Revenge ──
+  {
+    show: 'Masamune-kun\'s Revenge',
+    by: 'Masamune Makabe',
+    aka: ['Masamune'],
+    line: 'I’m going to make Adagaki Aki fall for me, and then [dump her on the spot].',
+    decoys: ['tell her who I really am', 'never speak to her again', 'make her my girlfriend for real'],
+    fame: 2,
+  },
+
+  // ── Arifureta: From Commonplace to World's Strongest ──
+  {
+    show: 'Arifureta: From Commonplace to World\'s Strongest',
+    by: 'Hajime Nagumo',
+    aka: ['Hajime'],
+    line: 'I want to survive and go home... [Everything between me and home is my enemy]!',
+    decoys: ['Nothing else matters to me', 'I’ll take whatever power I need', 'This Labyrinth won’t stop me'],
+    fame: 2,
+  },
+
+  // ── Ranking of Kings ──
+  {
+    show: 'Ranking of Kings',
+    by: 'Kage',
+    line: 'It’s not fake! Someday, Bojji is gonna be [a real-life king]!',
+    decoys: ['the strongest swordsman', 'my best friend forever', 'taller than his father'],
+    fame: 2,
+  },
+
+  // ── Steins;Gate 0 ──
+  {
+    show: 'Steins;Gate 0',
+    by: 'Mayuri Shiina',
+    aka: ['Mayuri', 'Mayushii'],
+    line: 'But... I love [Hououin Kyouma] even more!',
+    decoys: ['Kurisu-san', 'the lab', 'Upa'],
+    fame: 2,
+  },
+
+  // ── Blood Blockade Battlefront ──
+  {
+    show: 'Blood Blockade Battlefront',
+    by: 'Klaus von Reinherz',
+    aka: ['Klaus'],
+    line: 'The human spirit can never truly... [be defeated]!',
+    decoys: ['be explained', 'be bought', 'be sealed away'],
+    fame: 1,
+  },
+
+  // ── Shikimori's Not Just a Cutie ──
+  {
+    show: 'Shikimori\'s Not Just a Cutie',
+    by: 'Yuuki Izumi',
+    aka: ['Izumi', 'Yuu Izumi'],
+    line: 'My girlfriend is super cute, but sometimes she’s... [incredibly cool].',
+    decoys: ['incredibly scary', 'a total klutz', 'way too jealous'],
+    fame: 2,
+  },
+
+  // ── Alya Sometimes Hides Her Feelings in Russian ──
+  {
+    show: 'Alya Sometimes Hides Her Feelings in Russian',
+    by: 'Masachika Kuze',
+    aka: ['Masachika', 'Kuze'],
+    line: 'This cute Russian girl next to me fawns over me exclusively in Russian, and [I know]!',
+    decoys: ['she thinks I’m asleep', 'nobody else notices', 'she knows I know'],
+    fame: 2,
+  },
+
+  // ── How NOT to Summon a Demon Lord ──
+  {
+    show: 'How NOT to Summon a Demon Lord',
+    by: 'Diablo',
+    line: 'I am Diablo, [the Demon Lord from another world]!',
+    decoys: ['the strongest summoner alive', 'master of Cross Reverie', 'the one who conquers Faltra'],
+    fame: 2,
+  },
+
+  // ── The World's Finest Assassin Gets Reincarnated in Another World as an Aristocrat ──
+  {
+    show: 'The World\'s Finest Assassin Gets Reincarnated in Another World as an Aristocrat',
+    by: 'Lugh Tuatha Dé',
+    aka: ['Lugh'],
+    line: 'Do you want me to save the world, or do you want me to [kill the Hero]?',
+    decoys: ['become the Hero', 'kill the Demon Lord', 'protect the Hero'],
+    fame: 1,
+  },
+
+  // ── My Love Story with Yamada-kun at Lv999 ──
+  {
+    show: 'My Love Story with Yamada-kun at Lv999',
+    by: 'Akane Kinoshita',
+    aka: ['Akane'],
+    line: 'This is why I can’t stand [gamer guys]!',
+    decoys: ['college guys', 'pretty boys', 'younger guys'],
+    fame: 2,
+  },
+
+  // ── Gachiakuta ──
+  {
+    show: 'Gachiakuta',
+    line: 'Send the filth to [the Pit]!',
+    decoys: ['the river', 'the furnace', 'the sky'],
+    fame: 1,
+  },
+
+  // ── given ──
+  {
+    show: 'given',
+    by: 'Mafuyu Satou',
+    aka: ['Mafuyu', 'Mafuyu Sato'],
+    line: 'You see, I... had someone I [really, truly loved].',
+    decoys: ['never got to thank', 'played guitar with', 'promised to sing for'],
+    fame: 2,
   },
 ];
