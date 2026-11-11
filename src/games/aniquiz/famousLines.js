@@ -33,8 +33,9 @@
 //   show: when sources disagree, the most credible one's wording goes in, and
 //   a line only fan quote sites carry goes in with the wording fans use. The
 //   batches added that way are marked in the git history ("fifth" to "eighth
-//   batch"); those are the lines to revisit if a subtitle file ever settles
-//   the exact words.
+//   batch"). A subtitle archive now settles the exact words where it has
+//   the show (see the game's CLAUDE.md): lines added since are in it word for
+//   word, and the looser-bar lines it covers were reworded to it or replaced.
 // - **Translations differ; the blank stays meaningful.** Sub and dub word
 //   things differently ("can never change anything" / "can change nothing").
 //   The line takes the official wording, and the blank stays on the ending

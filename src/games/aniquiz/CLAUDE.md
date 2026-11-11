@@ -92,7 +92,7 @@ from either would still need checking, so they save nothing. The checking source
 Wikiquote's anime pages (episode-cited; `Category:Anime` lists which exist — most newer shows
 have none), then two independent quote sites agreeing. Fandom wikis refuse automated reads
 (402), and their BreezeWiki mirror sits behind bot protection. So `famousLines.js` is a
-hand-curated list (400 lines, 185 shows),
+hand-curated list (430 lines, 200 shows),
 bundled in AniQuiz's lazy chunk rather than shipped beside the pack: it is small, only this game
 parses it, and a correction is an ordinary deploy. The file header holds its rules — spoilers
 allowed (since 2026-11-10: the user's call, a table is assumed to have finished the anime; it was
@@ -109,6 +109,16 @@ Since 2026-11-10 the bar is looser (the user's call: the topic needs lines for a
 work): where sources disagree, the most credible one's wording goes in, and a line only fan quote
 sites carry goes in as fans word it. The lines added that way (commits "fifth batch" through "eighth batch") are
 the ones to revisit first if better sources turn up.
+
+**The subtitle archive settles wording** (2026-11-10). SubArchivist (`subs.yakuaru.com`, robots.txt
+allows all) holds whole-series subtitle text, mostly Crunchyroll's, with speakers; a book exports
+as one plain-text file (`/books/<slug>/export/plaintext`), and it rate-limits hard (429 with
+Retry-After; large books take minutes). Every line added since then is in it word for word, and the
+looser-bar lines it covers were checked against it: reworded to it where it says the same thing,
+replaced or dropped where it does not (it caught invented fan quotes such as Nao's "I'm not
+jealous, I'm just territorial"). Its absence is not proof: it is one translation, so a famous dub
+line (Attack on Titan's "grim reminder") stays. Many shows are not in it (no Death Note, Toradora,
+Violet Evergarden, One-Punch Man), and the looser-bar lines from those are still unchecked.
 
 **Close wordings get leeway, never a slash** (2026-11-09, at the user's request: they know it
 as "Infinite Void", officially "Unlimited Void"). A line's `alt` lists the other sourced
