@@ -48,6 +48,7 @@
     "knip": "^6.45.1",
     "size-limit": "^14.3.0",
     "tailwindcss": "^4.2.2",
+    "typescript": "^5.9.3",
     "vite": "^8.3.5",
     "vitest": "^3.2.7",
     "wrangler": "^4.155.0"

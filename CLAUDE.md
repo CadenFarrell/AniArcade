@@ -43,6 +43,10 @@ carries `eslint-plugin-jsx-a11y` for `src/**/*.jsx`; where a rule meets delibera
 (focus moved on purpose, the combobox's unfocused options) it is off or disabled in place with
 the reason beside it. `knip.jsonc` says why each exception stands.
 
+The `typescript` devDependency (5.x) is there for Claude Code's TypeScript LSP plugin alone:
+nothing imports it and the project has no `tsconfig`, but `typescript-language-server` needs a
+`tsserver.js`, which the global TypeScript 7 (the native port) does not ship. Keep it.
+
 Two project skills cover the repeated procedures: `/new-game` (every place a new game
 touches, in order) and `/ship` (green gate, own-hunks commit, push, CI, deploy only what
 changed).
