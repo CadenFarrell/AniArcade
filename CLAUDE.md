@@ -218,7 +218,8 @@ The external clients document their own limits and quirks in their headers: AniL
 **Local play touches no third-party network** (no `.env.local` → `firebaseEnabled` false,
 `ensureInitialized()` never called). Keep it that way. It requests only same-origin static files
 (`/facts/`, `/casts/`, fonts, `/art/`, `/sounds/`), plus the player's OWN imported portraits
-from AniList's CDN as `<img>` tags. `hub/HubScreen.test.jsx` pins this: its `fetch` stub fails
+from AniList's CDN as `<img>` tags. The one exception is AniTune, whose songs come from
+AnimeThemes even on one device (`src/games/anitune/CLAUDE.md`). `hub/HubScreen.test.jsx` pins this: its `fetch` stub fails
 every URL except `/facts/`.
 
 ### Offline: the service worker

@@ -33,7 +33,7 @@ export const HOW_TO = {
     {
       title: 'Settings worth knowing',
       items: [
-        'Shared shows only: characters come only from shows everyone has watched.',
+        'Shared shows only: your character comes only from a show at least one other player has watched, so someone can answer about it.',
         'Talk it out: ask questions out loud instead of typing them.',
         'Timer: a countdown on each turn. Running out ends it.',
       ],
