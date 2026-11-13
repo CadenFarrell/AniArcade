@@ -65,7 +65,7 @@ node whose **security rule** — not a client check — hides it. Pick by who mu
 | node | read | write | for | used by |
 | --- | --- | --- | --- | --- |
 | `assignments/{playerId}` | everyone **except** the owner | everyone except the owner | a value about you that you alone must not learn | AniGuess (your character, and the table's live proposal for it), AniTag (your category, dealt or picked by the table — the proposal lives here too) |
-| `secrets/{playerId}` | the owner **only** | any member | a value only you may learn | AniFake (your card), AniWave (target, `readroom`'s card — see its CLAUDE.md), AniTurf (each team's key, in its clue-giver's node), AniChain (the turn's card, in both givers' nodes) |
+| `secrets/{playerId}` | the owner **only** | any member | a value only you may learn | AniFake (your card), AniWave (target, `readroom`'s card — see its CLAUDE.md), AniTurf (each team's key, in its clue-giver's node), AniChain (the turn's card, in both givers' nodes), AniSketch (the drawer's offer and pick, dealt by the drawer's own device) |
 
 `secrets/` write is any member, not "the host", because the host is a `state/` value the rules
 cannot cheaply check and members are already trusted with `state/`. AniTurf writes
@@ -73,6 +73,10 @@ its own node; **AniTurf's owner also DEALS it**, so no device ever holds a key i
 dealt — at the price that a claim resolves across two devices, and the dealing effect must wait
 for the first `secrets/` snapshot or it deals over the real key on every refresh
 (`src/games/aniturf/CLAUDE.md`).
+
+**A node nothing hides still belongs beside `state/` when it is written often**: AniSketch's `sketch/{gameNo}-{turn}` carries the drawing four writes a second,
+which inside `state/` would re-fire every member's whole-room subscription. Its rules cap each
+write's shape and size (`src/games/anisketch/CLAUDE.md`).
 
 **Each row in the other node exposes the value to exactly the people it is hidden from**, and
 the round would look normal: an AniTag category (known to the table, hidden from one) in

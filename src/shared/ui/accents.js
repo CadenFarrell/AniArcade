@@ -17,6 +17,7 @@ export const ACCENT_BG = {
   umber: 'bg-pop-umber',
   violet: 'bg-pop-violet',
   magenta: 'bg-pop-magenta',
+  rose: 'bg-pop-rose',
 };
 
 export const accentBg = (accent) => ACCENT_BG[accent] ?? ACCENT_BG.pink;
@@ -39,6 +40,7 @@ export const ACCENT_VAR = {
   umber: 'var(--color-pop-umber)',
   violet: 'var(--color-pop-violet)',
   magenta: 'var(--color-pop-magenta)',
+  rose: 'var(--color-pop-rose)',
 };
 
 export const accentVar = (accent) => ACCENT_VAR[accent] ?? ACCENT_VAR.pink;

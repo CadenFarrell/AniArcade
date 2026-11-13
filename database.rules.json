@@ -111,6 +111,30 @@
         "state": {
           ".read": "auth != null && root.child('rooms/'+$code+'/memberUids/'+auth.uid).exists()",
           ".write": "auth != null && root.child('rooms/'+$code+'/memberUids/'+auth.uid).exists()"
+        },
+        "sketch": {
+          ".read": "auth != null && root.child('rooms/'+$code+'/memberUids/'+auth.uid).exists()",
+          "$turn": {
+            ".write": "auth != null && root.child('rooms/'+$code+'/memberUids/'+auth.uid).exists()",
+            ".validate": "$turn.matches(/^[0-9]{1,4}-[0-9]{1,3}$/)",
+            "$stroke": {
+              ".validate": "$stroke.matches(/^s[0-9]{1,3}$/) && newData.hasChildren(['c', 'w'])",
+              "c": {
+                ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 6"
+              },
+              "w": {
+                ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 2"
+              },
+              "p": {
+                "$chunk": {
+                  ".validate": "$chunk.matches(/^[0-9]{1,3}$/) && newData.isString() && newData.val().length <= 1200"
+                }
+              },
+              "$other": {
+                ".validate": false
+              }
+            }
+          }
         }
       }
     }

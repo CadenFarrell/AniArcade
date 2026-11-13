@@ -1,7 +1,7 @@
 # AniArcade — game ideas not built yet
 
-Context for the new chat: AniArcade (this repo) has 13 games — AniGuess, AniTune, AniRank,
-AniFake, AniWave, AniTag, AniQuiz, AniTurf, AniPeek, AniOut, AniName, AniChain, AniDraft. Every game has
+Context for the new chat: AniArcade (this repo) has 14 games — AniGuess, AniTune, AniRank,
+AniFake, AniWave, AniTag, AniQuiz, AniTurf, AniPeek, AniOut, AniName, AniChain, AniDraft, AniSketch. Every game has
 a local (pass-and-play) and an online (Firebase room) mode, a rules sheet, a playtest bot
 strategy and a smoke test. Read CLAUDE.md first. Things that shape any new game:
 
@@ -10,8 +10,8 @@ strategy and a smoke test. Read CLAUDE.md first. Things that shape any new game:
   role Main/Supporting, gender, portrait, short description, favourites). The fact pack
   (public/facts/) adds ~1000 popular shows: tags, staff, theme songs, Japanese voice
   actors, main/supporting casts. There are NO quotes, synopses or hair/power data anywhere.
-- Big tile words already taken: GUESS TUNE RANK FAKE WAVE TAG QUIZ TURF PEEK OUT NAME CHAIN DRAFT.
-- All 13 accent inks are taken (the newest is magenta, AniDraft's); a new game needs a new
+- Big tile words already taken: GUESS TUNE RANK FAKE WAVE TAG QUIZ TURF PEEK OUT NAME CHAIN DRAFT SKETCH.
+- All 14 accent inks are taken (the newest is rose, AniSketch's); a new game needs a new
   decorative colour token in src/index.css (+ accents.js, Badge, Wordmark, Lobby,
   OnlineIdentityCard maps). Each token's comment carries its two contrast ratios.
 - No third-party network in local play; anything new (e.g. quotes) ships as a static file.
@@ -62,14 +62,10 @@ any existing card game's rules.
 - Open questions: prompt categories, what makes the loop our own (e.g. a twist dealt
   mid-pitch, pitches built from the table's own shows), typed vs spoken, vote rules, rounds.
 
-## 5. AniSketch — draw a character, others guess
-- Round: the drawer gets a character from their list and draws it; others guess (typed
-  or choice). Faster guesses score more for both.
-- Data: characters from lists; portrait shown on reveal.
-- The most work of these: a drawing canvas, and online syncing of strokes through Firebase
-  (keep it small: batched stroke points, size limits, free-tier bandwidth).
-- Typed guesses can reuse shared/utils/nameMatch.js.
-- Open questions: timer, guess format, drawing tools (colours, eraser, undo).
+## Built: AniSketch (was idea 5)
+Draw a character from your list against the clock; everyone else names them, typed online
+(judged on the drawer's phone with the shared name matcher) and shouted on one device. An SVG
+pad, strokes in their own room node in chunks. Notes in src/games/anisketch/CLAUDE.md.
 
 ## Built: AniOut "Groups of four" (was under "Also considered")
 Sort 16 characters into 4 hidden groups of 4, each joined by something no other card on the

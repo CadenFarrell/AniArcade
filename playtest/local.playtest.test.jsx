@@ -25,6 +25,7 @@ import { playGame } from './core/driver.js';
 import { scenarioFor, profilesFor } from './core/scenarios.js';
 import { makeRng, mulberry32, gameSeed } from './core/rng.js';
 import { strategies } from './strategies/index.js';
+import { drawStroke } from './core/draw.js';
 import { respondAnimeThemes, isAnimeThemes } from './fakes/animethemes.js';
 import { installMediaStubs } from './fakes/media.js';
 import { writeLayerReport } from './report.js';
@@ -140,6 +141,7 @@ function makeAdapter(user, errors, offsite, app) {
       } else if (a.select && node) await user.selectOptions(node, a.value);
       else if (a.slide && node) fireEvent.change(node, { target: { value: String(a.value) } });
       else if (a.key) await user.keyboard(a.key);
+      else if (a.draw) drawStroke(document, a.draw, fireEvent);
       else if (a.wait) await act(async () => { await vi.advanceTimersByTimeAsync(a.wait); });
       await settle();
     },

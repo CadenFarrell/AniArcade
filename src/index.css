@@ -153,6 +153,13 @@
      both further apart than several older pairs already are. Bluer than plum's
      wine and redder than violet. */
   --color-pop-magenta: #8a1a80; /* AniDraft                 6.28 / 7.79 */
+  /* Rose: a deep raspberry, picked like magenta, by CIELAB distance — the ink
+     furthest from all thirteen and from ink-black within the inks' own
+     chroma. Plum is its nearest (ΔE 29), magenta and crimson next (31), all
+     further than magenta's own nearest (20). Fern green came first and sat at
+     ΔE 12 from lime: on the board SKETCH and TAG read as one game. Pinker and
+     brighter than crimson (wrong), so a rose block is not read as a miss. */
+  --color-pop-rose: #b80064; /* AniSketch                4.95 / 6.14 */
 
   /* AniTurf's two teams. Their own role, not pop-red and pop-blue: those mean
      wrong and asking, and a claimed square is neither. Kept a hue apart from

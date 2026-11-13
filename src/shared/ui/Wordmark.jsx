@@ -24,6 +24,7 @@ const TONES = {
   umber: '[--slash:var(--color-pop-umber)]',
   violet: '[--slash:var(--color-pop-violet)]',
   magenta: '[--slash:var(--color-pop-magenta)]',
+  rose: '[--slash:var(--color-pop-rose)]',
 };
 
 const SIZES = {

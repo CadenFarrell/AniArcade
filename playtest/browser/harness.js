@@ -146,6 +146,17 @@ export function pageAdapter(page, { errors, prefix }) {
       }
       else if (a.fill) await loc(id).fill(a.text ?? '', opts).catch(() => {});
       else if (a.select) await loc(id).selectOption(a.value, opts).catch(() => {});
+      else if (a.draw) {
+        // A real mouse stroke across AniSketch's pad, at fractions of its box.
+        const box = await page.locator('[data-sketch="pad"]').first().boundingBox().catch(() => null);
+        if (box) {
+          const [first, ...rest] = a.draw;
+          await page.mouse.move(box.x + first[0] * box.width, box.y + first[1] * box.height);
+          await page.mouse.down();
+          for (const [x, y] of rest) await page.mouse.move(box.x + x * box.width, box.y + y * box.height, { steps: 4 });
+          await page.mouse.up();
+        }
+      }
       else if (a.wait) await page.waitForTimeout(Math.min(a.wait, 3000));
       await page.waitForTimeout(60);
       // Let the hub's panel wipe (useWipe.js) finish before the next snapshot.

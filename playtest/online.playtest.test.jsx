@@ -20,7 +20,7 @@
 // Real time throughout — the emulator is a real server — so a seed replays
 // the same table and settings, but not the same interleaving.
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
-import { act, cleanup } from '@testing-library/react';
+import { act, cleanup, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { readFile, readdir } from 'node:fs/promises';
 import { goOffline } from 'firebase/database';
@@ -32,6 +32,7 @@ import { playTable } from './core/table.js';
 import { scenarioFor, profilesFor } from './core/scenarios.js';
 import { makeRng } from './core/rng.js';
 import { strategies } from './strategies/index.js';
+import { drawStroke } from './core/draw.js';
 import { respondAnimeThemes, isAnimeThemes } from './fakes/animethemes.js';
 import { installMediaStubs } from './fakes/media.js';
 import { writeLayerReport } from './report.js';
@@ -136,6 +137,7 @@ function makeSeat({ game, name, profile, prefs, isHost, user, errors }) {
         if (a.click && node) await user.click(node);
         else if (a.fill && node) { await user.clear(node); if (a.text) await user.type(node, a.text); }
         else if (a.select && node) await user.selectOptions(node, a.value);
+        else if (a.draw) drawStroke(container, a.draw, fireEvent);
         else if (a.wait) await new Promise((r) => setTimeout(r, Math.min(a.wait, 30_000)));
         await settle();
       },

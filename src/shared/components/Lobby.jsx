@@ -103,6 +103,7 @@ const YOU_BADGE = {
   umber: 'umber',
   violet: 'violet',
   magenta: 'magenta',
+  rose: 'rose',
 };
 
 /**
