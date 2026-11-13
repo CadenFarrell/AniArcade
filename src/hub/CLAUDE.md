@@ -48,10 +48,10 @@ starts "Ani" and every panel is a greyscale face, so with only a thin colour str
 caption box then grew over) players could not tell the games apart at a glance. Now the
 whole body under the picture is a **solid block of the game's ink with paper type** — the
 accent contract's fill-plus-paper pairing — while the art above stays greyscale, so colour
-appears exactly where it sorts. And **the title is split** (`tileTitle.js`'s `splitTitle`): a
+appears exactly where it sorts. And **the title is split** (`shared/utils/splitTitle.js`, shared since the cover, results and setup screens draw it too): a
 small, spaced "ANI" over the word that differs, set large — GUESS, TUNE, RANK. The split is
 drawn `aria-hidden` with the whole title in an `sr-only` span beside it, so the button is
-still named "AniGuess", not "Ani Guess". `tileTitle.test.js` pins that every registered game's
+still named "AniGuess", not "Ani Guess". `splitTitle.test.js` pins that every registered game's
 big word is distinct, because the split is worth nothing if two games share one. A game not
 yet available keeps a plain surface bar, so colour still means "ready to play". One known
 weak pair: AniGuess (vermilion) and AniQuiz (crimson) are both reds; the big word carries
@@ -209,7 +209,9 @@ Firebase and dnd-kit had arrived: one ~1 MB file (301 KB gzipped) before the fir
 Startup is now ~360 KB (112 KB gzipped, measured 2026-10-28 with AniChain in). Count the entry
 AND every chunk `index.html` preloads: Vite 8.3's Rolldown folds most of them into the entry,
 which took the entry alone from 68 KB to 112 KB with the total unchanged. Each game is its own chunk, and Firebase sits in a
-shared one that only a game pulls in.
+shared one that only a game pulls in. `.size-limit.json` budgets exactly that set (the
+`index-*` entry, the Rolldown runtime it preloads, and the stylesheet): 114.8 KB of script and
+14.0 KB of CSS on 2026-11-13 against limits of 120 and 15, checked by `npm run size` in CI.
 
 **The tap is not slower, because the hub preloads.** `preloadGames` runs once the menu is up
 and the browser is idle (`requestIdleCallback`, or a one-second timer on Safari, which has

@@ -110,6 +110,10 @@ export default function Combobox({
             border-2 border-ink bg-surface shadow-pop-sm"
         >
           {suggestions.map((option, i) => (
+            // Options are never focused, by the combobox pattern: focus stays
+            // in the input and the active option is announced through its
+            // aria-activedescendant, which the arrow keys move.
+            // eslint-disable-next-line jsx-a11y/interactive-supports-focus
             <div
               key={optionKey(option, i)}
               id={optionId(i)}

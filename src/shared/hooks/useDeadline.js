@@ -60,5 +60,3 @@ export function useDeadline(deadlineAt, { offsetMs = 0, windowMs = null, tickMs 
       : (active && !expired ? 0 : 1),
   };
 }
-
-export default useDeadline;

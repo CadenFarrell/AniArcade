@@ -1,0 +1,14 @@
+[
+  {
+    "name": "Hub startup script",
+    "path": ["dist/assets/index-*.js", "dist/assets/rolldown-runtime-*.js"],
+    "gzip": true,
+    "limit": "120 kB"
+  },
+  {
+    "name": "Hub startup styles",
+    "path": "dist/assets/index-*.css",
+    "gzip": true,
+    "limit": "15 kB"
+  }
+]

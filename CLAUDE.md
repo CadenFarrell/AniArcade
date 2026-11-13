@@ -24,13 +24,28 @@ npm run test:smoke    # online hooks vs the Firebase emulator (starts and stops 
 npm run generate      # regenerate seedProfiles.js from AniList (Node script)
 npm run generate:facts # regenerate the fact pack in public/facts/ (Node script)
 npm run generate:casts # regenerate the cast pack in public/casts/ (Node script, a few minutes)
+npm run size          # the hub's startup budget, over dist/ (run npm run build first)
+npm run knip          # unused files, exports and dependencies, across app, bots and scripts
 ```
 
-CI (`.github/workflows/ci.yml`) runs `npm run lint`, `npm test` and `npm run build` on every
-push and pull request, on Linux. That makes the filesystem **case-sensitive** there, unlike
+CI (`.github/workflows/ci.yml`) runs `npm run lint`, `npm test`, `npm run build` and
+`npm run size` on every push and pull request, on Linux. That makes the filesystem **case-sensitive** there, unlike
 this Windows checkout, so an import whose casing is off passes here and fails in CI (the
 `kanaText.js` story in `.claude/rules/styling-assets.md` is the same trap the other way round). Smoke and playtest stay
 manual.
+
+**A hook checks every file Claude edits** (`.claude/hooks/check-edit.mjs`, a PostToolUse hook
+in `.claude/settings.json`): ESLint errors, an import whose casing only Windows forgives, and
+the styling "nevers" below (`min-h-screen`, `text-white`, `white/N`/`black/N`, emoji, a game
+imported statically). It never blocks; its findings come back to Claude to fix. `node
+.claude/hooks/check-edit.mjs --all` sweeps the tree after a rule there changes. Lint also
+carries `eslint-plugin-jsx-a11y` for `src/**/*.jsx`; where a rule meets deliberate code
+(focus moved on purpose, the combobox's unfocused options) it is off or disabled in place with
+the reason beside it. `knip.jsonc` says why each exception stands.
+
+Two project skills cover the repeated procedures: `/new-game` (every place a new game
+touches, in order) and `/ship` (green gate, own-hunks commit, push, CI, deploy only what
+changed).
 
 `npm test` is vitest (config in `vite.config.js`'s `test` block): a `.test.js` is a pure module,
 a `.test.jsx` a component test that needs a `// @vitest-environment jsdom` docblock and a
@@ -100,9 +115,11 @@ available, Component, howTo }`) plus one line added to that array. `Component` r
 
 **`Component` is always `lazyGame(() => import('./<Game>Game'))`, never a static import.**
 Everything else on the descriptor is the menu and stays eager; the game's code downloads on
-demand, so the hub paints after ~112 KB gzipped instead of the whole arcade's ~300 KB. A new
+demand, so the hub paints after ~115 KB gzipped instead of the whole arcade's ~300 KB. A new
 game that imports its component statically pulls itself — and anything only it uses — back
-into the hub's startup bundle, and nothing fails to say so. The mechanics (idle preload,
+into the hub's startup bundle: the edit hook flags it as it is written, and `npm run size`
+(`.size-limit.json`, in CI) fails the build — AniDraft imported statically measured 165 KB
+against the 120 KB budget. Raise the budget only as a decision. The mechanics (idle preload,
 the loading screen, the reload-not-reset error) are in `src/hub/CLAUDE.md`.
 
 Each game's top component (`<Game>Game.jsx`) is just a local/online mode picker: it holds

@@ -22,3 +22,6 @@ jobs:
       - run: npm run lint
       - run: npm test
       - run: npm run build
+      # The hub's startup budget (.size-limit.json): a game imported statically
+      # instead of through lazyGame lands in the hub bundle and fails here.
+      - run: npm run size

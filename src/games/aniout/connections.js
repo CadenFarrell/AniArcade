@@ -13,7 +13,6 @@
 //   - every kind, rule or not, is CHECKED, so a round is never dealt where a
 //     second card is also out on something — gender most of all, which every
 //     portrait gives away at a glance.
-import { SOURCE_LABELS } from '../../shared/utils/mediaLabels';
 
 // Phrased as what the five have in common, because that is the question the
 // reason picker asks ("why are the other five together?"). Every one starts
@@ -76,6 +75,3 @@ export const fold = (s) => String(s ?? '')
   .toLowerCase()
   .replace(/\s+/g, ' ')
   .trim();
-
-/** The source's word on a card ("Manga"); its sentence is SOURCE_SENTENCES'. */
-export const sourceLabel = (key) => SOURCE_LABELS[key] ?? null;

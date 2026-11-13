@@ -1,0 +1,42 @@
+// Knip: unused files, dependencies and exports, across everything that runs —
+// the app, the generators, the playtest bots, the smoke suite, the service
+// worker and the MAL proxy. `npm run knip`; not in CI, because a finding is a
+// decision (delete it, or say why it stays here), not a build failure.
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "entry": [
+    "generate*.js",
+    "playtest/report.js",
+    "playtest/fixtures/build.js",
+    "playtest/*.playtest.test.jsx",
+    "playtest/vitest.config.js",
+    "playtest/browser/*.spec.js",
+    "playtest/browser/playwright.config.js",
+    "smoke/*.smoke.test.js",
+    "smoke/vitest.config.js",
+    "workers/mal-proxy/src/index.js",
+    "sw/serviceWorker.template.js"
+  ],
+  "project": [
+    "src/**/*.{js,jsx,css}",
+    "playtest/**/*.{js,jsx}",
+    "smoke/**/*.js",
+    "sw/**/*.js",
+    "workers/**/*.js",
+    "factSources/**/*.js",
+    "*.js"
+  ],
+  "ignore": ["seedProfiles.js"],
+  // Run by hand as `npx wrangler deploy` from workers/mal-proxy
+  // (.claude/rules/list-import.md), so no script names it.
+  "ignoreDependencies": ["wrangler"],
+  // An export used inside its own file is a constant or helper the module needs
+  // and also exposes (rules.js tables, storage keys); only one used NOWHERE is
+  // dead code.
+  "ignoreExportsUsedInFile": true,
+  "ignoreIssues": {
+    // MISS_COST equals WRONG_BONUS today by design (rules.js says why), but they
+    // are two rules a retune may part, so each keeps its own name.
+    "src/games/anipeek/rules.js": ["duplicates"]
+  }
+}

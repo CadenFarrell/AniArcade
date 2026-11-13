@@ -2,6 +2,7 @@ import js from '@eslint/js'
 import globals from 'globals'
 import reactHooks from 'eslint-plugin-react-hooks'
 import reactRefresh from 'eslint-plugin-react-refresh'
+import jsxA11y from 'eslint-plugin-jsx-a11y'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
@@ -35,6 +36,24 @@ export default defineConfig([
   {
     files: ['playtest/**/*.{js,jsx}'],
     languageOptions: { globals: { ...globals.node, ...globals.browser } },
+  },
+  // Accessibility at edit time, for the app's own screens. The browser
+  // playtest's axe pass checks the same ground, but only later and only on the
+  // screens a bot happens to reach; this reads every component as it is written.
+  {
+    files: ['src/**/*.jsx'],
+    extends: [jsxA11y.flatConfigs.recommended],
+    rules: {
+      // Focus is moved on purpose: a turn opens on its answer box (typing IS
+      // the turn, and on a passed phone nobody should have to find the field)
+      // and a dialog takes focus into itself (useDialogLayer). Every autoFocus
+      // here was a decision, not an accident.
+      'jsx-a11y/no-autofocus': 'off',
+      // `role` is also a plain prop on our own components (LapsSetting's
+      // role="the opener" names the seat that opens a round); only DOM
+      // elements carry ARIA roles.
+      'jsx-a11y/aria-role': ['error', { ignoreNonDOM: true }],
+    },
   },
   // The offline worker's template is a service worker (caches, clients, self);
   // its build plugin beside it runs in Node.

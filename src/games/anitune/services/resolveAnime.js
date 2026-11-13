@@ -10,7 +10,7 @@
 //   2. Title search. Everything else (hand-added and seeded entries) has only
 //      an English title. The API's search does the English->romaji work well
 //      ("Demon Slayer" finds "Kimetsu no Yaiba"), but its *ordering* is not
-//      trustworthy, so we re-rank — see scoreCandidate.
+//      trustworthy, so we re-rank — see matchAnime.js's scoreCandidate.
 //
 // Resolution is deliberately a one-time step whose result is cached, not
 // something the game does per question: route 2 is fuzzy, and re-running it
@@ -25,7 +25,7 @@ import { storage } from '../../../shared/services/storage';
 import { searchAnime } from './animethemesClient';
 import { normalizeTitle, extractAniListId, pickBestCandidate } from './matchAnime';
 
-export { normalizeTitle, extractAniListId, scoreCandidate, pickBestCandidate } from './matchAnime';
+export { extractAniListId } from './matchAnime';
 
 const CACHE_KEY = 'anitune_animethemes_map';
 

@@ -37,6 +37,7 @@ export default function PeekPanel({ peekList, hasPeeked, onPeek, className = 'mb
             // only scroll a region they can reach (axe's
             // scrollable-region-focusable, from the browser playtest).
             <ul
+              // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex
               tabIndex={0}
               aria-label="Your anime list"
               className="focus-pop max-h-80 space-y-2 overflow-y-auto"

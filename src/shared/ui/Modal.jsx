@@ -36,6 +36,10 @@ export default function Modal({
   const { rootRef, panelRef } = useDialogLayer({ onEscape: canDismiss ? onClose : null, sound });
 
   return (
+    // A click on the scrim is a pointer shortcut for closing, not the only way
+    // out: the keyboard's is Escape (useDialogLayer), so the scrim needs no key
+    // handler of its own.
+    // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions
     <div
       ref={rootRef}
       // backdrop-blur as well as the scrim: an ink scrim over a busy page
@@ -53,6 +57,9 @@ export default function Modal({
       aria-modal="true"
       aria-labelledby={labelledBy}
     >
+      {/* The panel's onClick only stops a click inside reaching the scrim's
+          close; it is not a control. */}
+      {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions */}
       <div
         ref={panelRef}
         // Focusable only from code (the open above), never a Tab stop, and

@@ -18,9 +18,3 @@ export function makeStrategy(spec) {
   };
 }
 
-// A bot's guess at something it is meant to know: right `p` of the time (the
-// answer is on screen to whoever may see it), otherwise a random other option.
-export function guessFrom(options, right, rng, p = 0.5) {
-  if (right && rng.chance(p)) return right;
-  return rng.pick(options.filter((o) => o !== right)) ?? right;
-}

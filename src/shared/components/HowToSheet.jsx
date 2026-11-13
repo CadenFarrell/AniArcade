@@ -100,6 +100,9 @@ export default function HowToSheet({ game, onClose, onFeedback }) {
     // runs past the screen, and the flex column hands any shortfall to the
     // page area alone, so the heading and the buttons stay in view.
     <Modal onClose={onClose} width="md" className="flex max-h-full flex-col">
+      {/* Catches the arrow keys bubbling up from the controls inside, to turn
+          the page; the wrapper is never a control itself. */}
+      {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions */}
       <div onKeyDown={onKeyDown} className="flex min-h-0 flex-1 flex-col">
         {/* The kana and the game's name share one line over the heading: as
             two lines of their own they cost a small phone's page a bullet. */}

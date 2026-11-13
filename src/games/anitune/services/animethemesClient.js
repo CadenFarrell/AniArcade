@@ -111,7 +111,7 @@ export async function animethemesRequest(path, params = {}, { signal } = {}) {
 
 // Free-text search. The API does the English->romaji work ("Demon Slayer"
 // finds "Kimetsu no Yaiba"), but its ordering is unreliable — see
-// scoreCandidate in resolveAnime.js.
+// scoreCandidate in matchAnime.js.
 export async function searchAnime(query, { signal } = {}) {
   const json = await animethemesRequest('/search', {
     q: query,
