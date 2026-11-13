@@ -12,6 +12,15 @@
 //   phase: 'picking' → 'revealed' → 'picking' … → 'finished'
 //   picks: { [playerId]: { card, reason, correct, reasonRight, delta } }
 //
+// A "Groups of four" match (deal.mode 'groups', groups.js) is the same
+// machine: a round is a board, and a pick is the player's whole sort —
+//
+//   { groups: [[four card keys] …], reasons: [reason index per group],
+//     correct, reasonRight, delta, groupsRight, reasonsRight }
+//
+// where `correct` is the whole board right and `reasonRight` every reason
+// too, so the awards, the reveal sound and the history read either mode.
+//
 // Everyone picks every round, in secret, and nothing settles until every
 // player still here has locked in — the gate counts the ACTIVE roster, so a
 // closed tab never wedges a room (settleIfComplete).
@@ -22,6 +31,8 @@ import { award, clearLeader, longestRuns, tally, times } from '../../shared/util
 export const PICK_POINTS = 2;
 /** A right reason, on top of a right pick — never on its own. */
 export const REASON_POINTS = 1;
+/** A group sorted right, in "Groups of four". Its reason adds REASON_POINTS. */
+export const GROUP_POINTS = 2;
 // Local play allows a table of one (a puzzle); a room needs company, and ends
 // when it drops below that.
 export const MIN_PLAYERS = 1;
@@ -50,6 +61,33 @@ export function stillToPick(game, activeIds) {
   return game.order.filter((id) => activeIds.includes(id) && !game.picks?.[id]);
 }
 
+const isGroups = (deal) => deal?.mode === 'groups';
+
+/**
+ * One sort against a board: which of the player's groups match a true group
+ * (as sets — the order of the four, and of the groups, never matters), and
+ * which of those carry the true group's reason.
+ */
+export function gradeSort(set, pick, reasonsOn) {
+  let groupsRight = 0;
+  let reasonsRight = 0;
+  (pick?.groups ?? []).forEach((g, i) => {
+    const t = (set?.groups ?? []).find((tg) => tg.keys.length === g.length && g.every((k) => tg.keys.includes(k)));
+    if (!t) return;
+    groupsRight += 1;
+    if (reasonsOn && pick.reasons?.[i] === t.reason) reasonsRight += 1;
+  });
+  const all = set?.groups?.length ?? 0;
+  const correct = all > 0 && groupsRight === all;
+  return {
+    groupsRight,
+    reasonsRight,
+    correct,
+    reasonRight: correct && reasonsOn && reasonsRight === all,
+    delta: groupsRight * GROUP_POINTS + reasonsRight * REASON_POINTS,
+  };
+}
+
 // Grades every pick in and moves to the reveal. Picks by players who have
 // since left are graded too: they locked in fairly, and their points stand.
 function settle(game, deal, picks) {
@@ -57,13 +95,33 @@ function settle(game, deal, picks) {
   const scores = { ...game.scores };
   const graded = {};
   for (const [id, p] of Object.entries(picks)) {
-    const correct = Boolean(set) && p.card === set.odd;
-    const reasonRight = correct && deal.reasonsOn && p.reason === set.reason;
-    const delta = (correct ? PICK_POINTS : 0) + (reasonRight ? REASON_POINTS : 0);
-    graded[id] = { ...p, correct, reasonRight, delta };
-    scores[id] = (scores[id] ?? 0) + delta;
+    if (isGroups(deal)) {
+      graded[id] = { ...p, ...gradeSort(set, p, deal.reasonsOn) };
+    } else {
+      const correct = Boolean(set) && p.card === set.odd;
+      const reasonRight = correct && deal.reasonsOn && p.reason === set.reason;
+      const delta = (correct ? PICK_POINTS : 0) + (reasonRight ? REASON_POINTS : 0);
+      graded[id] = { ...p, correct, reasonRight, delta };
+    }
+    scores[id] = (scores[id] ?? 0) + graded[id].delta;
   }
   return { picks: graded, scores, phase: 'revealed' };
+}
+
+// A sort is refused unless it partitions the board exactly: as many groups as
+// the board has, four cards each, every card once. Returns the clean pick or
+// null.
+function cleanSort(set, pick, reasonsOn) {
+  const n = set.groups.length;
+  const groups = listOf(pick?.groups).map((g) => listOf(g).map(String));
+  if (groups.length !== n || groups.some((g) => g.length !== set.groups[0].keys.length)) return null;
+  const keys = groups.flat();
+  const board = new Set(set.cards.map((c) => c.key));
+  if (new Set(keys).size !== board.size || keys.length !== board.size || !keys.every((k) => board.has(k))) return null;
+  if (!reasonsOn) return { groups, reasons: [] };
+  const reasons = listOf(pick?.reasons).map(Number);
+  if (reasons.length !== n || !reasons.every((r) => Number.isInteger(r) && r >= 0 && r < set.reasons.length)) return null;
+  return { groups, reasons };
 }
 
 /**
@@ -76,6 +134,13 @@ export function submitPick(game, deal, playerId, pick, activeIds) {
   if (game.phase !== 'picking' || game.picks?.[playerId]) return { patch: {} };
   if (!game.order.includes(playerId)) return { patch: {} };
   const set = currentSet(game, deal);
+  if (isGroups(deal)) {
+    const sort = set ? cleanSort(set, pick, deal.reasonsOn) : null;
+    if (!sort) return { patch: {} };
+    const sorts = { ...game.picks, [playerId]: sort };
+    const all = game.order.filter((id) => activeIds.includes(id)).every((id) => sorts[id]);
+    return { patch: all ? settle(game, deal, sorts) : { picks: sorts } };
+  }
   if (!set || !set.cards.some((c) => c.key === pick?.card)) return { patch: {} };
   const reason = deal.reasonsOn ? Number(pick.reason) : -1;
   if (deal.reasonsOn && !(Number.isInteger(reason) && reason >= 0 && reason < set.reasons.length)) return { patch: {} };
@@ -104,14 +169,21 @@ export function settleIfComplete(game, deal, activeIds) {
 // wrong pick can be told from a player who never picked — they left — and
 // two wrong picks on one card from two on different ones). Plain values, so
 // it survives RTDB.
+//
+// A board's line carries `sorted` (each player's groups right) instead of
+// `picks`: a sort has no one card to name, so the awards that quote a card
+// skip it.
 function logLine(game) {
   const picks = Object.entries(game.picks ?? {});
-  return {
+  const line = {
     round: game.round,
     got: picks.filter(([, p]) => p.correct).map(([id]) => id),
     reasons: picks.filter(([, p]) => p.reasonRight).map(([id]) => id),
-    picks: Object.fromEntries(picks.filter(([, p]) => p?.card != null).map(([id, p]) => [id, String(p.card)])),
   };
+  if (picks.some(([, p]) => p?.groups)) {
+    return { ...line, sorted: Object.fromEntries(picks.map(([id, p]) => [id, p.groupsRight ?? 0])) };
+  }
+  return { ...line, picks: Object.fromEntries(picks.filter(([, p]) => p?.card != null).map(([id, p]) => [id, String(p.card)])) };
 }
 
 /**
@@ -135,7 +207,9 @@ export function nextRound(game) {
  *
  *   Lone wolf                   the only one who found it
  *   Full marks                  the only one with the odd one AND its reason
+ *                               (every group and every reason, on a board)
  *   Perfect game                found every odd one out, three rounds or more
+ *                               (every board, two boards or more)
  *   Hot streak                  the most rounds in a row found (three or more)
  *   Against the grain           right, while everyone else fell for one card
  *   Fooled again                the most wrong picks (three or more, roast)
@@ -143,44 +217,68 @@ export function nextRound(game) {
  *   Right for the wrong reason  found it three times or more, never named why (roast)
  *   Herd mentality              fell for a card with two others or more (roast)
  *   Blind spot                  the only one who missed it (roast)
+ *
+ * A "Groups of four" match is one mode throughout, so its lines (`sorted`
+ * instead of `picks`) change the words — "sorted board 2", not "spotted
+ * Denji" — and skip the three awards that quote a wrong card.
  */
 export function outAwards(log = [], players = [], { reasonsOn = false, nameOf = () => '', oddOf = () => '' } = {}) {
   const byId = (id) => players.find((p) => p.id === id) ?? null;
   const lines = (log ?? []).filter(Boolean);
+  const groups = lines.some((l) => l.sorted);
+  const unit = groups ? 'board' : 'round';
   const card = (l, key) => nameOf(l.round, key) || 'a card';
   const odd = (l) => oddOf(l.round) || 'the odd one';
+  const board = (l) => `board ${l.round + 1}`;
   const latest = (list, id) => list.filter((x) => x.by === id).at(-1);
   const out = [];
 
+  // Who played a line: its picks or its sorts. Neither on a line from before
+  // picks were logged, which the awards read as "unknown".
+  const playedOf = (l) => l.picks ?? l.sorted ?? null;
   // "The only one" needs somebody else to have tried.
-  const contested = (l) => !l.picks || Object.keys(l.picks).length > 1;
+  const contested = (l) => !playedOf(l) || Object.keys(playedOf(l)).length > 1;
   const solos = lines.filter((l) => contested(l) && (l.got ?? []).length === 1).map((l) => ({ by: l.got[0], l }));
   const lone = clearLeader(tally(solos, (x) => x.by));
   if (lone) {
+    const l = latest(solos, lone.id).l;
     out.push(award('Lone wolf', byId(lone.id), lone.n === 1
-      ? `The only one who spotted ${odd(latest(solos, lone.id).l)}`
-      : `The only one who saw it, ${times(lone.n, 'round')}`, { weight: 2 }));
+      ? (groups ? `The only one who sorted ${board(l)}` : `The only one who spotted ${odd(l)}`)
+      : `The only one who saw it, ${times(lone.n, unit)}`, { weight: 2 }));
   }
   if (reasonsOn) {
     const fulls = lines.filter((l) => contested(l) && (l.reasons ?? []).length === 1).map((l) => ({ by: l.reasons[0], l }));
     const full = clearLeader(tally(fulls, (x) => x.by));
     if (full) {
-      out.push(award('Full marks', byId(full.id), full.n === 1
-        ? `The only one who knew why ${odd(latest(fulls, full.id).l)} was out`
-        : `The only one who knew why, ${times(full.n, 'round')}`, { weight: 2 }));
+      const l = latest(fulls, full.id).l;
+      let detail;
+      if (groups) {
+        detail = full.n === 1
+          ? `The only one with every group and every reason on ${board(l)}`
+          : `Every group and every reason, alone, ${times(full.n, 'board')}`;
+      } else {
+        detail = full.n === 1 ? `The only one who knew why ${odd(l)} was out` : `The only one who knew why, ${times(full.n, 'round')}`;
+      }
+      out.push(award('Full marks', byId(full.id), detail, { weight: 2 }));
     }
   }
-  if (lines.length >= 3) {
+  if (lines.length >= (groups ? 2 : 3)) {
     const perfect = players.filter((p) => lines.every((l) => (l.got ?? []).includes(p.id)));
-    if (perfect.length === 1) out.push(award('Perfect game', perfect[0], `Found the odd one out all ${lines.length} rounds`, { weight: 3 }));
+    if (perfect.length === 1) {
+      out.push(award('Perfect game', perfect[0], groups
+        ? `Sorted all ${lines.length} boards`
+        : `Found the odd one out all ${lines.length} rounds`, { weight: 3 }));
+    }
   }
   const streak = clearLeader(longestRuns(lines, (l) => l.got), { min: 3 });
-  if (streak) out.push(award('Hot streak', byId(streak.id), `${streak.n} rounds in a row`));
+  if (streak) out.push(award('Hot streak', byId(streak.id), `${streak.n} ${unit}s in a row`));
 
-  const wrongOf = (l) => Object.keys(l.picks ?? {}).filter((id) => !(l.got ?? []).includes(id));
+  const wrongOf = (l) => Object.keys(playedOf(l) ?? {}).filter((id) => !(l.got ?? []).includes(id));
+  // The card-quoting awards read only lines that name each player's card.
+  const carded = lines.filter((l) => l.picks);
   const sameAs = (l, id) => Object.values(l.picks).filter((k) => k === l.picks[id]).length;
   // Right, while every other player picked one and the same wrong card.
-  const grains = lines.filter((l) => (l.got ?? []).length === 1 && wrongOf(l).length >= 2
+  const grains = carded.filter((l) => (l.got ?? []).length === 1 && wrongOf(l).length >= 2
     && new Set(wrongOf(l).map((id) => l.picks[id])).size === 1).map((l) => ({ by: l.got[0], l }));
   const grain = clearLeader(tally(grains, (x) => x.by));
   if (grain) {
@@ -189,8 +287,12 @@ export function outAwards(log = [], players = [], { reasonsOn = false, nameOf = 
   }
 
   const fooled = clearLeader(tally(lines, wrongOf), { min: 3 });
-  if (fooled) out.push(award('Fooled again', byId(fooled.id), `Picked wrong ${fooled.n} times`, { roast: true }));
-  const odds = lines.flatMap((l) => wrongOf(l).filter((id) => sameAs(l, id) === 1).map((by) => ({ by, l })));
+  if (fooled) {
+    out.push(award('Fooled again', byId(fooled.id), groups
+      ? `Missed ${fooled.n} boards`
+      : `Picked wrong ${fooled.n} times`, { roast: true }));
+  }
+  const odds = carded.flatMap((l) => wrongOf(l).filter((id) => sameAs(l, id) === 1).map((by) => ({ by, l })));
   const contrary = clearLeader(tally(odds, (x) => x.by));
   if (contrary) {
     const { l } = latest(odds, contrary.id);
@@ -204,7 +306,7 @@ export function outAwards(log = [], players = [], { reasonsOn = false, nameOf = 
     const clueless = clearLeader(Object.fromEntries(Object.entries(found).filter(([id]) => !named[id])), { min: 3 });
     if (clueless) out.push(award('Right for the wrong reason', byId(clueless.id), `Found it ${clueless.n} times, never knew why`, { roast: true }));
   }
-  const herds = lines.flatMap((l) => wrongOf(l).filter((id) => sameAs(l, id) >= 3).map((by) => ({ by, l })));
+  const herds = carded.flatMap((l) => wrongOf(l).filter((id) => sameAs(l, id) >= 3).map((by) => ({ by, l })));
   const herd = clearLeader(tally(herds, (x) => x.by));
   if (herd) {
     const { l } = latest(herds, herd.id);
@@ -213,9 +315,10 @@ export function outAwards(log = [], players = [], { reasonsOn = false, nameOf = 
   const blinds = lines.filter((l) => wrongOf(l).length === 1 && (l.got ?? []).length >= 2).map((l) => ({ by: wrongOf(l)[0], l }));
   const blind = clearLeader(tally(blinds, (x) => x.by));
   if (blind) {
+    const l = latest(blinds, blind.id).l;
     out.push(award('Blind spot', byId(blind.id), blind.n === 1
-      ? `The only one who missed ${odd(latest(blinds, blind.id).l)}`
-      : `The only one who missed it, ${times(blind.n, 'round')}`, { roast: true }));
+      ? `The only one who missed ${groups ? board(l) : odd(l)}`
+      : `The only one who missed it, ${times(blind.n, unit)}`, { roast: true }));
   }
   return out.filter(Boolean);
 }
@@ -249,16 +352,30 @@ export function listOf(raw) {
 }
 
 function normalizePick(raw) {
-  if (!raw || typeof raw !== 'object' || typeof raw.card !== 'string') return null;
-  const out = { card: raw.card, reason: numberOr(raw.reason, -1) };
+  if (!raw || typeof raw !== 'object') return null;
+  let out;
+  if (raw.groups) {
+    // A sort: nested arrays, either of which RTDB may hand back as an object
+    // keyed by index. `reasons` is absent with reasons off (an empty array is
+    // not stored).
+    out = { groups: listOf(raw.groups).map((g) => listOf(g).map(String)), reasons: listOf(raw.reasons).map((r) => numberOr(r, -1)) };
+  } else if (typeof raw.card === 'string') {
+    out = { card: raw.card, reason: numberOr(raw.reason, -1) };
+  } else return null;
   // Grading fields exist only after the reveal; a pick still waiting has none.
   if (raw.correct !== undefined) {
     out.correct = Boolean(raw.correct);
     out.reasonRight = Boolean(raw.reasonRight);
     out.delta = numberOr(raw.delta, 0);
+    if (raw.groups) {
+      out.groupsRight = numberOr(raw.groupsRight, 0);
+      out.reasonsRight = numberOr(raw.reasonsRight, 0);
+    }
   }
   return out;
 }
+
+const countsOf = (raw) => Object.fromEntries(Object.entries(raw).map(([id, n]) => [id, numberOr(n, 0)]));
 
 export function normalizeGame(raw) {
   if (!raw || typeof raw !== 'object') return null;
@@ -286,6 +403,9 @@ export function normalizeGame(raw) {
         // Absent (not empty) on a line from before picks were logged, which
         // the awards read as "unknown" rather than "nobody picked".
         ...(l.picks && typeof l.picks === 'object' ? { picks: { ...l.picks } } : {}),
+        // A board's line. A board everyone missed still has every player at
+        // 0, which RTDB keeps (only empty objects are dropped).
+        ...(l.sorted && typeof l.sorted === 'object' ? { sorted: countsOf(l.sorted) } : {}),
       })),
   };
 }
@@ -301,8 +421,25 @@ function normalizeCard(raw) {
   };
 }
 
+function normalizeGroup(raw) {
+  if (!raw || typeof raw !== 'object') return null;
+  return {
+    kind: raw.kind ?? '',
+    sentence: raw.sentence ?? '',
+    keys: listOf(raw.keys).map(String),
+    reason: numberOr(raw.reason, -1),
+  };
+}
+
 function normalizeSet(raw) {
   if (!raw || typeof raw !== 'object') return null;
+  if (raw.groups) {
+    return {
+      groups: listOf(raw.groups).map(normalizeGroup).filter(Boolean),
+      cards: listOf(raw.cards).map(normalizeCard).filter(Boolean),
+      reasons: listOf(raw.reasons).filter((r) => typeof r === 'string'),
+    };
+  }
   return {
     kind: raw.kind ?? '',
     sentence: raw.sentence ?? '',
@@ -316,6 +453,8 @@ function normalizeSet(raw) {
 export function normalizeDeal(raw) {
   if (!raw || typeof raw !== 'object') return null;
   return {
+    // Absent on a deal from before the groups mode: odd one out.
+    mode: raw.mode === 'groups' ? 'groups' : 'odd',
     rounds: numberOr(raw.rounds, 0),
     size: numberOr(raw.size, 6),
     reasonsOn: raw.reasonsOn !== false,

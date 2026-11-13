@@ -6,6 +6,8 @@ import { currentSet } from '../rules';
 import CardGrid from './CardGrid';
 import PickPanel from './PickPanel';
 import RevealPanel from './RevealPanel';
+import BoardReveal from './BoardReveal';
+import SortBoard from './SortBoard';
 
 // One round, on any device — the screen local play and every phone in a room
 // both draw. It holds no state of its own: the phase says what is on screen.
@@ -28,10 +30,17 @@ export default function OutRound({
   const revealed = game.phase === 'revealed';
   const locked = (id) => Boolean(game.picks?.[id]);
   const waitingOn = players.filter((p) => !departedIds.includes(p.id) && !locked(p.id)).map((p) => p.name);
+  // "Groups of four": a round is a board to sort (SortBoard / BoardReveal).
+  const groups = deal.mode === 'groups';
+  const unit = groups ? 'Board' : 'Round';
+  const Reveal = groups ? BoardReveal : RevealPanel;
 
   let hint;
-  if (revealed) hint = set?.sentence ?? null;
-  else if (deal.reasonsOn) hint = 'All but one share something. Pick who’s out, and why.';
+  if (revealed) hint = groups ? null : set?.sentence ?? null;
+  else if (groups) {
+    hint = `${set?.groups?.length ?? 4} hidden groups of four. Each shares something nobody else on the board has.`
+      + (deal.reasonsOn ? ' Sort them, and say what joins each.' : ' Sort them.');
+  } else if (deal.reasonsOn) hint = 'All but one share something. Pick who’s out, and why.';
   else hint = 'All but one share something. Pick who’s out.';
 
   let panel;
@@ -39,11 +48,11 @@ export default function OutRound({
     panel = <Card padding="lg" className="text-center"><p className="text-fg-body">This round could not be loaded.</p></Card>;
   } else if (revealed) {
     panel = (
-      <RevealPanel set={set} game={game} deal={deal} players={players} youId={youId}>
+      <Reveal set={set} game={game} deal={deal} players={players} youId={youId}>
         <Button variant="primary" size="lg" fullWidth onClick={onNext}>
-          {lastRound ? 'See results' : 'Next round'}
+          {lastRound ? 'See results' : `Next ${unit.toLowerCase()}`}
         </Button>
-      </RevealPanel>
+      </Reveal>
     );
   } else if (handoff) {
     panel = handoff;
@@ -51,15 +60,20 @@ export default function OutRound({
     panel = (
       <div key={`${roundKey}:${pickerId}`}>
         {!youId && players.length > 1 && (
-          <p className="mb-3 text-center font-display text-xl font-extrabold text-fg-strong">{nameOf(pickerId)}, your pick</p>
+          <p className="mb-3 text-center font-display text-xl font-extrabold text-fg-strong">
+            {nameOf(pickerId)}, your {groups ? 'sort' : 'pick'}
+          </p>
         )}
-        <PickPanel set={set} reasonsOn={deal.reasonsOn} onLock={(choice) => onPick(pickerId, choice)} />
+        {groups
+          ? <SortBoard set={set} reasonsOn={deal.reasonsOn} onLock={(choice) => onPick(pickerId, choice)} />
+          : <PickPanel set={set} reasonsOn={deal.reasonsOn} onLock={(choice) => onPick(pickerId, choice)} />}
       </div>
     );
   } else {
     panel = (
       <>
-        <CardGrid cards={set.cards} />
+        {/* A board's 16 are too many to stand in for a waiting screen. */}
+        {!groups && <CardGrid cards={set.cards} />}
         <Card padding="lg" className="text-center">
           <p className="text-lg text-fg-body">
             {/* "Locked in" only for a seat that has: someone who joined the
@@ -98,11 +112,17 @@ export default function OutRound({
             return null;
           }}
         />
-        <RoundHeader title={revealed ? 'Who Was Out' : 'Who’s Out?'} tag={`Round ${game.round + 1}/${game.rounds}`} hint={hint} />
+        <RoundHeader title={headingOf(groups, revealed)} tag={`${unit} ${game.round + 1}/${game.rounds}`} hint={hint} />
         {panel}
       </Screen>
     </>
   );
+}
+
+// The bots and tests tell the screens apart by these.
+function headingOf(groups, revealed) {
+  if (groups) return revealed ? 'The Groups' : 'Sort the Board';
+  return revealed ? 'Who Was Out' : 'Who’s Out?';
 }
 
 function Tag({ children }) {

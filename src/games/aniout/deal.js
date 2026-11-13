@@ -24,6 +24,7 @@
 import { shuffle } from '../../shared/utils/random';
 import { KINDS, RULE_KINDS, sentenceFor } from './connections';
 import { cardPool } from './utils/pool';
+import { dealBoards } from './groups';
 
 export const CARDS_RANGE = { min: 5, max: 7 };
 const DECOYS = 3;
@@ -35,7 +36,7 @@ const GROUPS_PER_BUCKET = 5;
 const ODD_SAMPLE = 60;
 const ODDS_PER_GROUP = 12;
 
-const has = (card, kind, key) => Boolean(card.vals[kind]?.some((v) => v.key === key));
+export const has = (card, kind, key) => Boolean(card.vals[kind]?.some((v) => v.key === key));
 
 /** The values every card in `cards` holds for `kind`, as key → label. Any unknown: none. */
 export function sharedValues(kind, cards) {
@@ -81,7 +82,7 @@ export function validRound(cards, oddKey, rule) {
 // Most-known first with a little noise, so a character three players know
 // tends to beat one only its importer has seen without the same faces leading
 // every game.
-const byFame = (cards, rng) => cards
+export const byFame = (cards, rng) => cards
   .map((c) => ({ c, w: c.owners + rng() * 2 }))
   .sort((a, b) => b.w - a.w)
   .map(({ c }) => c);
@@ -98,7 +99,7 @@ function overlap(card, group, ruleKind) {
 }
 
 // Weighted order without replacement: heavier kinds tend to come first.
-function weightedOrder(kinds, rng) {
+export function weightedOrder(kinds, rng) {
   const left = [...kinds];
   const out = [];
   while (left.length) {
@@ -111,7 +112,7 @@ function weightedOrder(kinds, rng) {
 }
 
 // value key → cards holding it, for one kind.
-function buckets(pool, kind) {
+export function buckets(pool, kind) {
   const out = new Map();
   for (const c of pool) {
     for (const v of c.vals[kind] ?? []) {
@@ -124,7 +125,7 @@ function buckets(pool, kind) {
 
 // Five (size − 1) cards holding the value. A show-level rule takes one card per
 // show, so the five come from five different shows.
-function pickGroup(members, kindDef, need, rng) {
+export function pickGroup(members, kindDef, need, rng) {
   if (kindDef.id === 'show') return byFame(members, rng).slice(0, need);
   const perShow = new Map();
   for (const c of byFame(shuffle(members, rng), rng)) {
@@ -169,20 +170,31 @@ function buildRound(pool, kindDef, size, rng, usedOdd) {
  * the answer to someone half-sure. One per kind before any kind repeats.
  */
 export function decoysFor(cards, odd, rule, rng) {
-  const group = cards.filter((c) => c !== odd);
-  const truth = sentenceFor(rule.kind, rule);
+  return decoySentences([cards.filter((c) => c !== odd)], cards, [sentenceFor(rule.kind, rule)], rng, {
+    count: DECOYS,
+    // A same-show round's other shows are the obvious giveaway, not a decoy.
+    skipShow: rule.kind === 'show',
+  });
+}
+
+/**
+ * The decoy search, for one group (a round's five) or several (a groups
+ * board's four): a sentence is offered only when EVERY group has a member
+ * known to lack its value, so it is false of each of them and no unknown can
+ * make it true. Weighted by the most holders in any one group — a value three
+ * of a group share is the one a half-sure player reaches for.
+ */
+export function decoySentences(groups, cards, truths, rng, { count, skipShow = false }) {
   const options = [];
   for (const k of KINDS) {
     if (!k.rule && !k.decoy) continue;
     const seen = new Map();
     for (const c of cards) for (const v of c.vals[k.id] ?? []) if (!seen.has(v.key)) seen.set(v.key, v);
     for (const v of seen.values()) {
-      if (k.id === rule.kind && v.key === rule.key) continue;
-      const known = group.filter((c) => c.vals[k.id]);
-      if (!known.some((c) => !has(c, k.id, v.key))) continue;
-      const holders = group.filter((c) => has(c, k.id, v.key)).length;
-      // A same-show round's other shows are the obvious giveaway, not a decoy.
-      if (k.id === 'show' && rule.kind === 'show') continue;
+      const falseOfAll = groups.every((g) => g.some((c) => c.vals[k.id] && !has(c, k.id, v.key)));
+      if (!falseOfAll) continue;
+      if (k.id === 'show' && skipShow) continue;
+      const holders = Math.max(...groups.map((g) => g.filter((c) => has(c, k.id, v.key)).length));
       options.push({ kind: k.id, text: sentenceFor(k.id, v), w: holders + rng() });
     }
   }
@@ -191,8 +203,8 @@ export function decoysFor(cards, odd, rule, rng) {
   const kinds = new Set();
   for (const pass of [true, false]) {
     for (const o of options) {
-      if (out.length >= DECOYS) break;
-      if (o.text === truth || out.includes(o.text)) continue;
+      if (out.length >= count) break;
+      if (truths.includes(o.text) || out.includes(o.text)) continue;
       if (pass && kinds.has(o.kind)) continue;
       kinds.add(o.kind);
       out.push(o.text);
@@ -205,7 +217,7 @@ export function decoysFor(cards, odd, rule, rng) {
 // card without the value (the odd one, on a genre or tag round) shows two of
 // its own instead, so the reveal says what it IS rather than only what it is
 // not. A same-show round needs nothing — every card's show is printed anyway.
-function noteFor(card, rule) {
+export function noteFor(card, rule) {
   if (rule.kind === 'show') return '';
   const vals = card.vals[rule.kind] ?? [];
   const hit = vals.find((v) => v.key === rule.key);
@@ -225,6 +237,9 @@ function noteFor(card, rule) {
  * It is one more tier in front of "fresh this game", never a filter.
  */
 export function dealGame(players, settings, pack = null, rng = Math.random, { recent = null } = {}) {
+  // "Groups of four" deals whole boards instead of rounds (groups.js); the
+  // shared-first lean and its fallback are the same either way.
+  const dealer = settings?.mode === 'groups' ? dealBoards : dealFrom;
   // "Shared characters first": a game dealt only from characters on every
   // list, when those can fill it. They almost never can — a non-show round
   // wants five of them from five different shows plus a sixth one fact away —
@@ -232,12 +247,12 @@ export function dealGame(players, settings, pack = null, rng = Math.random, { re
   // shared deal that falls short deals from everyone's lists instead and says
   // so (`sharedFallback`), rather than blocking Start on a setting.
   if (settings?.sharedOnly && players?.length > 1) {
-    const shared = dealFrom(players, settings, pack, rng, recent, true);
+    const shared = dealer(players, settings, pack, rng, recent, true);
     if (shared.deal) return shared;
-    const all = dealFrom(players, settings, pack, rng, recent, false);
+    const all = dealer(players, settings, pack, rng, recent, false);
     return all.deal ? { deal: { ...all.deal, sharedFallback: true } } : all;
   }
-  return dealFrom(players, settings, pack, rng, recent, false);
+  return dealer(players, settings, pack, rng, recent, false);
 }
 
 function dealFrom(players, settings, pack, rng, recent, sharedOnly) {
@@ -297,7 +312,7 @@ function dealFrom(players, settings, pack, rng, recent, sharedOnly) {
   if (sets.length < rounds) {
     return { error: `These lists hold ${sets.length} round${sets.length === 1 ? '' : 's'} — need ${rounds}.`, found: sets.length };
   }
-  return { deal: { rounds, size, reasonsOn, sets } };
+  return { deal: { mode: 'odd', rounds, size, reasonsOn, sets } };
 }
 
 /** Every card a deal shows, for recentDeals. */

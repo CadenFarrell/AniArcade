@@ -2,6 +2,16 @@ import { MIN_PLAYERS, ONLINE_MIN_PLAYERS } from './rules';
 
 export const TAGLINE = 'Five belong. Spot the one who doesn’t';
 
+/** The match's length in its own unit: "8 rounds", or "3 boards" in "Groups of four". */
+export const matchLength = (settings) => (settings.mode === 'groups'
+  ? `${settings.boards} board${settings.boards === 1 ? '' : 's'}`
+  : `${settings.rounds} rounds`);
+
+// What the status line says a match is.
+const matchShape = (settings) => (settings.mode === 'groups'
+  ? `${matchLength(settings)} to sort`
+  : `${settings.rounds} rounds of ${settings.cards}`);
+
 /**
  * The StartBar line for setup and the lobby, and whether Start is open — one
  * function, so the two screens cannot disagree about why a game will not start.
@@ -21,9 +31,9 @@ export function setupStatus({ count, trial, settings, packStatus, online = false
   if (count < min) {
     status = online ? 'Waiting for more players to join.' : 'Seat at least one player.';
   } else if (loading) status = 'Loading show facts…';
-  else if (short) status = `Need ${settings.rounds} rounds — these lists hold ${trial.found}.`;
-  else if (trial?.deal?.sharedFallback) status = `${count} players · ${settings.rounds} rounds of ${settings.cards} · not enough shared, so from everyone’s lists`;
-  else status = `${count} player${count === 1 ? '' : 's'} · ${settings.rounds} rounds of ${settings.cards}`;
+  else if (short) status = `Need ${matchLength(settings)} — these lists hold ${trial.found}.`;
+  else if (trial?.deal?.sharedFallback) status = `${count} players · ${matchShape(settings)} · not enough shared, so from everyone’s lists`;
+  else status = `${count} player${count === 1 ? '' : 's'} · ${matchShape(settings)}`;
   const ready = count >= min && !loading && !short;
   return { status, ready, short };
 }

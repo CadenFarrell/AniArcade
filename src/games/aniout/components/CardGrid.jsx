@@ -65,7 +65,7 @@ export default function CardGrid({ cards, picked = null, onPick = null, oddKey =
 // square shows head and shoulders — the hub tile's crop). A dead link falls back
 // to speed lines and the initial, so a broken CDN URL never leaves a hole in the
 // grid. jsdom never fires load or error, so nothing waits on either.
-function Face({ card, faded = false }) {
+export function Face({ card, faded = false }) {
   const [broken, setBroken] = useState(false);
   return (
     <div aria-hidden="true" className="relative aspect-square w-full overflow-hidden border-b-2 border-ink bg-surface-2">

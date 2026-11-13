@@ -74,6 +74,50 @@ Setup and the lobby keep a trial deal of the table as it stands (`copy.js`'s `se
 because nothing short of dealing tells you how many rounds a list holds. `ShortBanner` lists
 the fixes, and the bot's `fixBlocked` applies them, opening the More settings fold first.
 
+## "Groups of four" (`groups.js`, 2026-11-13)
+
+A second game on the settings card (`mode: 'groups'`, a whole match one or the other; Caden
+chose secret sorts and a per-match setting). A board is 16 characters in four hidden groups of
+four; each player sorts it in secret, and `boards` (default 3) is the match. **Odd one out
+stays the default**, so a saved table keeps the game it knows.
+
+**What counts as a group is the rule the table is told: something those four share and NO
+other card on the board has.** "Any four sharing any value" could not work: broad values
+(most anime are manga, half a board is women, "Action") nearly always allow a second sort,
+and almost no board would deal. From that rule, `validBoard`:
+
+1. **Each dealt group is tight**: its four hold the value and the other twelve are KNOWN to
+   lack it.
+2. **The sort is unique**: every four-card set that could be a tight group on ANY kind
+   (check-only gender, role and format included) is a candidate, an unknown counting as
+   possibly holding the value and four cards unknown on a kind as possibly sharing an unseen
+   one. An exact-cover search over them (bitmasks, stop at 2) must find exactly one
+   partition. A red herring (a studio-group card from group B's year) is allowed, and is the
+   puzzle, as long as only one whole sort survives.
+
+`groups.test.js` checks dealt boards against an independent brute force written from the
+rule's text, not from `candidateGroups`. **Tags and voice actors come only from the pack**,
+so a board needs it: on the playtest fixtures with the pack, tables of one to three deal three
+full boards every seed in 3–12ms; with no pack, none. The cards known on every rule kind are
+tried first (`buildBoard`'s `sure` tier). A list that cannot hold four groups gets a board of
+three (`BOARD_GROUPS`); fewer than that is `{ error, found }` and the usual banner.
+
+**Scoring**: `GROUP_POINTS` (2) per group matching a true group as a set, `REASON_POINTS` per
+right reason beside a right group (reasons on: the board's true sentences among two decoys,
+`decoySentences`, false of every group). Getting all but one group right means all of them,
+so a sort scores 0, …, n−2 or n groups. `correct` is the whole board and `reasonRight` every
+reason too, so the reveal sound, history and awards read both modes. A board's log line
+carries `sorted` (groups right per player) instead of `picks`, so the three awards that quote
+a wrong card skip it, and the rest say "board 2" for "Denji". The house rule of five good
+awards held, so the groups feat is "Full marks" with its own words, not a sixth title.
+
+**Screens**: `SortBoard` (tap four characters, toggles named by name, "Make group"; the last
+group makes itself; a row's "Undo group A"; each row's reasons are "Group A reason: …") and
+`BoardReveal` ("The Groups": each true group's sentence and cards, then "n of 4 groups" per
+player). Headings "Sort the Board" / "The Groups", "Next board". Rows are told apart by
+letter, never colour. `smoke/aniout.smoke.test.js` sorts a board on three devices, passing
+the host a synthetic pack.
+
 ## Where the facts come from (`utils/pool.js`)
 
 `cardPool` builds on `characterOwners` and keeps pictured characters only (`hasPortrait`, now
@@ -114,6 +158,8 @@ words:
 - "Lock in", "Next round", "See results"
 - "I'm <name> — ready" (handoff)
 - the headings "Who's Out?" / "Who Was Out"
+- in "Groups of four": character toggles, "Make group", "Undo group <L>", "Group <L>
+  reason: …", "Next board", the headings "Sort the Board" / "The Groups"
 
 The game's ink is the decorative `--color-pop-moss` (index.css), wired into every accent map
 beside `plum` and `slate`.

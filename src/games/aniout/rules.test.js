@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  PICK_POINTS, REASON_POINTS, currentSet, endGame, nextRound, normalizeDeal, normalizeGame,
+  GROUP_POINTS, PICK_POINTS, REASON_POINTS, gradeSort, currentSet, endGame, nextRound, normalizeDeal, normalizeGame,
   outAwards, settleIfComplete, standings, startGame, stillToPick, submitPick,
 } from './rules';
 
@@ -167,5 +167,92 @@ describe('the game log and its awards', () => {
       line(['p1', 'p2'], { p1: 'odd', p2: 'odd' }, ['p2']),
     ];
     expect(titles(log)['Right for the wrong reason']).toEqual(['p1', 'Found it 3 times, never knew why']);
+  });
+});
+
+// "Groups of four": a board of eight in two groups keeps the cases readable;
+// the rules never assume four groups.
+const board = () => ({
+  groups: [
+    { kind: 'studio', sentence: 'All animated by MAPPA', keys: ['a', 'b', 'c', 'd'], reason: 2 },
+    { kind: 'year', sentence: 'All from shows that first aired in 2006', keys: ['e', 'f', 'g', 'h'], reason: 0 },
+  ],
+  cards: ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'].map((key) => ({ key, name: key.toUpperCase(), series: '', imageUrl: '', note: '' })),
+  reasons: ['All from shows that first aired in 2006', 'All male characters', 'All animated by MAPPA'],
+});
+const BOARDS = { mode: 'groups', rounds: 1, reasonsOn: true, sets: [board()] };
+const RIGHT = { groups: [['h', 'g', 'f', 'e'], ['b', 'a', 'd', 'c']], reasons: [0, 2] };
+
+describe('sorting a board', () => {
+  it('grades groups as sets, whatever their order, and pays reasons only beside a right group', () => {
+    expect(gradeSort(board(), RIGHT, true)).toEqual({
+      groupsRight: 2, reasonsRight: 2, correct: true, reasonRight: true, delta: 2 * GROUP_POINTS + 2 * REASON_POINTS,
+    });
+    const swapped = { groups: [['a', 'b', 'c', 'e'], ['d', 'f', 'g', 'h']], reasons: [2, 0] };
+    expect(gradeSort(board(), swapped, true)).toMatchObject({ groupsRight: 0, reasonsRight: 0, correct: false, delta: 0 });
+    const halfWhy = { ...RIGHT, reasons: [1, 2] };
+    expect(gradeSort(board(), halfWhy, true)).toMatchObject({ correct: true, reasonRight: false, reasonsRight: 1 });
+  });
+
+  it('waits for every sort, then reveals', () => {
+    let g = startGame(['p1', 'p2'], BOARDS);
+    g = apply(g, submitPick(g, BOARDS, 'p1', RIGHT, ['p1', 'p2']));
+    expect(g.phase).toBe('picking');
+    g = apply(g, submitPick(g, BOARDS, 'p2', { groups: [['a', 'b', 'c', 'e'], ['d', 'f', 'g', 'h']], reasons: [0, 1] }, ['p1', 'p2']));
+    expect(g.phase).toBe('revealed');
+    expect(g.scores).toEqual({ p1: 2 * GROUP_POINTS + 2 * REASON_POINTS, p2: 0 });
+  });
+
+  it('refuses a sort that is not a partition of the board, or lacks a reason', () => {
+    const g = startGame(['p1'], BOARDS);
+    const bad = [
+      { groups: [['a', 'b', 'c', 'd']], reasons: [2] }, // a group short
+      { groups: [['a', 'b', 'c', 'd'], ['a', 'f', 'g', 'h']], reasons: [2, 0] }, // a card twice
+      { groups: [['a', 'b', 'c', 'd'], ['e', 'f', 'g', 'z']], reasons: [2, 0] }, // a card not dealt
+      { groups: [['a', 'b', 'c'], ['d', 'e', 'f', 'g', 'h']], reasons: [2, 0] }, // wrong sizes
+      { groups: RIGHT.groups, reasons: [0] }, // a reason missing
+      { groups: RIGHT.groups, reasons: [0, 7] }, // a reason not on offer
+    ];
+    for (const pick of bad) expect(submitPick(g, BOARDS, 'p1', pick, ['p1']).patch).toEqual({});
+    const off = { ...BOARDS, reasonsOn: false };
+    expect(submitPick(g, off, 'p1', { groups: RIGHT.groups }, ['p1']).patch.phase).toBe('revealed');
+  });
+
+  it('logs a board as sorted counts, and the awards speak of boards', () => {
+    const deal = { ...BOARDS, rounds: 2, sets: [board(), board()] };
+    let g = startGame(['p1', 'p2'], deal);
+    for (let r = 0; r < 2; r++) {
+      g = apply(g, submitPick(g, deal, 'p1', RIGHT, ['p1', 'p2']));
+      g = apply(g, submitPick(g, deal, 'p2', { groups: [['a', 'b', 'c', 'e'], ['d', 'f', 'g', 'h']], reasons: [2, 0] }, ['p1', 'p2']));
+      g = apply(g, nextRound(g));
+    }
+    expect(g.phase).toBe('finished');
+    expect(g.log[0]).toEqual({ round: 0, got: ['p1'], reasons: ['p1'], sorted: { p1: 2, p2: 0 } });
+    expect(g.log[0].picks).toBeUndefined();
+    const players = [{ id: 'p1', name: 'Ada' }, { id: 'p2', name: 'Bo' }];
+    const awards = outAwards(g.log, players, { reasonsOn: true });
+    const lone = awards.find((a) => a.title === 'Lone wolf');
+    expect(lone.detail).toMatch(/2 boards/);
+    expect(awards.find((a) => a.title === 'Perfect game').detail).toBe('Sorted all 2 boards');
+    expect(awards.find((a) => a.title === 'Full marks').detail).toMatch(/every group and every reason/i);
+    expect(awards.map((a) => a.title)).not.toContain('Contrarian');
+  });
+
+  it('repairs a board and a sort that RTDB returned as objects', () => {
+    const raw = {
+      mode: 'groups', rounds: 1, reasonsOn: true,
+      sets: { 0: { ...board(), groups: { 0: { ...board().groups[0], keys: { 0: 'a', 1: 'b', 2: 'c', 3: 'd' } }, 1: board().groups[1] } } },
+    };
+    const deal = normalizeDeal(raw);
+    expect(deal.mode).toBe('groups');
+    expect(deal.sets[0].groups[0].keys).toEqual(['a', 'b', 'c', 'd']);
+    const game = normalizeGame({
+      order: ['p1'], scores: { p1: 0 }, rounds: 1, round: 0, phase: 'picking',
+      picks: { p1: { groups: { 0: { 0: 'a', 1: 'b', 2: 'c', 3: 'd' }, 1: ['e', 'f', 'g', 'h'] } } },
+      log: [{ round: 0, got: ['p1'], sorted: { p1: 2, p2: 0 } }],
+    });
+    expect(game.picks.p1).toEqual({ groups: [['a', 'b', 'c', 'd'], ['e', 'f', 'g', 'h']], reasons: [] });
+    expect(game.log[0].sorted).toEqual({ p1: 2, p2: 0 });
+    expect(normalizeDeal({ rounds: 1, sets: [] }).mode).toBe('odd');
   });
 });

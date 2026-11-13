@@ -1,5 +1,8 @@
 import { describe, it, expect, afterAll } from 'vitest';
 import { device, seatTable, until, sleep, GRACE_WAIT, syncErrors } from './harness';
+import { indexPack } from '../src/shared/utils/facts';
+import { franchiseTitleKey } from '../src/shared/utils/franchise';
+import { characterNameKey } from '../src/shared/utils/character';
 
 const HOOK = ['src/games/aniout/hooks/useOutRoom.js', 'useOutRoom'];
 const BASE = { rounds: 3, cards: 5, reasons: true, sharedOnly: false };
@@ -8,15 +11,20 @@ const BASE = { rounds: 3, cards: 5, reasons: true, sharedOnly: false };
 // only pictured characters linked by something on record. Twenty-four shows
 // whose studios, years and sources cycle at different periods hold clean
 // rounds with no pack at all.
-const STUDIOS = ['MAPPA', 'Bones', 'Madhouse', 'Kyoto Animation'];
+//
+// A "Groups of four" board wants every kind known on its cards, and tags and
+// voice actors live only in the fact pack, so its test passes the host a pack
+// for these shows (PACK) — only the host deals, so only the host needs it.
+const STUDIOS = ['MAPPA', 'Bones', 'Madhouse', 'Kyoto Animation', 'Trigger', 'Wit'];
+const SHOWS = 48;
 const pictured = (name) => ({
   id: name.toLowerCase(),
   name,
-  animeList: Array.from({ length: 24 }, (_, i) => ({
+  animeList: Array.from({ length: SHOWS }, (_, i) => ({
     id: `anilist_anime_${2000 + i}`,
     title: `Smoke Show ${i}`,
-    studio: STUDIOS[i % 4],
-    seasonYear: 2010 + (i % 5),
+    studio: STUDIOS[i % 6],
+    seasonYear: 2001 + (i % 9),
     source: ['MANGA', 'LIGHT_NOVEL', 'ORIGINAL'][i % 3],
     format: 'TV',
     characters: [{
@@ -27,9 +35,14 @@ const pictured = (name) => ({
       imageUrl: `https://s4.anilist.co/c/${i}.jpg`,
       description: '',
       favourites: 100 + i,
-      genres: ['Action'],
+      genres: [`Genre ${i % 7}`],
     }],
   })),
+});
+const PACK = indexPack({
+  version: 5,
+  shows: Object.fromEntries(Array.from({ length: SHOWS }, (_, i) => [franchiseTitleKey(`Smoke Show ${i}`), { tags: [`Tag ${i % 8}`] }])),
+  characters: Object.fromEntries(Array.from({ length: SHOWS }, (_, i) => [characterNameKey(`Hero ${i}`), { voiceActorJp: `Voice ${i % 10}` }])),
 });
 
 const all = [];
@@ -76,6 +89,42 @@ describe('AniOut online', () => {
     }
     await until(() => devs.every((d) => d.r.view === 'results'), { what: 'results' });
     expect(same(devs, (r) => r.game.scores)).toBe(true);
+    expect(syncErrors(devs)).toEqual([]);
+  });
+
+  it('sorts a groups board on three devices, graded as sets once all are in', async () => {
+    const devs = [mk('s'), mk('t'), mk('u')];
+    const [A, B, C] = devs;
+    await seatTable(devs, [pictured('Sam'), pictured('Tia'), pictured('Uma')]);
+    await A.act((r) => r.startGame({ ...BASE, mode: 'groups', boards: 1 }, PACK));
+    await until(() => devs.every((d) => d.r.view === 'round' && d.r.game?.phase === 'picking'), { what: 'board dealt' });
+    expect(same(devs, (r) => r.deal)).toBe(true);
+    expect(A.r.deal.mode).toBe('groups');
+    const set = setOf(A.r);
+    const n = set.groups.length;
+    const truth = set.groups.map((g) => g.keys);
+
+    // Sam: every group right, each listed backwards and in reverse order, with
+    // every reason. Tia: right groups, no reason right. Uma: two groups'
+    // first cards swapped, so two wrong.
+    const right = [...truth].reverse().map((g) => [...g].reverse());
+    const rightReasons = [...set.groups].reverse().map((g) => g.reason);
+    const wrongReasons = rightReasons.map((r) => (r + 1) % set.reasons.length);
+    const swapped = truth.map((g) => [...g]);
+    [swapped[0][0], swapped[1][0]] = [swapped[1][0], swapped[0][0]];
+    await A.act((r) => r.pick(null, { groups: right, reasons: rightReasons }));
+    await B.act((r) => r.pick(null, { groups: right, reasons: wrongReasons }));
+    await until(() => devs.every((d) => d.r.game.picks.sam && d.r.game.picks.tia), { what: 'two sorts in' });
+    expect(A.r.game.phase).toBe('picking');
+    await C.act((r) => r.pick(null, { groups: swapped, reasons: set.groups.map((g) => g.reason) }));
+    await until(() => devs.every((d) => d.r.game.phase === 'revealed'), { what: 'board revealed' });
+    // Sam: n groups and n reasons. Tia: n groups. Uma: n − 2 groups, each with its reason.
+    expect(A.r.game.scores).toEqual({ sam: 3 * n, tia: 2 * n, uma: 3 * (n - 2) });
+    expect(A.r.game.picks.sam).toMatchObject({ correct: true, reasonRight: true, groupsRight: n });
+    expect(A.r.game.picks.uma).toMatchObject({ correct: false, groupsRight: n - 2 });
+    await A.act((r) => r.next());
+    await until(() => devs.every((d) => d.r.view === 'results'), { what: 'results' });
+    expect(A.r.game.log[0].sorted).toEqual({ sam: n, tia: n, uma: n - 2 });
     expect(syncErrors(devs)).toEqual([]);
   });
 

@@ -1,5 +1,6 @@
 import { DEFAULT_PREFS } from './prefs';
-import { MIN_PLAYERS, PICK_POINTS, REASON_POINTS } from './rules';
+import { GROUP_SIZE } from './groups';
+import { GROUP_POINTS, MIN_PLAYERS, PICK_POINTS, REASON_POINTS } from './rules';
 
 // The game's rules sheet (shared/components/HowToSheet.jsx), built from the
 // rules' own constants, so a retuned number reaches the sheet by itself.
@@ -25,9 +26,19 @@ export const HOW_TO = {
       ],
     },
     {
+      // The second game, picked on the settings card.
+      title: 'Groups of four',
+      items: [
+        `A board of ${GROUP_SIZE * GROUP_SIZE} characters hides ${GROUP_SIZE} groups of ${GROUP_SIZE}. Sort them into the groups, in secret.`,
+        'A group shares something no other character on the board has: a show, studio, debut year, source, genre, tag or Japanese voice actor.',
+        `Each group right: ${GROUP_POINTS} points. Its reason as well: +${REASON_POINTS}.`,
+        `${DEFAULT_PREFS.boards} boards by default. Lists too small for four groups get boards of three.`,
+      ],
+    },
+    {
       title: 'Good to know',
       items: [
-        'Every round has exactly one answer. A round where a second character also stands out is never dealt.',
+        'Every round has exactly one answer, and every board sorts exactly one way. Anything that could be read two ways is never dealt.',
         'The reveal shows each character’s show and what links them.',
         'Bigger lists make more varied rounds. Studio, tag and voice-actor rounds need the shows to be well known.',
       ],

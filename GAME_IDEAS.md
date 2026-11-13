@@ -71,8 +71,11 @@ any existing card game's rules.
 - Typed guesses can reuse shared/utils/nameMatch.js.
 - Open questions: timer, guess format, drawing tools (colours, eraser, undo).
 
+## Built: AniOut "Groups of four" (was under "Also considered")
+Sort 16 characters into 4 hidden groups of 4, each joined by something no other card on the
+board has; every board sorts exactly one way. A mode on AniOut's settings card. Notes in
+src/games/aniout/CLAUDE.md.
+
 ## Also considered
-- AniOut "grouping" mode: sort 16 characters into 4 hidden groups of 4. It reuses AniOut's
-  one-answer deal checks, so it fits there as a mode.
 - Higher or lower on show stats: skipped because AniRank already ranks by facts.
 - Voice-actor categories in AniName: left out because the data is too thin.

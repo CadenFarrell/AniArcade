@@ -39,7 +39,7 @@ export default function LocalRound({ players, deal, onPlayAgain, onBack }) {
       handoff={needsHandoff ? (
         <Handoff
           player={player}
-          note="Picks stay hidden until everyone is in."
+          note={deal.mode === 'groups' ? 'Sorts stay hidden until everyone is in.' : 'Picks stay hidden until everyone is in.'}
           cta={`I'm ${player?.name ?? 'next'} — ready`}
           onReady={() => setHolding(current)}
         />

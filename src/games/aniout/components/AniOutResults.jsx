@@ -66,22 +66,26 @@ function Recap({ log, deal, players }) {
   if (!lines.length || !deal?.sets?.length) return null;
   const nameOf = (id) => players.find((p) => p.id === id)?.name ?? 'Someone';
   return (
-    <Card title="The rounds" padding="sm" className="mb-6">
+    <Card title={deal.mode === 'groups' ? 'The boards' : 'The rounds'} padding="sm" className="mb-6">
       {lines.map((l) => {
         const set = deal.sets[l.round];
         if (!set) return null;
-        const odd = set.cards.find((c) => c.key === set.odd);
+        // A board has no one face: its row leads with the groups' links.
+        const board = Boolean(set.groups);
+        const odd = board ? null : set.cards.find((c) => c.key === set.odd);
         const nobody = !l.got.length;
         return (
           <CardRow key={l.round}>
-            <Avatar src={odd?.imageUrl} alt="" size="sm" />
+            {!board && <Avatar src={odd?.imageUrl} alt="" size="sm" />}
             <span className="min-w-0 flex-1">
-              <span className="block truncate text-sm text-fg-helper">{set.sentence}</span>
+              <span className="block text-sm text-fg-helper [overflow-wrap:anywhere]">
+                {board ? set.groups.map((g) => g.sentence).join(' · ') : set.sentence}
+              </span>
               <span className="block truncate font-display text-lg font-extrabold text-fg-strong">
-                {odd?.name ?? 'The odd one out'}
+                {board ? `Board ${l.round + 1}` : (odd?.name ?? 'The odd one out')}
               </span>
               <span className="flex flex-wrap items-center gap-1 text-sm text-fg-helper">
-                {nobody ? 'It fooled everyone' : (
+                {nobody ? (board ? 'Nobody sorted it all' : 'It fooled everyone') : (
                   <>
                     {l.got.map((id) => <PlayerFace key={id} player={players.find((p) => p.id === id) ?? { id, name: nameOf(id) }} />)}
                     <span className="truncate">{l.got.map(nameOf).join(', ')}</span>
