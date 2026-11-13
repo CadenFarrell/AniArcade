@@ -21,7 +21,27 @@ paths:
 
 # Online rooms (Firebase Realtime Database)
 
-`useRoomCore` and its options are in the root `CLAUDE.md`.
+## `useRoomCore`, and what stays per-game
+
+AniGuess and AniTune each grew their own room lifecycle first and the copies drifted; a game's
+online hook now configures the core and adds only its own rules bindings:
+
+```js
+useRoomCore({ storageKey, playersPath, initialState, normalizeState, onExitRoom })
+```
+
+- `storageKey` — `<game>_online_room`, per-game so two games' saved rooms can't clobber
+  each other.
+- `playersPath` — where the roster lives under `state/`. Genuinely differs
+  (`gameSession/players` in AniGuess, `players` elsewhere); the join transaction and the
+  roster read both follow it.
+- `normalizeState` — repairs what RTDB dropped, at the single point state enters the hook.
+
+It owns codes, `memberUids`/`claims`/`open`, create/join/leave, the `onValue`
+subscription, presence and the grace-window clock, `guard`/`bestEffort`, `patchState`, the
+`once` one-shot, and host migration. What stays per-game is the
+departure-reconciliation effect: noticing *that* someone left is generic, deciding what
+their absence broke is not.
 
 ## The tree, and where a hidden value goes
 
@@ -87,8 +107,8 @@ room. Host migration and the card check are the two such cases so far.
 
 ## Outside `rooms/`: reports
 
-`reports/{crashes,feedback}/{uid}/{id}` and `reportGate/{uid}/{kind}` (root `CLAUDE.md`, "Crash
-reports and feedback") are **write-only**: no rule grants a read, so nothing in the app can
+`reports/{crashes,feedback}/{uid}/{id}` and `reportGate/{uid}/{kind}` (`.claude/rules/reports.md`)
+are **write-only**: no rule grants a read, so nothing in the app can
 list them. A report is written in ONE multi-path `update` with its gate set to the server
 `now`; the report's rule reads the gate's new value through `newData.parent()` ×4 (the
 multi-path trap below is about `root`, which sees the old tree), and the gate's rule refuses

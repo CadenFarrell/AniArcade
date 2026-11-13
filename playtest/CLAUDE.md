@@ -3,8 +3,19 @@
 Loaded when Claude works on files in this folder. Moved from the root `CLAUDE.md`, which
 still holds the cross-game architecture these notes build on.
 
+```bash
+npm run playtest                                   # local, jsdom, every game × 20 seeds (~4 min)
+npm run playtest -- --game anitag --seed 7 --debug # replay one run exactly (--debug screens: dump each screen)
+npm run playtest -- --layer online                 # devices in one room on the emulator (reuses a running one)
+npm run playtest -- --layer browser                # Playwright: phone + desktop, axe, layout, drag, online
+npm run playtest:all                               # all three, then the report
+npm run playtest -- --shards 1                     # local/online in one process (default: picked by free RAM)
+```
+
 Each run writes `playtest-report/` (gitignored): `summary.md`, `index.html`, screenshots,
-and a replay command per failure. Three things to know before touching it:
+and a replay command per failure. Read `summary.md`: `index.html` is the same text plus
+images at ~160 KB, and `.claude/settings.json` denies reading it. Three things to know
+before touching the bots:
 
 - **One bot brain, every layer.** `core/snapshot.js` reads a screen into
   `{ heading, text, controls }` (it must stay self-contained — Playwright ships its source

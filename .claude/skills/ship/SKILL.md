@@ -75,7 +75,10 @@ Decide from `git diff --name-only <last deployed>..HEAD` — or this ship's comm
 | anything the built app ships (`src/`, `public/`, `index.html`, `sw/`, `vite.config.js`, `package.json` deps) | hosting |
 | `database.rules.json` | `npx firebase deploy --only database` |
 | `workers/mal-proxy/` | `npx wrangler deploy` from that folder |
-| only docs, tests, `playtest/`, `smoke/`, `.claude/`, generators | nothing |
+| only docs, tests, `playtest/`, `smoke/`, `.claude/`, `scripts/`, generators | nothing |
+
+Before a hosting or database deploy, read `.claude/rules/hosting.md` (the two sites, the
+redirect, the emulator namespace). It does not load by itself here.
 
 **Hosting is built from a clean checkout of the commit, never from the main tree** (it may
 hold another session's unfinished work, and `.env.local` must be the production one):

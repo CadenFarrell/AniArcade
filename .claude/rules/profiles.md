@@ -20,8 +20,14 @@ paths:
 
 # Profiles and identity
 
-The key name, the stored-fields table and the `useProfileStore` rule are in the root
-`CLAUDE.md`.
+The key name and the `useProfileStore` rule are in the root `CLAUDE.md`.
+
+**What a profile stores** — anything not listed here is simply not there at read time:
+
+| entry | stored fields |
+| --- | --- |
+| anime | `id`, `title`, `characters`, plus the `STAT_KEYS` in `profileMerge.js` (`coverImageUrl`, `startDate`, `episodes`, `averageScore`, `popularity`, `format`, `studio`, `source`, `season`, `seasonYear`, `duration`) |
+| character | `id`, `name`, `role`, `gender`, `imageUrl`, `description`, `favourites`, `genres` |
 
 **Every read runs `normalizeProfile`**, which repairs older shapes without a migration flag and
 guards missing `animeList`/`characters` — the picker renders EVERY saved profile, so one

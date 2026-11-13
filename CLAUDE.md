@@ -56,53 +56,14 @@ traps behind both are in `.claude/rules/testing.md`.
 its harness simulates one device per player is in `smoke/CLAUDE.md`. Never `await` an
 `act()` that might not resolve: it holds every React update in the process.
 
-Playtest bots (`playtest/`, also `/playtest`) play every game, start to results, through
-the real screens:
+Playtest bots (`npm run playtest`, or `/playtest`) play every game through the real screens and
+find buttons by their words: a renamed heading or button needs a matching change in
+`playtest/strategies/`, and a new game needs a strategy. Commands and internals:
+`playtest/CLAUDE.md`. Read `playtest-report/summary.md`, never `index.html`.
 
-```bash
-npm run playtest                                   # local, jsdom, every game × 20 seeds (~4 min)
-npm run playtest -- --game anitag --seed 7 --debug # replay one run exactly (--debug screens: dump each screen)
-npm run playtest -- --layer online                 # devices in one room on the emulator (reuses a running one)
-npm run playtest -- --layer browser                # Playwright: phone + desktop, axe, layout, drag, online
-npm run playtest:all                               # all three, then the report
-npm run playtest -- --shards 1                     # local/online in one process (default: picked by free RAM)
-```
-
-Each run writes `playtest-report/` (gitignored). The bots find screens and buttons by their
-words, so a renamed heading or button needs a matching change in `playtest/strategies/`, and
-a new game needs a strategy or its playtest fails on purpose. The browser layer builds to
-`dist-playtest*` and serves on 4198/4199 — never `dist`, never 5173. Internals (the shared
-bot brain, seeds as replays, reading "stuck" failures) are in `playtest/CLAUDE.md`.
-
-Firebase (online rooms only):
-
-```bash
-npx firebase emulators:start --only database,auth --project demo-aniguess
-npx firebase deploy --only database    # database.rules.json
-npx firebase deploy --only hosting     # dist/ — run npm run build first
-```
-
-The arcade lives at **`aniarcade.web.app`**, a second Hosting site in the Firebase project
-`aniguess-a08f7` (a project ID can never change, so the console, the database
-`aniguess-a08f7-default-rtdb` and `.env.local`'s `*.firebaseapp.com` auth domain keep the old
-name). `firebase.json`'s `hosting` is a list of two: `aniarcade` serves `dist/`, and the
-project's original site `aniguess-a08f7.web.app` 301s every path there from
-`hosting/old-address/` (renamed before release, so nothing was stranded). The bare `/` needs
-its own redirect rule — `/:path*` does not match it, and the placeholder page served instead
-would drop an invite link's query, which a redirect keeps. One deploy updates both. A new
-origin the app is served from must also be in the MyAnimeList proxy's `ALLOWED_ORIGINS`
-(`workers/mal-proxy/wrangler.toml`), redeployed, or that import breaks there.
-
-The CLI is `firebase-tools` in devDependencies, not a global install, so a bare `firebase`
-in a shell is "command not found". npm scripts are the exception — they put
-`node_modules/.bin` on the PATH, which is why `test:smoke` can call it bare.
-
-MyAnimeList proxy (`workers/mal-proxy`, wrangler) commands: `.claude/rules/list-import.md`.
-
-`.env.local` (copied from `.env.local.example`) holds the `VITE_FIREBASE_*` config. When
-pointing at the emulator, `VITE_FIREBASE_DATABASE_URL` must use the `-default-rtdb`
-suffixed namespace — the wrong namespace connects to a rules-less database instead of the
-one your rules were deployed to.
+Firebase is `npx firebase` (a devDependency; bare `firebase` works only inside npm scripts).
+Deploying goes through `/ship`. The two Hosting sites, the emulator's database namespace and
+`.env.local`: `.claude/rules/hosting.md`.
 
 ## Architecture
 
@@ -122,29 +83,17 @@ into the hub's startup bundle: the edit hook flags it as it is written, and `npm
 against the 120 KB budget. Raise the budget only as a decision. The mechanics (idle preload,
 the loading screen, the reload-not-reset error) are in `src/hub/CLAUDE.md`.
 
-Each game's top component (`<Game>Game.jsx`) is just a local/online mode picker: it holds
-`mode` and renders `shared/components/ModePicker.jsx` with its own descriptor (imported from
-`./index`) and tagline. **Build a new game's picker from that component, not from another
-game's file** — the first seven were hand-copied once and differed only in colour and tagline.
-ModePicker is the game's cover page: the hub tile opened — game-ink block, split ANI / WORD
-title, and the same character the tile showed (`shared/context/tileCharacterContext.js`,
-provided by `HubScreen` around the active game; null when a game is mounted alone, which
-draws a bare panel). Its two mode cards are named "Play on this device" / "Play online"
-because HubScreen.test and the playtest bots find them by those words; online is disabled
-unless `firebaseEnabled`. The picker delegates to `LocalGame.jsx` or `OnlineGame.jsx`, each
-of which is a thin view-router holding a `view` string and rendering dumb screens from
-`components/`.
+Each game's top component (`<Game>Game.jsx`) is a local/online mode picker built from
+`shared/components/ModePicker.jsx` (**never copied from another game's file**), which delegates
+to `LocalGame.jsx` or `OnlineGame.jsx`: thin view-routers that hold a `view` string and render
+dumb screens from `components/`. Its cards are named "Play on this device" / "Play online"
+because the tests and bots find them by those words. The cover, tiles and `ArcadeMark`:
+`src/hub/CLAUDE.md`. A new game: `/new-game`.
 
-Tile sizing, the tile characters, the blurb's two homes and `ArcadeMark` are in
-`src/hub/CLAUDE.md`.
-
-**Every game ships a rules sheet: `howTo: () => import('./howTo')`**, whose `HOW_TO` is
-`{ goal, players, sections: [{ title, items }] }` built from the game's own `rules.js` and
-`prefs.js` constants, so a retuned number reaches the sheet by itself. `HubScreen` shows it
-(`shared/components/HowToSheet.jsx`, one section a page so it fits a phone) from a "How to
-play" button in the top bar on every screen of a game and another on its cover, and by
-itself the first time a game is opened on a device (`hub/howToSeen.js`). `hub/howTo.test.js` fails a game without one, or one printing
-`undefined`. Change a game's rules, check its sheet.
+**Every game ships a rules sheet: `howTo: () => import('./howTo')`**, whose `HOW_TO` is built
+from the game's own `rules.js` and `prefs.js` constants, so a retuned number reaches the sheet
+by itself. `hub/howTo.test.js` fails a game without one, or one printing `undefined`. Change a
+game's rules, check its sheet.
 
 ### rules.js — the central invariant
 
@@ -161,44 +110,15 @@ and online play. **Change game behaviour in `rules.js`, not in the hooks** — a
 `*.test.js` files that cover it are the reason it stays testable without a DOM or a
 network.
 
-**Per-game design notes live beside each game and load only when Claude works in that folder:**
-`src/games/anirank/CLAUDE.md` (board direction, Kendall-tau scoring, the pool toggle, tier
-lists), `src/games/wavelength/CLAUDE.md` (AniWave), `src/games/categories/CLAUDE.md` (AniTag),
-`src/games/aniquiz/CLAUDE.md` (AniQuiz: the turn and the miss penalty, the casual topics), `src/games/anifake/CLAUDE.md` (AniFake: the deal and
-the card check, hidden-role patterns, fame coverage), `src/games/aniturf/CLAUDE.md` (AniTurf: crossing
-goals, the winding-route footing and its detours, the two-device claim),
-`src/games/anipeek/CLAUDE.md` (AniPeek: the bid and its score, the pool's three filters, the
-tile board, the skip), `src/games/aniout/CLAUDE.md` (AniOut: the connections, the
-one-answer checks, profile-then-pack facts, the reasons), `src/games/aniname/CLAUDE.md`
-(AniName: the auction, the three verdicts, the table's review, the clock),
-`src/games/anichain/CLAUDE.md` (AniChain: the three table shapes, the banned words, the guess
-window, the givers' card and judge) and `src/games/anidraft/CLAUDE.md` (AniDraft: the role
-deck, the board and what is never dealt twice, the snake, the role-by-role vote,
-auto-picks). Read the relevant one before changing a game's behaviour from shared code, where
-it will not load on its own.
+**Each game's design notes are its `src/games/<game>/CLAUDE.md`** (AniWave is `wavelength/`,
+AniTag `categories/`), which loads only when Claude works in that folder. Read the relevant one
+before changing a game's behaviour from shared code, where it will not load on its own.
 
 ### Online rooms (Firebase Realtime Database)
 
-**The room lifecycle is `shared/hooks/useRoomCore.js`, not per-game.** AniGuess and AniTune
-each grew their own copy first and the copies drifted; a game's online hook now configures
-the core and adds only its own rules bindings:
-
-```js
-useRoomCore({ storageKey, playersPath, initialState, normalizeState, onExitRoom })
-```
-
-- `storageKey` — `<game>_online_room`, per-game so two games' saved rooms can't clobber
-  each other.
-- `playersPath` — where the roster lives under `state/`. Genuinely differs
-  (`gameSession/players` in AniGuess, `players` elsewhere); the join transaction and the
-  roster read both follow it.
-- `normalizeState` — repairs what RTDB dropped, at the single point state enters the hook.
-
-It owns codes, `memberUids`/`claims`/`open`, create/join/leave, the `onValue`
-subscription, presence and the grace-window clock, `guard`/`bestEffort`, `patchState`, the
-`once` one-shot, and host migration. What stays per-game is the
-departure-reconciliation effect: noticing *that* someone left is generic, deciding what
-their absence broke is not.
+**The room lifecycle is `shared/hooks/useRoomCore.js`, not per-game.** A game's online hook
+configures the core and adds only its own rules bindings and its departure reconciliation
+(its options and what it owns: `.claude/rules/online-rooms.md`).
 
 All games share one `rooms/{code}` namespace (codes are app-wide, 5 chars, no `0/O/1/I`):
 `createdAt`, `open`, `memberUids/{uid}`, `claims/{playerId}` and `state/`, which every member
@@ -229,23 +149,13 @@ Every finished game is a line in `aniarcade_history`. Each game's FINAL results 
 `RoundEnd`, which would count a game several times. Ties, solo tables, team wins, the online
 scope and the head-to-head: `.claude/rules/play-history.md`.
 
-### Crash reports and feedback
+### Crash reports, feedback, wake lock
 
-`shared/services/reports.js` is the one write-only channel home: `reports/crashes/{uid}` and
-`reports/feedback/{uid}` in the same RTDB, which no client can read (read them in the Firebase
-console), each write rate-limited by a `reportGate/{uid}/{kind}` stamp the rules check.
-Firebase is imported **dynamically** there, so the hub's bundle carries no SDK and local play
-contacts Firebase only when something is actually sent. Crashes come from `ErrorBoundary`
-and `main.jsx`'s window listeners (`crashReport.js`: never from a dev server, offline, or for a
-failed game download, and never a profile or an invite's query); feedback from
-`FeedbackModal.jsx` (hub footer, and each rules sheet). Rules and smoke test:
-`.claude/rules/online-rooms.md`, `smoke/reports.smoke.test.js`.
-
-### The screen stays on
-
-`shared/hooks/useWakeLock.js` keeps the screen on while any game is open (one call in
-`HubScreen`), since a locked phone drops a room connection exactly as a closed tab does.
-Presence itself is in `.claude/rules/online-rooms.md`.
+Crash reports and feedback are write-only RTDB nodes sent through `shared/services/reports.js`.
+That file imports Firebase **dynamically**, so the hub's bundle carries no SDK:
+`.claude/rules/reports.md`. `shared/hooks/useWakeLock.js` (one call in `HubScreen`) keeps the
+screen on while a game is open, because a locked phone drops a room connection the way a
+closed tab does.
 
 ### Game settings
 
@@ -257,13 +167,10 @@ the settings, setup and lobby files).
 
 ### Recent deals
 
-`shared/utils/recentDeals.js` (`aniarcade_recent_deals`, not in `PRESERVED_KEYS`) remembers
-what each game dealt in its last few games on the dealing device (locally the one device,
-online the host's; never room state), and AniPeek, AniOut, AniName and AniTurf deal around it.
-It is a **preference, never a filter** (`preferFresh`, or a rank penalty), because a small
-shared list is exactly where a filter would leave nothing to deal. AniQuiz keeps its own
-two-tier `recent.js`. Repeats WITHIN a match are each game's own state (AniFake's match log,
-AniGuess's round history, AniTag's `seenCategories`).
+`shared/utils/recentDeals.js` remembers what each game dealt lately on the dealing device
+(never room state). It is a **preference, never a filter** (`preferFresh`, or a rank penalty),
+because a small shared list is exactly where a filter would leave nothing to deal. Repeats
+WITHIN a match are each game's own state. The file's header has the rest.
 
 ### Profiles and identity
 
@@ -272,15 +179,9 @@ Player profiles (name + anime list + characters) live in localStorage under
 saved profile is orphaned. **Components use `useProfileStore` (`context/profileContext.js`),
 never `useProfile()` directly**, which writes storage and re-renders nothing else.
 
-**What a profile stores is narrower than what the import fetches**, and anything not listed
-here is simply not there at read time:
-
-| entry | stored fields |
-| --- | --- |
-| anime | `id`, `title`, `characters`, plus the `STAT_KEYS` in `profileMerge.js` (`coverImageUrl`, `startDate`, `episodes`, `averageScore`, `popularity`, `format`, `studio`, `source`, `season`, `seasonYear`, `duration`) |
-| character | `id`, `name`, `role`, `gender`, `imageUrl`, `description`, `favourites`, `genres` |
-
-The stats are **absent, not null,** on profiles imported before them, and a character's
+**What a profile stores is narrower than what the import fetches** — read the stored-fields
+table in `.claude/rules/profiles.md` before relying on a field. The stats are **absent, not
+null,** on profiles imported before them, and a character's
 `favourites` is written `?? 0`: anything that ranks or filters by them must treat missing as
 "not eligible" and say so on screen. Online, the room holds a *copy* of each profile, and a
 lobby that reads a list calls `useRepublishProfile`. Identity is by folded name, never id
@@ -303,31 +204,18 @@ AniFake read its stats only through `usePackBackfill`. A missing entry is normal
 fold a profile keys on (`franchiseTitleKey`, `characterNameKey`). Versions, outside sources,
 `facts/overrides.json` and AniList's no-`Referer` 403 are in `.claude/rules/fact-packs.md`.
 
-### External APIs
+### Network
 
-- `shared/services/anilistClient.js` — GraphQL. Throttles from the `X-RateLimit-*` headers
-  the API actually returns (~30/min, not the widely-cited 90) and backs off on 429.
-  `shared/services/anilist.js` batches ~15 media per aliased query to stay under AniList's
-  500 query-complexity cap; the characters connection is hard-capped at 25/page.
-- Kitsu and MyAnimeList (proxy only): `.claude/rules/list-import.md`.
-- `games/anitune/services/animethemesClient.js` — public, no auth. Two verified quirks
-  documented in the file: the API bot-filters on `User-Agent` (fine in a browser, fatal for
-  Node scripts), and the audio CDN omits CORS headers on the actual GET, so `<audio src>`
-  playback and Range seeking work but `fetch`/`decodeAudioData` never will.
-  `factSources/animethemes.js` is the generator's own Node copy (it must send a UA).
-- Wikidata (generator only): `.claude/rules/fact-packs.md`.
+The external clients document their own limits and quirks in their headers: AniList
+(`shared/services/anilistClient.js`, ~30 requests/min), AnimeThemes
+(`games/anitune/services/animethemesClient.js`), Kitsu and MyAnimeList
+(`.claude/rules/list-import.md`) and Wikidata (`.claude/rules/fact-packs.md`).
 
-With no `.env.local`, `firebaseEnabled` is false, `ensureInitialized()` is never called, and
-local play touches no **third-party** network at all. Keep that property intact. What local
-play does request is all same-origin static files, in the same class as its own JS bundle:
-the fact pack under `/facts/`, the cast pack under `/casts/` (a list import's pre-fetched
-characters), the fonts, the prints under `/art/`, and the UI sounds under
-`/sounds/` (fetched at idle, and only where Web Audio exists — see
-`shared/services/sound.js`). The one third-party load is the player's OWN data: character
-portraits from an imported list, as `<img>` tags from AniList's CDN — on the hub tiles and in
-every game's `Avatar`, and only for someone who imported one. `hub/HubScreen.test.jsx` pins the network half of that: its
-`fetch` stub serves `/facts/` from `public/` and fails every other URL, and jsdom has no Web
-Audio, so the sound engine never asks.
+**Local play touches no third-party network** (no `.env.local` → `firebaseEnabled` false,
+`ensureInitialized()` never called). Keep it that way. It requests only same-origin static files
+(`/facts/`, `/casts/`, fonts, `/art/`, `/sounds/`), plus the player's OWN imported portraits
+from AniList's CDN as `<img>` tags. `hub/HubScreen.test.jsx` pins this: its `fetch` stub fails
+every URL except `/facts/`.
 
 ### Offline: the service worker
 
@@ -371,3 +259,8 @@ list both generators read) and `facts/overrides.json`.
 Comments here explain *why*, and heavily so — most are hard-won API, Firebase, or
 accessibility findings that would be re-broken without them. Match that density rather
 than stripping it. ESLint treats unused vars as errors, with `varsIgnorePattern: '^[A-Z_]'`.
+
+**Files over ~40 KB are read in parts, never whole:** Grep for the spot, then `Read` with
+`offset`/`limit`. That covers `aniquiz/famousLines.js` and `clues.js` (whose own tool is
+`node scripts/famous-lines.js`), the large `rules.js` files (`categories/`, `anifake/`) and
+their `rules.test.js`.

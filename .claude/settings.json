@@ -6,7 +6,9 @@
       "Read(./public/casts/**)",
       "Read(./package-lock.json)",
       "Read(./.anilist-cache/**)",
-      "Read(./.facts-cache/**)"
+      "Read(./.facts-cache/**)",
+      "Read(./playtest/fixtures/profiles.json)",
+      "Read(./playtest-report/index.html)"
     ]
   },
   "hooks": {

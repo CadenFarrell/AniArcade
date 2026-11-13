@@ -4,6 +4,13 @@ Loaded when Claude works on files in this folder. Moved here from the root `CLAU
 which still holds the cross-game architecture these notes build on (rules.js, online rooms,
 presence, settings, profiles, styling).
 
+**Never read `famousLines.js` or `clues.js` whole** (~120 KB and ~80 KB, about 30k and 20k
+tokens). `node scripts/famous-lines.js` gives the count, the lines-per-show shape and any
+duplicate; `--show <title>` lists one show's lines, and `--missing 40` lists the most popular
+pack shows that have none, which is where a new batch starts. The entry rules and fields are
+the file's first ~85 lines (`Read` with `limit`). Add a show's lines after its own `// ── Show ──`
+block (Grep for it) or as a new block at the end, and let `famousLines.test.js` judge them.
+
 ## AniQuiz: the fact pack's game
 
 `games/aniquiz/` (id `aniquiz`) is anime trivia, one player per clue: casts, portraits,

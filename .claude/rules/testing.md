@@ -21,3 +21,7 @@ setup and back. Two traps it hit:
   `vite.config.js` is what makes JSX compile at all.
 - vitest loads `.env.local` (production Firebase), so a component test must
   `vi.mock('shared/services/firebase')` before anything mounts.
+
+**While working, run the tests the change touches** — `npx vitest run src/games/<game>` (add
+`--reporter=dot` for a wide change) — and leave the whole suite to `/ship`, which runs it as the
+green gate. The full run's output is long, and every retry reads it again.

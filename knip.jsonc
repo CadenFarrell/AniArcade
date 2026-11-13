@@ -15,7 +15,8 @@
     "smoke/*.smoke.test.js",
     "smoke/vitest.config.js",
     "workers/mal-proxy/src/index.js",
-    "sw/serviceWorker.template.js"
+    "sw/serviceWorker.template.js",
+    "scripts/*.js"
   ],
   "project": [
     "src/**/*.{js,jsx,css}",
@@ -24,6 +25,7 @@
     "sw/**/*.js",
     "workers/**/*.js",
     "factSources/**/*.js",
+    "scripts/*.js",
     "*.js"
   ],
   "ignore": ["seedProfiles.js"],
