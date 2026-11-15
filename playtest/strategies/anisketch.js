@@ -10,8 +10,8 @@
 //   - online a guess is the "Your guess" box then "Guess", held while one is
 //     being checked (waited out, not resent).
 // The bot cannot see who is drawn, so online its guesses are names off the
-// fixture lists — right only by luck — and an online drawer gives up after a
-// few looks so a run is not every turn's whole clock. Locally a random
+// fixture lists — right only by luck — and an online drawer mostly gives up
+// after one look, so a run is not every turn's whole clock. Locally a random
 // guesser is credited, so every scoring branch is reached.
 import { makeStrategy } from './base.js';
 import { find, findAll, click, fill, wait } from '../core/generic.js';
@@ -80,10 +80,15 @@ export default makeStrategy({
         if (rng.chance(0.1)) return wait((ctx.scenario.prefs.drawSeconds ?? 80) * 1000 + 2000, 'let the clock run out');
         return click(rng.pick(credits), 'credit whoever shouted it');
       }
-      // Online: the guessers are typing. Give up after a few looks so a run
-      // is not every turn's full clock.
-      memory.looks = memory.looks?.turn === turn ? { turn, n: memory.looks.n + 1 } : { turn, n: 1 };
-      if (giveUp && memory.looks.n > 2 && rng.chance(0.7)) return click(giveUp, 'give up on this one');
+      // Online: the guessers are typing, and their guesses are names off the
+      // lists, right only by luck — so a turn left alone is the whole clock,
+      // and online clocks are real time. Decided once a turn: most turns the
+      // drawer gives up after one look at the feed (the guesses have been
+      // judged by then); about one in seven runs the clock out, so time-up is
+      // still played.
+      if (memory.plan?.turn !== turn) memory.plan = { turn, runOut: rng.chance(0.15), looks: 0 };
+      memory.plan.looks += 1;
+      if (giveUp && !memory.plan.runOut && memory.plan.looks > 1) return click(giveUp, 'give up on this one');
       return wait(2000, 'watch the guesses come in');
     }
 

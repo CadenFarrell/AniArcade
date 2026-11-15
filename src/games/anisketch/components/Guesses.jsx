@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { Button, Icon } from '../../../shared/ui';
 import { MAX_GUESS } from '../rules';
 
@@ -36,6 +36,10 @@ export function GuessFeed({ game, players, youId = null }) {
 /** The guess box: one line, sent with Enter or "Guess". Disabled while one is waiting. */
 export function GuessBar({ onGuess, waiting = false }) {
   const [text, setText] = useState('');
+  // useId, not a fixed id: the online playtest mounts every seat in one page,
+  // where two guess boxes sharing "anisketch-guess" left one with both labels
+  // and the other with none.
+  const inputId = useId();
   const send = (e) => {
     e.preventDefault();
     const clean = text.trim();
@@ -45,9 +49,9 @@ export function GuessBar({ onGuess, waiting = false }) {
   };
   return (
     <form onSubmit={send} className="mb-4 flex gap-2">
-      <label htmlFor="anisketch-guess" className="sr-only">Your guess</label>
+      <label htmlFor={inputId} className="sr-only">Your guess</label>
       <input
-        id="anisketch-guess"
+        id={inputId}
         type="text"
         value={text}
         maxLength={MAX_GUESS}
