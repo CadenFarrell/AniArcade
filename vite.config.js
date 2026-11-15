@@ -44,8 +44,9 @@ export default defineConfig(({ mode }) => ({
     environment: 'node',
     // playtest/core's pure helpers too (the shard split): the bots themselves
     // are long runs with their own config, but a plain module beside them is
-    // as cheap to test as any rules.js.
-    include: ['src/**/*.test.{js,jsx}', 'playtest/core/**/*.test.js'],
+    // as cheap to test as any rules.js. And sw/: the offline worker's install,
+    // against a fake CacheStorage.
+    include: ['src/**/*.test.{js,jsx}', 'playtest/core/**/*.test.js', 'sw/**/*.test.js'],
     // Vitest's default is one worker per core minus one: 13 on the 14-thread
     // dev machine, each its own Node process with its own jsdom. That run
     // peaked at ~3 GB and left 0.26 GB of 16 GB free, enough for Claude Code to

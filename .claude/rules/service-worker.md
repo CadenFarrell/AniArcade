@@ -13,10 +13,19 @@ paths:
 A production build carries `/sw.js` (`sw/serviceWorker.template.js`, written by `sw/plugin.js` at
 `writeBundle`), so a phone that opened the arcade once with signal opens and plays locally with
 none. `shared/utils/precache.js` decides what is stored over the finished build: every chunk, the
-page, the fact pack `index.json` names (no other), fonts, prints, sounds and icons — about 3.5 MB,
+page, the fact pack `index.json` names (no other), fonts, prints, sounds and icons — 113 files,
+4.1 MB, 1.45 MB on the wire (2026-11-15) —
 not `og.png`, and not the cast pack (`casts/`: megabytes only an import reads, and an import
 needs AniList, so never offline). The version hashes every stored file's bytes, because `public/` names are not
 content-hashed and a re-encoded sound must still ship.
+
+- **A deploy downloads only the files whose bytes changed.** `PRECACHE` is url → content hash
+  (`sw/plugin.js`); install hashes the copy a cache of ours already holds and copies it when it
+  matches, and fetches the rest. Before this every deploy cost every returning player the whole
+  1.45 MB, against Spark Hosting's ~360 MB a day. Held files are verified by their bytes, never
+  trusted by name. Install gathers every file before writing any, so a failed one leaves no
+  partial cache to take the previous build's place in activate. `sw/serviceWorker.test.js` runs
+  install against a fake CacheStorage.
 
 - **It never touches another origin** (Firebase, AniList, AnimeThemes, the MAL proxy,
   portraits), so online play stays live. "Play online" is disabled on the cover while

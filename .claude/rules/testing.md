@@ -9,7 +9,8 @@ paths:
 # Unit and component tests
 
 Vitest's config is the `test` block of `vite.config.js`: `include` is
-`src/**/*.test.{js,jsx}` (plus `playtest/core/**/*.test.js`, the bots' pure helpers) under a
+`src/**/*.test.{js,jsx}` (plus `playtest/core/**/*.test.js`, the bots' pure helpers, and
+`sw/**/*.test.js`, the offline worker's install) under a
 default `environment: 'node'`. A `.test.jsx` must open with a
 `// @vitest-environment jsdom` docblock, or it fails on `document is not defined`.
 

@@ -3,8 +3,8 @@
 //
 // Production builds only: the dev server has no sw.js, and a worker caching
 // dev modules would serve stale code across every HMR edit. And never under
-// Data Saver — the worker stores ~3.5 MB up front, every game and the fact
-// pack, which is exactly the download lazyGame's preload already skips for
+// Data Saver — the worker stores ~4 MB up front (1.45 MB on the wire), every
+// game and the fact pack, which is exactly the download lazyGame's preload already skips for
 // someone who asked their phone to save data. They play online-only, as before.
 //
 // After `load`, so the install's downloads never compete with the hub's first

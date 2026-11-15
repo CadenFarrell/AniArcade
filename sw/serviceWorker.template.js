@@ -2,10 +2,10 @@
 //
 // A TEMPLATE, not a module the app imports. sw/plugin.js reads it after every
 // build, puts one line in front of it — `self.__ANIARCADE_SW__ = { VERSION,
-// PRECACHE }`, the build's version hash and its file list (see
-// src/shared/utils/precache.js for what is in it) — and writes dist/sw.js. A
-// classic worker rather than a module one, so it needs nothing from the browser
-// beyond service workers themselves.
+// PRECACHE }`, the build's version hash and its files as url -> content hash
+// (see src/shared/utils/precache.js for what is in it) — and writes dist/sw.js.
+// A classic worker rather than a module one, so it needs nothing from the
+// browser beyond service workers themselves.
 //
 // What it promises, and nothing more: every file local play asks for is on the
 // phone, so a game opens and plays offline. It never touches another origin —
@@ -18,6 +18,9 @@
 // lazily loaded game chunks still come from the PREVIOUS cache, which activate
 // keeps for that reason (newest two, never more). The next load is the new
 // build. Nothing prompts, nothing reloads under a game in progress.
+//
+// And cheap: a new build downloads only the files whose bytes changed. The
+// rest are copied from the cache the last build filled (see install).
 const { VERSION, PRECACHE } = self.__ANIARCADE_SW__;
 const PREFIX = 'aniarcade-';
 const CACHE = `${PREFIX}${VERSION}`;
@@ -32,18 +35,73 @@ const NETWORK_WAIT_MS = 3000;
 // then failed every script on it. These are static files that never differ by
 // request header, so the URL alone is the right key.
 const MATCH = { ignoreVary: true };
-const STORED = new Set(PRECACHE);
+const STORED = new Set(Object.keys(PRECACHE));
 
+// Every file is gathered before any is written, the way cache.addAll did it: a
+// download that fails leaves no half-filled cache behind. That matters beyond
+// tidiness — activate keeps "the newest other cache" for pages still open on
+// the previous build, and a stray partial one would take that place.
 self.addEventListener('install', (event) => {
   event.waitUntil((async () => {
-    const cache = await caches.open(CACHE);
-    // `reload` goes past the HTTP cache: Firebase Hosting serves public/ files
-    // with an hour's max-age, and a sound edited under the same name would
-    // otherwise be stored stale for this whole version.
-    await cache.addAll(PRECACHE.map((url) => new Request(url, { cache: 'reload' })));
+    const existed = await caches.has(CACHE);
+    try {
+      const held = await ourCaches();
+      const files = await Promise.all(Object.entries(PRECACHE).map(async ([url, hash]) => {
+        return [url, (await unchanged(held, url, hash)) ?? (await download(url))];
+      }));
+      const cache = await caches.open(CACHE);
+      await Promise.all(files.map(([url, res]) => cache.put(url, res)));
+    } catch (err) {
+      // Never a cache that was whole before this install touched it (the same
+      // files under a changed worker share one VERSION, so one name).
+      if (!existed) await caches.delete(CACHE);
+      throw err;
+    }
     await self.skipWaiting();
   })());
 });
+
+// Our caches, newest first: the build before this one is the likeliest to hold
+// a file unchanged.
+async function ourCaches() {
+  const names = (await caches.keys()).filter((key) => key.startsWith(PREFIX)).reverse();
+  return Promise.all(names.map((name) => caches.open(name)));
+}
+
+// The copy of this file a cache of ours already holds, if its bytes are
+// exactly what this build ships. The bytes are hashed here rather than trusted
+// by name or by what an older worker said it stored: public/ names are not
+// content-hashed, and a deploy landing in the middle of an old install could
+// have stored the next build's file under this one's name. Hashing the whole
+// precache is a few megabytes, once per deploy, off the page's thread. Any
+// failure is "not held", and the file is downloaded as it always was.
+async function unchanged(held, url, hash) {
+  try {
+    for (const cache of held) {
+      const hit = await cache.match(url, MATCH);
+      if (hit && (await sha256(hit.clone())).startsWith(hash)) return hit;
+    }
+  } catch {
+    // Fall through to the download.
+  }
+  return null;
+}
+
+async function sha256(res) {
+  const digest = await crypto.subtle.digest('SHA-256', await res.arrayBuffer());
+  return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('');
+}
+
+async function download(url) {
+  // `reload` goes past the HTTP cache: Firebase Hosting serves public/ files
+  // with an hour's max-age, and a sound edited under the same name would
+  // otherwise be stored stale for this whole version.
+  const res = await fetch(new Request(url, { cache: 'reload' }));
+  // What addAll enforced: a missing file fails the install rather than being
+  // stored as an error page. The browser tries again on a later visit.
+  if (!res.ok) throw new Error(`precache: HTTP ${res.status} for ${url}`);
+  return res;
+}
 
 self.addEventListener('activate', (event) => {
   event.waitUntil((async () => {
