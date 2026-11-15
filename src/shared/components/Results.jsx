@@ -6,7 +6,8 @@ import { portraitsFor } from '../utils/portrait';
 import {
   TablePortraitsContext, usePlayerPortrait, useTablePortraits,
 } from '../context/tablePortraitsContext';
-import { Backdrop, Card, Kana, PlaceMark, Screen } from '../ui';
+import { Backdrop, Card, Icon, Kana, PlaceMark, Screen } from '../ui';
+import { useFreshUnlocks, useRecordAwards } from '../hooks/useAchievements';
 import Portrait from './Portrait';
 import { useSoundCue } from '../hooks/useSoundCue';
 import { useStagger } from '../hooks/useStagger';
@@ -318,15 +319,56 @@ function StandingRow({ player, left, score, extra, scoreClass, style, staged }) 
  * the good, the odd and the playful roasts ("Butterfingers — missed 4 clues").
  * A game hands over everything its players earned and `pickAwards`
  * (shared/utils/awards.js) chooses: rarest first, one per player while it
- * can, and a roast when one was earned. An empty list draws nothing.
+ * can, and a roast when one was earned. An empty list draws no card.
+ *
+ * Every FINAL screen renders this and no stop between rounds does, so it is
+ * also where achievements hook in (shared/utils/achievements.js): the awards
+ * SHOWN here are what a profile's tally counts — never the ones earned and
+ * left off the card, which nobody saw — and the "Unlocked" card under it
+ * names any milestone this game reached, even when there were no awards.
  */
 export function Awards({ awards = [], max, className = '' }) {
-  const shown = pickAwards(awards, { max });
-  if (!shown.length) return null;
+  const shown = useMemo(() => pickAwards(awards, { max }), [awards, max]);
+  useRecordAwards(shown);
   return (
-    <Card title="Awards" padding="sm" className={`mb-6 ${className}`}>
+    <>
+      {shown.length > 0 && (
+        <Card title="Awards" padding="sm" className={`mb-6 ${className}`}>
+          <ul>
+            {shown.map((a) => <AwardRow key={a.title} award={a} />)}
+          </ul>
+        </Card>
+      )}
+      <UnlockedCard className={className} />
+    </>
+  );
+}
+
+// What this game unlocked, for whoever this device records (online, only its
+// own player). It listens rather than reads once: the writes land in effects
+// after it mounts — the parent's useRecordResult runs after this card's own.
+function UnlockedCard({ className }) {
+  const fresh = useFreshUnlocks();
+  if (!fresh.length) return null;
+  return (
+    <Card title="Unlocked" padding="sm" className={`mb-6 ${className}`}>
       <ul>
-        {shown.map((a) => <AwardRow key={a.title} award={a} />)}
+        {fresh.map((u) => (
+          <li key={`${u.id}:${u.achievementId}`} className="flex items-center gap-3 border-b border-line px-1 py-2.5 last:border-0">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center border-2 border-ink bg-ink text-xl text-paper">
+              <Icon name="trophy" />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block font-display text-sm font-bold uppercase tracking-[0.2em] text-pop-amber">
+                {u.title}
+              </span>
+              <span className="block truncate font-display text-lg font-bold uppercase leading-tight tracking-wide text-fg-strong">
+                {u.name}
+              </span>
+              <span className="block text-sm text-fg-helper">{u.detail}</span>
+            </span>
+          </li>
+        ))}
       </ul>
     </Card>
   );

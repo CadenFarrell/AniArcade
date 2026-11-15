@@ -12,4 +12,10 @@ export default {
   Component: lazyGame(() => import('./AniNameGame')),
   // The rules sheet, loaded on demand like the game (shared/utils/lazyGame.js).
   howTo: () => import('./howTo'),
+  // The final card's award titles, for the trophy page's collection. They
+  // live in rules.js's award() calls; hub/awards.test.js keeps the two equal.
+  awards: {
+    good: ['Big talker', 'Flawless', 'Objection!', 'True to their word', 'Freeloader'],
+    roasts: ['Overreach', 'Not even close', 'Broken record', 'Chicken', 'Wallflower'],
+  },
 };

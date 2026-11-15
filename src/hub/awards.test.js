@@ -14,9 +14,14 @@ function awardsIn(source) {
   return chunks.map((chunk) => ({ title: chunk.slice(0, chunk.indexOf("'")), roast: chunk.includes('roast: true') }));
 }
 
+// Each descriptor's `awards` catalogue (the trophy page's collection), by the
+// same folder, so a title renamed in rules.js and not on the menu fails here.
+const descriptors = import.meta.glob('../games/*/index.js', { import: 'default', eager: true });
+
 const games = Object.entries(sources).map(([path, source]) => ({
   game: path.split('/').at(-2),
   awards: awardsIn(source),
+  catalogue: descriptors[path.replace('rules.js', 'index.js')]?.awards,
 }));
 
 describe('end-of-game awards', () => {
@@ -27,6 +32,13 @@ describe('end-of-game awards', () => {
   it.each(games)('$game has five good awards and five roasts', ({ awards }) => {
     expect(awards.filter((a) => !a.roast).map((a) => a.title)).toHaveLength(5);
     expect(awards.filter((a) => a.roast).map((a) => a.title)).toHaveLength(5);
+  });
+
+  it.each(games)('$game lists the same titles on its descriptor', ({ awards, catalogue }) => {
+    expect(catalogue).toEqual({
+      good: awards.filter((a) => !a.roast).map((a) => a.title),
+      roasts: awards.filter((a) => a.roast).map((a) => a.title),
+    });
   });
 
   it('never gives two games the same title', () => {

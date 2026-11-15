@@ -91,7 +91,9 @@ game's `howTo.js`). `src/hub/howTo.test.js` fails a game without one or one prin
   (`.claude/rules/online-rooms.md`, "Next game").
 - The final results carry `Awards`: a `<thing>Awards` function in `rules.js` (the reference game's is `draftAwards`), five good and five roasts,
   built on `shared/utils/awards.js` (`.claude/rules/shared-screens.md`, the awards section;
-  `hub/awards.test.js` checks every game from its source).
+  `hub/awards.test.js` checks every game from its source). The same ten titles go on the
+  descriptor as `awards: { good: [...], roasts: [...] }` (the trophy page's award collection);
+  the same test fails a descriptor whose list differs from `rules.js`.
 
 ## 8. Tests outside the game folder
 

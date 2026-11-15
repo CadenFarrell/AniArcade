@@ -151,7 +151,9 @@ file, and keep their headings and button words: the playtest bots read them.
 Every finished game is a line in `aniarcade_history`. Each game's FINAL results screen calls
 `useRecordResult(gameId, players, winnerIds, { places, scores })` once — never a between-rounds
 `RoundEnd`, which would count a game several times. Ties, solo tables, team wins, the online
-scope and the head-to-head: `.claude/rules/play-history.md`.
+scope and the head-to-head: `.claude/rules/play-history.md`. **Achievements** (lifetime
+milestones and award tallies, `aniarcade_achievements`) are written by that same call and by
+`Awards`, so no results screen does anything extra; same file.
 
 ### Crash reports, feedback, wake lock
 

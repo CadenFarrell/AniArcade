@@ -60,4 +60,25 @@ describe('play history', () => {
     expect(screen.getByText('1 of 1')).toBeTruthy();
     expect(screen.getByText('with Ayu')).toBeTruthy();
   });
+
+  it('announces what a game unlocks on its results screen', async () => {
+    finishQuiz();
+    const card = (await screen.findByRole('heading', { name: 'Unlocked' })).closest('.card-pop');
+    expect(card.textContent).toMatch(/First game.*Caden/);
+    expect(card.textContent).toMatch(/First win/);
+    expect(card.textContent).toMatch(/First game.*Ayu/);
+  });
+
+  it('never announces a milestone history had already earned', () => {
+    // One earlier game, Caden winning, from before achievements existed.
+    localStorage.setItem(HISTORY_KEY, JSON.stringify({
+      caden: [{ at: 1, game: 'aniquiz', won: true, place: 1, size: 2, with: ['Ayu'], fp: 'old' }],
+      ayu: [{ at: 1, game: 'aniquiz', won: false, place: 2, size: 2, with: ['Caden'], fp: 'old' }],
+    }));
+    finishQuiz();
+    expect(screen.queryByRole('heading', { name: 'Unlocked' })).toBeNull();
+    const ach = JSON.parse(localStorage.getItem('aniarcade_achievements'));
+    expect(ach.caden.stats).toMatchObject({ played: 2, won: 2 });
+    expect(ach.caden.unlocked['won-1']).toBe(1);
+  });
 });

@@ -12,4 +12,10 @@ export default {
   Component: lazyGame(() => import('./AniSketchGame')),
   // The rules sheet, loaded on demand like the game (shared/utils/lazyGame.js).
   howTo: () => import('./howTo'),
+  // The final card's award titles, for the trophy page's collection. They
+  // live in rules.js's award() calls; hub/awards.test.js keeps the two equal.
+  awards: {
+    good: ['Snap judgement', 'Speed painter', 'Masterpiece', 'Art critic', 'Eye for detail'],
+    roasts: ['Abstract art', 'Blank canvas', 'Squint harder', 'Photo finish', 'Spray and pray'],
+  },
 };

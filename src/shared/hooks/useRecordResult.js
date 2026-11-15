@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useHistoryScope } from '../context/historyScopeContext';
 import { storage } from '../services/storage';
 import { HISTORY_KEY, addEntries, entriesForGame, normalizeHistory } from '../utils/history';
+import { recordGameAchievements } from './useAchievements';
 
 // Storage only, read fresh on every call, the way useProfile.js is. No provider:
 // the one reader is the hub's record strip, which mounts each time the menu
@@ -13,7 +14,14 @@ export function readHistory() {
 function recordGame(args) {
   const lines = entriesForGame({ ...args, at: Date.now() });
   if (!Object.keys(lines).length) return;
-  storage.setItem(HISTORY_KEY, addEntries(readHistory(), lines));
+  const before = readHistory();
+  const after = addEntries(before, lines);
+  storage.setItem(HISTORY_KEY, after);
+  // The achievements count only the lines that went in: addEntries returns a
+  // profile's old array untouched when it dropped the line as a duplicate (a
+  // refresh on a results screen), and that is no new game there either.
+  const added = Object.fromEntries(Object.entries(lines).filter(([id]) => after[id] !== before[id]));
+  recordGameAchievements(added, before, Object.fromEntries(args.table.map((p) => [p.id, p.name])));
 }
 
 /**

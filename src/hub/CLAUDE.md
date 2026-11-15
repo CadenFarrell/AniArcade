@@ -140,7 +140,11 @@ content that was not a game.
 
 **`RecordScreen.jsx` is the whole record**, a full hub view like ListManager's (`recordOf` in
 `HubScreen`, `{ id, from }`): totals, streaks, a card per game in its ink, head-to-head, and
-every game, 20 at a time. It opens from the bar's trophy ("Your record") and from a trophy on
+every game, 20 at a time. Its achievements are `RecordAchievements.jsx`: an "Achievements"
+card (every milestone, locked ones with their progress; each game's "ace" behind "Show all")
+and an "Award collection" card (every game's ten titles from its descriptor, earned ones
+with a count). Its header's totals are lifetime, from the achievements' counters, since
+history keeps only 200 lines (`.claude/rules/play-history.md`). It opens from the bar's trophy ("Your record") and from a trophy on
 every profile-picker row — any profile, because every profile seated at a local game here is
 recorded — and its back step returns where it came from ("← Hub" or "← Profiles"). It reads
 storage once per mount, which is enough because nothing records while the hub is on screen. Its

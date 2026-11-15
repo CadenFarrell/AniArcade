@@ -17,4 +17,10 @@ export default {
   Component: lazyGame(() => import('./WavelengthGame')),
   // The rules sheet, loaded on demand like the game (shared/utils/lazyGame.js).
   howTo: () => import('./howTo'),
+  // The final card's award titles, for the trophy page's collection. They
+  // live in rules.js's award() calls; hub/awards.test.js keeps the two equal.
+  awards: {
+    good: ['Bullseye', 'Mind meld', 'Steady hand', 'Lone ranger', 'Crowd pleaser'],
+    roasts: ['Wrong end of the dial', 'Radio static', 'Back of the pack', 'Mixed signals', 'Fence sitter'],
+  },
 };

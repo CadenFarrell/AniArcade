@@ -1,11 +1,14 @@
 import { useState } from 'react';
 import Portrait from '../shared/components/Portrait';
+import { readAchievements } from '../shared/hooks/useAchievements';
 import { readHistory } from '../shared/hooks/useRecordResult';
+import { seedFromHistory } from '../shared/utils/achievements';
 import { recordDetail } from '../shared/utils/history';
 import { portraitFor } from '../shared/utils/portrait';
 import { splitTitle } from '../shared/utils/splitTitle';
 import { Button, Card, Screen } from '../shared/ui';
 import { accentBg } from '../shared/ui/accents';
+import RecordAchievements from './RecordAchievements';
 import RecordLine from './RecordLine';
 
 // How many log lines show before "Show more", and how many each press adds. A
@@ -23,10 +26,19 @@ const PAGE = 20;
 // nothing to keep fresh.
 export default function RecordScreen({ profile, games, onBack, backLabel }) {
   const [history] = useState(readHistory);
+  // A profile that has not finished a game since achievements shipped has no
+  // record yet: it is seeded the same way the first write will seed it, just
+  // not stored — reading a page writes nothing.
+  const [achieved] = useState(() => readAchievements()[profile.id]
+    ?? seedFromHistory(history[profile.id] ?? [], profile.name, games.filter((g) => g.available)));
   const [shown, setShown] = useState(PAGE);
   const record = recordDetail(history[profile.id] ?? [], games.map((g) => g.id));
   const gameOf = (id) => games.find((g) => g.id === id);
-  const rate = record.played ? Math.round((record.won / record.played) * 100) : 0;
+  // The header's totals are LIFETIME, from the achievements' counters: history
+  // keeps a profile's newest 200 games, so its own count stops at 200.
+  const played = Math.max(achieved.stats.played, record.played);
+  const won = Math.max(achieved.stats.won, record.won);
+  const rate = played ? Math.round((won / played) * 100) : 0;
 
   return (
     <Screen width="md" onBack={onBack} backLabel={backLabel}>
@@ -39,18 +51,21 @@ export default function RecordScreen({ profile, games, onBack, backLabel }) {
             {profile.name}
           </h1>
           <span className="mt-1 block font-display text-lg font-bold uppercase tracking-wide text-fg-body">
-            {record.played} {record.played === 1 ? 'game' : 'games'}
+            {played} {played === 1 ? 'game' : 'games'}
             <span className="text-fg-subtle"> · </span>
-            <span className="text-pop-amber">{record.won} {record.won === 1 ? 'win' : 'wins'}</span>
-            {record.played > 0 && <span className="text-fg-subtle"> · {rate}%</span>}
+            <span className="text-pop-amber">{won} {won === 1 ? 'win' : 'wins'}</span>
+            {played > 0 && <span className="text-fg-subtle"> · {rate}%</span>}
           </span>
         </span>
       </header>
 
       {!record.played ? (
-        <Card>
-          <p className="text-sm text-fg-body">No games yet. Finish one and it lands here.</p>
-        </Card>
+        <div className="flex flex-col gap-5">
+          <Card>
+            <p className="text-sm text-fg-body">No games yet. Finish one and it lands here.</p>
+          </Card>
+          <RecordAchievements rec={achieved} games={games} />
+        </div>
       ) : (
         <div className="flex flex-col gap-5">
           {record.streak.best > 1 && (
@@ -97,6 +112,8 @@ export default function RecordScreen({ profile, games, onBack, backLabel }) {
               );
             })}
           </ul>
+
+          <RecordAchievements rec={achieved} games={games} />
 
           {record.rivals.length > 0 && (
             <Card title="Head to head">

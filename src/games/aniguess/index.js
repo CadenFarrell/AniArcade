@@ -11,4 +11,10 @@ export default {
   Component: lazyGame(() => import('./AniGuessGame')),
   // The rules sheet, loaded on demand like the game (shared/utils/lazyGame.js).
   howTo: () => import('./howTo'),
+  // The final card's award titles, for the trophy page's collection. They
+  // live in rules.js's award() calls; hub/awards.test.js keeps the two equal.
+  awards: {
+    good: ['Sharpest', 'Lucky shot', 'Cold read', 'Sole survivor', 'Clean slate'],
+    roasts: ['Slow burner', 'Mistaken identity', 'The interrogator', 'Identity crisis', 'Rage quit'],
+  },
 };

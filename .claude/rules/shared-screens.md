@@ -82,7 +82,8 @@ log recorded. The house rules, settled with Caden (2026-11-05) and checked by
 `clearLeader`/`clearBest` — **a tie drops the award** (never picked by seat) and a count has a
 minimum, so one slip is not a "most". `award(title, player, detail, { weight, roast })`: `roast`
 is the bad side, `weight` ranks within a side (~3 for the rare feats), and within each side the
-card names someone new while it can. A log field an award needs goes into the round's log line
+card names someone new while it can. `Awards` also tallies what it showed into each profile's
+achievements and carries the "Unlocked" card under itself (`.claude/rules/play-history.md`). A log field an award needs goes into the round's log line
 and its normalizer — RTDB drops empties, and most normalizers rebuild from named fields — and
 an award reads a line from before the field existed as "unknown", never as zero. Awards say
 nothing a game hides: AniDraft's come from the tallies, never the ballots.

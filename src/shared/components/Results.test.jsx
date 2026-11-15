@@ -18,6 +18,7 @@ const players = [
 ];
 
 beforeEach(() => {
+  localStorage.clear();
   vi.stubGlobal('requestAnimationFrame', vi.fn(() => 1));
   vi.stubGlobal('cancelAnimationFrame', vi.fn());
 });
@@ -98,5 +99,18 @@ describe('Awards', () => {
     expect(rows).toHaveLength(3);
     for (const name of ['Ann', 'Ben', 'Cat']) expect(rows.some((r) => r.includes(name))).toBe(true);
     expect(rows.some((r) => r.includes('Two'))).toBe(false);
+  });
+
+  it('tallies what it showed once, however often it mounts', () => {
+    const awards = [
+      { title: 'One', player: players[0], detail: 'a' },
+      { title: 'Two', player: players[1], detail: 'b', roast: true },
+    ];
+    render(<Awards awards={awards} />);
+    cleanup();
+    render(<Awards awards={awards} />); // a refresh: the same card, not a second game
+    const stored = JSON.parse(localStorage.getItem('aniarcade_achievements'));
+    expect(stored.a.awards).toEqual({ One: 1 });
+    expect(stored.b).toMatchObject({ awards: { Two: 1 }, roasts: 1 });
   });
 });

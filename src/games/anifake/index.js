@@ -11,4 +11,10 @@ export default {
   Component: lazyGame(() => import('./AniFakeGame')),
   // The rules sheet, loaded on demand like the game (shared/utils/lazyGame.js).
   howTo: () => import('./howTo'),
+  // The final card's award titles, for the trophy page's collection. They
+  // live in rules.js's award() calls; hub/awards.test.js keeps the two equal.
+  awards: {
+    good: ['Master thief', 'Poker face', 'Frame job', 'Lone accuser', 'Bloodhound'],
+    roasts: ['Sweaty palms', 'Friendly fire', 'Scapegoat', 'Frozen', 'Wild stab'],
+  },
 };

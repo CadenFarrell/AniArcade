@@ -123,3 +123,31 @@ describe('the ways in', () => {
     expect(await screen.findByRole('button', { name: "Ayu's record" })).toBeTruthy();
   });
 });
+
+describe('RecordScreen achievements', () => {
+  it('backfills milestones from history and lists every award title, locked or not', () => {
+    seedProfiles([caden, ayu]);
+    seedGames(5, 3);
+    localStorage.setItem('aniarcade_achievements', JSON.stringify({
+      caden: { name: 'Caden', stats: { played: 250, won: 60 }, awards: { 'Lucky shot': 7 }, unlocked: { 'played-1': T0 } },
+    }));
+    renderArcade(<RecordScreen profile={caden} games={games} onBack={() => {}} />);
+
+    // Lifetime totals win over history's capped count.
+    expect(document.querySelector('header').textContent).toMatch(/250 games · 60 wins · 24%/);
+    const ach = screen.getByRole('heading', { name: 'Achievements' }).closest('.card-pop');
+    expect(within(ach).getByText('First game').closest('li').textContent).toMatch(/Unlocked/);
+    expect(within(ach).getByText('Legend').closest('li').textContent).toMatch(/Locked\. ?60 \/ 100/);
+    const col = screen.getByRole('heading', { name: 'Award collection' }).closest('.card-pop');
+    expect(within(col).getByText('Lucky shot').closest('li').textContent).toMatch(/×7/);
+    expect(within(col).getByText('Rage quit').closest('li').textContent).toMatch(/not yet/);
+  });
+
+  it('shows the goals even before a first game', () => {
+    seedProfiles([caden]);
+    renderArcade(<RecordScreen profile={caden} games={games} onBack={() => {}} />);
+    expect(screen.getByText('No games yet. Finish one and it lands here.')).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Achievements' }).closest('.card-pop').textContent).toMatch(/0 of \d+ unlocked/);
+  });
+});
+
