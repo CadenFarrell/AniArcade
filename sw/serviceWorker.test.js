@@ -16,12 +16,19 @@ const bytes = (text) => new TextEncoder().encode(text);
 const hashOf = (text) => createHash('sha256').update(bytes(text)).digest('hex').slice(0, 16);
 const manifest = (files) => Object.fromEntries(Object.entries(files).map(([url, text]) => [url, hashOf(text)]));
 
+const ORIGIN = 'https://arcade.test';
+// Files are keyed by path here; a page's request carries the whole address.
+const pathOf = (request) => {
+  const url = typeof request === 'string' ? request : request.url;
+  return url.startsWith(ORIGIN) ? url.slice(ORIGIN.length) : url;
+};
+
 class FakeCache {
   constructor(files = {}) {
     this.files = new Map(Object.entries(files));
   }
   async match(request) {
-    const url = typeof request === 'string' ? request : request.url;
+    const url = pathOf(request);
     return this.files.has(url) ? new Response(bytes(this.files.get(url))) : undefined;
   }
   async put(url, res) {
@@ -41,6 +48,16 @@ class FakeCacheStorage {
     if (!this.stores.has(name)) this.stores.set(name, new FakeCache());
     return this.stores.get(name);
   }
+  // As the real one: the named cache alone when `cacheName` is given (and
+  // nothing when there is no such cache), else every cache in creation order.
+  async match(request, { cacheName } = {}) {
+    const searched = cacheName ? [this.stores.get(cacheName)].filter(Boolean) : [...this.stores.values()];
+    for (const cache of searched) {
+      const hit = await cache.match(request);
+      if (hit) return hit;
+    }
+    return undefined;
+  }
   contents(name) {
     return this.stores.has(name) ? Object.fromEntries(this.stores.get(name).files) : null;
   }
@@ -56,22 +73,24 @@ class FakeRequest {
 }
 
 /** One worker: `server` is what the network holds, `stores` what the phone does. */
-function worker({ version, server, stores = {}, precache = manifest(server) }) {
+function worker({ version, server, stores = {}, precache = manifest(server), offline = false }) {
   const handlers = {};
   const requests = [];
   let skipped = false;
   const caches = new FakeCacheStorage(stores);
   const self = {
     __ANIARCADE_SW__: { VERSION: version, PRECACHE: precache },
-    location: { origin: 'https://arcade.test' },
+    location: { origin: ORIGIN },
     addEventListener: (type, fn) => { handlers[type] = fn; },
     skipWaiting: async () => { skipped = true; },
     clients: { claim: async () => {} },
   };
   const fetch = async (request) => {
     requests.push(request);
-    return request.url in server
-      ? new Response(bytes(server[request.url]))
+    if (offline) throw new TypeError('Failed to fetch');
+    const path = pathOf(request);
+    return path in server
+      ? new Response(bytes(server[path]))
       : new Response('not found', { status: 404 });
   };
   new Function('self', 'caches', 'fetch', 'Request', SOURCE)(self, caches, fetch, FakeRequest);
@@ -81,10 +100,21 @@ function worker({ version, server, stores = {}, precache = manifest(server) }) {
     handlers[type]({ waitUntil: (promise) => { done = promise; } });
     await done;
   };
+  // What the page gets back for a request, as text — or null when the worker
+  // steps aside and leaves it to the browser.
+  const ask = async (path, mode = 'no-cors') => {
+    let answer = null;
+    handlers.fetch({
+      request: { method: 'GET', url: `${ORIGIN}${path}`, mode },
+      respondWith: (promise) => { answer = promise; },
+    });
+    return answer && (await answer).text();
+  };
   return {
     caches,
     install: () => run('install'),
     activate: () => run('activate'),
+    ask,
     downloaded: () => requests.map((r) => r.url).sort(),
     requests,
     skipped: () => skipped,
@@ -187,6 +217,52 @@ describe('the service worker install', () => {
 
     await expect(sw.install()).rejects.toThrow(/404/);
     expect(sw.caches.contents('aniarcade-v1')).toEqual(v1);
+  });
+});
+
+// Two builds on the phone, as after any deploy: the one before (kept for pages
+// still open on it) and this one. They share every name that is not
+// content-hashed, and the older cache comes first in creation order.
+describe('the service worker answering a page', () => {
+  const before = {
+    '/index.html': '<html>one</html>',
+    '/assets/index-a1.js': 'entry one',
+    '/sounds/tap.mp3': 'tap',
+  };
+  const current = {
+    '/index.html': '<html>two</html>',
+    '/assets/index-c3.js': 'entry two',
+    '/sounds/tap.mp3': 'a better tap',
+  };
+  const phone = (options = {}) => worker({
+    version: 'v2',
+    server: current,
+    stores: { 'aniarcade-v1': before, 'aniarcade-v2': current },
+    ...options,
+  });
+
+  it('opens this build with no signal, not the one before', async () => {
+    expect(await phone({ offline: true }).ask('/', 'navigate')).toBe('<html>two</html>');
+  });
+
+  it('opens the live page when there is signal', async () => {
+    const sw = phone({ server: { ...current, '/': '<html>three</html>' } });
+    expect(await sw.ask('/', 'navigate')).toBe('<html>three</html>');
+  });
+
+  it('serves this build\'s copy of a file both builds name', async () => {
+    const sw = phone({ offline: true });
+    expect(await sw.ask('/sounds/tap.mp3')).toBe('a better tap');
+    expect(sw.requests).toEqual([]);
+  });
+
+  it('still serves the build before its own chunks, for a page left open on it', async () => {
+    expect(await phone({ offline: true }).ask('/assets/index-a1.js')).toBe('entry one');
+  });
+
+  it('leaves what it never stored to the browser', async () => {
+    expect(await phone().ask('/casts/index.json')).toBeNull();
+    expect(await phone().ask('/src/main.jsx')).toBeNull();
   });
 });
 

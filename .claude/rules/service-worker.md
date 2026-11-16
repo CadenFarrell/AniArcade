@@ -34,6 +34,10 @@ content-hashed and a re-encoded sound must still ship.
   its lazy chunks still come from the previous cache, which activation keeps (newest two). Page
   loads are network-first with a 3s wait, so a deploy reaches the next load and a dead
   connection still opens.
+- **A stored file is looked up in THIS build's cache first, then the others** (`stored()`).
+  `caches.match` alone searches in creation order, so the previous build won every name the two
+  share: an offline load opened the page from one deploy back, and a re-encoded sound stayed
+  the old one until the deploy after.
 - **Never cache an HTML answer to a file request:** Hosting rewrites a missing file to
   `index.html` with a 200, and stored under an old chunk's name it breaks every later load.
 - **It answers only for what it stored, and `/assets/` chunks.** A preview build on

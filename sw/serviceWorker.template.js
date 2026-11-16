@@ -156,14 +156,23 @@ async function networkFirst(request, fallback) {
   } catch {
     // Offline or too slow. Nothing stored means no worse than no worker: the
     // network's own answer, or its own failure.
-    return (await caches.match(fallback, MATCH)) ?? network;
+    return (await stored(fallback)) ?? network;
   }
 }
 
-// Stored files from ANY of our caches — the previous build's included, for a
-// page still running it — then the network, keeping what it brings back.
+// A stored file: THIS build's copy first, then any of our caches — the
+// previous build's, for a page still running it and asking for its chunks.
+// caches.match alone searches in creation order, so the previous build won
+// every name the two share: a phone opened with no signal got the page from
+// one deploy back, and a sound re-encoded under its old name stayed the old
+// one until the deploy after.
+async function stored(request) {
+  return (await caches.match(request, { ...MATCH, cacheName: CACHE })) ?? caches.match(request, MATCH);
+}
+
+// Stored files first, then the network, keeping what it brings back.
 async function cacheFirst(request) {
-  const hit = await caches.match(request, MATCH);
+  const hit = await stored(request);
   if (hit) return hit;
   const res = await fetch(request);
   // Not an HTML answer to a non-page request: hosting rewrites a missing file
