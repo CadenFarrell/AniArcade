@@ -189,6 +189,15 @@ feedback box opens from the menu's footer ("Feedback", beside Credits) and from 
 unless passed `{ showHowTo: true }`; the bots close a sheet by "Got it"
 (`playtest/core/generic.js`'s `closeRulesSheet`) and never open one.
 
+**The footer says what the arcade is, and links Feedback, Privacy and Credits.** Its sentence
+is the disclaimer ("A fan project, not affiliated with any studio or list site"), on the page
+because one behind a link is seen by nobody; the full sentence opens `CreditsModal`.
+`PrivacyModal.jsx` is the privacy note (a plain import: loaded on demand it made Rolldown
+split `shared/ui` into a second preloaded chunk, about 1 KB more to start with), and **each of
+its sentences is a claim about the code** — its header lists what every one rests on.
+Something new stored, a new service contacted or a new field on a report means changing the
+sentence in the same commit.
+
 ## Title, hero and wipe
 
 **`TitleScreen` shows once per browser session** (`titleSeen.js`, sessionStorage): right on

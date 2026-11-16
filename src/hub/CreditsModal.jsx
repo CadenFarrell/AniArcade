@@ -11,7 +11,15 @@ export default function CreditsModal({ onClose }) {
   return (
     <Modal onClose={onClose} width="md">
       <Kana className="block text-sm text-pop-pink">{KANA.credits}</Kana>
-      <h2 className="mb-5 font-display text-3xl font-bold uppercase text-fg-strong">Credits</h2>
+      <h2 className="mb-2 font-display text-3xl font-bold uppercase text-fg-strong">Credits</h2>
+      {/* First, above every credit: the arcade is built on other people's
+          shows, and says so before it says anything else. The hub's footer
+          carries the short form, so nobody has to open this to learn it. */}
+      <p className="mb-5 text-sm text-fg-body">
+        AniArcade is a fan project. It is not affiliated with or endorsed by any anime studio or
+        publisher, or by AniList, MyAnimeList, Kitsu or AnimeThemes. Characters, titles and songs
+        belong to their owners.
+      </p>
 
       <Section title="Game tiles">
         <li className="text-fg-body">

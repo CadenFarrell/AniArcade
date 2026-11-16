@@ -428,6 +428,25 @@ describe('how to play and feedback', () => {
     expect(screen.queryByRole('heading', { name: 'Send feedback' })).toBeNull();
   });
 
+  // The disclaimer is on the page itself; its full sentence and the privacy
+  // note are one press away, each from its own footer link.
+  it('says it is a fan project, and opens the privacy note and the credits from the footer', async () => {
+    const user = userEvent.setup();
+    seedProfiles([makeProfile('Caden')]);
+    renderArcade(<HubScreen />);
+
+    expect(screen.getByText(/fan project, not affiliated/i)).toBeTruthy();
+
+    await user.click(screen.getByRole('button', { name: 'Privacy' }));
+    expect(screen.getByRole('heading', { name: 'Privacy' })).toBeTruthy();
+    expect(screen.getByText('No accounts, no ads, no tracking.')).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: 'Close' }));
+    expect(screen.queryByRole('heading', { name: 'Privacy' })).toBeNull();
+
+    await user.click(screen.getByRole('button', { name: 'Credits' }));
+    expect(screen.getByText(/not affiliated with or endorsed by/i)).toBeTruthy();
+  });
+
   it('opens feedback about a game from that game’s rules sheet', async () => {
     seedProfiles([makeProfile('Caden')]);
     const user = userEvent.setup();

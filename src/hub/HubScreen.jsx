@@ -1,6 +1,10 @@
 import { Suspense, useEffect, useMemo, useState } from 'react';
 import { games } from './registry';
 import CreditsModal from './CreditsModal';
+// A plain import, on purpose. Loaded on demand it saved 0.75 KB of the entry,
+// but Rolldown then split shared/ui into a second chunk the page preloads:
+// about 1 KB more to start with (measured 2026-11-16).
+import PrivacyModal from './PrivacyModal';
 import FeedbackModal from '../shared/components/FeedbackModal';
 import HowToSheet from '../shared/components/HowToSheet';
 import { markHowToSeen, readHowToSeen } from './howToSeen';
@@ -63,6 +67,11 @@ const BOARD_STYLE = {
   '--cols-lg': COLS.lg,
   '--cols-xl': COLS.xl,
 };
+
+// The footer's links: Feedback, Privacy, Credits. min-h-6 is the 24px floor of
+// WCAG 2.5.8, without growing the text — at text-xs the bare link was 16px tall.
+const FOOTER_LINK = `focus-pop min-h-6 px-1 font-bold text-fg-body underline decoration-2 underline-offset-2
+  hover:text-fg-strong`;
 
 // The open game's rules, from the top bar — the one place on every screen of a
 // game (cover, setup, a round, the lobby, results), so the rules are never more
@@ -307,6 +316,7 @@ export default function HubScreen() {
   const [gameId, setGameId] = useState(() => invite?.gameId ?? null);
   const [showPicker, setShowPicker] = useState(false);
   const [showCredits, setShowCredits] = useState(false);
+  const [showPrivacy, setShowPrivacy] = useState(false);
   // The How to play sheet: the id of the game it is open for, or null. It opens
   // by itself the first time a game is opened on this device (howToSeen.js) —
   // invite links included, since a friend joining by link is the newest player
@@ -571,25 +581,25 @@ export default function HubScreen() {
           </div>
 
           <p className="mt-8 flex flex-wrap items-center justify-center gap-x-2 text-xs text-fg-subtle">
-            <span>Characters from your own list · prints from the Met · sounds by Kenney.</span>
-            <button
-              type="button"
-              onClick={() => setFeedback({ gameId: '' })}
-              className="focus-pop min-h-6 px-1 font-bold text-fg-body underline decoration-2 underline-offset-2
-                hover:text-fg-strong"
-            >
-              Feedback
-            </button>
-            <button
-              type="button"
-              onClick={() => setShowCredits(true)}
-              // min-h-6: the 24px floor of WCAG 2.5.8, without growing the
-              // text — at text-xs the bare link was 16px tall.
-              className="focus-pop min-h-6 px-1 font-bold text-fg-body underline decoration-2 underline-offset-2
-                hover:text-fg-strong"
-            >
-              Credits
-            </button>
+            {/* On the page, not behind a link: the full sentence opens the
+                Credits dialog, but a disclaimer only counts where it is seen.
+                It replaced a one-line summary of the credits, which the
+                Credits link beside it already leads to. */}
+            <span>A fan project, not affiliated with any studio or list site.</span>
+            {/* One group, so the three wrap together: on a phone the sentence
+                took the first line with one link, and left the other two alone
+                on the second. */}
+            <span className="flex items-center gap-x-2">
+              <button type="button" onClick={() => setFeedback({ gameId: '' })} className={FOOTER_LINK}>
+                Feedback
+              </button>
+              <button type="button" onClick={() => setShowPrivacy(true)} className={FOOTER_LINK}>
+                Privacy
+              </button>
+              <button type="button" onClick={() => setShowCredits(true)} className={FOOTER_LINK}>
+                Credits
+              </button>
+            </span>
           </p>
         </Screen>
 
@@ -601,6 +611,7 @@ export default function HubScreen() {
           />
         )}
         {showCredits && <CreditsModal onClose={() => setShowCredits(false)} />}
+        {showPrivacy && <PrivacyModal onClose={() => setShowPrivacy(false)} />}
         {showWelcome && !showPicker && (
           <WelcomeModal onClose={() => setWelcomeDone(true)} />
         )}

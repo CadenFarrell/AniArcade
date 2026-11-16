@@ -49,8 +49,9 @@ const DENY_START = [
   'new player', 'just a name', 'bring my', 'not now',
   // The rules sheet and the feedback box: help, never a step in a game. A bot
   // pressing the top bar's "How to play" at random would only reopen a dialog,
-  // and Send feedback would write to the database the build points at.
-  'how to play', 'feedback', 'send feedback',
+  // and Send feedback would write to the database the build points at. The
+  // footer's privacy note is the same kind of dialog as Credits beside it.
+  'how to play', 'feedback', 'send feedback', 'privacy',
   // A follower's way back from waiting on the host's next game (see the
   // `next$` pattern below).
   'back to the results',

@@ -23,6 +23,7 @@ export const KANA = {
   start: 'スタート', // "start"
   loading: 'ロード中', // "loading"
   credits: 'クレジット', // "credits"
+  privacy: 'プライバシー', // "privacy"
   error: 'エラー', // "error"
   results: 'リザルト', // "results"
   winner: 'ウィナー', // "winner"

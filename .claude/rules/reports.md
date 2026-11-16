@@ -21,3 +21,6 @@ and `main.jsx`'s window listeners (`services/crashReport.js`: never from a dev s
 failed game download, and never a profile or an invite's query); feedback from
 `FeedbackModal.jsx` (hub footer, and each rules sheet). Rules and smoke test:
 `.claude/rules/online-rooms.md` ("Outside `rooms/`: reports"), `smoke/reports.smoke.test.js`.
+
+**The privacy note (`hub/PrivacyModal.jsx`) tells players what a report carries.** A new field
+on either kind means changing its sentence there in the same commit.
