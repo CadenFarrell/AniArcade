@@ -1,12 +1,15 @@
 import { useMemo } from 'react';
 import { createPortal } from 'react-dom';
+import { useCoverGame } from '../context/coverGameContext';
 import { HistoryScopeContext } from '../context/historyScopeContext';
 import { NextGameSlotContext } from '../context/nextGameContext';
 import { useTopBar } from '../context/topBarContext';
 import { useConfirm } from '../hooks/useConfirm';
 import { Banner, HubButton } from '../ui';
 import TablePortraits from './TablePortraits';
+import { nightPoints } from '../utils/night';
 import { FollowScreen, NextGamePicker } from './NextGame';
+import { NightChampion, TonightCard } from './Night';
 
 // Wraps every in-room screen so connection problems and the way out are always
 // reachable, whatever phase the game is in.
@@ -35,6 +38,12 @@ import { FollowScreen, NextGamePicker } from './NextGame';
 //   it, through NextGameSlotContext). Once a pick is in, every device but the
 //   host's shows FollowScreen in place of whatever the room was on, whatever
 //   the view, and moves on by itself when the new room's code lands.
+// - Game night (shared/utils/night.js). The same final results screen carries
+//   the table's running score above that picker, from its second game on, and
+//   the shell is where a finished game becomes a line in it: useRecordResult
+//   reports the outcome through the history scope, and the points and the
+//   game's name and ink are added here. Once the host ends the night, every
+//   device shows NightChampion in place of whatever the room was on.
 // Both ways out of a room ask the same question: the room outlives you while
 // anyone is still in it (useRoomCore's leaveRoom), so nothing is lost yet.
 const LEAVE_ROOM = {
@@ -44,10 +53,29 @@ const LEAVE_ROOM = {
 
 export default function RoomShell({ room, onExit, codeInPage = false, nextGame = false, children }) {
   const bar = useTopBar();
-  // Results are recorded on each player's own device (useRecordResult).
-  const historyScope = useMemo(() => ({ onlyId: room.myPlayerId ?? null }), [room.myPlayerId]);
+  // Results are recorded on each player's own device (useRecordResult), and
+  // each device also reports the game to the table's night — the room keeps
+  // one line however many report it. The open game's title and ink ride along
+  // (CoverGameContext is the hub's; absent in a test, the id stands in).
+  const cover = useCoverGame();
+  const recordNight = room.handoff?.recordNight ?? null;
+  const historyScope = useMemo(() => ({
+    onlyId: room.myPlayerId ?? null,
+    night: recordNight ? ({ game, table, winnerIds, places }) => {
+      const results = nightPoints({ table, winnerIds, places });
+      if (!results) return;
+      const named = cover?.id === game ? { title: cover.title, accent: cover.accent } : {};
+      // Best effort: a night that misses a line is a smaller loss than a
+      // results screen that reports an error about something it never showed.
+      recordNight({ game, ...named, results }).catch(() => {});
+    } : null,
+  }), [room.myPlayerId, recordNight, cover]);
   const next = room.handoff?.next ?? null;
   const following = next != null && next.by !== room.myPlayerId;
+  // The host called the night: the champion takes the screen, on every device
+  // and the host's own. A pick already in flight still wins — the table is
+  // mid-move, and the night goes with it.
+  const nightOver = !following && Boolean(room.handoff?.night?.ended);
   // Leave asks on the game's pause screen, as Hub does (HubButton): rendered
   // below in the shell, never in the bar's portal, whose backdrop-blur would
   // trap the fixed sheet inside the bar.
@@ -127,8 +155,12 @@ export default function RoomShell({ room, onExit, codeInPage = false, nextGame =
           roster under gameSession). The lobby's slots share out their own. */}
       <HistoryScopeContext.Provider value={historyScope}>
         <TablePortraits players={room.players ?? room.gameSession?.players}>
-          {following ? <FollowScreen room={room} next={next} /> : (
-            <NextGameSlotContext.Provider value={nextGame ? <NextGamePicker room={room} /> : null}>
+          {following && <FollowScreen room={room} next={next} />}
+          {nightOver && <NightChampion room={room} />}
+          {!following && !nightOver && (
+            <NextGameSlotContext.Provider
+              value={nextGame ? <><TonightCard room={room} /><NextGamePicker room={room} /></> : null}
+            >
               {children}
             </NextGameSlotContext.Provider>
           )}

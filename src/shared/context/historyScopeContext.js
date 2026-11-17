@@ -6,6 +6,10 @@ import { createContext, useContext } from 'react';
 // nobody's history gains a line on somebody else's phone. Local play provides
 // nothing, and a null scope means every seated profile, since every one of
 // them is on this device.
+//
+// The room's scope also carries `night(outcome)`: the same call that records a
+// result reports it to the table's game night (shared/utils/night.js), which
+// only a room has.
 export const HistoryScopeContext = createContext(null);
 
 export const useHistoryScope = () => useContext(HistoryScopeContext);

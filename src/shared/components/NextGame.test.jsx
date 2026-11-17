@@ -7,12 +7,13 @@
 // runs the writes against the emulator.
 import { StrictMode, useEffect, useState } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { act, cleanup, fireEvent, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import ModePicker from './ModePicker';
 import ResultsLayout from './Results';
 import RoomSetup from './RoomSetup';
 import RoomShell from './RoomShell';
 import { InviteContext } from '../context/inviteContext';
+import { useRecordResult } from '../hooks/useRecordResult';
 import { makeProfile, renderArcade, seedProfiles } from '../testing/arcade';
 
 vi.mock('../services/firebase', () => ({
@@ -44,6 +45,7 @@ const stubRoom = (over = {}) => ({
     start: vi.fn(async () => {}),
     announce: vi.fn(async () => {}),
     cancel: vi.fn(async () => {}),
+    carry: vi.fn(async () => {}),
     ...over.handoff,
   },
 });
@@ -161,6 +163,122 @@ describe('everyone else follows', () => {
   });
 });
 
+// Game night (shared/utils/night.js): the running table under the same final
+// results, the host's way of ending it, and the champion screen it puts up.
+describe('the night\'s table', () => {
+  const line = (game, title, accent, results) => ({
+    game, title, accent, results: Object.entries(results).map(([name, pts]) => ({ name, pts })),
+  });
+  const two = {
+    games: [
+      line('anipeek', 'AniPeek', 'slate', { Ana: 1, Ben: 0 }),
+      line('anitune', 'AniTune', 'blue', { Ana: 0, Ben: 1, Cy: 2 }),
+    ],
+    counted: true,
+    ended: null,
+  };
+  const nightRoom = (night, over = {}) => stubRoom({
+    ...over,
+    handoff: {
+      night,
+      recordNight: vi.fn(async () => {}),
+      endNight: vi.fn(async () => {}),
+      resumeNight: vi.fn(async () => {}),
+      ...over.handoff,
+    },
+  });
+
+  it('stays off the screen after one game, which the standings above already show', () => {
+    results(nightRoom({ ...two, games: two.games.slice(0, 1) }), invite());
+    expect(screen.queryByRole('region', { name: 'Tonight' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'End the night' })).toBeNull();
+  });
+
+  it('shows everyone the table from the second game, with who has left it', () => {
+    results(nightRoom(two, { isHost: false, myPlayerId: 'ben' }), invite());
+    const card = within(screen.getByRole('region', { name: 'Tonight' }));
+    expect(card.getByRole('heading', { name: 'Tonight · 2 games' })).toBeTruthy();
+    const rows = card.getAllByRole('listitem').map((li) => li.textContent);
+    // Cy played one game tonight and is not in this room.
+    expect(rows[0]).toMatch(/Cy.*left.*1 game.*2 pts/);
+    expect(rows[1]).toMatch(/Ana.*2 games.*1 pt$/);
+    expect(rows[2]).toMatch(/Ben.*2 games.*1 pt$/);
+    // The games, each by its tile word and who took it.
+    expect(rows.slice(3)).toEqual(['AniPeekPeekAna', 'AniTuneTuneCy']);
+    expect(screen.queryByRole('button', { name: 'End the night' })).toBeNull();
+  });
+
+  it('is only on a screen marked as the final results', () => {
+    results(nightRoom(two), invite(), false);
+    expect(screen.queryByRole('region', { name: 'Tonight' })).toBeNull();
+  });
+
+  it('lets the host end the night, after asking', async () => {
+    const room = nightRoom(two);
+    results(room, invite());
+    fireEvent.click(screen.getByRole('button', { name: 'End the night' }));
+    expect(room.handoff.endNight).not.toHaveBeenCalled();
+    const dialog = within(screen.getByRole('dialog', { name: 'End the night?' }));
+    fireEvent.click(dialog.getByRole('button', { name: 'Not yet' }));
+    expect(room.handoff.endNight).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole('button', { name: 'End the night' }));
+    fireEvent.click(within(screen.getByRole('dialog', { name: 'End the night?' })).getByRole('button', { name: 'End the night' }));
+    await waitFor(() => expect(room.handoff.endNight).toHaveBeenCalledTimes(1));
+  });
+
+  it('puts the champion over the room once the night is ended', () => {
+    const room = nightRoom({ ...two, ended: { by: 'ana', byName: 'Ana' } }, { isHost: false, myPlayerId: 'ben' });
+    results(room, invite());
+    expect(screen.getByRole('heading', { name: 'Night Champion' })).toBeTruthy();
+    expect(screen.queryByRole('heading', { name: 'Final Scores' })).toBeNull();
+    expect(screen.getByRole('region', { name: 'Champion: Cy' })).toBeTruthy();
+    expect(screen.getByText('Ana ended the night.')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Keep the night going' })).toBeNull();
+    expect(screen.queryByRole('button', { name: /next$/ })).toBeNull();
+  });
+
+  it('shares the title on a tie, and lets the host carry on', async () => {
+    const tied = { ...two, games: two.games.slice(0, 1).concat(line('anitag', 'AniTag', 'teal', { Ana: 0, Ben: 1 })) };
+    const room = nightRoom({ ...tied, ended: { by: 'ana', byName: 'Ana' } });
+    results(room, invite());
+    expect(screen.getByRole('region', { name: 'Tied: Ana & Ben' })).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Keep the night going' }));
+    await waitFor(() => expect(room.handoff.resumeNight).toHaveBeenCalledTimes(1));
+  });
+
+  it('reports a finished game to the room as players beaten', () => {
+    const room = nightRoom(null);
+    function Final() {
+      useRecordResult('anipeek', players, ['ben'], { places: { ana: 2, ben: 1 } });
+      return null;
+    }
+    renderArcade(
+      <InviteContext.Provider value={invite()}>
+        <RoomShell room={room} onExit={() => {}} nextGame><Final /></RoomShell>
+      </InviteContext.Provider>,
+    );
+    expect(room.handoff.recordNight).toHaveBeenCalledTimes(1);
+    expect(room.handoff.recordNight).toHaveBeenCalledWith({
+      game: 'anipeek', results: [{ name: 'Ana', pts: 0 }, { name: 'Ben', pts: 1 }],
+    });
+  });
+
+  it('reports nothing for a game nobody won', () => {
+    const room = nightRoom(null);
+    function Final() {
+      useRecordResult('anirank', players, []);
+      return null;
+    }
+    renderArcade(
+      <InviteContext.Provider value={invite()}>
+        <RoomShell room={room} onExit={() => {}} nextGame><Final /></RoomShell>
+      </InviteContext.Provider>,
+    );
+    expect(room.handoff.recordNight).not.toHaveBeenCalled();
+  });
+});
+
 describe('the new game makes the room', () => {
   const mount = (room, value) => renderArcade(
     <InviteContext.Provider value={value}>
@@ -175,6 +293,9 @@ describe('the new game makes the room', () => {
     const value = arriving();
     mount(room, value);
     await waitFor(() => expect(room.handoff.announce).toHaveBeenCalledWith('AAAAA', 'NEWRM'));
+    // The night is copied across before anyone is told the room exists.
+    expect(room.handoff.carry).toHaveBeenCalledWith('AAAAA', 'NEWRM');
+    expect(room.handoff.carry.mock.invocationCallOrder[0]).toBeLessThan(room.handoff.announce.mock.invocationCallOrder[0]);
     expect(room.createRoom).toHaveBeenCalledTimes(1);
     expect(room.createRoom.mock.calls[0][0].id).toBe('caden');
     expect(room.joinRoom).not.toHaveBeenCalled();

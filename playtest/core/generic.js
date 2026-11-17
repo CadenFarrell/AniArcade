@@ -55,6 +55,10 @@ const DENY_START = [
   // A follower's way back from waiting on the host's next game (see the
   // `next$` pattern below).
   'back to the results',
+  // Game night (src/shared/utils/night.js): the host's button under a room's
+  // final results puts a champion screen over the whole table, and its way
+  // back takes it down again. Neither is a step in a game.
+  'end the night', 'keep the night going',
 ];
 // A name ending in a disclosure triangle opens or closes a panel and never
 // moves a game on; pressed at random it is the commonest way to look busy. And

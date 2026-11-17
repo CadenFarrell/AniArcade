@@ -9,6 +9,7 @@
 import { test, expect } from '@playwright/test';
 import net from 'node:net';
 import { GAMES, seedContext, routeNetwork, pageAdapter, auditor, writeRun } from './harness.js';
+import { REPORT_DIR } from '../report.js';
 import { playTable } from '../core/table.js';
 import { scenarioFor, profilesFor, FIXTURE_PROFILES } from '../core/scenarios.js';
 import { makeRng } from '../core/rng.js';
@@ -50,6 +51,15 @@ for (const { game, seed, chaos, chainTo } of cases) {
     if (strategy.onlinePrefs) scenario.prefs = strategy.onlinePrefs(scenario.prefs);
     const profiles = profilesFor(scenario, strategy);
     const origin = info.project.use.baseURL;
+    // The chained game is played through as well (below), by the same table:
+    // its settings are seeded beside the first game's, since the lobby it
+    // lands in reads them from the host's storage like any other.
+    const chain = chainTo ? { game: GAMES.find((g) => g.id === chainTo), strategy: strategies[chainTo] } : null;
+    if (chain) {
+      chain.scenario = scenarioFor(chain.game, chain.strategy, seed, { layer: 'online' });
+      chain.scenario.names = scenario.names;
+      if (chain.strategy.onlinePrefs) chain.scenario.prefs = chain.strategy.onlinePrefs(chain.scenario.prefs);
+    }
 
     const seats = [];
     for (const [i, profile] of profiles.entries()) {
@@ -59,7 +69,10 @@ for (const { game, seed, chaos, chainTo } of cases) {
         storage: {
           aniguess_profiles: { [profile.id]: profile },
           aniarcade_active_profile: profile.id,
-          aniarcade_game_prefs: { [game.id]: scenario.prefs },
+          aniarcade_game_prefs: {
+            [game.id]: scenario.prefs,
+            ...(chain ? { [chain.game.id]: chain.scenario.prefs } : {}),
+          },
         },
       });
       const offsite = [];
@@ -83,8 +96,10 @@ for (const { game, seed, chaos, chainTo } of cases) {
     writeRun('browser-online', record);
     try {
       expect(record.outcome, `${record.failure?.kind}: ${record.failure?.message}\n${record.lastScreen ?? ''}`).toBe('pass');
-      if (chainTo) {
-        const next = GAMES.find((g) => g.id === chainTo);
+      if (chain) {
+        const next = chain.game;
+        // One game is not a night yet: the table appears from the second.
+        await expect(seats[0].page.getByRole('region', { name: 'Tonight' })).toHaveCount(0);
         await seats[0].page.getByRole('button', { name: `Play ${next.title} next` }).click();
         for (const s of seats) {
           // The lobby's banner, with every player in its roster: the host made
@@ -95,6 +110,48 @@ for (const { game, seed, chaos, chainTo } of cases) {
             await expect(s.page.getByText(p.name, { exact: true }).first(), `${s.name} sees ${p.name} seated`)
               .toBeVisible({ timeout: 30_000 });
           }
+        }
+
+        // Game night (src/shared/utils/night.js): the same table plays the
+        // second game through, and its final results carry the running score
+        // of both — the first game's line having come across with the host.
+        const second = await playTable({
+          seats, game: next, strategy: chain.strategy, scenario: chain.scenario, rng: makeRng(seed + 1),
+          layer: 'browser-online',
+        });
+        expect(second.outcome, `${next.id} after the handoff — ${second.failure?.kind}: ${second.failure?.message}\n${second.lastScreen ?? ''}`).toBe('pass');
+        for (const s of seats) {
+          const tonight = s.page.getByRole('region', { name: 'Tonight' });
+          await expect(tonight.getByRole('heading', { name: /Tonight · 2 games/ }), `${s.name} sees the night's table`)
+            .toBeVisible({ timeout: 15_000 });
+          for (const p of profiles) await expect(tonight.getByText(p.name, { exact: true }).first()).toBeVisible();
+          await expect(tonight.getByText(game.title, { exact: true })).toHaveCount(1);
+          await expect(tonight.getByText(next.title, { exact: true })).toHaveCount(1);
+        }
+        const [host, guest] = seats;
+        const endNight = host.page.getByRole('button', { name: 'End the night' });
+        await expect(endNight).toBeVisible();
+        await expect(guest.page.getByRole('button', { name: 'End the night' })).toHaveCount(0);
+        // For review, like the auditor's shots: nothing else walks these two
+        // screens, which only a table's second game can reach.
+        const shot = (page, name) => page.screenshot({ path: `${REPORT_DIR}/shots/night-${name}.png`, fullPage: true }).catch(() => {});
+        await shot(host.page, 'tonight-host');
+
+        // The host ends the night: the champion takes every screen, and the
+        // host alone can take it back down.
+        await endNight.click();
+        await host.page.getByRole('dialog', { name: 'End the night?' }).getByRole('button', { name: 'End the night' }).click();
+        for (const s of seats) {
+          await expect(s.page.getByRole('heading', { level: 1, name: 'Night Champion' }), `${s.name} sees the champion`)
+            .toBeVisible({ timeout: 15_000 });
+        }
+        await expect(guest.page.getByRole('button', { name: 'Keep the night going' })).toHaveCount(0);
+        await shot(host.page, 'champion-host');
+        await shot(guest.page, 'champion-guest');
+        await host.page.getByRole('button', { name: 'Keep the night going' }).click();
+        for (const s of seats) {
+          await expect(s.page.getByRole('region', { name: 'Tonight' }), `${s.name} is back on the results`)
+            .toBeVisible({ timeout: 15_000 });
         }
       }
     } finally {

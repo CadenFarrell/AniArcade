@@ -109,6 +109,11 @@ export default function RoomSetup({ room, onBack, tone = 'purple', stat = () => 
       setError('');
       try {
         const code = await room.createRoom(profile);
+        // The table's game night comes too (shared/utils/night.js), and BEFORE
+        // the code is announced, so the followers join a room that already
+        // holds it. A night that cannot be copied is lost, never a reason to
+        // leave the table waiting on a room that exists.
+        if (from) await room.handoff?.carry?.(from, code).catch(() => {});
         if (from) await room.handoff?.announce(from, code).catch(() => {});
       } catch (e) {
         setError(e.message);

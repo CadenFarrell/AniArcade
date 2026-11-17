@@ -190,6 +190,29 @@ and between-rounds screens never show it. A new game's room hook that lists fiel
 spreading `core` must pass `handoff: core.handoff`. `smoke/handoff.smoke.test.js` and
 `NextGame.test.jsx` cover it; the browser layer's online spec chains AniWave into AniTag.
 
+**Game night** (`shared/utils/night.js`, `Night.jsx`; settled with Caden 2026-11-16): a running
+table across every game one online table plays — a point for every player you finish above —
+shown under a room's final results from the second game on ("Tonight"), until the host presses
+"End the night" and every device shows `NightChampion`. Online only, and nothing of it reaches
+history or achievements.
+
+- **One more node beside `next`, `state/night`**: `{ games: [{ game, title, accent, results:
+  [{ name, pts }] }], open, ended }`, read off the raw snapshot like `next` and handed out on
+  the same `handoff` object, so no game's hook or results screen knows it exists. `results` is
+  a LIST: a folded name can hold `.`, `$`, `/` or `[`, which RTDB refuses in a key. A player is
+  one person across rooms by folded name (`profileIdFromName`), never by room id.
+- **Every final results screen reports through `useRecordResult`** (the history scope's
+  `night`), on every device, and a transaction keeps one line: it appends unless `counted` is
+  set, and `useRoomCore` deletes `counted` once the ROOM is back in a lobby view
+  (`LOBBY_VIEWS`: `lobby`, and AniGuess's `setup`). Never keyed on the outcome (an identical
+  rematch is a second game), on what a device is showing (a loading screen would re-arm it), or
+  on "the view changed": AniQuiz's results come up on `round` and the view turns to `results`
+  a moment later, which counted one game three times. `night.test.js` fails a game whose
+  `returnToLobby` goes to a view not in the list.
+- **The host's device carries it** (`handoff.carry`, in `RoomSetup` between `createRoom` and
+  `announce`): read from the room the table is leaving, written without `open` or `ended`.
+- A game that ranks nobody (`winnerIds = []` with no places, a table of one) adds no line.
+
 ## Presence and the departed-player problem
 
 `usePresence.js` keeps `state/presence/{playerId}` alive with `onDisconnect` (server-side: no

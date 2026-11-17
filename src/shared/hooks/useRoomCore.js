@@ -8,6 +8,7 @@ import { usePresence } from './usePresence';
 import { useInvite } from '../context/inviteContext';
 import { GRACE_MS, rosterSnapshot, nextHostId, isLastToLeave } from '../utils/presence';
 import { normalizeNext } from '../utils/handoff';
+import { addNightLine, carriedNight, nightLatchStale, normalizeNight } from '../utils/night';
 
 const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no ambiguous 0/O/1/I
 const EMPTY_PLAYERS = []; // stable identity so the roster memo doesn't churn
@@ -135,6 +136,9 @@ export function useRoomCore({
   // The host's pick of the next game, read off the raw snapshot (see
   // shared/utils/handoff.js), or null.
   const [next, setNext] = useState(null);
+  // The table's running score across the games it has played together
+  // (shared/utils/night.js), read the same way and for the same reason.
+  const [night, setNight] = useState(null);
 
   // A handoff into this game (shared/utils/handoff.js), as it stood when this
   // hook mounted. It beats a saved room: a device that once closed a tab in
@@ -163,6 +167,7 @@ export function useRoomCore({
     setMyPlayerId(null);
     setState(null);
     setNext(null);
+    setNight(null);
     onExitRef.current?.();
   }, [forgetSavedRoom]);
 
@@ -214,6 +219,7 @@ export function useRoomCore({
         }
         setState(normalizeRef.current(val));
         setNext(normalizeNext(val.next));
+        setNight(normalizeNight(val.night));
       },
       () => {
         // Permission denied — usually a saved room this device's uid no longer
@@ -506,9 +512,43 @@ export function useRoomCore({
   const cancelNext = useCallback((fromCode) => (
     remove(ref(getFirebaseDb(), `rooms/${fromCode}/state/next`))
   ), []);
+
+  // --- Game night (shared/utils/night.js) -------------------------------------
+  //
+  // The night rides on `handoff` because every game's room hook already passes
+  // that object through, so no hook had to learn it. `record` is called by
+  // every device's final results screen (useRecordResult, through RoomShell):
+  // the transaction is what makes fourteen games, any number of phones and a
+  // refresh add exactly one line. `carry` is the host's, from the NEW game's
+  // hook like `announce`: it copies the night out of the room the table is
+  // leaving, which this device may still read (leaving keeps memberUids) and
+  // which the followers are holding open.
+  const recordNight = useCallback((line) => {
+    if (!roomCode) return Promise.resolve();
+    return runTransaction(
+      ref(getFirebaseDb(), `rooms/${roomCode}/state/night`),
+      (cur) => addNightLine(cur, line),
+    );
+  }, [roomCode]);
+  const endNight = useCallback(async () => {
+    if (!roomCode || !myPlayerId) throw new Error('Not in a room.');
+    const byName = readPath(state, playersPath)?.find((p) => p.id === myPlayerId)?.name ?? '';
+    await set(ref(getFirebaseDb(), `rooms/${roomCode}/state/night/ended`), { by: myPlayerId, byName });
+  }, [roomCode, myPlayerId, state, playersPath]);
+  const resumeNight = useCallback(async () => {
+    if (!roomCode) throw new Error('Not in a room.');
+    await remove(ref(getFirebaseDb(), `rooms/${roomCode}/state/night/ended`));
+  }, [roomCode]);
+  const carryNight = useCallback(async (fromCode, code) => {
+    const db = getFirebaseDb();
+    const carried = carriedNight((await get(ref(db, `rooms/${fromCode}/state/night`))).val());
+    if (carried) await set(ref(db, `rooms/${code}/state/night`), carried);
+  }, []);
+
   const handoff = useMemo(() => ({
     next, start: startNext, announce: announceNext, cancel: cancelNext,
-  }), [next, startNext, announceNext, cancelNext]);
+    night, recordNight, endNight, resumeNight, carry: carryNight,
+  }), [next, startNext, announceNext, cancelNext, night, recordNight, endNight, resumeNight, carryNight]);
 
   // --- Departure reconciliation ----------------------------------------------
   //
@@ -539,6 +579,14 @@ export function useRoomCore({
   // outgoing host instead, because a lobby can need to migrate twice without
   // the view ever changing.
   useEffect(() => { reconciledRef.current = {}; }, [roomCode, state?.view]);
+
+  // Game night's latch (shared/utils/night.js): once the ROOM is back in its
+  // lobby, the next results screen is a new game, identical outcome or not.
+  // Every device may write this; it is the same delete from each.
+  useEffect(() => {
+    if (!roomCode || !state || !nightLatchStale(night, state.view)) return;
+    once('night:latch', () => remove(ref(getFirebaseDb(), `rooms/${roomCode}/state/night/counted`)));
+  }, [roomCode, state, night, once]);
 
   // The crown has to move before anything else: the host is the only one who
   // can start the game or move past a round end, so a room whose host has gone

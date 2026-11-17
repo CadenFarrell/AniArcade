@@ -63,7 +63,10 @@ and shares portraits with `portraitsFor`, so a winner wears their setup slot's f
 (`Portrait.jsx` draws both). The stamp's `stamp-in` is from-state, so reduced motion leaves it
 stamped. Online, a FINAL results screen also carries the "Next game" card under the recap
 (`NextGame.jsx`, slotted in by `RoomShell` — `.claude/rules/online-rooms.md`); its buttons are
-"Play <Game> next", which the bots' fallback never presses.
+"Play <Game> next", which the bots' fallback never presses. Above it, from a table's second
+game, sits the night's running score (`Night.jsx`'s `TonightCard`, a region named "Tonight")
+with the host's "End the night"; that puts `NightChampion` ("Night Champion", "Keep the night
+going") over the room on every device. The bots press neither button.
 
 **Every FINAL results screen carries `Awards`** (never a between-rounds stop): superlatives
 for good play and playful roasts of bad play. Each game derives its own in its `rules.js`

@@ -47,13 +47,19 @@ export function useRecordResult(game, table, winnerIds, { places, scores } = {})
     if (done.current || winnerIds == null || !table?.length) return;
     done.current = true;
     const forIds = scope ? [scope.onlyId].filter(Boolean) : table.map((p) => p.id);
+    const seated = table.map((p) => ({ id: p.id, name: p.name }));
     recordGame({
       game,
-      table: table.map((p) => ({ id: p.id, name: p.name })),
+      table: seated,
       winnerIds,
       places: places ?? {},
       scores: scores ?? {},
       forIds,
     });
+    // Online, the same outcome is also a line in the table's game night
+    // (shared/utils/night.js). Here because this is the one call every final
+    // results screen already makes, so no game had to learn the night exists;
+    // the room makes it one line however many devices report it.
+    scope?.night?.({ game, table: seated, winnerIds, places: places ?? {} });
   });
 }

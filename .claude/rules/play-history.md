@@ -22,7 +22,9 @@ paths:
   lines written before that are one round each, a side's win (the fake against everyone).
 - **Whose line it is comes from `HistoryScopeContext`:** `RoomShell` provides
   `{ onlyId: myPlayerId }`, so online each device records only its own player; locally every
-  seated profile is recorded.
+  seated profile is recorded. The room's scope also carries `night`, through which the same
+  call reports the game to the table's game night (`.claude/rules/online-rooms.md`) — room
+  state, never this device's history.
 - **A results screen can mount twice for one game** (a refresh, AniGuess's leaderboard → list →
   back), so the same fingerprint (game, table, winners, places, running totals) within 30
   minutes is dropped.

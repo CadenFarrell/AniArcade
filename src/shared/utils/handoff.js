@@ -21,6 +21,10 @@
 // The room is read straight off the raw snapshot in useRoomCore, before any
 // game's normalizeState, since those rebuild state from named fields and would
 // drop it.
+//
+// The table's running score rides the same move (./night.js): `state/night`,
+// read the same way, copied into the new room by the host's device between
+// making it and announcing it.
 
 const CODE_RE = /^[A-Z0-9]{5}$/;
 
