@@ -49,6 +49,7 @@ const SOUNDS = {
   timeup: 0.6, // a countdown running out
   reveal: 0.55, // an answer coming out (AniWave's dial, AniFake's vote, AniRank's order)
   stamp: 0.65, // the results splash's stamp landing
+  unlock: 0.6, // an achievement unlocking, a beat after that stamp
 };
 
 let ctx = null;

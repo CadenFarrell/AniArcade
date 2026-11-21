@@ -12,7 +12,6 @@ import GameLoading from './GameLoading';
 import { readInvite, stripInvite } from '../shared/utils/inviteLink';
 import PanelWipe from './PanelWipe';
 import RecordButton from './RecordButton';
-import RecordScreen from './RecordScreen';
 import TitleScreen from './TitleScreen';
 import WelcomeModal from './WelcomeModal';
 import { readWelcomeSeen } from './welcomeSeen';
@@ -34,7 +33,7 @@ import { HowToContext } from '../shared/context/howToContext';
 import { CoverGameContext } from '../shared/context/coverGameContext';
 import { useWakeLock } from '../shared/hooks/useWakeLock';
 import { playSound } from '../shared/services/sound';
-import { preloadGames } from '../shared/utils/lazyGame';
+import { lazyGame, preloadGames } from '../shared/utils/lazyGame';
 import { nextGameChoices } from '../shared/utils/handoff';
 import { Backdrop, Badge, GhostButton, HubButton, Icon, Kana, Screen } from '../shared/ui';
 import { accentBg } from '../shared/ui/accents';
@@ -72,6 +71,34 @@ const BOARD_STYLE = {
 // WCAG 2.5.8, without growing the text — at text-xs the bare link was 16px tall.
 const FOOTER_LINK = `focus-pop min-h-6 px-1 font-bold text-fg-body underline decoration-2 underline-offset-2
   hover:text-fg-strong`;
+
+// The record page is its own chunk, loaded like a game (lazyGame is not only
+// for games: it is the memoized, retrying import with the `gameLoad` tag the
+// boundary reads). It is the one hub view most visits never open, and taking
+// it and its achievements out of the entry freed ~3 KB of a 120 KB startup
+// budget that had 0.2 KB left (119.78 to 116.84, measured 2026-11-16 by
+// .size-limit.js). The idle preload below fetches it with the games, so the
+// trophy still opens with no wait, and offline it is in the cache with them.
+const RecordScreen = lazyGame(() => import('./RecordScreen'));
+
+// What the record's Suspense shows if a tap ever beats that preload (or under
+// Data Saver, which skips it). Held back like GameLoading and for its reason:
+// a load that lands within a few frames should not flash a screen.
+function RecordLoading() {
+  const [shown, setShown] = useState(false);
+  useEffect(() => {
+    const timer = setTimeout(() => setShown(true), 200);
+    return () => clearTimeout(timer);
+  }, []);
+  if (!shown) return null;
+  return (
+    <Screen center width="md" className="text-center">
+      <p role="status" className="font-display text-lg font-bold uppercase tracking-[0.3em] text-fg-body">
+        Loading <Kana className="ml-1 text-sm text-fg-subtle">{KANA.loading}</Kana>
+      </p>
+    </Screen>
+  );
+}
 
 // The open game's rules, from the top bar — the one place on every screen of a
 // game (cover, setup, a round, the lobby, results), so the rules are never more
@@ -363,7 +390,7 @@ export default function HubScreen() {
   // visit: HubScreen stays mounted under every game, and each preload is
   // memoized anyway. Started behind the title screen too — that screen is
   // exactly the idle time this wants.
-  useEffect(() => preloadGames(games), []);
+  useEffect(() => preloadGames(games, { also: [RecordScreen.preload] }), []);
 
   // Off the address bar once read, so a refresh mid-game does not join the room
   // a second time. replaceState, not a navigation: nothing reloads. Skipping
@@ -483,13 +510,20 @@ export default function HubScreen() {
       <TopBar>
         <Backdrop />
         <HubButton onClick={() => setRecordOf(null)} />
-        <RecordScreen
-          key={recordOf.id}
-          profile={profiles[recordOf.id]}
-          games={games}
-          backLabel={fromPicker ? '← Profiles' : '← Hub'}
-          onBack={() => { setRecordOf(null); if (fromPicker) setShowPicker(true); }}
-        />
+        {/* A boundary of its own, as a game has: a chunk that never arrives
+            (offline before the preload, a tab left open across a deploy) is a
+            reload, not the root boundary's reset. */}
+        <ErrorBoundary key={recordOf.id} subject="your record" onBack={() => setRecordOf(null)}>
+          <Suspense fallback={<RecordLoading />}>
+            <RecordScreen
+              key={recordOf.id}
+              profile={profiles[recordOf.id]}
+              games={games}
+              backLabel={fromPicker ? '← Profiles' : '← Hub'}
+              onBack={() => { setRecordOf(null); if (fromPicker) setShowPicker(true); }}
+            />
+          </Suspense>
+        </ErrorBoundary>
       </TopBar>
     );
   } else if (editingListId) {

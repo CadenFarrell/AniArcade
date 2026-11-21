@@ -69,11 +69,15 @@ export default class ErrorBoundary extends Component {
     window.location.reload();
   };
 
+  // `subject` is what the boundary wraps, in the screens' own words: "this
+  // game" unless told otherwise (the hub's record page, which loads on demand
+  // like a game, passes "your record").
   render() {
+    const { subject = 'this game' } = this.props;
     if (this.state.loadFailed) {
       const { onBack } = this.props;
       return (
-        <ErrorPanel icon="warning" tone="bg-pop-amber" title="Couldn't load this game">
+        <ErrorPanel icon="warning" tone="bg-pop-amber" title={`Couldn't load ${subject}`}>
           <p className="text-fg-body text-lg mb-8">
             Check your connection and reload. If the arcade was just updated, reloading picks
             up the new version.
@@ -98,7 +102,7 @@ export default class ErrorBoundary extends Component {
         <ErrorPanel icon="burst" tone="bg-pop-red" title="Something went wrong">
           <p className="text-fg-body text-lg mb-8">
             {onBack
-              ? 'This game hit an unexpected error. The rest of the arcade is fine — head back to the menu, or reset if it keeps happening.'
+              ? `${subject[0].toUpperCase()}${subject.slice(1)} hit an unexpected error. The rest of the arcade is fine — head back to the menu, or reset if it keeps happening.`
               : 'AniArcade hit an unexpected error. Resetting your in-progress game usually fixes it.'}
           </p>
           {/* Leaving is offered first and styled as the primary action: it is

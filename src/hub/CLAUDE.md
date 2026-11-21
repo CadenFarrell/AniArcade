@@ -138,12 +138,13 @@ an icon-only trophy just left of the profile pill, shown only when there is a ma
 replaced a "Your record" card under the board (the record strip), removed because it was page
 content that was not a game.
 
-**`RecordScreen.jsx` is the whole record**, a full hub view like ListManager's (`recordOf` in
+**`RecordScreen.jsx` is the whole record, and its own chunk** (`lazyGame` in `HubScreen`, preloaded at idle with the games through `preloadGames`' `also`, behind its own `ErrorBoundary subject="your record"`), a full hub view like ListManager's (`recordOf` in
 `HubScreen`, `{ id, from }`): totals, streaks, a card per game in its ink, head-to-head, and
 every game, 20 at a time. Its achievements are `RecordAchievements.jsx`: an "Achievements"
 card (every milestone, locked ones with their progress; each game's "ace" behind "Show all")
 and an "Award collection" card (every game's ten titles from its descriptor, earned ones
-with a count). Its header's totals are lifetime, from the achievements' counters, since
+with a count). Each game's titles are folded behind its ink bar, which carries "n / 10": open, the
+fourteen blocks were ~4,300px on a phone and put eight screens above Head to head. Its header's totals are lifetime, from the achievements' counters, since
 history keeps only 200 lines (`.claude/rules/play-history.md`). It opens from the bar's trophy ("Your record") and from a trophy on
 every profile-picker row — any profile, because every profile seated at a local game here is
 recorded — and its back step returns where it came from ("← Hub" or "← Profiles"). It reads
@@ -222,7 +223,7 @@ Firebase and dnd-kit had arrived: one ~1 MB file (301 KB gzipped) before the fir
 Startup is now ~360 KB (112 KB gzipped, measured 2026-10-28 with AniChain in). Count the entry
 AND every chunk `index.html` preloads: Vite 8.3's Rolldown folds most of them into the entry,
 which took the entry alone from 68 KB to 112 KB with the total unchanged. Each game is its own chunk, and Firebase sits in a
-shared one that only a game pulls in. `.size-limit.json` budgets exactly that set (the
+shared one that only a game pulls in. `.size-limit.js` reads that set out of the built `index.html` (2026-11-16: 116.8 KB of script once the record page became its own chunk; a fixed file list under-counted the day Rolldown split the entry). It was first a JSON list of (the
 `index-*` entry, the Rolldown runtime it preloads, and the stylesheet): 114.8 KB of script and
 14.0 KB of CSS on 2026-11-13 against limits of 120 and 15, checked by `npm run size` in CI.
 

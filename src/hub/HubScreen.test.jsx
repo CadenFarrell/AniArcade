@@ -32,7 +32,8 @@ const CRASH = /something went wrong/i;
 // transforming its whole folder — well past findBy's one-second wait on a cold
 // run. Loading them here makes each test time the hub, not the compiler; the
 // tap still goes through Suspense exactly as it does in the app.
-beforeAll(() => Promise.all(games.map((g) => g.Component.preload())), 60_000);
+// The record page too: it is a chunk of its own, loaded the same way.
+beforeAll(() => Promise.all([...games.map((g) => g.Component.preload()), import('./RecordScreen')]), 60_000);
 
 let errors;
 beforeEach(() => {

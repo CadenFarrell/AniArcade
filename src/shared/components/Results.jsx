@@ -1,4 +1,4 @@
-import { useContext, useMemo } from 'react';
+import { useContext, useMemo, useState } from 'react';
 import { accentBg } from '../ui/accents';
 import { KANA } from '../ui/kanaText';
 import { splitTitle } from '../utils/splitTitle';
@@ -15,6 +15,7 @@ import { useStepCues } from '../hooks/useStepCues';
 import CountUp from './CountUp';
 import { useNextGameSlot } from '../context/nextGameContext';
 import { pickAwards } from '../utils/awards';
+import { prefersStill } from '../utils/motion';
 import { CeremonyContext } from '../context/ceremonyContext';
 
 // The frame every results screen shares — the final standings of every game and
@@ -344,33 +345,61 @@ export function Awards({ awards = [], max, className = '' }) {
   );
 }
 
+// How long after the winner's stamp the "Unlocked" card lands, with its chime.
+// Long enough that the stamp's thud has finished and the winner has been read:
+// the unlock is the screen's second beat, never a sound on top of the first.
+const UNLOCK_BEAT_MS = 700;
+
 // What this game unlocked, for whoever this device records (online, only its
 // own player). It listens rather than reads once: the writes land in effects
 // after it mounts — the parent's useRecordResult runs after this card's own.
+//
+// On a staged screen it is the LAST thing to land: places, the winner, then
+// this, with `unlock` sounding as it arrives. It first shipped silent because
+// it showed at once, where a sound would have played before the winner's
+// stamp. The chime is this card's own timer rather than one more step of the
+// ceremony's, because the ceremony's steps are fixed at mount and the unlock is
+// not known until the effects after it. A press that skips the reveal shows
+// the card at once and drops the chime with the stamp (useStepCues' rule);
+// reduced motion, which starts every reveal finished, still sounds it once —
+// `skipped` is true there from the first render, so it is not passed on.
+// With no ceremony the card is there from the start and the chime waits the
+// same beat, clear of the splash's own stamp.
 function UnlockedCard({ className }) {
   const fresh = useFreshUnlocks();
+  const staged = useContext(CeremonyContext);
+  const [still] = useState(prefersStill);
+  // One key however many writes add to the list (the awards' tally lands an
+  // effect before the game's), so two unlocks are one chime.
+  useStepCues(
+    [{ atMs: (staged?.splashAt ?? 0) + UNLOCK_BEAT_MS, name: 'unlock' }],
+    fresh.length ? 'unlock' : null,
+    { skip: !still && Boolean(staged?.skipped) },
+  );
   if (!fresh.length) return null;
   return (
-    <Card title="Unlocked" padding="sm" className={`mb-6 ${className}`}>
-      <ul>
-        {fresh.map((u) => (
-          <li key={`${u.id}:${u.achievementId}`} className="flex items-center gap-3 border-b border-line px-1 py-2.5 last:border-0">
-            <span className="flex h-11 w-11 shrink-0 items-center justify-center border-2 border-ink bg-ink text-xl text-paper">
-              <Icon name="trophy" />
-            </span>
-            <span className="min-w-0 flex-1">
-              <span className="block font-display text-sm font-bold uppercase tracking-[0.2em] text-pop-amber">
-                {u.title}
+    <div className={staged ? 'reveal-row' : ''} style={staged?.after(UNLOCK_BEAT_MS)}>
+      <Card title="Unlocked" padding="sm" className={`mb-6 ${className}`}>
+        <ul>
+          {fresh.map((u) => (
+            <li key={`${u.id}:${u.achievementId}`} className="flex items-center gap-3 border-b border-line px-1 py-2.5 last:border-0">
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center border-2 border-ink bg-ink text-xl text-paper">
+                <Icon name="trophy" />
               </span>
-              <span className="block truncate font-display text-lg font-bold uppercase leading-tight tracking-wide text-fg-strong">
-                {u.name}
+              <span className="min-w-0 flex-1">
+                <span className="block font-display text-sm font-bold uppercase tracking-[0.2em] text-pop-amber">
+                  {u.title}
+                </span>
+                <span className="block truncate font-display text-lg font-bold uppercase leading-tight tracking-wide text-fg-strong">
+                  {u.name}
+                </span>
+                <span className="block text-sm text-fg-helper">{u.detail}</span>
               </span>
-              <span className="block text-sm text-fg-helper">{u.detail}</span>
-            </span>
-          </li>
-        ))}
-      </ul>
-    </Card>
+            </li>
+          ))}
+        </ul>
+      </Card>
+    </div>
   );
 }
 

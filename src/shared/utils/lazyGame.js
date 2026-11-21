@@ -44,9 +44,12 @@ export function lazyGame(load) {
  * not pay for six games they did not open. They get the on-tap load instead,
  * which the loading screen covers.
  *
+ * `also` is any other on-demand view's `preload` (the hub's record page), fetched
+ * in the same idle pass and under the same Data Saver rule.
+ *
  * Returns a cancel function, for the effect that schedules it.
  */
-export function preloadGames(games, { idle = globalThis.requestIdleCallback } = {}) {
+export function preloadGames(games, { idle = globalThis.requestIdleCallback, also = [] } = {}) {
   if (globalThis.navigator?.connection?.saveData) return () => {};
   const run = () => {
     for (const game of games) {
@@ -57,6 +60,7 @@ export function preloadGames(games, { idle = globalThis.requestIdleCallback } = 
       // it is in the cache with the game (the service worker keeps /assets/).
       game.howTo?.()?.catch(() => {});
     }
+    for (const preload of also) preload?.()?.catch(() => {});
   };
   if (typeof idle === 'function') {
     const handle = idle(run, { timeout: 3000 });

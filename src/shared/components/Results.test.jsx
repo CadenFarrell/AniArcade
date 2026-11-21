@@ -4,11 +4,13 @@
 // this pins is the ORDER of the delays and that nothing is missing from the
 // page while they run — jsdom never plays an animation, which is exactly the
 // point: every name and every final number is in the DOM from the first render.
-import { cleanup, render, screen } from '@testing-library/react';
+import { act, cleanup, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('../services/sound', () => ({ playCue: vi.fn() }));
 const { default: ResultsLayout, Awards, Splash, Standings } = await import('./Results');
+const { playCue } = await import('../services/sound');
+const { recordGameAchievements } = await import('../hooks/useAchievements');
 
 const game = { id: 'demo', title: 'AniDemo', accent: 'pink' };
 const players = [
@@ -112,5 +114,83 @@ describe('Awards', () => {
     const stored = JSON.parse(localStorage.getItem('aniarcade_achievements'));
     expect(stored.a.awards).toEqual({ One: 1 });
     expect(stored.b).toMatchObject({ awards: { Two: 1 }, roasts: 1 });
+  });
+});
+
+// The "Unlocked" card is the ceremony's last beat: places, the winner's stamp,
+// then the card with its chime. It first shipped silent because it showed at
+// once, where a sound would have played before the stamp.
+describe('the Unlocked card', () => {
+  const finalScreen = (ceremony = 2) => render(
+    <ResultsLayout
+      game={game}
+      title="Final Scores"
+      players={players}
+      ceremony={ceremony}
+      splash={<Splash players={[players[0]]} stamp="Winner" />}
+    >
+      <Standings build ranked={players.slice(1)} score={(p) => `${p.total} pts`} />
+      <Awards />
+    </ResultsLayout>,
+  );
+  // What the game's results screen does in its own effect, after the card has
+  // mounted: Ann's first game, and her first win.
+  const unlock = () => act(() => recordGameAchievements(
+    { a: { at: Date.now(), game: 'aniquiz', won: true, place: 1, size: 3, with: ['Ben', 'Cat'] } },
+    {},
+    { a: 'Ann' },
+  ));
+  const cues = () => playCue.mock.calls.map(([name]) => name);
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+    playCue.mockClear();
+  });
+  afterEach(() => vi.useRealTimers());
+
+  it('lands after the winner, and chimes once, a beat after the stamp', () => {
+    const { container } = finalScreen();
+    unlock();
+    const card = screen.getByRole('heading', { name: 'Unlocked' }).closest('.reveal-row');
+    expect(card.textContent).toMatch(/First game.*First win/);
+    const splash = container.querySelector('section.curtain-in');
+    expect(delayOf(card)).toBeGreaterThan(delayOf(splash));
+
+    act(() => vi.advanceTimersByTime(delayOf(splash)));
+    expect(cues()).toContain('stamp');
+    expect(cues()).not.toContain('unlock');
+    act(() => vi.advanceTimersByTime(delayOf(card) - delayOf(splash)));
+    expect(cues().filter((c) => c === 'unlock')).toHaveLength(1);
+  });
+
+  it('shows at once and stays silent when the table presses through', () => {
+    const { container } = finalScreen();
+    unlock();
+    act(() => {
+      container.querySelector('li.reveal-row').closest('div')
+        .dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
+    });
+    const card = screen.getByRole('heading', { name: 'Unlocked' }).closest('.reveal-row');
+    expect(card.style.animationDelay).toBe('');
+    act(() => vi.advanceTimersByTime(10_000));
+    expect(cues()).not.toContain('unlock');
+  });
+
+  it('under reduced motion is there at once, and still chimes', () => {
+    vi.stubGlobal('matchMedia', vi.fn((q) => ({ matches: q.includes('reduce'), media: q })));
+    finalScreen();
+    unlock();
+    expect(screen.getByRole('heading', { name: 'Unlocked' }).closest('.reveal-row').style.animationDelay).toBe('');
+    act(() => vi.advanceTimersByTime(0));
+    expect(cues().filter((c) => c === 'unlock')).toHaveLength(1);
+  });
+
+  it('with no ceremony is a plain card, its chime a beat clear of the stamp', () => {
+    finalScreen(null);
+    unlock();
+    expect(screen.getByRole('heading', { name: 'Unlocked' }).closest('.reveal-row')).toBeNull();
+    expect(cues()).toEqual(['stamp']);
+    act(() => vi.advanceTimersByTime(700));
+    expect(cues()).toEqual(['stamp', 'unlock']);
   });
 });

@@ -70,7 +70,8 @@ export const ART = {
 //   correct ← confirmation_004   wrong ← error_003    yes ← confirmation_001
 //   no ← error_008      turn ← question_003    buzz ← bong_001
 //   tick ← tick_002     timeup ← error_006     reveal ← maximize_004
-//   stamp ← drop_004
+//   stamp ← drop_004    unlock ← confirmation_003 (the one confirmation left:
+//   a third of a second that finishes high, so it cannot be heard as `correct`)
 export const SOUND_PACK = {
   title: 'Interface Sounds',
   artist: 'Kenney',

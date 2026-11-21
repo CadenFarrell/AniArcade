@@ -44,8 +44,18 @@ describe('preloadGames', () => {
   it('downloads nothing under Data Saver', () => {
     vi.stubGlobal('navigator', { connection: { saveData: true } });
     const games = [game()];
-    preloadGames(games, { idle: now });
+    const also = vi.fn(async () => ({}));
+    preloadGames(games, { idle: now, also: [also] });
     expect(games[0].Component.preload).not.toHaveBeenCalled();
+    expect(also).not.toHaveBeenCalled();
+  });
+
+  // The hub's record page: a view that is not a game but loads like one.
+  it('preloads the other on-demand views it is handed, and swallows their failures', async () => {
+    const also = [vi.fn(async () => ({})), vi.fn(() => Promise.reject(new Error('offline')))];
+    preloadGames([], { idle: now, also });
+    expect(also.map((p) => p.mock.calls.length)).toEqual([1, 1]);
+    await new Promise((r) => setTimeout(r, 0));
   });
 
   it('swallows a failed preload — the tap retries it', async () => {

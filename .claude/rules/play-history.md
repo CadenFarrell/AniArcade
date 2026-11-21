@@ -59,6 +59,13 @@ milestones plus a tally of every award a profile was named for.
 - The card listens (`useSyncExternalStore` over a write counter) rather than reading once:
   a parent's effect (`useRecordResult`) runs after the card's own, so a read on mount is
   always too early.
+- **The card is the ceremony's last beat** (settled with Caden, 2026-11-16): places, the
+  winner's stamp, then the card 700 ms later with the `unlock` chime. It shipped silent,
+  because a card shown at once would have sounded before the stamp. The chime is the card's
+  own `useStepCues` timer (the ceremony's steps are fixed at mount, before any unlock is
+  known), one chime however many unlock. A press that skips the reveal shows the card and
+  drops the chime; reduced motion shows it at once and still chimes; with no ceremony the
+  card is plain and the chime waits the same beat, clear of the splash's stamp.
 - **Each game's descriptor lists its ten titles** (`awards: { good, roasts }`) for the trophy
   page's collection, which shows every title, locked ones included; `hub/awards.test.js`
   fails a descriptor whose list differs from the `award('…')` calls in its `rules.js`. A

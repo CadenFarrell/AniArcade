@@ -83,7 +83,7 @@ Everything else on the descriptor is the menu and stays eager; the game's code d
 demand, so the hub paints after ~115 KB gzipped instead of the whole arcade's ~300 KB. A new
 game that imports its component statically pulls itself — and anything only it uses — back
 into the hub's startup bundle: the edit hook flags it as it is written, and `npm run size`
-(`.size-limit.json`, in CI) fails the build — AniDraft imported statically measured 165 KB
+(`.size-limit.js`, in CI; it counts whatever the built `index.html` loads first) fails the build — AniDraft imported statically measured 165 KB
 against the 120 KB budget. Raise the budget only as a decision. The mechanics (idle preload,
 the loading screen, the reload-not-reset error) are in `src/hub/CLAUDE.md`.
 

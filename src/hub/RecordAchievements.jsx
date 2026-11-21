@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { achievementView } from '../shared/utils/achievements';
 import { whenLabel } from '../shared/utils/history';
 import { splitTitle } from '../shared/utils/splitTitle';
@@ -47,30 +47,53 @@ export default function RecordAchievements({ rec, games }) {
           Awards count once they are on a game&apos;s final card.
         </p>
         <ul className="flex flex-col gap-3">
-          {view.collection.map((g) => {
-            const game = gameOf(g.id);
-            const title = splitTitle(game.title);
-            const good = g.awards.filter((a) => !a.roast);
-            const roasts = g.awards.filter((a) => a.roast);
-            return (
-              <li key={g.id} className="border-2 border-ink">
-                <p className={`px-2 py-1 font-display leading-none text-paper ${accentBg(game.accent)}`}>
-                  <span className="sr-only">{game.title}</span>
-                  <span aria-hidden="true">
-                    <span className="text-[0.6rem] font-bold uppercase tracking-[0.3em]">{title.prefix}</span>
-                    <span className="text-base font-bold uppercase tracking-wide">{title.word}</span>
-                  </span>
-                </p>
-                <div className="flex flex-col gap-2 p-2">
-                  <Chips label="Good" awards={good} />
-                  <Chips label="Roasts" awards={roasts} />
-                </div>
-              </li>
-            );
-          })}
+          {view.collection.map((g) => <GameAwards key={g.id} game={gameOf(g.id)} awards={g.awards} />)}
         </ul>
       </Card>
     </>
+  );
+}
+
+// One game's ten titles, folded behind its title bar. Open, fourteen games
+// were ~4,300px on a phone (about 285px each at 375 wide, measured 2026-11-16)
+// and with the milestones put eight screens between the header and Head to
+// head. Closed, the bar still says the thing a glance wants, how many of the
+// ten are earned, and the page is the fourteen bars. MoreSettings' fold, minus
+// the remembering: `hidden` rather than unmounted, so the titles stay in the
+// page for find-in-page and for the tests.
+function GameAwards({ game, awards }) {
+  const [open, setOpen] = useState(false);
+  const id = useId();
+  const title = splitTitle(game.title);
+  const earned = awards.filter((a) => a.n > 0).length;
+  return (
+    <li className="border-2 border-ink">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        aria-controls={id}
+        className={`focus-pop flex min-h-11 w-full items-center gap-2 px-2 py-1 text-left font-display leading-none
+          text-paper ${accentBg(game.accent)}`}
+      >
+        <Icon name="chevron" className={`shrink-0 transition-transform ${open ? 'rotate-90' : ''}`} />
+        <span className="min-w-0 flex-1">
+          <span className="sr-only">{game.title}</span>
+          <span aria-hidden="true">
+            <span className="text-[0.6rem] font-bold uppercase tracking-[0.3em]">{title.prefix}</span>
+            <span className="text-base font-bold uppercase tracking-wide">{title.word}</span>
+          </span>
+        </span>
+        <span className="shrink-0 text-sm font-bold tabular-nums">
+          <span aria-hidden="true">{earned} / {awards.length}</span>
+          <span className="sr-only">, {earned} of {awards.length} awards collected</span>
+        </span>
+      </button>
+      <div id={id} hidden={!open} className="flex flex-col gap-2 p-2">
+        <Chips label="Good" awards={awards.filter((a) => !a.roast)} />
+        <Chips label="Roasts" awards={awards.filter((a) => a.roast)} />
+      </div>
+    </li>
   );
 }
 

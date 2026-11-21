@@ -4,7 +4,7 @@
 // ways into it from the hub — the top bar's trophy (the main profile) and a row of
 // the profile picker (anyone on this device), each with its own way back.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, screen, waitFor, within } from '@testing-library/react';
+import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import HubScreen from './HubScreen';
 import RecordScreen from './RecordScreen';
@@ -141,6 +141,14 @@ describe('RecordScreen achievements', () => {
     const col = screen.getByRole('heading', { name: 'Award collection' }).closest('.card-pop');
     expect(within(col).getByText('Lucky shot').closest('li').textContent).toMatch(/×7/);
     expect(within(col).getByText('Rage quit').closest('li').textContent).toMatch(/not yet/);
+    // Each game's titles are folded behind its bar, which carries the count:
+    // open, fourteen games were most of the page on a phone.
+    const bar = within(col).getByRole('button', { name: /AniGuess.*1 of 10 awards collected/ });
+    expect(bar.getAttribute('aria-expanded')).toBe('false');
+    expect(within(col).getByText('Lucky shot').closest('[hidden]')).toBeTruthy();
+    fireEvent.click(bar);
+    expect(bar.getAttribute('aria-expanded')).toBe('true');
+    expect(within(col).getByText('Lucky shot').closest('[hidden]')).toBeNull();
   });
 
   it('shows the goals even before a first game', () => {
